@@ -827,6 +827,7 @@ function loadDB(){
   }
   // No v3 data — start fresh from SEED
   const data=JSON.parse(JSON.stringify(SEED));
+  _migrateDB(data);
   _applyCompatAliases(data);
   saveDB(data);
   return data;
@@ -968,20 +969,36 @@ function _migrateDB(data){
     if(!t.dependencies)             t.dependencies=[];
   });
 
-  // Upgrade checklist items: title / text sync + task-parity fields
-  (data.checklistItems||[]).forEach(ci=>{
-    if(!ci.title&&ci.text)          ci.title=ci.text;
-    if(!ci.text&&ci.title)          ci.text=ci.title;
-    if(ci.completed===undefined)    ci.completed=ci.complete||false;
-    if(ci.complete===undefined)     ci.complete=ci.completed||false;
-    if(ci.order===undefined)        ci.order=0;
-    if(!ci.createdAt)               ci.createdAt=new Date().toISOString();
-    if(!ci.updatedAt)               ci.updatedAt=ci.createdAt;
-    // Task-parity fields for main-table column display
-    if(!ci.status)                  ci.status=ci.complete?'done':'todo';
-    if(!ci.priority)                ci.priority='med';
-    if(ci.percentComplete===undefined) ci.percentComplete=ci.complete?100:0;
-  });
+  // Migrate checklistItems → child tasks with parentTaskId (one-time migration)
+  if(!data._ciMigrated){
+    (data.checklistItems||[]).forEach(ci=>{
+      const parentTask=(data.tasks||[]).find(t=>t.id===ci.taskId);
+      if(!parentTask)return;
+      if((data.tasks||[]).some(t=>t.id==='st_'+ci.id))return; // already migrated
+      const now=new Date().toISOString();
+      const isDone=ci.complete||ci.completed||(ci.status==='done');
+      (data.tasks||(data.tasks=[])).push({
+        id:'st_'+ci.id,
+        parentTaskId:ci.taskId,
+        name:ci.text||ci.title||'Untitled subitem',
+        status:ci.status||(isDone?'done':'todo'),
+        priority:ci.priority||parentTask.priority||'med',
+        ownerId:ci.ownerId||null,
+        currentlyWith:null,currentlyWithUserId:null,
+        groupId:parentTask.groupId,
+        startDate:ci.startDate||null,
+        endDate:ci.endDate||null,
+        percentComplete:ci.percentComplete!==undefined?ci.percentComplete:(isDone?100:0),
+        tags:[],dependencies:[],archived:false,hourBudget:null,
+        order:ci.order||0,
+        createdAt:ci.createdAt||now,
+        updatedAt:ci.updatedAt||now,
+        createdBy:parentTask.createdBy||null,
+      });
+    });
+    data.checklistItems=[];
+    data._ciMigrated=true;
+  }
 
   // Upgrade time entries: add billable, clientId
   (data.timeEntries||[]).forEach(te=>{
@@ -1171,7 +1188,7 @@ function countActiveFilters(){
     (pmin>0||pmax<100?1:0);
 }
 function getFilteredTasks(){
-  let t=getVisibleTasks();
+  let t=getVisibleTasks().filter(x=>!x.parentTaskId); // top-level only
   const f=activeFilters;
   const fs=f.statuses||[];const fp=f.priorities||[];
   if(f.clientId!=='all')t=t.filter(x=>{const g=getGroup(x);return g&&g.clientId===f.clientId;});
@@ -1187,7 +1204,7 @@ function getFilteredTasks(){
   if(f.dateTo)t=t.filter(x=>!x.startDate||x.startDate<=f.dateTo);
   if(f.awaitingClient)t=t.filter(x=>x.currentlyWithType==='client'||x.awaitingClient||x.currentlyWith==='client');
   if(f.overdue){const td=new Date().toISOString().slice(0,10);t=t.filter(x=>x.endDate&&x.endDate<td&&x.status!=='done'&&x.status!=='completed'&&x.status!=='cancelled');}
-  if(f.hasChecklist)t=t.filter(x=>(DB.checklistItems||[]).some(c=>c.taskId===x.id));
+  if(f.hasChecklist)t=t.filter(x=>(DB.tasks||[]).some(c=>c.parentTaskId===x.id&&!c.archived));
   if(f.hasDeps)t=t.filter(x=>(DB.dependencies||[]).some(d=>d.predecessorTaskId===x.id||d.dependentTaskId===x.id));
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
@@ -1530,9 +1547,9 @@ function getTaskClient(task){
   return g?DB.clients.find(c=>c.id===g.clientId)||null:null;
 }
 function getEffectiveTaskPct(taskId){
-  const cis=DB.checklistItems.filter(ci=>ci.taskId===taskId);
-  if(!cis.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
-  return Math.round(cis.reduce((s,ci)=>s+(ci.percentComplete||0),0)/cis.length);
+  const children=DB.tasks.filter(t=>t.parentTaskId===taskId&&!t.archived);
+  if(!children.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
+  return Math.round(children.reduce((s,t)=>s+(t.percentComplete||0),0)/children.length);
 }
 // ── Personal Shenanigans helpers ──
 function isPersonalBoard(board){return !!(board&&(board.personal||board.isPersonalBoard));}
@@ -1627,9 +1644,9 @@ function formatDate(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${da
 function hoursForTask(taskId){return DB.timeEntries.filter(e=>e.taskId===taskId).reduce((a,e)=>a+e.hours,0);}
 
 function checklistRatio(taskId){
-  const items=DB.checklistItems.filter(c=>c.taskId===taskId);
+  const items=DB.tasks.filter(t=>t.parentTaskId===taskId&&!t.archived);
   if(!items.length)return null;
-  return{done:items.filter(c=>c.complete).length,total:items.length};
+  return{done:items.filter(t=>t.status==='done'||t.status==='completed'||t.percentComplete===100).length,total:items.length};
 }
 
 // DAG cycle check: would adding depId as predecessor of taskId create a cycle?
@@ -5258,7 +5275,7 @@ function openTaskModal(id, defaultGroupId){
 
   document.getElementById('task-modal-title').textContent=isNew?'New Task':'Edit Task';
 
-  const checklistItems=id?DB.checklistItems.filter(c=>c.taskId===id):[];
+  const checklistItems=id?DB.tasks.filter(t=>t.parentTaskId===id&&!t.archived):[];
   const comments=id?DB.comments.filter(c=>c.taskId===id):[];
   const taskEntries=id?[...DB.timeEntries.filter(e=>e.taskId===id)].sort((a,b)=>b.date.localeCompare(a.date)):[];
   const timeTotal=taskEntries.reduce((s,e)=>s+e.hours,0);
@@ -5335,22 +5352,23 @@ function openTaskModal(id, defaultGroupId){
       ${!isClientView?(canEdit?`<div><label class="form-label">Description</label><textarea id="tm-desc" class="form-input form-textarea" style="min-height:70px">${t.description||''}</textarea></div>`
       :t.description?`<div style="background:#f8fbff;border-radius:8px;padding:12px;font-size:13px;color:#4a5568;line-height:1.6">${t.description}</div>`:''):''}
 
-      <!-- AC: checklist hidden from clients entirely -->
-      ${!isClientView?`<div>
+      <!-- AC: subitems hidden from clients entirely -->
+      ${!isClientView&&id?`<div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <label class="form-label" style="margin:0">Checklist</label>
+          <label class="form-label" style="margin:0">Subitems <span style="font-size:11px;color:#8da2b2;font-weight:400">${checklistItems.length?`(${checklistItems.filter(t=>t.status==='done').length}/${checklistItems.length} done)`:''}</span></label>
           ${timeTotal>0?`<span style="font-size:11px;color:#97bcbd;font-weight:600">⏱ ${timeTotal}h logged</span>`:''}
         </div>
-        <div id="tm-checklist">
-          ${checklistItems.map(ci=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
-            <input type="checkbox" ${ci.complete?'checked':''} onchange="toggleChecklist('${ci.id}',this.checked)" style="accent-color:#97bcbd"/>
-            <span style="flex:1;font-size:13px;text-decoration:${ci.complete?'line-through':'none'};color:${ci.complete?'#8da2b2':'#1a2940'}">${ci.text}</span>
-            ${canEdit?`<button onclick="deleteChecklist('${ci.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px">✕</button>`:''}
-          </div>`).join('')}
+        <div id="tm-checklist" style="max-height:160px;overflow-y:auto">
+          ${checklistItems.length===0?'<div style="font-size:12px;color:#8da2b2;padding:4px 0">No subitems yet.</div>':
+            checklistItems.map(si=>{const sm=STATUS_META[si.status]||STATUS_META['todo'];const isDone=si.status==='done';return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
+            <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${sm.bg};color:${sm.color};white-space:nowrap">${sm.label}</span>
+            <span style="flex:1;font-size:13px;text-decoration:${isDone?'line-through':'none'};color:${isDone?'#8da2b2':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(si.name)}">${escHtml(si.name)}</span>
+            ${canEdit?`<button onclick="tmDeleteSubitem('${si.id}')" title="Delete subitem" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>`:''}
+          </div>`}).join('')}
         </div>
         ${canEdit?`<div style="display:flex;gap:8px;margin-top:8px">
-          <input id="tm-ci-new" class="form-input" placeholder="Add checklist item…" style="flex:1" onkeypress="if(event.key==='Enter')addChecklist('${id||''}')"/>
-          <button onclick="addChecklist('${id||''}')" class="btn btn-ghost btn-sm">Add</button>
+          <input id="tm-ci-new" class="form-input" placeholder="Add subitem…" style="flex:1" onkeypress="if(event.key==='Enter')tmAddSubitem('${id}')"/>
+          <button onclick="tmAddSubitem('${id}')" class="btn btn-ghost btn-sm">Add</button>
         </div>`:''}
       </div>`:''}
 
@@ -5686,36 +5704,34 @@ function saveTask(){
   }
   saveDB(DB);closeTaskModal();renderView(currentView);updateNotifBadge();
 }
-function addChecklist(taskId){
+function tmAddSubitem(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
+  const pid=taskId||editingTaskId||'';
+  const parent=DB.tasks.find(t=>t.id===pid);
+  if(!parent)return;
   const inp=document.getElementById('tm-ci-new');
   const text=inp?.value.trim();
   if(!text)return;
-  const item={id:'ci'+uid(),taskId:taskId||editingTaskId||'',text,complete:false};
-  DB.checklistItems.push(item);
+  const now=new Date().toISOString();
+  const si={id:'si_'+uid(),parentTaskId:pid,name:text,status:'todo',priority:'med',ownerId:null,currentlyWith:null,currentlyWithUserId:null,groupId:parent.groupId,startDate:null,endDate:null,percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,order:DB.tasks.filter(t=>t.parentTaskId===pid).length,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null};
+  DB.tasks.push(si);
   saveDB(DB);
-  inp.value='';
-  const list=document.getElementById('tm-checklist');
-  if(list){
-    const div=document.createElement('div');
-    div.style.cssText='display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8';
-    div.innerHTML=`<input type="checkbox" onchange="toggleChecklist('${item.id}',this.checked)" style="accent-color:#97bcbd"/><span style="flex:1;font-size:13px">${text}</span><button onclick="deleteChecklist('${item.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px">✕</button>`;
-    list.appendChild(div);
-  }
+  if(inp)inp.value='';
+  openTaskModal(pid); // refresh to show new subitem
 }
-function toggleChecklist(id,val){
+function tmDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  const ci=DB.checklistItems.find(x=>x.id===id);
-  if(ci){ci.complete=val;saveDB(DB);}
-}
-function deleteChecklist(id){
-  try{requireInternalUser(currentUser);}catch(e){return;}
-  DB.checklistItems=DB.checklistItems.filter(x=>x.id!==id);
+  const si=DB.tasks.find(t=>t.id===siId);
+  const parentId=si?.parentTaskId;
+  DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);
+  DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
   saveDB(DB);
-  // remove from DOM
-  const btn=document.querySelector(`button[onclick="deleteChecklist('${id}')"]`);
-  if(btn)btn.closest('div').remove();
+  if(parentId)openTaskModal(parentId);
 }
+// Legacy no-ops
+function addChecklist(taskId){tmAddSubitem(taskId);}
+function toggleChecklist(){}
+function deleteChecklist(id){tmDeleteSubitem(id);}
 // Render comment body with @mention highlighting (XSS-safe)
 function _renderCommentBody(body){
   return escHtml(body).replace(/@(\w[\w\d_-]*)/g,
@@ -6206,28 +6222,59 @@ function wsCiAddComment(ciId){
   document.querySelectorAll('.ci-comment-popover').forEach(el=>el.remove());
   renderView('workspace');
 }
-function wsStartInlineSubtask(taskId){
+function wsStartInlineSubitem(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   wsInlineAddSubtaskId=taskId;
   if(!wsExpanded.has(taskId))wsExpanded.add(taskId);
   renderView('workspace');
   setTimeout(()=>document.getElementById('ws-inline-subtask-input')?.focus(),40);
 }
-function wsSaveInlineSubtask(){
+// Keep old name as alias
+function wsStartInlineSubtask(taskId){wsStartInlineSubitem(taskId);}
+function wsSaveInlineSubitem(){
   const text=(document.getElementById('ws-inline-subtask-input')?.value||'').trim();
   if(!text){document.getElementById('ws-inline-subtask-input')?.focus();return;}
-  const taskId=wsInlineAddSubtaskId;
-  if(!taskId)return;
+  const parentId=wsInlineAddSubtaskId;
+  if(!parentId)return;
+  const parent=DB.tasks.find(t=>t.id===parentId);
+  if(!parent)return;
   const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
   const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
   const now=new Date().toISOString();
-  DB.checklistItems.push({id:'ci'+uid(),taskId,text,title:text,complete:false,status:'todo',priority:'med',ownerId:ownerId||undefined,endDate:endDate||undefined,percentComplete:0,order:DB.checklistItems.filter(c=>c.taskId===taskId).length,createdAt:now,updatedAt:now});
+  DB.tasks.push({
+    id:'si_'+uid(),parentTaskId:parentId,name:text,status:'todo',priority:'med',
+    ownerId:ownerId||null,currentlyWith:null,currentlyWithUserId:null,
+    groupId:parent.groupId,startDate:null,endDate:endDate||null,
+    percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
+    order:DB.tasks.filter(t=>t.parentTaskId===parentId).length,
+    createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
+  });
   saveDB(DB);
   wsInlineAddSubtaskId=null;
-  wsExpanded.add(taskId);
+  wsExpanded.add(parentId);
   renderView('workspace');
 }
-function wsCancelInlineSubtask(){wsInlineAddSubtaskId=null;renderView('workspace');}
+function wsSaveInlineSubtask(){wsSaveInlineSubitem();}
+function wsCancelInlineSubitem(){wsInlineAddSubtaskId=null;renderView('workspace');}
+function wsCancelInlineSubtask(){wsCancelInlineSubitem();}
+function wsDeleteSubitem(id){
+  const si=DB.tasks.find(t=>t.id===id);
+  const parentId=si?.parentTaskId;
+  confirmCallback=()=>{
+    DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);
+    DB.comments=DB.comments.filter(c=>c.taskId!==id);
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id);
+    if(parentId){
+      const parent=DB.tasks.find(t=>t.id===parentId);
+      if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
+    }
+    saveDB(DB);closeConfirm();renderView('workspace');
+  };
+  document.getElementById('confirm-title').textContent='Delete Subitem';
+  document.getElementById('confirm-msg').textContent='Delete this subitem? This cannot be undone.';
+  document.getElementById('confirm-ok-btn').onclick=confirmCallback;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
 function wsSetGroupBy(val){wsGroupBy=val;document.getElementById('ws-gb-menu')?.classList.add('hidden');renderView('workspace');}
 function wsAddGroup(){
   if(!currentWorkboard)return;
@@ -6353,12 +6400,16 @@ function wsCommitRenameGroup(groupId,name){
 function wsToggleCol(key){wsColumns[key]=!wsColumns[key];renderView('workspace');}
 function wsDeleteTask(id){
   confirmCallback=()=>{
-    DB.tasks=DB.tasks.filter(t=>t.id!==id);
-    DB.checklistItems=DB.checklistItems.filter(c=>c.taskId!==id);
+    function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
+    const ids=new Set(collectIds(id));
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
+    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
     saveDB(DB);closeConfirm();renderView('workspace');
   };
   document.getElementById('confirm-title').textContent='Delete Task';
-  document.getElementById('confirm-msg').textContent='Are you sure? This cannot be undone.';
+  document.getElementById('confirm-msg').textContent='Are you sure? This will also delete all subitems.';
   document.getElementById('confirm-ok-btn').onclick=confirmCallback;
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
@@ -6613,12 +6664,15 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
   `}`;
 }
 
-function renderWsRow(t,cols,visCols,custCols,groupColor){
+function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
+  depth=depth||0;
+  const isSubitem=depth>0;
   const owner=getStaff(t.ownerId);
-  const client=getTaskClient(t);
-  const expanded=wsExpanded.has(t.id);
-  const checklist=DB.checklistItems.filter(c=>c.taskId===t.id);
-  const hasChecklist=checklist.length>0;
+  const client=isSubitem?null:getTaskClient(t);
+  const childTasks=!isSubitem?DB.tasks.filter(t2=>t2.parentTaskId===t.id&&!t2.archived).sort((a,b)=>(a.order||0)-(b.order||0)):[];
+  const hasChildren=childTasks.length>0;
+  const isExpanded=wsExpanded.has(t.id)||wsInlineAddSubtaskId===t.id;
+  const expanded=!isSubitem&&isExpanded&&(hasChildren||wsInlineAddSubtaskId===t.id);
   const isDone=t.status==='done';
   const sm=getStatusMeta(t.status);
   const pm=getPrioMeta(t.priority);
@@ -6630,29 +6684,31 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
   const hours=hoursForTask(t.id);
   const deps=(t.dependencies||[]).length;
   const cr=checklistRatio(t.id);
-  const isSelected=wsSelected.has(t.id);
+  const isSelected=!isSubitem&&wsSelected.has(t.id);
   const isOverdue=t.endDate&&t.endDate<toDateStr(new Date())&&t.status!=='done'&&t.status!=='completed'&&!t.archived;
   const commentCount=(DB.comments||[]).filter(c=>c.taskId===t.id).length;
   const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
-  const totalSubCols=visCols.length+custCols.length+1;
-
-  // Timeline display: startDate → endDate
   const tlStart=t.startDate?formatDate(t.startDate):'';
   const tlEnd=t.endDate?formatDate(t.endDate):'';
   const tlText=tlStart&&tlEnd?`${tlStart} → ${tlEnd}`:tlEnd||tlStart||'—';
+  const effectivePct=getEffectiveTaskPct(t.id);
+  const indent=isSubitem?56:10;
+  const borderColor=isSubitem?groupColor+'55':groupColor;
 
   return`
-  <tr class="ws-row${isSelected?' ws-row-selected':''}">
+  <tr class="${isSubitem?'ws-subrow':`ws-row${isSelected?' ws-row-selected':''}`}">
     <td style="text-align:center;width:36px" onclick="event.stopPropagation()">
-      <input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>
+      ${isSubitem?'':`<input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>`}
     </td>
     <td onclick="openTaskPanel('${t.id}')" style="cursor:pointer;max-width:300px">
-      <div style="display:flex;align-items:center;gap:5px;padding:0 10px;border-left:3px solid ${groupColor}">
-        ${(hasChecklist||currentUser?.role!=='client')
-          ?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" style="background:none;border:none;cursor:pointer;padding:2px;color:${hasChecklist?'#8da2b2':'#d4dde8'};font-size:9px;width:14px;flex-shrink:0;line-height:1">${expanded?'▼':'▶'}</button>`
-          :'<span style="width:14px;flex-shrink:0"></span>'}
+      <div style="display:flex;align-items:center;gap:5px;padding:0 10px 0 ${indent}px;border-left:3px solid ${borderColor}">
+        ${isSubitem
+          ?`<span style="color:#c4d0db;font-size:10px;flex-shrink:0;margin-right:2px">↳</span>`
+          :(hasChildren||currentUser?.role!=='client'
+            ?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" style="background:none;border:none;cursor:pointer;padding:2px;color:${hasChildren?'#8da2b2':'#d4dde8'};font-size:9px;width:14px;flex-shrink:0;line-height:1">${wsExpanded.has(t.id)?'▼':'▶'}</button>`
+            :'<span style="width:14px;flex-shrink:0"></span>')}
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
-          style="font-size:13px;font-weight:500;cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:#1a2940'}"
+          style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${escHtml(t.name)}</span>
         ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}')" title="${commentCount} comment${commentCount!==1?'s':''}"
           style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0"
@@ -6687,12 +6743,12 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''}
-    ${cols.progress?`<td class="${hasChecklist?'':'ws-editable'}" onclick="event.stopPropagation();${hasChecklist?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChecklist?'Auto-calculated from subtasks':'Change progress'}">
-      <div style="display:inline-flex;align-items:center;gap:5px">
-        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${getEffectiveTaskPct(t.id)}%;background:${getEffectiveTaskPct(t.id)===100?'#22c55e':'#97bcbd'}"></div></div>
-        <span style="font-size:11px;color:${getEffectiveTaskPct(t.id)===100?'#16a34a':'#6b8399'}">${getEffectiveTaskPct(t.id)}%</span>
-        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done} of ${cr.total} subtasks done">☑${cr.done}/${cr.total}</span>`:''}
-        ${hasChecklist?'':'<span class="ws-cell-caret">▾</span>'}
+    ${cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}">
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:0 6px">
+        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${effectivePct}%;background:${effectivePct===100?'#22c55e':'#97bcbd'}"></div></div>
+        <span style="font-size:11px;color:${effectivePct===100?'#16a34a':'#6b8399'}">${effectivePct}%</span>
+        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">⊞${cr.done}/${cr.total}</span>`:''}
+        ${hasChildren&&!isSubitem?'':'<span class="ws-cell-caret">▾</span>'}
       </div>
     </td>`:''}
     ${cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''}
@@ -6710,100 +6766,23 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     <td onclick="event.stopPropagation()">
       <div class="ws-actions">
         <button onclick="openTaskPanel('${t.id}')" title="Open" style="font-size:13px">✎</button>
-        <button onclick="wsDeleteTask('${t.id}')" title="Delete" style="color:#dc2626">✕</button>
+        <button onclick="${isSubitem?`wsDeleteSubitem('${t.id}')`:`wsDeleteTask('${t.id}')`}" title="${isSubitem?'Delete subitem':'Delete task'}" style="color:#dc2626">✕</button>
       </div>
     </td>
   </tr>
-  ${expanded?(
-    checklist.map(ci=>{
-      const ciStatus=ci.status||'todo';
-      const ciPrio=ci.priority||'med';
-      const ciSm=STATUS_META[ciStatus]||STATUS_META['todo'];
-      const ciPm=PRIO_META[ciPrio]||PRIO_META['med'];
-      const ciOwner=DB.staff.find(s=>s.id===ci.ownerId);
-      const ciDone=ci.complete||ciStatus==='done';
-      const ciOverdue=ci.endDate&&ci.endDate<toDateStr(new Date())&&!ciDone;
-      const ciPct=ci.percentComplete||0;
-      const ciStatusOpts=Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}"${ciStatus===k?' selected':''}>${v.label}</option>`).join('');
-      const ciPrioOpts=['low','med','high','crit'].map(p=>`<option value="${p}"${ciPrio===p?' selected':''}>${PRIO_META[p]?.icon||''} ${PRIO_META[p]?.label||p}</option>`).join('');
-      const ciOwnerOpts=`<option value="">—</option>`+DB.staff.map(s=>`<option value="${s.id}"${ci.ownerId===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
-      const ciEndFmt=ci.endDate?formatDate(ci.endDate):'—';
-      return`
-  <tr class="ws-subrow">
-    <td style="text-align:center;width:36px">
-      <input type="checkbox" ${ciDone?'checked':''} onchange="wsCiUpdate('${ci.id}','complete',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>
-    </td>
-    <td style="max-width:300px">
-      <div style="display:flex;align-items:center;gap:5px;padding:0 10px 0 56px;border-left:3px solid ${groupColor}55">
-        <span style="color:#c4d0db;font-size:10px;flex-shrink:0">↳</span>
-        <span ondblclick="wsCiRenameStart('${ci.id}',this)"
-          style="font-size:12px;font-weight:400;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;${ciDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
-          title="Double-click to rename">${escHtml(ci.text||ci.title||'')}</span>
-      </div>
-    </td>
-    ${cols.status?`<td style="background:${ciSm.bg}">
-      <select onchange="wsCiUpdate('${ci.id}','status',this.value)" style="border:none;background:transparent;font-size:11px;font-weight:700;color:${ciSm.color};width:100%;padding:0 8px;height:38px;cursor:pointer;outline:none">
-        ${ciStatusOpts}
-      </select>
-    </td>`:''}
-    ${cols.priority?`<td style="background:${ciPm.bg}">
-      <select onchange="wsCiUpdate('${ci.id}','priority',this.value)" style="border:none;background:transparent;font-size:11px;font-weight:700;color:${ciPm.color};width:100%;padding:0 8px;height:38px;cursor:pointer;outline:none">
-        ${ciPrioOpts}
-      </select>
-    </td>`:''}
-    ${cols.owner?`<td style="padding:0 10px">
-      <div style="display:inline-flex;align-items:center;gap:4px">
-        ${ciOwner?avatarHtml(ciOwner,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}
-        <select onchange="wsCiUpdate('${ci.id}','ownerId',this.value)" title="${ciOwner?escHtml(ciOwner.name):'Unassigned'}"
-          style="border:none;background:transparent;font-size:11px;color:#6b8399;max-width:70px;cursor:pointer;outline:none">
-          ${ciOwnerOpts}
-        </select>
-      </div>
-    </td>`:''}
-    ${cols.cwith?`<td></td>`:''}
-    ${cols.duedate?`<td style="padding:0 8px">
-      <div style="display:inline-flex;align-items:center;gap:4px">
-        ${ciOverdue?'<span style="font-size:11px;color:#dc2626">⚠</span>':''}
-        <input type="date" value="${ci.endDate||''}" onchange="wsCiUpdate('${ci.id}','endDate',this.value)"
-          style="border:1px solid ${ciOverdue?'#fca5a5':'#e2eaf2'};border-radius:5px;background:${ciOverdue?'#fff5f5':'#fafcff'};font-size:11px;color:${ciOverdue?'#dc2626;font-weight:700':'#6b8399'};padding:2px 4px;cursor:pointer;outline:none;height:28px"
-          title="Due date"/>
-      </div>
-    </td>`:''}
-    ${cols.progress?`<td>
-      <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px">
-        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${ciPct}%;background:${ciPct===100?'#22c55e':'#97bcbd'}"></div></div>
-        <input type="number" min="0" max="100" value="${ciPct}" onchange="wsCiUpdate('${ci.id}','percentComplete',Math.min(100,Math.max(0,+this.value)))"
-          style="width:34px;border:1px solid #e2eaf2;border-radius:5px;background:#fafcff;font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'};outline:none;padding:1px 3px;cursor:pointer;height:26px"/>
-        <span style="font-size:11px;color:#b0bec5">%</span>
-      </div>
-    </td>`:''}
-    ${cols.hours?`<td></td>`:''}
-    ${cols.client?`<td></td>`:''}
-    ${cols.tags?`<td></td>`:''}
-    ${cols.attachments?`<td></td>`:''}
-    ${custCols.map(()=>`<td></td>`).join('')}
-    <td style="width:36px"></td>
-    <td onclick="event.stopPropagation()">
-      <div class="ws-actions">
-        <button onclick="wsCiOpenComments('${ci.id}',event)" title="Comments" style="font-size:11px;position:relative">
-          💬${(()=>{const n=(DB.comments||[]).filter(c=>c.checklistItemId==='${ci.id}').length;return n?`<span style="position:absolute;top:-4px;right:-4px;background:#97bcbd;color:#fff;border-radius:8px;font-size:9px;padding:0 3px;min-width:12px;text-align:center;line-height:14px">${n}</span>`:''})()}
-        </button>
-        <button onclick="wsCiDeleteItem('${ci.id}')" title="Delete subtask" style="color:#dc2626">✕</button>
-      </div>
-    </td>
-  </tr>`;
-    }).join('')
+  ${!isSubitem&&expanded?(
+    childTasks.map(child=>renderWsRow(child,cols,visCols,custCols,groupColor,1)).join('')
     +(currentUser?.role!=='client'
       ?(wsInlineAddSubtaskId===t.id
         ?`<tr class="ws-inline-row">
-    <td style="text-align:center;width:36px"><input type="checkbox" disabled style="opacity:.3"/></td>
-    <td style="padding:5px 8px 5px 56px">
+    <td style="width:36px"></td>
+    <td style="padding:5px 8px 5px 62px">
       <div style="display:flex;align-items:center;gap:5px;border-left:3px solid ${groupColor}55;padding-left:6px">
         <span style="color:#c4d0db;font-size:10px">↳</span>
         <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
-          placeholder="Subtask name… (Enter to save)"
+          placeholder="Subitem name… (Enter to save)"
           style="flex:1;min-width:100px"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubtask();}if(event.key==='Escape')wsCancelInlineSubtask();"/>
+          onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"/>
       </div>
     </td>
     ${cols.status?`<td><span style="font-size:11px;color:#c4d0db;padding:0 8px">todo</span></td>`:''}
@@ -6811,29 +6790,24 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     ${cols.owner?`<td style="padding:0 6px"><select id="ws-inline-subtask-owner" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;cursor:pointer"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
     ${cols.cwith?`<td></td>`:''}
     ${cols.duedate?`<td style="padding:0 6px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
-    ${cols.progress?`<td></td>`:''}
-    ${cols.hours?`<td></td>`:''}
-    ${cols.client?`<td></td>`:''}
-    ${cols.tags?`<td></td>`:''}
-    ${cols.attachments?`<td></td>`:''}
+    ${cols.progress?`<td></td>`:''}${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}
     ${custCols.map(()=>`<td></td>`).join('')}
     <td></td>
     <td style="padding:0 6px;white-space:nowrap">
-      <button onclick="wsSaveInlineSubtask()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 10px">↵</button>
-      <button onclick="wsCancelInlineSubtask()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;margin-left:2px">✕</button>
+      <button onclick="wsSaveInlineSubitem()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 10px">↵</button>
+      <button onclick="wsCancelInlineSubitem()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;margin-left:2px">✕</button>
     </td>
   </tr>`
         :`<tr class="ws-subrow">
     <td style="width:36px"></td>
-    <td colspan="${totalSubCols}" style="padding:2px 10px 5px 50px">
-      <button onclick="event.stopPropagation();wsStartInlineSubtask('${t.id}')"
+    <td colspan="${visCols.length+custCols.length+2}" style="padding:3px 10px 5px 66px">
+      <button onclick="event.stopPropagation();wsStartInlineSubitem('${t.id}')"
         style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;font-family:'Jost',sans-serif;padding:2px 0;display:inline-flex;align-items:center;gap:4px;line-height:1"
         onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">
         <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.3" stroke="currentColor" stroke-width="1.4"/><line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-        Add subtask
+        + Add subitem
       </button>
     </td>
-    <td></td>
   </tr>`)
       :'')
   ):''}`;
@@ -6875,7 +6849,7 @@ function closeTaskPanel(){
 function renderTaskPanel(task){
   const isOverdue=task.endDate&&task.endDate<toDateStr(new Date())&&task.status!=='done'&&task.status!=='completed'&&!task.archived;
   const sm=STATUS_META[task.status]||STATUS_META['todo'];
-  const subtaskCount=(DB.checklistItems||[]).filter(ci=>ci.taskId===task.id).length;
+  const subtaskCount=(DB.tasks||[]).filter(t=>t.parentTaskId===task.id&&!t.archived).length;
   const commentCount=(DB.comments||[]).filter(c=>c.taskId===task.id).length;
   const prioBg={'low':'#f1f5f9','med':'#fffbeb','high':'#fff7ed','crit':'#fef2f2'}[task.priority]||'#f1f5f9';
   const prioColor={'low':'#475569','med':'#b45309','high':'#c2410c','crit':'#b91c1c'}[task.priority]||'#475569';
@@ -6898,7 +6872,7 @@ function renderTaskPanel(task){
     </div>
     <div style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 20px;overflow-x:auto">
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
-      <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subtasks <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
+      <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
       <div class="tp-tab" id="tp-tab-comments" onclick="tpShowTab('comments')">Comments <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${commentCount}</span></div>
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
@@ -6976,23 +6950,45 @@ function renderTpDetails(task){
 }
 
 function renderTpSubtasks(taskId){
-  const items=(DB.checklistItems||[]).filter(ci=>ci.taskId===taskId);
-  const done=items.filter(x=>x.complete).length;
+  const items=(DB.tasks||[]).filter(t=>t.parentTaskId===taskId&&!t.archived).sort((a,b)=>(a.order||0)-(b.order||0));
+  const done=items.filter(t=>t.status==='done'||t.status==='completed'||t.percentComplete===100).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
   return`<div>
-    ${items.length?`<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:600;color:#6b8399">${done}/${items.length} complete</span>
-        <div style="height:4px;flex:1;margin-left:10px;background:#e2eaf2;border-radius:4px;overflow:hidden"><div style="height:100%;background:#97bcbd;width:${items.length?Math.round(done/items.length*100):0}%;transition:width 0.3s"></div></div>
+    ${items.length?`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:12px;font-weight:600;color:#6b8399">${done}/${items.length} done</span>
+        <div style="height:5px;flex:1;margin-left:10px;background:#e2eaf2;border-radius:4px;overflow:hidden"><div style="height:100%;background:#97bcbd;width:${pct}%;transition:width 0.3s"></div></div>
+        <span style="font-size:11px;color:#8da2b2;margin-left:8px">${pct}%</span>
       </div>
-      ${items.map(ci=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f4f6fa">
-        <input type="checkbox" ${ci.complete?'checked':''} onchange="tpToggleChecklist('${ci.id}',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#97bcbd;flex-shrink:0"/>
-        <span style="font-size:13px;color:${ci.complete?'#8da2b2':'#1a2940'};text-decoration:${ci.complete?'line-through':'none'};flex:1">${escHtml(ci.text)}</span>
-        <button onclick="tpDeleteChecklist('${ci.id}')" style="border:none;background:none;cursor:pointer;color:#c0cdd8;font-size:16px;line-height:1;padding:0 2px" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">&#215;</button>
-      </div>`).join('')}
-    </div>`:'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No subtasks yet</div>'}
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <input id="tp-new-ci" class="form-input" placeholder="Add a subtask..." style="font-size:13px" onkeydown="if(event.key==='Enter')tpAddChecklist()"/>
-      <button onclick="tpAddChecklist()" class="btn btn-teal btn-sm">Add</button>
+      ${items.map(si=>{
+        const sm=STATUS_META[si.status]||STATUS_META['todo'];
+        const pm=PRIO_META[si.priority]||PRIO_META['med'];
+        const owner=DB.staff.find(s=>s.id===si.ownerId);
+        const isDone=si.status==='done'||si.status==='completed';
+        const siPct=si.percentComplete||0;
+        return`<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff;cursor:pointer;transition:border-color 0.1s" onclick="openTaskPanel('${si.id}')" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#e2eaf2'">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:${isDone?'#b0bec5':'#1a2940'};text-decoration:${isDone?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${escHtml(si.name)}</div>
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <span style="background:${sm.bg};color:${sm.color};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${sm.label}</span>
+              <span style="background:${pm.bg};color:${pm.color};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${pm.icon} ${pm.label}</span>
+              ${owner?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:#6b8399">${avatarHtml(owner,13)} ${escHtml(owner.name.split(' ')[0])}</span>`:''}
+              ${si.endDate?`<span style="font-size:10px;color:#8da2b2">Due ${formatDate(si.endDate)}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:3px">
+              <div class="progress-bar" style="width:28px"><div class="progress-fill" style="width:${siPct}%;background:${siPct===100?'#22c55e':'#97bcbd'}"></div></div>
+              <span style="font-size:10px;color:#8da2b2">${siPct}%</span>
+            </div>
+            <button onclick="event.stopPropagation();tpDeleteSubitem('${si.id}')" style="border:none;background:none;cursor:pointer;color:#c0cdd8;font-size:15px;line-height:1;padding:0 2px" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">&#215;</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No subitems yet. Add one below or via the main table.</div>'}
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <input id="tp-new-si" class="form-input" placeholder="Add a subitem…" style="font-size:13px" onkeydown="if(event.key==='Enter')tpAddSubitem('${taskId}')"/>
+      <button onclick="tpAddSubitem('${taskId}')" class="btn btn-teal btn-sm">Add</button>
     </div>
   </div>`;
 }
@@ -7211,29 +7207,42 @@ function tpRemoveTag(tag){
   if(body)body.innerHTML=renderTpDetails(_tpCurrentTask);
 }
 
-function tpToggleChecklist(ciId,checked){
+function tpAddSubitem(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(ci){ci.complete=checked;saveDB(DB);}
-}
-
-function tpAddChecklist(){
-  try{requireInternalUser(currentUser);}catch(e){return;}
-  if(!_tpCurrentTask)return;
-  const inp=document.getElementById('tp-new-ci');
+  const parent=DB.tasks.find(t=>t.id===taskId);
+  if(!parent)return;
+  const inp=document.getElementById('tp-new-si');
   const text=(inp?inp.value:'').trim();
   if(!text)return;
-  DB.checklistItems.push({id:'ci'+uid(),taskId:_tpCurrentTask.id,text,complete:false});
+  const now=new Date().toISOString();
+  DB.tasks.push({
+    id:'si_'+uid(),parentTaskId:taskId,name:text,status:'todo',priority:'med',
+    ownerId:null,currentlyWith:null,currentlyWithUserId:null,
+    groupId:parent.groupId,startDate:null,endDate:null,
+    percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
+    order:DB.tasks.filter(t=>t.parentTaskId===taskId).length,
+    createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
+  });
   saveDB(DB);
   tpShowTab('subtasks');
 }
-
-function tpDeleteChecklist(ciId){
+function tpDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  DB.checklistItems=DB.checklistItems.filter(x=>x.id!==ciId);
+  const si=DB.tasks.find(t=>t.id===siId);
+  const parentId=si?.parentTaskId;
+  DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);
+  DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
+  if(parentId){
+    const parent=DB.tasks.find(t=>t.id===parentId);
+    if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
+  }
   saveDB(DB);
   tpShowTab('subtasks');
 }
+// Legacy aliases (no-op stubs to prevent JS errors if referenced from old data)
+function tpToggleChecklist(){}
+function tpAddChecklist(){tpAddSubitem(_tpCurrentTask?.id);}
+function tpDeleteChecklist(id){tpDeleteSubitem(id);}
 
 function tpAddComment(){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -7271,11 +7280,13 @@ function tpArchiveTask(){
 function tpDeleteTask(){
   if(!_tpCurrentTask)return;
   const id=_tpCurrentTask.id;
-  if(!confirm('Delete this task? This cannot be undone.'))return;
-  DB.tasks=DB.tasks.filter(t=>t.id!==id);
-  DB.checklistItems=DB.checklistItems.filter(c=>c.taskId!==id);
-  DB.comments=DB.comments.filter(c=>c.taskId!==id);
-  DB.timeEntries=DB.timeEntries.filter(e=>e.taskId!==id);
+  if(!confirm('Delete this task and all its subitems? This cannot be undone.'))return;
+  function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
+  const ids=new Set(collectIds(id));
+  DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+  DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
+  DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+  DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
   saveDB(DB);
   closeTaskPanel();
   renderView(currentView);
