@@ -6836,12 +6836,12 @@ function openTaskPanel(taskId,tab){
   const overlay=document.getElementById('task-panel-overlay');
   if(!panel||!overlay)return;
   panel.innerHTML=renderTaskPanel(task);
+  if(tab)tpShowTab(tab);
   panel.style.display='flex';
   overlay.style.display='block';
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       panel.style.transform='translateX(0)';
-      if(tab)tpShowTab(tab);
     });
   });
   setTimeout(()=>{const el=document.getElementById('tp-title');if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}},300);
