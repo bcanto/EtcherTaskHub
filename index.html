@@ -1089,7 +1089,7 @@ let selectedWbColor='#0d1c33';
 let wsCollapsed=new Set();
 let wsExpanded=new Set();
 let wsGroupBy='group';
-let wsColumns={status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true};
+let wsColumns={status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true,deps:false};
 let wsInlineAddSectionId=null;
 let wsInlineAddGroupId=null;
 let wsAddGroupInline=false;
@@ -6483,6 +6483,7 @@ function renderWorkspace(){
     {key:'client',      label:'Client',    w:'70px'},
     {key:'tags',        label:'Tags',      w:'110px'},
     {key:'attachments', label:'Files',     w:'56px'},
+    {key:'deps',        label:'Deps',      w:'110px'},
   ];
   const visCols=COL_DEFS.filter(c=>cols[c.key]);
   const custCols=mtGetBoardCustomCols();
@@ -6759,6 +6760,17 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
         ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">📎 ${attachCount}</span>`:`<span style="color:#d4dde8;font-size:14px">📎</span>`}
       </div>
     </td>`:''}
+    ${cols.deps?(()=>{
+      const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id);
+      return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','deps',event)" title="Dependencies — click to edit">
+        <div style="display:inline-flex;align-items:center;gap:3px;padding:0 6px;min-width:36px">
+          ${myDeps.length===0
+            ?`<span style="color:#c8d5e0;font-size:11px;font-weight:500">+ add</span>`
+            :`<span style="display:inline-flex;align-items:center;gap:3px;background:#f0f4ff;border:1px solid #c7d4f8;color:#4361c2;border-radius:12px;padding:1px 8px;font-size:11px;font-weight:700">⛓ ${myDeps.length}</span>`}
+          <span class="ws-cell-caret" style="color:#b0bec5">▾</span>
+        </div>
+      </td>`;
+    })():''}
     ${custCols.map(cc=>`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
       ${renderCustomColCell(t.id,cc)}
     </td>`).join('')}
@@ -6790,7 +6802,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
     ${cols.owner?`<td style="padding:0 6px"><select id="ws-inline-subtask-owner" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;cursor:pointer"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
     ${cols.cwith?`<td></td>`:''}
     ${cols.duedate?`<td style="padding:0 6px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
-    ${cols.progress?`<td></td>`:''}${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}
+    ${cols.progress?`<td></td>`:''}${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}${cols.deps?`<td></td>`:''}
     ${custCols.map(()=>`<td></td>`).join('')}
     <td></td>
     <td style="padding:0 6px;white-space:nowrap">
@@ -7469,8 +7481,104 @@ function wsBuildDropdownHtml(taskId,field){
         <div style="font-size:10px;color:#b0bec5;margin-top:4px">Max 500 KB per file</div>
       </div>
     </div>`;
+  } else if(field==='deps'){
+    html=wsBuildDepsHtml(taskId);
   }
   return html;
+}
+
+function wsBuildDepsHtml(taskId){
+  const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId);
+  // Gather candidate tasks: all tasks on this workboard that aren't self or already a dep
+  const depPredIds=new Set(myDeps.map(d=>d.predecessorTaskId));
+  const wbId=currentWorkboard?.id;
+  const candidates=DB.tasks.filter(t=>t.id!==taskId&&!t.archived&&!t.parentTaskId&&(t.workboardId===wbId||t.boardId===wbId)&&!depPredIds.has(t.id));
+  const clientOpts=`<option value="">All Clients</option>`+DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  const allGroups=[...new Set(candidates.map(t=>t.groupId).filter(Boolean))];
+  const grpOpts=`<option value="">All Groups</option>`+allGroups.map(gid=>{const g=DB.groups.find(x=>x.id===gid);return g?`<option value="${gid}">${escHtml(g.name)}</option>`:''}).join('');
+  // Task select built by wsDepsFilterTasks after render
+  return`<div style="min-width:260px;max-width:310px;padding:0">
+    <div style="padding:8px 12px 4px;font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #f0f4f8">Dependencies — ${escHtml((DB.tasks.find(t=>t.id===taskId)||{}).name||'task')} waits on:</div>
+    <div style="max-height:180px;overflow-y:auto">
+      ${myDeps.length===0?`<div style="padding:8px 12px;font-size:12px;color:#8da2b2;font-style:italic">No dependencies</div>`:''}
+      ${myDeps.map(d=>{
+        const pred=DB.tasks.find(t=>t.id===d.predecessorTaskId)||(DB.personalTasks||[]).find(t=>t.id===d.predecessorTaskId);
+        const predName=pred?.name||pred?.title||d.predecessorTaskId;
+        const sm=pred?getStatusMeta(pred.status):null;
+        return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px;padding:6px 12px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(predName)}">${escHtml(predName)}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+              ${sm?`<span style="font-size:9px;font-weight:700;padding:0px 5px;border-radius:7px;background:${sm.bg};color:${sm.color}">${sm.label}</span>`:''}
+              ${d.lagDays?`<span style="font-size:10px;color:#8da2b2">+${d.lagDays}d lag</span>`:''}
+            </div>
+          </div>
+          <button onclick="event.stopPropagation();wsDepsRemove('${d.id}','${taskId}')" title="Remove dependency"
+            style="background:none;border:none;cursor:pointer;color:#d0d8e4;font-size:13px;padding:2px 4px;flex-shrink:0;line-height:1"
+            onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#d0d8e4'">✕</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="ws-dd-sep"></div>
+    <div style="padding:8px 12px" onclick="event.stopPropagation()">
+      <div style="display:flex;gap:5px;margin-bottom:5px">
+        <select id="wsDepsClient" onchange="wsDepsFilterTasks('${taskId}')"
+          style="flex:1;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#4a5568;padding:2px 4px;height:26px;background:#fafcff">
+          ${clientOpts}
+        </select>
+        <select id="wsDepsGroup" onchange="wsDepsFilterTasks('${taskId}')"
+          style="flex:1;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#4a5568;padding:2px 4px;height:26px;background:#fafcff">
+          ${grpOpts}
+        </select>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <select id="wsDepsTask"
+          style="flex:1;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#4a5568;padding:2px 4px;height:26px;background:#fafcff">
+          <option value="">— Select task —</option>
+          ${candidates.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}
+        </select>
+        <input id="wsDepsLag" type="number" min="0" placeholder="lag d" title="Lag days"
+          style="width:46px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#4a5568;padding:2px 4px;height:26px;background:#fafcff"/>
+        <button onclick="event.stopPropagation();wsDepsAdd('${taskId}')"
+          style="background:#97bcbd;color:#fff;border:none;border-radius:5px;font-size:11px;font-weight:700;padding:2px 10px;height:26px;cursor:pointer;white-space:nowrap"
+          onmouseover="this.style.background='#6fa0a2'" onmouseout="this.style.background='#97bcbd'">+ Add</button>
+      </div>
+      <div id="wsDepsErr" style="font-size:11px;color:#dc2626;margin-top:4px;display:none"></div>
+    </div>
+  </div>`;
+}
+
+function wsDepsFilterTasks(taskId){
+  const clientId=document.getElementById('wsDepsClient')?.value||'';
+  const groupId=document.getElementById('wsDepsGroup')?.value||'';
+  const depPredIds=new Set((DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId).map(d=>d.predecessorTaskId));
+  const wbId=currentWorkboard?.id;
+  let cands=DB.tasks.filter(t=>t.id!==taskId&&!t.archived&&!t.parentTaskId&&(t.workboardId===wbId||t.boardId===wbId)&&!depPredIds.has(t.id));
+  if(clientId){cands=cands.filter(t=>{const g=DB.groups.find(g=>g.id===t.groupId);return g?.clientId===clientId;});}
+  if(groupId){cands=cands.filter(t=>t.groupId===groupId);}
+  const sel=document.getElementById('wsDepsTask');
+  if(sel){sel.innerHTML=`<option value="">— Select task —</option>`+cands.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('');}
+}
+
+function wsDepsAdd(taskId){
+  const predId=document.getElementById('wsDepsTask')?.value;
+  const lag=parseInt(document.getElementById('wsDepsLag')?.value)||0;
+  const errEl=document.getElementById('wsDepsErr');
+  if(!predId){if(errEl){errEl.textContent='Select a task first.';errEl.style.display='block';}return;}
+  if(errEl)errEl.style.display='none';
+  const result=addDependency(predId,taskId,lag);
+  if(!result.ok){if(errEl){errEl.textContent=result.error||'Cannot add.';errEl.style.display='block';}return;}
+  // Refresh popover in-place
+  const body=document.getElementById('ws-cell-dd-body');
+  if(body)body.innerHTML=wsBuildDepsHtml(taskId);
+  renderView('workspace');
+}
+
+function wsDepsRemove(depId,taskId){
+  removeDependency(depId);
+  const body=document.getElementById('ws-cell-dd-body');
+  if(body)body.innerHTML=wsBuildDepsHtml(taskId);
+  renderView('workspace');
 }
 
 function wsCellOpen(taskId,field,evt){
