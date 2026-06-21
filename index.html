@@ -388,8 +388,8 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <aside id="sidebar">
     <!-- Logo -->
     <div style="padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,0.06)">
-      <img src="Etcher White Logo.png" alt="Etcher" style="width:100%;height:auto;display:block" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:18px;letter-spacing:0.06em\'>ETCHER</span>'"/>
-      <p style="font-size:9px;color:#2a4560;margin-top:7px;font-family:Jost,sans-serif;letter-spacing:0.16em;text-transform:uppercase;text-align:center;font-weight:700">Task Hub</p>
+      <img src="Etcher White Logo.png" alt="Etcher" style="width:100%;height:auto;display:block;margin-top:19px" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:18px;letter-spacing:0.06em\'>ETCHER</span>'"/>
+      <p style="font-size:11px;color:#3a5a78;margin-top:4px;font-family:Jost,sans-serif;letter-spacing:0.28em;text-transform:uppercase;text-align:center;font-weight:600">Task Hub</p>
     </div>
 
     <!-- User -->
@@ -585,12 +585,12 @@ const SEED = {
     {id:'b3', clientId:'c2', name:'Humanz Stage 1.5',  description:'Humanz HR platform — Stage 1.5 integration and data migration.',color:'#1d6fb8', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'b4', clientId:'c2', name:'Humanz Stage 2',    description:'Humanz Stage 2 — architecture, build and deployment.',         color:'#2c5282', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'b5', clientId:'c3', name:'Retained Services', description:'Monthly retained service delivery and ad hoc requests.',       color:'#7c3aed', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    // Personal workboards (one per staff member)
-    {id:'wb_p_u1',clientId:null,name:'Personal Organiser',color:'#0d6e4e',archived:false,personal:true,ownerId:'u1',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u2',clientId:null,name:'Personal Organiser',color:'#1d6fb8',archived:false,personal:true,ownerId:'u2',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u3',clientId:null,name:'Personal Organiser',color:'#7c3aed',archived:false,personal:true,ownerId:'u3',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u4',clientId:null,name:'Personal Organiser',color:'#b45309',archived:false,personal:true,ownerId:'u4',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u5',clientId:null,name:'Personal Organiser',color:'#c2410c',archived:false,personal:true,ownerId:'u5',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    // Personal Shenanigans boards (one per staff member — private, excluded from all reporting)
+    {id:'wb_p_u1',clientId:null,name:'Personal Shenanigans',color:'#0d6e4e',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u1',ownerId:'u1',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'wb_p_u2',clientId:null,name:'Personal Shenanigans',color:'#1d6fb8',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u2',ownerId:'u2',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'wb_p_u3',clientId:null,name:'Personal Shenanigans',color:'#7c3aed',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u3',ownerId:'u3',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'wb_p_u4',clientId:null,name:'Personal Shenanigans',color:'#b45309',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u4',ownerId:'u4',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'wb_p_u5',clientId:null,name:'Personal Shenanigans',color:'#c2410c',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u5',ownerId:'u5',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
   // ── BoardViews ─────────────────────────────────────────
@@ -891,6 +891,29 @@ function _migrateDB(data){
     if(!b.description)          b.description='';
     if(!b.createdAt)            b.createdAt=new Date().toISOString();
     if(!b.updatedAt)            b.updatedAt=b.createdAt;
+  });
+
+  // Migrate personal boards: rename + stamp isolation flags
+  (data.boards||[]).filter(b=>b.personal).forEach(b=>{
+    if(b.name==='Personal Organiser')b.name='Personal Shenanigans';
+    b.isPersonalBoard=true;
+    if(!b.ownerUserId&&b.ownerId)b.ownerUserId=b.ownerId;
+    b.visibility='private';b.systemBoard=true;
+    b.excludeFromReports=true;b.excludeFromSearch=true;b.excludeFromAuditTrail=true;
+    b.excludeFromTimesheets=true;b.excludeFromCapacity=true;b.excludeFromClientPortal=true;
+  });
+
+  // Auto-create Personal Shenanigans boards for any internal users that don't have one yet
+  (data.users||[]).filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>{
+    const has=(data.boards||[]).some(b=>b.personal&&(b.ownerId===u.id||b.ownerUserId===u.id));
+    if(!has){
+      const bId='wb_ps_'+u.id;
+      if(!data.boards)data.boards=[];
+      data.boards.push({id:bId,clientId:null,name:'Personal Shenanigans',color:u.displayColor||u.color||'#10b981',archived:false,personal:true,isPersonalBoard:true,ownerUserId:u.id,ownerId:u.id,visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      if(!data.groups)data.groups=[];
+      if(!data.groups.some(g=>g.boardId===bId||g.workboardId===bId))
+        data.groups.push({id:'g_ps_'+u.id,boardId:bId,workboardId:bId,name:'To Do',order:0,clientId:null,color:u.displayColor||u.color||'#10b981',createdAt:new Date().toISOString()});
+    }
   });
 
   // Upgrade groups: add boardId from workboardId if needed
@@ -1363,6 +1386,7 @@ function launchApp(){
   updateSidebarUser();
   applyRolePermissions();
   loadFilters();
+  ensurePersonalBoardForUser(currentUser?.id);
   renderSidebarWorkboards();
   navigate('dashboard');
   updateNotifBadge();
@@ -1439,7 +1463,11 @@ function onGlobalSearch(){
   const q=document.getElementById('global-search').value.trim().toLowerCase();
   if(!q&&currentView==='list')return renderView('list');
   if(!q)return;
-  const tasks=getVisibleTasks().filter(t=>t.name.toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
+  // Always search DB.tasks only — never DB.personalTasks (personal board excluded from global search)
+  const nonPersonalWb=currentWorkboard&&!isPersonalBoard(currentWorkboard)?currentWorkboard:null;
+  let pool=DB.tasks.filter(t=>canViewTask(currentUser,t));
+  if(nonPersonalWb)pool=pool.filter(t=>(t.boardId||t.workboardId)===nonPersonalWb.id);
+  const tasks=pool.filter(t=>t.name.toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
   renderListView(tasks);
   navigate('list');
 }
@@ -1496,6 +1524,45 @@ function getTaskClient(task){
   if(task.clientId) return DB.clients.find(c=>c.id===task.clientId)||null;
   const g=DB.groups.find(g=>g.id===task.groupId);
   return g?DB.clients.find(c=>c.id===g.clientId)||null:null;
+}
+// ── Personal Shenanigans helpers ──
+function isPersonalBoard(board){return !!(board&&(board.personal||board.isPersonalBoard));}
+function canViewPersonalBoard(user,board){
+  if(!user||!board||user.role==='client')return false;
+  return board.ownerUserId===user.id||board.ownerId===user.id;
+}
+function shouldExcludeFromReports(board){return isPersonalBoard(board);}
+function shouldExcludeFromSearch(board){return isPersonalBoard(board);}
+function shouldExcludeFromAuditTrail(entityId){
+  return !!(DB.personalTasks||[]).find(t=>t.id===entityId)||
+    !!(DB.boards||[]).find(b=>b.id===entityId&&isPersonalBoard(b));
+}
+function ensurePersonalBoardForUser(userId){
+  if(!userId)return;
+  const user=(DB.users||[]).find(u=>u.id===userId);
+  if(!user||user.role==='client')return;
+  const existing=(DB.boards||[]).find(b=>isPersonalBoard(b)&&(b.ownerId===userId||b.ownerUserId===userId));
+  if(existing){
+    // Stamp missing flags on older boards
+    if(existing.name==='Personal Organiser')existing.name='Personal Shenanigans';
+    existing.isPersonalBoard=true;existing.ownerUserId=existing.ownerUserId||userId;
+    existing.systemBoard=true;existing.visibility='private';
+    existing.excludeFromReports=true;existing.excludeFromSearch=true;
+    existing.excludeFromAuditTrail=true;existing.excludeFromTimesheets=true;
+    existing.excludeFromCapacity=true;existing.excludeFromClientPortal=true;
+    // Ensure at least one group exists
+    if(!(DB.groups||[]).some(g=>g.boardId===existing.id||g.workboardId===existing.id))
+      DB.groups.push({id:'g_ps_'+userId+'_'+uid(),boardId:existing.id,workboardId:existing.id,name:'To Do',order:0,clientId:null,color:existing.color||'#10b981',createdAt:new Date().toISOString()});
+    return existing;
+  }
+  const bId='wb_ps_'+userId+'_'+uid();
+  const nb={id:bId,clientId:null,name:'Personal Shenanigans',color:user.displayColor||user.color||'#10b981',archived:false,personal:true,isPersonalBoard:true,ownerUserId:userId,ownerId:userId,visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  if(!DB.boards)DB.boards=[];
+  DB.boards.push(nb);
+  if(!DB.groups)DB.groups=[];
+  DB.groups.push({id:'g_ps_'+userId+'_'+uid(),boardId:bId,workboardId:bId,name:'To Do',order:0,clientId:null,color:nb.color,createdAt:new Date().toISOString()});
+  saveDB(DB);
+  return nb;
 }
 function getGroup(task){return DB.groups.find(g=>g.id===task.groupId);}
 // Return all Dependency entities for a given task (as dependentTaskId)
@@ -2148,20 +2215,37 @@ function updateSidebarWorkboard(){
 function renderSidebarWorkboards(){
   const container=document.getElementById('sidebar-wb-list');
   if(!container)return;
-  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&!wb.personal);
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&!isPersonalBoard(wb));
+  const myPS=(DB.workboards||[]).find(wb=>isPersonalBoard(wb)&&canViewPersonalBoard(currentUser,wb)&&!wb.archived);
+  let html='';
   if(wbs.length===0){
-    container.innerHTML=`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
-    return;
+    html=`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
+  }else{
+    html=wbs.map(wb=>{
+      const count=DB.tasks.filter(t=>t.workboardId===wb.id).length;
+      const isActive=currentWorkboard?.id===wb.id;
+      return`<div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${wb.id}')" style="padding-left:14px;gap:8px">
+        <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${escHtml(wb.name)}</span>
+        ${count?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${count}</span>`:''}
+      </div>`;
+    }).join('');
   }
-  container.innerHTML=wbs.map(wb=>{
-    const count=DB.tasks.filter(t=>t.workboardId===wb.id).length;
-    const isActive=currentWorkboard?.id===wb.id;
-    return`<div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${wb.id}')" style="padding-left:14px;gap:8px">
-      <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${escHtml(wb.name)}</span>
-      ${count?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${count}</span>`:''}
+  if(myPS){
+    const isActive=currentWorkboard?.id===myPS.id;
+    const ptCount=(DB.personalTasks||[]).filter(t=>t.workboardId===myPS.id&&!t.archived).length;
+    html+=`
+    <div style="margin-top:14px;padding:5px 14px 3px;font-size:10px;font-weight:700;color:#3a5068;letter-spacing:0.07em;text-transform:uppercase;display:flex;align-items:center;gap:5px">
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2.5" stroke="#3a5068" stroke-width="1.4"/><path d="M4 6l1.5 1.5L8 4" stroke="#3a5068" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Personal
+    </div>
+    <div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${myPS.id}')" style="padding-left:14px;gap:8px" title="Private — only visible to you">
+      <svg width="8" height="8" viewBox="0 0 10 10" fill="none" style="flex-shrink:0"><circle cx="5" cy="5" r="4" fill="${myPS.color}" opacity="0.9"/></svg>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">Personal Shenanigans</span>
+      ${ptCount?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${ptCount}</span>`:''}
     </div>`;
-  }).join('');
+  }
+  container.innerHTML=html;
 }
 function sidebarNewWb(){
   navigate('dashboard');
@@ -2199,10 +2283,13 @@ function toggleWbMenu(id){
 }
 function openRenameWb(id){
   const wb=DB.workboards.find(w=>w.id===id);if(!wb)return;
+  if(isPersonalBoard(wb)){alert('Personal Shenanigans cannot be renamed.');return;}
   const name=prompt('Rename WorkBoard:',wb.name);
   if(name&&name.trim()){wb.name=name.trim();saveDB(DB);renderSidebarWorkboards();renderView('dashboard');}
 }
 function deleteWorkboard(id){
+  const _wbToDelete=DB.workboards.find(w=>w.id===id);
+  if(_wbToDelete&&isPersonalBoard(_wbToDelete)){alert('Personal Shenanigans cannot be deleted.');return;}
   confirmCallback=()=>{
     DB.workboards=DB.workboards.filter(w=>w.id!==id);
     DB.tasks=DB.tasks.filter(t=>t.workboardId!==id);
@@ -2689,7 +2776,7 @@ function renderDashboard(){
   <div style="margin-bottom:28px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="3" stroke="${clr}" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="${clr}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <h2 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">Personal Organiser</h2>
+      <h2 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">Personal Shenanigans</h2>
       <span style="font-size:10px;color:#b0bec5;background:#f0f4f8;padding:1px 8px;border-radius:8px">Private</span>
       <span style="font-size:11px;color:#8da2b2;margin-left:auto">${myPDone}/${myPTasks.length} done</span>
     </div>
@@ -4734,7 +4821,15 @@ let auditDateTo='';
 function renderAudit(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
-  const log=[...(DB.auditLog||[])].sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
+  // Exclude personal board entities from audit trail
+  const _personalTaskIds=new Set((DB.personalTasks||[]).map(t=>t.id));
+  const _personalBoardIds=new Set((DB.boards||[]).filter(b=>isPersonalBoard(b)).map(b=>b.id));
+  const log=[...(DB.auditLog||[])].filter(a=>{
+    if(!a.entityId)return true;
+    if(_personalTaskIds.has(a.entityId))return false;
+    if(_personalBoardIds.has(a.entityId))return false;
+    return true;
+  }).sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
 
   // Derive distinct entity types + actors
   const entityTypes=[...new Set(log.map(a=>a.entityType||'Unknown'))].sort();
@@ -5671,13 +5766,14 @@ function renderWbTabs(activeView){
     <div style="display:flex;align-items:center;gap:3px;padding:0 6px;border-right:1px solid #e2eaf2">
       <div style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0"></div>
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;padding:0 6px 0 4px;white-space:nowrap">${escHtml(wb.name)}</span>
+      ${isPersonalBoard(wb)?`<span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border:1px solid #e2eaf2;border-radius:8px;padding:1px 7px;margin-left:2px">Private</span>`:''}
     </div>
     ${tabs.map(t=>`<div class="ws-tab${activeView===t.v?' active':''}" onclick="navigate('${t.v}')">${t.icon} ${t.label}</div>`).join('')}
     <div style="margin-left:auto;padding:0 12px;display:flex;gap:7px;align-items:center;flex-shrink:0">
-      <button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}">
+      ${!isPersonalBoard(wb)?`<button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M14 9a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
         Comms${commsCount>0?` <span style="background:#97bcbd;color:#0d1c33;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${commsCount}</span>`:''}
-      </button>
+      </button>`:''}
       <button onclick="openTaskModal(null)" class="btn btn-teal btn-sm" style="font-size:12px;height:28px">+ New Item</button>
     </div>
   </div>`;
@@ -5711,14 +5807,20 @@ function wsCancelInlineAdd(){wsInlineAddSectionId=null;wsInlineAddGroupId=null;r
 function wsSaveInlineGroup(){
   const name=(document.getElementById('ws-inline-group-name')?.value||'').trim();
   if(!name){document.getElementById('ws-inline-group-name')?.focus();return;}
-  const clientId=document.getElementById('ws-inline-group-client')?.value||(DB.clients[0]?.id||'');
-  if(!clientId)return;
-  const client=DB.clients.find(c=>c.id===clientId);
-  const color=client?.color||'#97bcbd';
   const wbId=currentWorkboard?.id;
   if(!wbId)return;
   const existing=DB.groups.filter(g=>g.workboardId===wbId||g.boardId===wbId);
-  DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
+  if(isPersonalBoard(currentWorkboard)){
+    // Personal board — no client association
+    const color=currentWorkboard.color||'#97bcbd';
+    DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId:null,name,color,order:existing.length,createdAt:new Date().toISOString()});
+  }else{
+    const clientId=document.getElementById('ws-inline-group-client')?.value||(DB.clients[0]?.id||'');
+    if(!clientId)return;
+    const client=DB.clients.find(c=>c.id===clientId);
+    const color=client?.color||'#97bcbd';
+    DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
+  }
   saveDB(DB);
   wsAddGroupInline=false;
   renderView('workspace');
@@ -6238,14 +6340,15 @@ function renderWorkspace(){
           ${wsMtSearch?`<div style="margin-top:6px"><button onclick="wsMtSearch='';renderView('workspace')" class="btn btn-ghost btn-sm">Clear search</button></div>`:''}
         </td></tr>`:''}
         ${wsAddGroupInline&&wsGroupBy==='group'?(()=>{
+          const _isPS=isPersonalBoard(currentWorkboard);
           const _igClient=DB.clients.find(c=>c.id===activeFilters.clientId)||DB.clients[0];
-          const _igColor=_igClient?.color||'#97bcbd';
-          const _igClientOpts=DB.clients.map((c,i)=>`<option value="${c.id}"${(activeFilters.clientId===c.id||(activeFilters.clientId==='all'&&i===0))?' selected':''}>${escHtml(c.name)}</option>`).join('');
+          const _igColor=_isPS?(currentWorkboard?.color||'#97bcbd'):(_igClient?.color||'#97bcbd');
+          const _igClientOpts=!_isPS?DB.clients.map((c,i)=>`<option value="${c.id}"${(activeFilters.clientId===c.id||(activeFilters.clientId==='all'&&i===0))?' selected':''}>${escHtml(c.name)}</option>`).join(''):'';
           return`<tr class="ws-inline-row">
             <td style="width:36px;padding:0 0 0 12px"><input type="checkbox" disabled style="opacity:.3"/></td>
             <td colspan="${totalCols-1}" id="ws-inline-group-border" style="padding:8px 12px 8px 16px;border-left:4px solid ${_igColor}">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <select id="ws-inline-group-client" class="ws-inline-select" onchange="wsInlineGroupClientChange(this)" style="height:28px;font-size:12px;flex-shrink:0">${_igClientOpts}</select>
+                ${!_isPS?`<select id="ws-inline-group-client" class="ws-inline-select" onchange="wsInlineGroupClientChange(this)" style="height:28px;font-size:12px;flex-shrink:0">${_igClientOpts}</select>`:''}
                 <input id="ws-inline-group-name" type="text" class="ws-inline-input"
                   placeholder="Group name — press Enter to save, Esc to cancel"
                   style="flex:1;min-width:180px"
