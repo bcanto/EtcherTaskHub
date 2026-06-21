@@ -1529,6 +1529,11 @@ function getTaskClient(task){
   const g=DB.groups.find(g=>g.id===task.groupId);
   return g?DB.clients.find(c=>c.id===g.clientId)||null:null;
 }
+function getEffectiveTaskPct(taskId){
+  const cis=DB.checklistItems.filter(ci=>ci.taskId===taskId);
+  if(!cis.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
+  return Math.round(cis.reduce((s,ci)=>s+(ci.percentComplete||0),0)/cis.length);
+}
 // ── Personal Shenanigans helpers ──
 function isPersonalBoard(board){return !!(board&&(board.personal||board.isPersonalBoard));}
 function canViewPersonalBoard(user,board){
@@ -6098,6 +6103,8 @@ function wsToggleChecklist(ciId,checked){
   ci.status=checked?'done':'todo';
   ci.percentComplete=checked?100:0;
   ci.updatedAt=new Date().toISOString();
+  const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
+  if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
   saveDB(DB);renderView('workspace');
 }
 function wsCiUpdate(ciId,field,value){
@@ -6116,6 +6123,9 @@ function wsCiUpdate(ciId,field,value){
     ci[field]=value;
   }
   ci.updatedAt=new Date().toISOString();
+  // Sync parent task percentComplete from subtask hierarchy
+  const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
+  if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
   saveDB(DB);renderView('workspace');
 }
 function wsCiRenameStart(ciId,el){
@@ -6136,7 +6146,65 @@ function wsCiRenameStart(ciId,el){
 }
 function wsCiDeleteItem(ciId){
   const i=DB.checklistItems.findIndex(x=>x.id===ciId);
-  if(i!==-1){DB.checklistItems.splice(i,1);saveDB(DB);renderView('workspace');}
+  if(i!==-1){
+    const ci=DB.checklistItems[i];
+    DB.checklistItems.splice(i,1);
+    const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
+    if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
+    saveDB(DB);renderView('workspace');
+  }
+}
+function wsCiOpenComments(ciId,event){
+  event.stopPropagation();
+  document.querySelectorAll('.ci-comment-popover').forEach(el=>el.remove());
+  const ci=DB.checklistItems.find(x=>x.id===ciId);
+  if(!ci)return;
+  const comments=(DB.comments||[]).filter(c=>c.checklistItemId===ciId).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  const div=document.createElement('div');
+  div.className='ci-comment-popover';
+  div.style.cssText='position:fixed;z-index:9999;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 32px rgba(13,28,51,0.18);padding:14px 16px;width:320px;max-height:380px;overflow-y:auto';
+  const rect=event.currentTarget.getBoundingClientRect();
+  div.style.left=Math.min(rect.left,window.innerWidth-340)+'px';
+  div.style.top=(rect.bottom+6)+'px';
+  div.innerHTML=`
+    <div style="font-size:12px;font-weight:700;color:#1a2940;margin-bottom:10px;padding-right:20px">💬 ${escHtml(ci.text||ci.title||'Subtask')}</div>
+    <div id="ci-cmt-list-${ciId}" style="max-height:200px;overflow-y:auto;margin-bottom:10px">
+      ${comments.length?comments.map(c=>{
+        const author=getStaff(c.authorId);
+        return`<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f0f4f8;last-child:border:none">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+            ${avatarHtml(author,16)}
+            <span style="font-size:11px;font-weight:600;color:#1a2940">${escHtml(author?.name||'?')}</span>
+            <span style="font-size:10px;color:#b0bec5">${_relativeTime(c.createdAt)}</span>
+          </div>
+          <div style="font-size:12px;color:#4a5568;padding-left:21px;line-height:1.5">${escHtml(c.body)}</div>
+        </div>`;
+      }).join(''):'<div style="font-size:12px;color:#b0bec5;padding:4px 0">No comments yet.</div>'}
+    </div>
+    <div style="display:flex;gap:6px">
+      <input id="ci-cmt-input-${ciId}" class="form-input" style="flex:1;font-size:12px;padding:5px 10px"
+        placeholder="Add comment…"
+        onkeypress="if(event.key==='Enter'){event.preventDefault();wsCiAddComment('${ciId}');}"/>
+      <button onclick="wsCiAddComment('${ciId}')" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Post</button>
+    </div>
+    <button onclick="this.closest('.ci-comment-popover').remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:#b0bec5;font-size:14px" onmouseover="this.style.color='#1a2940'" onmouseout="this.style.color='#b0bec5'">✕</button>`;
+  document.body.appendChild(div);
+  setTimeout(()=>document.getElementById(`ci-cmt-input-${ciId}`)?.focus(),50);
+  const closeHandler=e=>{if(!div.contains(e.target)){div.remove();document.removeEventListener('click',closeHandler);}};
+  setTimeout(()=>document.addEventListener('click',closeHandler),100);
+}
+function wsCiAddComment(ciId){
+  const input=document.getElementById(`ci-cmt-input-${ciId}`);
+  const body=(input?.value||'').trim();
+  if(!body)return;
+  const ci=DB.checklistItems.find(x=>x.id===ciId);
+  if(!ci)return;
+  if(!DB.comments)DB.comments=[];
+  DB.comments.push({id:'cc'+uid(),taskId:ci.taskId,checklistItemId:ciId,authorId:currentUser.id,body,createdAt:new Date().toISOString()});
+  saveDB(DB);
+  // Refresh the popover in-place
+  document.querySelectorAll('.ci-comment-popover').forEach(el=>el.remove());
+  renderView('workspace');
 }
 function wsStartInlineSubtask(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -6150,10 +6218,12 @@ function wsSaveInlineSubtask(){
   if(!text){document.getElementById('ws-inline-subtask-input')?.focus();return;}
   const taskId=wsInlineAddSubtaskId;
   if(!taskId)return;
-  DB.checklistItems.push({id:'ci'+uid(),taskId,text,title:text,complete:false,createdAt:new Date().toISOString()});
+  const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
+  const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
+  const now=new Date().toISOString();
+  DB.checklistItems.push({id:'ci'+uid(),taskId,text,title:text,complete:false,status:'todo',priority:'med',ownerId:ownerId||undefined,endDate:endDate||undefined,percentComplete:0,order:DB.checklistItems.filter(c=>c.taskId===taskId).length,createdAt:now,updatedAt:now});
   saveDB(DB);
   wsInlineAddSubtaskId=null;
-  // Keep the task expanded so the new subtask is visible
   wsExpanded.add(taskId);
   renderView('workspace');
 }
@@ -6491,8 +6561,7 @@ function renderWorkspace(){
 
 function renderWsSection(sec,cols,visCols,custCols,totalCols){
   const collapsed=wsCollapsed.has(sec.id);
-  const done=sec.tasks.filter(t=>t.status==='done').length;
-  const pct=sec.tasks.length?Math.round(done/sec.tasks.length*100):0;
+  const pct=sec.tasks.length?Math.round(sec.tasks.reduce((s,t)=>s+getEffectiveTaskPct(t.id),0)/sec.tasks.length):0;
   return`
   <tr class="ws-grp-hdr" onclick="wsToggleGroup('${sec.id}')">
     <td colspan="${totalCols}">
@@ -6618,12 +6687,12 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''}
-    ${cols.progress?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" title="Change progress">
+    ${cols.progress?`<td class="${hasChecklist?'':'ws-editable'}" onclick="event.stopPropagation();${hasChecklist?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChecklist?'Auto-calculated from subtasks':'Change progress'}">
       <div style="display:inline-flex;align-items:center;gap:5px">
-        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${t.percentComplete||0}%;background:${(t.percentComplete||0)===100?'#22c55e':'#97bcbd'}"></div></div>
-        <span style="font-size:11px;color:${(t.percentComplete||0)===100?'#16a34a':'#6b8399'}">${t.percentComplete||0}%</span>
-        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0">· ☑${cr.done}/${cr.total}</span>`:''}
-        <span class="ws-cell-caret">▾</span>
+        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${getEffectiveTaskPct(t.id)}%;background:${getEffectiveTaskPct(t.id)===100?'#22c55e':'#97bcbd'}"></div></div>
+        <span style="font-size:11px;color:${getEffectiveTaskPct(t.id)===100?'#16a34a':'#6b8399'}">${getEffectiveTaskPct(t.id)}%</span>
+        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done} of ${cr.total} subtasks done">☑${cr.done}/${cr.total}</span>`:''}
+        ${hasChecklist?'':'<span class="ws-cell-caret">▾</span>'}
       </div>
     </td>`:''}
     ${cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''}
@@ -6693,19 +6762,19 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     </td>`:''}
     ${cols.cwith?`<td></td>`:''}
     ${cols.duedate?`<td style="padding:0 8px">
-      <div style="display:inline-flex;align-items:center;gap:3px">
-        <span style="font-size:11px;white-space:nowrap;${ciOverdue?'color:#dc2626;font-weight:700':'color:#6b8399'}">${ciOverdue?'⚠ ':''}${ciEndFmt}</span>
+      <div style="display:inline-flex;align-items:center;gap:4px">
+        ${ciOverdue?'<span style="font-size:11px;color:#dc2626">⚠</span>':''}
         <input type="date" value="${ci.endDate||''}" onchange="wsCiUpdate('${ci.id}','endDate',this.value)"
-          style="border:none;background:transparent;font-size:10px;color:#b0bec5;width:0;padding:0;cursor:pointer;outline:none"
-          title="Set due date"/>
+          style="border:1px solid ${ciOverdue?'#fca5a5':'#e2eaf2'};border-radius:5px;background:${ciOverdue?'#fff5f5':'#fafcff'};font-size:11px;color:${ciOverdue?'#dc2626;font-weight:700':'#6b8399'};padding:2px 4px;cursor:pointer;outline:none;height:28px"
+          title="Due date"/>
       </div>
     </td>`:''}
     ${cols.progress?`<td>
       <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px">
         <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${ciPct}%;background:${ciPct===100?'#22c55e':'#97bcbd'}"></div></div>
         <input type="number" min="0" max="100" value="${ciPct}" onchange="wsCiUpdate('${ci.id}','percentComplete',Math.min(100,Math.max(0,+this.value)))"
-          style="width:32px;border:none;background:transparent;font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'};outline:none;padding:0;cursor:pointer"/>
-        <span style="font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'}">%</span>
+          style="width:34px;border:1px solid #e2eaf2;border-radius:5px;background:#fafcff;font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'};outline:none;padding:1px 3px;cursor:pointer;height:26px"/>
+        <span style="font-size:11px;color:#b0bec5">%</span>
       </div>
     </td>`:''}
     ${cols.hours?`<td></td>`:''}
@@ -6716,6 +6785,9 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     <td style="width:36px"></td>
     <td onclick="event.stopPropagation()">
       <div class="ws-actions">
+        <button onclick="wsCiOpenComments('${ci.id}',event)" title="Comments" style="font-size:11px;position:relative">
+          💬${(()=>{const n=(DB.comments||[]).filter(c=>c.checklistItemId==='${ci.id}').length;return n?`<span style="position:absolute;top:-4px;right:-4px;background:#97bcbd;color:#fff;border-radius:8px;font-size:9px;padding:0 3px;min-width:12px;text-align:center;line-height:14px">${n}</span>`:''})()}
+        </button>
         <button onclick="wsCiDeleteItem('${ci.id}')" title="Delete subtask" style="color:#dc2626">✕</button>
       </div>
     </td>
@@ -6724,19 +6796,32 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     +(currentUser?.role!=='client'
       ?(wsInlineAddSubtaskId===t.id
         ?`<tr class="ws-inline-row">
-    <td style="width:36px"></td>
-    <td colspan="${totalSubCols}" style="padding:6px 10px 6px 46px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="checkbox" disabled style="opacity:.3;flex-shrink:0"/>
+    <td style="text-align:center;width:36px"><input type="checkbox" disabled style="opacity:.3"/></td>
+    <td style="padding:5px 8px 5px 56px">
+      <div style="display:flex;align-items:center;gap:5px;border-left:3px solid ${groupColor}55;padding-left:6px">
+        <span style="color:#c4d0db;font-size:10px">↳</span>
         <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
-          placeholder="Subtask name — press Enter to save, Esc to cancel"
-          style="flex:1"
+          placeholder="Subtask name… (Enter to save)"
+          style="flex:1;min-width:100px"
           onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubtask();}if(event.key==='Escape')wsCancelInlineSubtask();"/>
-        <button onclick="wsSaveInlineSubtask()" class="btn btn-teal btn-sm" style="font-size:12px;padding:3px 12px;flex-shrink:0">↵ Save</button>
-        <button onclick="wsCancelInlineSubtask()" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 8px;flex-shrink:0">Cancel</button>
       </div>
     </td>
+    ${cols.status?`<td><span style="font-size:11px;color:#c4d0db;padding:0 8px">todo</span></td>`:''}
+    ${cols.priority?`<td><span style="font-size:11px;color:#c4d0db;padding:0 8px">med</span></td>`:''}
+    ${cols.owner?`<td style="padding:0 6px"><select id="ws-inline-subtask-owner" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;cursor:pointer"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
+    ${cols.cwith?`<td></td>`:''}
+    ${cols.duedate?`<td style="padding:0 6px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
+    ${cols.progress?`<td></td>`:''}
+    ${cols.hours?`<td></td>`:''}
+    ${cols.client?`<td></td>`:''}
+    ${cols.tags?`<td></td>`:''}
+    ${cols.attachments?`<td></td>`:''}
+    ${custCols.map(()=>`<td></td>`).join('')}
     <td></td>
+    <td style="padding:0 6px;white-space:nowrap">
+      <button onclick="wsSaveInlineSubtask()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 10px">↵</button>
+      <button onclick="wsCancelInlineSubtask()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;margin-left:2px">✕</button>
+    </td>
   </tr>`
         :`<tr class="ws-subrow">
     <td style="width:36px"></td>
