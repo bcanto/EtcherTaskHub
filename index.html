@@ -5375,17 +5375,58 @@ function openTaskModal(id, defaultGroupId){
         </div>`:''}
       </div>`:''}
 
-      <!-- Dependencies — internal only -->
-      ${canEdit?`<div>
-        <label class="form-label">Depends On (predecessors)</label>
-        <select id="tm-deps" class="form-input" multiple style="height:80px;padding:4px">
-          ${DB.tasks.filter(x=>x.id!==id).map(x=>{
-            const xClient=getTaskClient(x);
-            const selected=(t.dependencies||[]).includes(x.id);
-            return`<option value="${x.id}" ${selected?'selected':''}>${xClient?xClient.shortCode+' — ':''} ${x.name}</option>`;
-          }).join('')}
-        </select>
-        <div style="font-size:10px;color:#8da2b2;margin-top:3px">Ctrl/Cmd+click to select multiple. Circular dependencies are blocked on save.</div>
+      <!-- Dependencies — internal only, existing tasks only -->
+      ${canEdit&&id?`<div>
+        <label class="form-label">Dependencies — this task waits on:</label>
+        <div id="tm-dep-list" style="margin-bottom:8px">
+          ${(()=>{
+            const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===id);
+            if(!myDeps.length)return'<div style="font-size:12px;color:#8da2b2;padding:4px 0">No dependencies yet.</div>';
+            return myDeps.map(d=>{
+              const pre=DB.tasks.find(t=>t.id===d.predecessorTaskId);
+              if(!pre)return'';
+              const g=DB.groups.find(g=>g.id===pre.groupId);
+              const c=DB.clients.find(cl=>cl.id===g?.clientId);
+              const sm=STATUS_META[pre.status]||STATUS_META['todo'];
+              return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1.5px solid #e2eaf2;border-radius:7px;margin-bottom:5px;background:#fafcff">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pre.name)}</div>
+                  <div style="font-size:11px;color:#8da2b2;margin-top:1px;display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+                    ${c?`<span style="color:${c.color};font-weight:600">${escHtml(c.name)}</span><span>·</span>`:''}
+                    ${g?`<span>${escHtml(g.name)}</span><span>·</span>`:''}
+                    <span style="background:${sm.bg};color:${sm.color};border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${sm.label}</span>
+                  </div>
+                </div>
+                <button onclick="tmRemoveDep('${d.id}','${id}')" style="background:none;border:none;cursor:pointer;color:#c4d0db;font-size:13px;flex-shrink:0;padding:2px 5px;border-radius:4px" title="Remove" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
+              </div>`;
+            }).join('');
+          })()}
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <select id="tm-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tmDepFilterChange('${id}')">
+            <option value="">All Clients</option>
+            ${DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}
+          </select>
+          <select id="tm-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tmDepFilterChange('${id}')">
+            <option value="">All Groups</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="tm-dep-task" class="form-input" style="flex:2;font-size:12px">
+            <option value="">— Select predecessor task —</option>
+            ${(()=>{
+              const existingPredIds=new Set((DB.dependencies||[]).filter(d=>d.dependentTaskId===id).map(d=>d.predecessorTaskId));
+              return DB.tasks.filter(x=>x.id!==id&&!existingPredIds.has(x.id)&&!x.archived).map(x=>{
+                const g=DB.groups.find(g=>g.id===x.groupId);
+                const c=DB.clients.find(cl=>cl.id===g?.clientId);
+                return`<option value="${x.id}" data-client="${g?.clientId||''}" data-group="${x.groupId||''}">[${c?escHtml(c.name):'No client'}] ${g?escHtml(g.name)+' — ':''}${escHtml(x.name)}</option>`;
+              }).join('');
+            })()}
+          </select>
+          <input id="tm-dep-lag" type="number" min="0" max="365" value="0" class="form-input" style="width:65px;font-size:12px" title="Lag days"/>
+          <button onclick="tmAddDep('${id}')" class="btn btn-teal btn-sm" style="white-space:nowrap">+ Add</button>
+        </div>
+        <div id="tm-dep-error" style="font-size:12px;color:#dc2626;margin-top:4px;display:none"></div>
       </div>`:''}
 
       <!-- AC: comments are internal — hidden from clients -->
@@ -5459,6 +5500,36 @@ function openTaskModal(id, defaultGroupId){
 function closeTaskModal(){
   document.getElementById('task-modal').classList.add('hidden');
   editingTaskId=null;
+}
+function tmDepFilterChange(taskId){
+  const clientId=document.getElementById('tm-dep-client')?.value||'';
+  const groupSel=document.getElementById('tm-dep-group');
+  const taskSel=document.getElementById('tm-dep-task');
+  if(!groupSel||!taskSel)return;
+  const groups=DB.groups.filter(g=>!clientId||g.clientId===clientId);
+  groupSel.innerHTML=`<option value="">All Groups</option>`+groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  const groupId=groupSel.value;
+  Array.from(taskSel.options).forEach(opt=>{
+    if(!opt.value){opt.style.display='';return;}
+    const matchC=!clientId||opt.dataset.client===clientId;
+    const matchG=!groupId||opt.dataset.group===groupId;
+    opt.style.display=matchC&&matchG?'':'none';
+  });
+  taskSel.value='';
+}
+function tmAddDep(taskId){
+  const predId=document.getElementById('tm-dep-task')?.value;
+  const lag=parseInt(document.getElementById('tm-dep-lag')?.value)||0;
+  const errEl=document.getElementById('tm-dep-error');
+  if(!predId){if(errEl){errEl.textContent='Please select a task.';errEl.style.display='block';}return;}
+  const result=addDependency(predId,taskId,lag);
+  if(!result.ok){if(errEl){errEl.textContent=result.error;errEl.style.display='block';}return;}
+  if(errEl)errEl.style.display='none';
+  openTaskModal(taskId); // refresh modal
+}
+function tmRemoveDep(depId,taskId){
+  removeDependency(depId);
+  openTaskModal(taskId); // refresh modal
 }
 function saveTask(){
   try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
@@ -6633,6 +6704,7 @@ function renderTaskPanel(task){
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
       <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subtasks <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
       <div class="tp-tab" id="tp-tab-comments" onclick="tpShowTab('comments')">Comments <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${commentCount}</span></div>
+      <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
     </div>
     <div id="tp-body" style="flex:1;overflow-y:auto;padding:16px 20px">
@@ -6779,6 +6851,110 @@ function renderTpActivity(task){
   </div>`).join('')}</div>`;
 }
 
+function renderTpDependencies(task){
+  const deps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id);
+  const blockedBy=deps.map(d=>{
+    const pre=DB.tasks.find(t=>t.id===d.predecessorTaskId);
+    if(!pre)return'';
+    const g=DB.groups.find(g=>g.id===pre.groupId);
+    const c=DB.clients.find(cl=>cl.id===g?.clientId);
+    const sm=STATUS_META[pre.status]||STATUS_META['todo'];
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pre.name)}</div>
+        <div style="font-size:11px;color:#8da2b2;margin-top:2px;display:flex;align-items:center;gap:6px">
+          ${c?`<span style="color:${c.color};font-weight:600">${escHtml(c.name)}</span><span>·</span>`:''}
+          ${g?`<span>${escHtml(g.name)}</span><span>·</span>`:''}
+          <span style="background:${sm.bg};color:${sm.color};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${sm.label}</span>
+          ${d.lagDays?`<span>· ${d.lagDays}d lag</span>`:''}
+        </div>
+      </div>
+      <button onclick="tpRemoveDep('${d.id}')" style="background:none;border:none;cursor:pointer;color:#c4d0db;font-size:13px;flex-shrink:0;padding:3px 6px;border-radius:4px" title="Remove dependency" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
+    </div>`;
+  }).join('');
+
+  // Build task picker options (all tasks except self, filterable)
+  const clientOpts=DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  const existingPredIds=new Set(deps.map(d=>d.predecessorTaskId));
+
+  return`<div>
+    ${deps.length
+      ?`<div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8da2b2;margin-bottom:8px">Blocked by</div>
+          ${blockedBy}
+        </div>`
+      :`<div style="text-align:center;padding:20px 0 16px;color:#8da2b2;font-size:13px">No dependencies yet.</div>`}
+
+    <div style="border-top:1px solid #e2eaf2;padding-top:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8da2b2;margin-bottom:10px">Add dependency — this task waits on:</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="tp-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tpDepFilterChange()">
+          <option value="">All Clients</option>${clientOpts}
+        </select>
+        <select id="tp-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tpDepFilterChange()">
+          <option value="">All Groups</option>
+        </select>
+      </div>
+      <select id="tp-dep-task" class="form-input" style="font-size:12px;margin-bottom:8px">
+        <option value="">— Select a task —</option>
+        ${DB.tasks.filter(t=>t.id!==task.id&&!existingPredIds.has(t.id)&&!t.archived).map(t=>{
+          const g=DB.groups.find(g=>g.id===t.groupId);
+          const c=DB.clients.find(cl=>cl.id===g?.clientId);
+          return`<option value="${t.id}" data-client="${g?.clientId||''}" data-group="${t.groupId||''}">[${c?escHtml(c.name):'No client'}] ${g?escHtml(g.name)+' — ':''}${escHtml(t.name)}</option>`;
+        }).join('')}
+      </select>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:12px;color:#6b8399;white-space:nowrap">Lag days:</label>
+        <input id="tp-dep-lag" type="number" min="0" max="365" value="0" class="form-input" style="width:70px;font-size:12px"/>
+        <button onclick="tpAddDep('${task.id}')" class="btn btn-teal btn-sm" style="flex:1">+ Add</button>
+      </div>
+      <div id="tp-dep-error" style="font-size:12px;color:#dc2626;margin-top:6px;display:none"></div>
+    </div>
+  </div>`;
+}
+
+function tpDepFilterChange(){
+  const clientId=document.getElementById('tp-dep-client')?.value||'';
+  const groupSel=document.getElementById('tp-dep-group');
+  const taskSel=document.getElementById('tp-dep-task');
+  if(!groupSel||!taskSel)return;
+  // Repopulate group dropdown
+  const groups=DB.groups.filter(g=>!clientId||g.clientId===clientId);
+  groupSel.innerHTML=`<option value="">All Groups</option>`+groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  // Filter task options
+  const groupId=groupSel.value;
+  Array.from(taskSel.options).forEach(opt=>{
+    if(!opt.value){opt.style.display='';return;}
+    const matchC=!clientId||opt.dataset.client===clientId;
+    const matchG=!groupId||opt.dataset.group===groupId;
+    opt.style.display=matchC&&matchG?'':'none';
+  });
+  taskSel.value='';
+}
+
+function tpAddDep(taskId){
+  const predId=document.getElementById('tp-dep-task')?.value;
+  const lag=parseInt(document.getElementById('tp-dep-lag')?.value)||0;
+  const errEl=document.getElementById('tp-dep-error');
+  if(!predId){if(errEl){errEl.textContent='Please select a task.';errEl.style.display='block';}return;}
+  const result=addDependency(predId,taskId,lag);
+  if(!result.ok){if(errEl){errEl.textContent=result.error;errEl.style.display='block';}return;}
+  if(errEl)errEl.style.display='none';
+  // Refresh dependencies tab
+  const body=document.getElementById('tp-body');
+  const task=_tpCurrentTask;
+  if(body&&task)body.innerHTML=renderTpDependencies(task);
+  renderView(currentView);
+}
+
+function tpRemoveDep(depId){
+  removeDependency(depId);
+  const body=document.getElementById('tp-body');
+  const task=_tpCurrentTask;
+  if(body&&task)body.innerHTML=renderTpDependencies(task);
+  renderView(currentView);
+}
+
 function tpShowTab(tabName){
   const task=_tpCurrentTask;
   if(!task)return;
@@ -6790,6 +6966,7 @@ function tpShowTab(tabName){
   if(tabName==='details')body.innerHTML=renderTpDetails(task);
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='comments')body.innerHTML=renderTpComments(task.id);
+  else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
 }
 
