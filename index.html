@@ -328,7 +328,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <img src="Etcher White Logo.png" alt="Etcher" style="max-height:96px;height:auto;max-width:100%;width:auto;display:block;margin-bottom:28px;opacity:0.95" onerror="this.outerHTML='<span style=\'font-family:Jost,sans-serif;font-size:32px;font-weight:700;color:#97bcbd;letter-spacing:0.08em\'>ETCHER</span>'"/>
         <div style="width:28px;height:2px;background:#97bcbd;border-radius:2px;margin-bottom:18px;opacity:0.6"></div>
         <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:10px">Task Hub</h2>
-        <p style="font-size:13px;color:#97bcbd;line-height:1.6">Etcher's internal workspace for tasks, clients, and team collaboration.</p>
+        <p style="font-size:13px;color:#8da2b2;line-height:1.6">Etcher's internal workspace for tasks, clients, and team collaboration.</p>
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -377,21 +377,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
 
-      <div style="margin-top:28px;padding-top:20px;border-top:1px solid #f0f4f8">
-        <p style="font-size:11px;color:#b0bec5;margin-bottom:2px;font-family:'Jost',sans-serif;font-weight:600;letter-spacing:0.04em;text-transform:uppercase">Demo credentials</p>
-
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <button onclick="document.getElementById('login-email').value='admin@etchersolutions.com';document.getElementById('login-password').focus()" style="background:none;border:1px dashed #e2eaf2;border-radius:6px;padding:5px 10px;text-align:left;cursor:pointer;font-size:11px;color:#8da2b2;font-family:'Lato',sans-serif;transition:all 0.12s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#8da2b2'">
-            Admin — admin@etchersolutions.com
-          </button>
-          <button onclick="document.getElementById('login-email').value='client@daltech.com.au';document.getElementById('login-password').focus()" style="background:none;border:1px dashed #e2eaf2;border-radius:6px;padding:5px 10px;text-align:left;cursor:pointer;font-size:11px;color:#8da2b2;font-family:'Lato',sans-serif;transition:all 0.12s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#8da2b2'">
-            Client (Daltech) — client@daltech.com.au
-          </button>
-          <button onclick="document.getElementById('login-email').value='client@generalcranes.com.au';document.getElementById('login-password').focus()" style="background:none;border:1px dashed #e2eaf2;border-radius:6px;padding:5px 10px;text-align:left;cursor:pointer;font-size:11px;color:#8da2b2;font-family:'Lato',sans-serif;transition:all 0.12s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#8da2b2'">
-            Client (General Cranes) — client@generalcranes.com.au
-          </button>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -1045,6 +1030,8 @@ function saveDB(data){localStorage.setItem('etcher_taskhub_v4',JSON.stringify(da
 function uid(){return Math.random().toString(36).slice(2,10);}
 
 let DB=loadDB();
+
+
 let currentUser=null;
 let currentView='dashboard';
 let selectedNoteClientId=null;
