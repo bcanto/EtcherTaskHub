@@ -968,7 +968,7 @@ function _migrateDB(data){
     if(!t.dependencies)             t.dependencies=[];
   });
 
-  // Upgrade checklist items: title / text sync
+  // Upgrade checklist items: title / text sync + task-parity fields
   (data.checklistItems||[]).forEach(ci=>{
     if(!ci.title&&ci.text)          ci.title=ci.text;
     if(!ci.text&&ci.title)          ci.text=ci.title;
@@ -977,6 +977,10 @@ function _migrateDB(data){
     if(ci.order===undefined)        ci.order=0;
     if(!ci.createdAt)               ci.createdAt=new Date().toISOString();
     if(!ci.updatedAt)               ci.updatedAt=ci.createdAt;
+    // Task-parity fields for main-table column display
+    if(!ci.status)                  ci.status=ci.complete?'done':'todo';
+    if(!ci.priority)                ci.priority='med';
+    if(ci.percentComplete===undefined) ci.percentComplete=ci.complete?100:0;
   });
 
   // Upgrade time entries: add billable, clientId
@@ -6089,7 +6093,50 @@ function wsCycleStatus(id){
 }
 function wsToggleChecklist(ciId,checked){
   const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(ci){ci.complete=checked;saveDB(DB);renderView('workspace');}
+  if(!ci)return;
+  ci.complete=checked;ci.completed=checked;
+  ci.status=checked?'done':'todo';
+  ci.percentComplete=checked?100:0;
+  ci.updatedAt=new Date().toISOString();
+  saveDB(DB);renderView('workspace');
+}
+function wsCiUpdate(ciId,field,value){
+  const ci=DB.checklistItems.find(x=>x.id===ciId);
+  if(!ci)return;
+  if(field==='complete'){
+    ci.complete=value;ci.completed=value;
+    ci.status=value?'done':'todo';
+    ci.percentComplete=value?100:0;
+  } else if(field==='status'){
+    ci.status=value;
+    const done=value==='done'||value==='completed';
+    ci.complete=done;ci.completed=done;
+    ci.percentComplete=done?100:(ci.percentComplete||0);
+  } else {
+    ci[field]=value;
+  }
+  ci.updatedAt=new Date().toISOString();
+  saveDB(DB);renderView('workspace');
+}
+function wsCiRenameStart(ciId,el){
+  const ci=DB.checklistItems.find(x=>x.id===ciId);
+  if(!ci)return;
+  const orig=el.textContent;
+  el.contentEditable='true';el.focus();
+  const sel=window.getSelection(),range=document.createRange();
+  range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);
+  const done=()=>{
+    el.contentEditable='false';
+    const val=el.textContent.trim();
+    if(val&&val!==orig){ci.text=val;ci.title=val;ci.updatedAt=new Date().toISOString();saveDB(DB);renderView('workspace');}
+    else el.textContent=orig;
+  };
+  el.onblur=done;
+  el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();done();}if(e.key==='Escape'){el.textContent=orig;el.contentEditable='false';}};
+}
+function wsCiDeleteItem(ciId){
+  const i=DB.checklistItems.findIndex(x=>x.id===ciId);
+  if(i!==-1){DB.checklistItems.splice(i,1);saveDB(DB);renderView('workspace');}
 }
 function wsStartInlineSubtask(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -6599,17 +6646,81 @@ function renderWsRow(t,cols,visCols,custCols,groupColor){
     </td>
   </tr>
   ${expanded?(
-    checklist.map(ci=>`
+    checklist.map(ci=>{
+      const ciStatus=ci.status||'todo';
+      const ciPrio=ci.priority||'med';
+      const ciSm=STATUS_META[ciStatus]||STATUS_META['todo'];
+      const ciPm=PRIO_META[ciPrio]||PRIO_META['med'];
+      const ciOwner=DB.staff.find(s=>s.id===ci.ownerId);
+      const ciDone=ci.complete||ciStatus==='done';
+      const ciOverdue=ci.endDate&&ci.endDate<toDateStr(new Date())&&!ciDone;
+      const ciPct=ci.percentComplete||0;
+      const ciStatusOpts=Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}"${ciStatus===k?' selected':''}>${v.label}</option>`).join('');
+      const ciPrioOpts=['low','med','high','crit'].map(p=>`<option value="${p}"${ciPrio===p?' selected':''}>${PRIO_META[p]?.icon||''} ${PRIO_META[p]?.label||p}</option>`).join('');
+      const ciOwnerOpts=`<option value="">—</option>`+DB.staff.map(s=>`<option value="${s.id}"${ci.ownerId===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
+      const ciEndFmt=ci.endDate?formatDate(ci.endDate):'—';
+      return`
   <tr class="ws-subrow">
-    <td style="width:36px"></td>
-    <td colspan="${totalSubCols}" style="padding:5px 10px 5px 50px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="checkbox" ${ci.complete?'checked':''} onchange="wsToggleChecklist('${ci.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd;flex-shrink:0"/>
-        <span style="font-size:12px;color:${ci.complete?'#b0bec5':'#4a5568'};${ci.complete?'text-decoration:line-through':''}">${escHtml(ci.text||ci.content||'')}</span>
+    <td style="text-align:center;width:36px">
+      <input type="checkbox" ${ciDone?'checked':''} onchange="wsCiUpdate('${ci.id}','complete',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>
+    </td>
+    <td style="max-width:300px">
+      <div style="display:flex;align-items:center;gap:5px;padding:0 10px 0 56px;border-left:3px solid ${groupColor}55">
+        <span style="color:#c4d0db;font-size:10px;flex-shrink:0">↳</span>
+        <span ondblclick="wsCiRenameStart('${ci.id}',this)"
+          style="font-size:12px;font-weight:400;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;${ciDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
+          title="Double-click to rename">${escHtml(ci.text||ci.title||'')}</span>
       </div>
     </td>
-    <td></td>
-  </tr>`).join('')
+    ${cols.status?`<td style="background:${ciSm.bg}">
+      <select onchange="wsCiUpdate('${ci.id}','status',this.value)" style="border:none;background:transparent;font-size:11px;font-weight:700;color:${ciSm.color};width:100%;padding:0 8px;height:38px;cursor:pointer;outline:none">
+        ${ciStatusOpts}
+      </select>
+    </td>`:''}
+    ${cols.priority?`<td style="background:${ciPm.bg}">
+      <select onchange="wsCiUpdate('${ci.id}','priority',this.value)" style="border:none;background:transparent;font-size:11px;font-weight:700;color:${ciPm.color};width:100%;padding:0 8px;height:38px;cursor:pointer;outline:none">
+        ${ciPrioOpts}
+      </select>
+    </td>`:''}
+    ${cols.owner?`<td style="padding:0 10px">
+      <div style="display:inline-flex;align-items:center;gap:4px">
+        ${ciOwner?avatarHtml(ciOwner,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}
+        <select onchange="wsCiUpdate('${ci.id}','ownerId',this.value)" title="${ciOwner?escHtml(ciOwner.name):'Unassigned'}"
+          style="border:none;background:transparent;font-size:11px;color:#6b8399;max-width:70px;cursor:pointer;outline:none">
+          ${ciOwnerOpts}
+        </select>
+      </div>
+    </td>`:''}
+    ${cols.cwith?`<td></td>`:''}
+    ${cols.duedate?`<td style="padding:0 8px">
+      <div style="display:inline-flex;align-items:center;gap:3px">
+        <span style="font-size:11px;white-space:nowrap;${ciOverdue?'color:#dc2626;font-weight:700':'color:#6b8399'}">${ciOverdue?'⚠ ':''}${ciEndFmt}</span>
+        <input type="date" value="${ci.endDate||''}" onchange="wsCiUpdate('${ci.id}','endDate',this.value)"
+          style="border:none;background:transparent;font-size:10px;color:#b0bec5;width:0;padding:0;cursor:pointer;outline:none"
+          title="Set due date"/>
+      </div>
+    </td>`:''}
+    ${cols.progress?`<td>
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px">
+        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${ciPct}%;background:${ciPct===100?'#22c55e':'#97bcbd'}"></div></div>
+        <input type="number" min="0" max="100" value="${ciPct}" onchange="wsCiUpdate('${ci.id}','percentComplete',Math.min(100,Math.max(0,+this.value)))"
+          style="width:32px;border:none;background:transparent;font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'};outline:none;padding:0;cursor:pointer"/>
+        <span style="font-size:11px;color:${ciPct===100?'#16a34a':'#6b8399'}">%</span>
+      </div>
+    </td>`:''}
+    ${cols.hours?`<td></td>`:''}
+    ${cols.client?`<td></td>`:''}
+    ${cols.tags?`<td></td>`:''}
+    ${cols.attachments?`<td></td>`:''}
+    ${custCols.map(()=>`<td></td>`).join('')}
+    <td style="width:36px"></td>
+    <td onclick="event.stopPropagation()">
+      <div class="ws-actions">
+        <button onclick="wsCiDeleteItem('${ci.id}')" title="Delete subtask" style="color:#dc2626">✕</button>
+      </div>
+    </td>
+  </tr>`;
+    }).join('')
     +(currentUser?.role!=='client'
       ?(wsInlineAddSubtaskId===t.id
         ?`<tr class="ws-inline-row">
