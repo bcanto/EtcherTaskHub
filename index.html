@@ -1387,7 +1387,7 @@ function renderAdvancedFilterPanel(view){
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
-      ${[{key:'awaitingClient',label:'↗ Awaiting Client'},{key:'overdue',label:'⚠ Overdue only'},{key:'hasChecklist',label:'☑ Has checklist'},{key:'hasDeps',label:'⟶ Has dependencies'}].map(({key,label})=>{const on=!!f[key];return`<button onclick="setFilter('${key}',${!on})" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${on?'#97bcbd':'#e2eaf2'};background:${on?'#f0f7f7':'transparent'};color:${on?'#0d6e4e':'#8da2b2'};transition:all 0.12s">${label}</button>`;}).join('')}
+      ${[{key:'awaitingClient',label:'↗ Awaiting Client'},{key:'overdue',label:'⚠ Overdue only'},{key:'hasChecklist',label:'☑ Has subitems'},{key:'hasDeps',label:'⟶ Has dependencies'}].map(({key,label})=>{const on=!!f[key];return`<button onclick="setFilter('${key}',${!on})" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${on?'#97bcbd':'#e2eaf2'};background:${on?'#f0f7f7':'transparent'};color:${on?'#0d6e4e':'#8da2b2'};transition:all 0.12s">${label}</button>`;}).join('')}
     </div>
     <div style="display:flex;align-items:center;padding-top:10px;border-top:1px solid #f0f4f8">
       <button onclick="clearFilters();wsMtSearch=''" class="btn btn-ghost btn-sm" style="font-size:11px">✕ Clear all</button>
@@ -3155,7 +3155,7 @@ function renderBoard(){
             </div>
             ${prioFlag(t.priority)}
           </div>
-          ${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'};margin-bottom:4px">☑ ${r.done}/${r.total} checklist</div>`:''})()}
+          ${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'};margin-bottom:4px">☑ ${r.done}/${r.total} subitems</div>`:''})()}
           ${t.percentComplete>0?`<div class="progress-bar" style="margin-bottom:6px"><div class="progress-fill" style="width:${t.percentComplete}%;background:#97bcbd"></div></div>`:''}
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="display:flex;align-items:center;gap:4px">${avatarHtml(owner,22)}<span style="font-size:11px;color:#8da2b2">${owner.name.split(' ')[0]}</span></div>
@@ -6162,116 +6162,6 @@ function wsCycleStatus(id){
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
 }
-function wsToggleChecklist(ciId,checked){
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(!ci)return;
-  ci.complete=checked;ci.completed=checked;
-  ci.status=checked?'done':'todo';
-  ci.percentComplete=checked?100:0;
-  ci.updatedAt=new Date().toISOString();
-  const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
-  if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
-  saveDB(DB);renderView('workspace');
-}
-function wsCiUpdate(ciId,field,value){
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(!ci)return;
-  if(field==='complete'){
-    ci.complete=value;ci.completed=value;
-    ci.status=value?'done':'todo';
-    ci.percentComplete=value?100:0;
-  } else if(field==='status'){
-    ci.status=value;
-    const done=value==='done'||value==='completed';
-    ci.complete=done;ci.completed=done;
-    ci.percentComplete=done?100:(ci.percentComplete||0);
-  } else {
-    ci[field]=value;
-  }
-  ci.updatedAt=new Date().toISOString();
-  // Sync parent task percentComplete from subtask hierarchy
-  const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
-  if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
-  saveDB(DB);renderView('workspace');
-}
-function wsCiRenameStart(ciId,el){
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(!ci)return;
-  const orig=el.textContent;
-  el.contentEditable='true';el.focus();
-  const sel=window.getSelection(),range=document.createRange();
-  range.selectNodeContents(el);sel.removeAllRanges();sel.addRange(range);
-  const done=()=>{
-    el.contentEditable='false';
-    const val=el.textContent.trim();
-    if(val&&val!==orig){ci.text=val;ci.title=val;ci.updatedAt=new Date().toISOString();saveDB(DB);renderView('workspace');}
-    else el.textContent=orig;
-  };
-  el.onblur=done;
-  el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();done();}if(e.key==='Escape'){el.textContent=orig;el.contentEditable='false';}};
-}
-function wsCiDeleteItem(ciId){
-  const i=DB.checklistItems.findIndex(x=>x.id===ciId);
-  if(i!==-1){
-    const ci=DB.checklistItems[i];
-    DB.checklistItems.splice(i,1);
-    const parentTask=DB.tasks.find(t=>t.id===ci.taskId);
-    if(parentTask){parentTask.percentComplete=getEffectiveTaskPct(ci.taskId);parentTask.updatedAt=new Date().toISOString();}
-    saveDB(DB);renderView('workspace');
-  }
-}
-function wsCiOpenComments(ciId,event){
-  event.stopPropagation();
-  document.querySelectorAll('.ci-comment-popover').forEach(el=>el.remove());
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(!ci)return;
-  const comments=(DB.comments||[]).filter(c=>c.checklistItemId===ciId).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
-  const div=document.createElement('div');
-  div.className='ci-comment-popover';
-  div.style.cssText='position:fixed;z-index:9999;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 32px rgba(13,28,51,0.18);padding:14px 16px;width:320px;max-height:380px;overflow-y:auto';
-  const rect=event.currentTarget.getBoundingClientRect();
-  div.style.left=Math.min(rect.left,window.innerWidth-340)+'px';
-  div.style.top=(rect.bottom+6)+'px';
-  div.innerHTML=`
-    <div style="font-size:12px;font-weight:700;color:#1a2940;margin-bottom:10px;padding-right:20px">💬 ${escHtml(ci.text||ci.title||'Subtask')}</div>
-    <div id="ci-cmt-list-${ciId}" style="max-height:200px;overflow-y:auto;margin-bottom:10px">
-      ${comments.length?comments.map(c=>{
-        const author=getStaff(c.authorId);
-        return`<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f0f4f8;last-child:border:none">
-          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
-            ${avatarHtml(author,16)}
-            <span style="font-size:11px;font-weight:600;color:#1a2940">${escHtml(author?.name||'?')}</span>
-            <span style="font-size:10px;color:#b0bec5">${_relativeTime(c.createdAt)}</span>
-          </div>
-          <div style="font-size:12px;color:#4a5568;padding-left:21px;line-height:1.5">${escHtml(c.body)}</div>
-        </div>`;
-      }).join(''):'<div style="font-size:12px;color:#b0bec5;padding:4px 0">No comments yet.</div>'}
-    </div>
-    <div style="display:flex;gap:6px">
-      <input id="ci-cmt-input-${ciId}" class="form-input" style="flex:1;font-size:12px;padding:5px 10px"
-        placeholder="Add comment…"
-        onkeypress="if(event.key==='Enter'){event.preventDefault();wsCiAddComment('${ciId}');}"/>
-      <button onclick="wsCiAddComment('${ciId}')" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Post</button>
-    </div>
-    <button onclick="this.closest('.ci-comment-popover').remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:#b0bec5;font-size:14px" onmouseover="this.style.color='#1a2940'" onmouseout="this.style.color='#b0bec5'">✕</button>`;
-  document.body.appendChild(div);
-  setTimeout(()=>document.getElementById(`ci-cmt-input-${ciId}`)?.focus(),50);
-  const closeHandler=e=>{if(!div.contains(e.target)){div.remove();document.removeEventListener('click',closeHandler);}};
-  setTimeout(()=>document.addEventListener('click',closeHandler),100);
-}
-function wsCiAddComment(ciId){
-  const input=document.getElementById(`ci-cmt-input-${ciId}`);
-  const body=(input?.value||'').trim();
-  if(!body)return;
-  const ci=DB.checklistItems.find(x=>x.id===ciId);
-  if(!ci)return;
-  if(!DB.comments)DB.comments=[];
-  DB.comments.push({id:'cc'+uid(),taskId:ci.taskId,checklistItemId:ciId,authorId:currentUser.id,body,createdAt:new Date().toISOString()});
-  saveDB(DB);
-  // Refresh the popover in-place
-  document.querySelectorAll('.ci-comment-popover').forEach(el=>el.remove());
-  renderView('workspace');
-}
 function wsStartInlineSubitem(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   wsInlineAddSubtaskId=taskId;
@@ -6279,8 +6169,6 @@ function wsStartInlineSubitem(taskId){
   renderView('workspace');
   setTimeout(()=>document.getElementById('ws-inline-subtask-input')?.focus(),40);
 }
-// Keep old name as alias
-function wsStartInlineSubtask(taskId){wsStartInlineSubitem(taskId);}
 function wsSaveInlineSubitem(){
   const text=(document.getElementById('ws-inline-subtask-input')?.value||'').trim();
   if(!text){document.getElementById('ws-inline-subtask-input')?.focus();return;}
@@ -6304,9 +6192,7 @@ function wsSaveInlineSubitem(){
   wsExpanded.add(parentId);
   renderView('workspace');
 }
-function wsSaveInlineSubtask(){wsSaveInlineSubitem();}
 function wsCancelInlineSubitem(){wsInlineAddSubtaskId=null;renderView('workspace');}
-function wsCancelInlineSubtask(){wsCancelInlineSubitem();}
 function wsDeleteSubitem(id){
   const si=DB.tasks.find(t=>t.id===id);
   const parentId=si?.parentTaskId;
@@ -7305,8 +7191,6 @@ function tpDeleteSubitem(siId){
 }
 // Legacy aliases (no-op stubs to prevent JS errors if referenced from old data)
 function tpToggleChecklist(){}
-function tpAddChecklist(){tpAddSubitem(_tpCurrentTask?.id);}
-function tpDeleteChecklist(id){tpDeleteSubitem(id);}
 
 function tpAddComment(){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -7545,7 +7429,16 @@ function wsBuildDepsHtml(taskId){
   // Gather candidate tasks: all tasks on this workboard that aren't self or already a dep
   const depPredIds=new Set(myDeps.map(d=>d.predecessorTaskId));
   const wbId=currentWorkboard?.id;
-  const candidates=DB.tasks.filter(t=>t.id!==taskId&&!t.archived&&!t.parentTaskId&&(t.workboardId===wbId||t.boardId===wbId)&&!depPredIds.has(t.id));
+  const _myTask=DB.tasks.find(t=>t.id===taskId);
+  const _myParentId=_myTask?.parentTaskId||null;
+  const candidates=DB.tasks.filter(t=>{
+    if(t.id===taskId||t.archived||depPredIds.has(t.id))return false;
+    if(!(t.workboardId===wbId||t.boardId===wbId))return false;
+    // If current task is a subitem, include parent-level tasks AND sibling subitems (same parent)
+    if(_myParentId) return !t.parentTaskId||t.parentTaskId===_myParentId;
+    // Otherwise only parent-level tasks
+    return !t.parentTaskId;
+  });
   const clientOpts=`<option value="">All Clients</option>`+DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
   const allGroups=[...new Set(candidates.map(t=>t.groupId).filter(Boolean))];
   const grpOpts=`<option value="">All Groups</option>`+allGroups.map(gid=>{const g=DB.groups.find(x=>x.id===gid);return g?`<option value="${gid}">${escHtml(g.name)}</option>`:''}).join('');
@@ -7606,7 +7499,13 @@ function wsDepsFilterTasks(taskId){
   const groupId=document.getElementById('wsDepsGroup')?.value||'';
   const depPredIds=new Set((DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId).map(d=>d.predecessorTaskId));
   const wbId=currentWorkboard?.id;
-  let cands=DB.tasks.filter(t=>t.id!==taskId&&!t.archived&&!t.parentTaskId&&(t.workboardId===wbId||t.boardId===wbId)&&!depPredIds.has(t.id));
+  const _ft=DB.tasks.find(t=>t.id===taskId);const _fpId=_ft?.parentTaskId||null;
+  let cands=DB.tasks.filter(t=>{
+    if(t.id===taskId||t.archived||depPredIds.has(t.id))return false;
+    if(!(t.workboardId===wbId||t.boardId===wbId))return false;
+    if(_fpId) return !t.parentTaskId||t.parentTaskId===_fpId;
+    return !t.parentTaskId;
+  });
   if(clientId){cands=cands.filter(t=>{const g=DB.groups.find(g=>g.id===t.groupId);return g?.clientId===clientId;});}
   if(groupId){cands=cands.filter(t=>t.groupId===groupId);}
   const sel=document.getElementById('wsDepsTask');
@@ -7681,6 +7580,11 @@ function wsCellSave(taskId,field,value){
     // Keep name/title in sync
     if(field==='name') task.title=value;
     if(field==='title') task.name=value;
+    // Rollup: if this task is a subitem, sync parent's stored percentComplete
+    if(task.parentTaskId&&(field==='percentComplete'||field==='status')){
+      const _parent=DB.tasks.find(t=>t.id===task.parentTaskId);
+      if(_parent){_parent.percentComplete=getEffectiveTaskPct(task.parentTaskId);_parent.updatedAt=new Date().toISOString();}
+    }
     saveDB(DB);
   }
   wsCellClose();
@@ -8402,7 +8306,17 @@ function cpGanttAutoFit(){
 // KEYBOARD SHORTCUTS
 // ═══════════════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){wsCellClose();closeTaskModal();closeConfirm();closeGenericModal();closeTaskPanel();}
+  if(e.key==='Escape'){
+    wsCellClose();
+    const confirmVisible=!document.getElementById('confirm-modal')?.classList.contains('hidden');
+    const genericVisible=!document.getElementById('generic-modal')?.classList.contains('hidden');
+    const taskModalVisible=!document.getElementById('task-modal-overlay')?.classList.contains('hidden');
+    const panelVisible=document.getElementById('task-panel')?.style.display!=='none';
+    if(confirmVisible)closeConfirm();
+    else if(genericVisible)closeGenericModal();
+    else if(taskModalVisible)closeTaskModal();
+    else if(panelVisible)closeTaskPanel();
+  }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
 });
 // Enter on login
