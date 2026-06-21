@@ -1,0 +1,11 @@
+# Dev/test scripts
+screenshot*.mjs
+temporary screenshots/
+
+# Office/spec docs
+*.docx
+*.xlsx
+
+# OS
+Thumbs.db
+.DS_Store
