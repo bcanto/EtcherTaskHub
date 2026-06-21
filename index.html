@@ -580,17 +580,11 @@ const SEED = {
 
   // ── Boards (one per project/engagement per client) ─────
   boards:[
-    {id:'b1', clientId:'c1', name:'Maintenance',       description:'Preventive maintenance, breakdown response and compliance.',   color:'#c2410c', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'b2', clientId:'c1', name:'SharePoint',        description:'SharePoint intranet design, build and rollout.',               color:'#e85d2f', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'b3', clientId:'c2', name:'Humanz Stage 1.5',  description:'Humanz HR platform — Stage 1.5 integration and data migration.',color:'#1d6fb8', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'b4', clientId:'c2', name:'Humanz Stage 2',    description:'Humanz Stage 2 — architecture, build and deployment.',         color:'#2c5282', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'b5', clientId:'c3', name:'Retained Services', description:'Monthly retained service delivery and ad hoc requests.',       color:'#7c3aed', archived:false, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    // Personal Shenanigans boards (one per staff member — private, excluded from all reporting)
-    {id:'wb_p_u1',clientId:null,name:'Personal Shenanigans',color:'#0d6e4e',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u1',ownerId:'u1',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u2',clientId:null,name:'Personal Shenanigans',color:'#1d6fb8',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u2',ownerId:'u2',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u3',clientId:null,name:'Personal Shenanigans',color:'#7c3aed',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u3',ownerId:'u3',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u4',clientId:null,name:'Personal Shenanigans',color:'#b45309',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u4',ownerId:'u4',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'wb_p_u5',clientId:null,name:'Personal Shenanigans',color:'#c2410c',archived:false,personal:true,isPersonalBoard:true,ownerUserId:'u5',ownerId:'u5',visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'b1', clientId:'c1', name:'Maintenance',       description:'Preventive maintenance, breakdown response and compliance.',   color:'#c2410c', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'b2', clientId:'c1', name:'SharePoint',        description:'SharePoint intranet design, build and rollout.',               color:'#e85d2f', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'b3', clientId:'c2', name:'Humanz Stage 1.5',  description:'Humanz HR platform — Stage 1.5 integration and data migration.',color:'#1d6fb8', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'b4', clientId:'c2', name:'Humanz Stage 2',    description:'Humanz Stage 2 — architecture, build and deployment.',         color:'#2c5282', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'b5', clientId:'c3', name:'Retained Services', description:'Monthly retained service delivery and ad hoc requests.',       color:'#7c3aed', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
   // ── BoardViews ─────────────────────────────────────────
@@ -627,10 +621,6 @@ const SEED = {
     // Retained Services (b5)
     {id:'tg12',clientId:'c3',boardId:'b5',name:'Monthly Deliverables',     color:'#7c3aed',order:0,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'tg13',clientId:'c3',boardId:'b5',name:'Ad Hoc Requests',          color:'#553c9a',order:1,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    // Personal — Bruna
-    {id:'gp1', clientId:null,boardId:'wb_p_u1',name:'Home',    color:'#0d6e4e',order:0,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'gp2', clientId:null,boardId:'wb_p_u1',name:'Work',    color:'#1d6fb8',order:1,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'gp3', clientId:null,boardId:'wb_p_u1',name:'Errands', color:'#b45309',order:2,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
   // ── Tasks ──────────────────────────────────────────────
@@ -803,14 +793,8 @@ const SEED = {
   taskFiles:[],
   labelConfig:{statuses:{},priorities:{}},
 
-  // Personal tasks (scoped to Personal Organiser boards)
-  personalTasks:[
-    {id:'pt1',groupId:'gp1',workboardId:'wb_p_u1',name:'Review team performance reports',  status:'todo',ownerId:'u1',priority:'high',percentComplete:0,  endDate:'2026-06-25',tags:[],archived:false,createdAt:'2026-06-20T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z',completedAt:null,description:'Q2 staff performance review — draft notes for 1:1s.'},
-    {id:'pt2',groupId:'gp1',workboardId:'wb_p_u1',name:'Prepare board update deck',         status:'in-progress',ownerId:'u1',priority:'high',percentComplete:30,endDate:'2026-06-27',tags:[],archived:false,createdAt:'2026-06-18T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z',completedAt:null,description:'Slide deck for July board update — cover project status and capacity.'},
-    {id:'pt3',groupId:'gp2',workboardId:'wb_p_u1',name:'Submit expense claims — May/June',  status:'todo',ownerId:'u1',priority:'med', percentComplete:0,  endDate:'2026-06-30',tags:[],archived:false,createdAt:'2026-06-20T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z',completedAt:null,description:''},
-    {id:'pt4',groupId:'gp2',workboardId:'wb_p_u1',name:'Book flights — Sydney conference',  status:'done',ownerId:'u1',priority:'med', percentComplete:100,endDate:'2026-06-19',tags:[],archived:false,createdAt:'2026-06-10T00:00:00.000Z',updatedAt:'2026-06-19T00:00:00.000Z',completedAt:'2026-06-19T00:00:00.000Z',description:'AIPM conference 12–13 August.'},
-    {id:'pt5',groupId:'gp3',workboardId:'wb_p_u1',name:'Renew professional indemnity insurance',status:'todo',ownerId:'u1',priority:'high',percentComplete:0,endDate:'2026-07-10',tags:[],archived:false,createdAt:'2026-06-20T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z',completedAt:null,description:'Policy renewal due 15 July. Get 3 quotes.'},
-  ],
+  boardShares:[],
+  personalChecklist:[],
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -847,7 +831,10 @@ function _migrateDB(data){
   if(!data.taskFiles)     data.taskFiles     = [];
   if(!data.scheduleEvents)data.scheduleEvents= [];
   if(!data.auditLog)      data.auditLog      = [];
-  if(!data.personalTasks) data.personalTasks = [];
+  if(!data.boardShares)       data.boardShares       = [];
+  if(!data.personalChecklist) data.personalChecklist = [];
+  // Drop legacy personal tasks array — no longer used
+  delete data.personalTasks;
 
   // Enforce demo passwords — covers: missing field, legacy value, any old value on known demo accounts
   const _legacyPw=new Set(['admin123','staff123','client123','']);
@@ -885,36 +872,21 @@ function _migrateDB(data){
     if(!c.updatedAt)                      c.updatedAt=c.createdAt;
   });
 
-  // Upgrade boards (was workboards): ensure boardId canonical field
+  // Remove legacy Personal Shenanigans boards and their groups from loaded data
+  const _psIds=new Set((data.boards||[]).filter(b=>b.personal||b.isPersonalBoard).map(b=>b.id));
+  if(_psIds.size){
+    data.boards=(data.boards||[]).filter(b=>!_psIds.has(b.id));
+    data.groups=(data.groups||[]).filter(g=>!_psIds.has(g.boardId||g.workboardId));
+  }
+
+  // Upgrade boards: ensure canonical fields + default visibility
   (data.boards||[]).forEach(b=>{
     if(b.archived===undefined)  b.archived=false;
-    if(b.personal===undefined)  b.personal=false;
     if(!b.description)          b.description='';
+    if(!b.visibility)           b.visibility='all_internal';
+    if(!b.ownerId)              b.ownerId='u1';
     if(!b.createdAt)            b.createdAt=new Date().toISOString();
     if(!b.updatedAt)            b.updatedAt=b.createdAt;
-  });
-
-  // Migrate personal boards: rename + stamp isolation flags
-  (data.boards||[]).filter(b=>b.personal).forEach(b=>{
-    if(b.name==='Personal Organiser')b.name='Personal Shenanigans';
-    b.isPersonalBoard=true;
-    if(!b.ownerUserId&&b.ownerId)b.ownerUserId=b.ownerId;
-    b.visibility='private';b.systemBoard=true;
-    b.excludeFromReports=true;b.excludeFromSearch=true;b.excludeFromAuditTrail=true;
-    b.excludeFromTimesheets=true;b.excludeFromCapacity=true;b.excludeFromClientPortal=true;
-  });
-
-  // Auto-create Personal Shenanigans boards for any internal users that don't have one yet
-  (data.users||[]).filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>{
-    const has=(data.boards||[]).some(b=>b.personal&&(b.ownerId===u.id||b.ownerUserId===u.id));
-    if(!has){
-      const bId='wb_ps_'+u.id;
-      if(!data.boards)data.boards=[];
-      data.boards.push({id:bId,clientId:null,name:'Personal Shenanigans',color:u.displayColor||u.color||'#10b981',archived:false,personal:true,isPersonalBoard:true,ownerUserId:u.id,ownerId:u.id,visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
-      if(!data.groups)data.groups=[];
-      if(!data.groups.some(g=>g.boardId===bId||g.workboardId===bId))
-        data.groups.push({id:'g_ps_'+u.id,boardId:bId,workboardId:bId,name:'To Do',order:0,clientId:null,color:u.displayColor||u.color||'#10b981',createdAt:new Date().toISOString()});
-    }
   });
 
   // Upgrade groups: add boardId from workboardId if needed
@@ -1023,15 +995,6 @@ function _migrateDB(data){
     if(!n.createdAt) n.createdAt=n.timestamp||new Date().toISOString();
   });
 
-  // Seed personal boards for any users that lack one
-  (data.users||[]).forEach(u=>{
-    if(u.role==='staff'||u.role==='admin'){
-      const pid='wb_p_'+u.id;
-      if(!(data.boards||[]).find(b=>b.id===pid)){
-        (data.boards||[]).push({id:pid,clientId:null,name:'Personal Organiser',color:u.displayColor||u.color||'#64748b',archived:false,personal:true,ownerId:u.id,description:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
-      }
-    }
-  });
 }
 
 function _applyCompatAliases(data){
@@ -1301,9 +1264,7 @@ function renderUniversalToolbar(view,opts){
   const matched=typeof opts.itemCount==='number'?opts.itemCount:getFilteredTasks().length;
   const clientOpts=DB.clients.map(c=>`<option value="${c.id}"${f.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${f.staffId===s.id?' selected':''}>${escHtml(s.name.split(' ')[0])}</option>`).join('');
-  const _psWbIds=new Set((DB.boards||DB.workboards||[]).filter(b=>isPersonalBoard(b)).map(b=>b.id));
-  const _nonPsGroups=DB.groups.filter(g=>!_psWbIds.has(g.boardId||g.workboardId));
-  const gList=f.clientId!=='all'?_nonPsGroups.filter(g=>g.clientId===f.clientId):_nonPsGroups;
+  const gList=f.clientId!=='all'?DB.groups.filter(g=>g.clientId===f.clientId):DB.groups;
   const groupOpts=gList.map(g=>{const cl=DB.clients.find(c=>c.id===g.clientId);return`<option value="${g.id}"${f.groupId===g.id?' selected':''}>${cl?escHtml(cl.shortCode||cl.name)+' — ':''}${escHtml(g.name)}</option>`;}).join('');
   const viewControls=(opts.viewControlsHtml!=null?opts.viewControlsHtml:_utViewControls(view));
   const personChipsHtml=view==='workspace'?_utPersonChips():'';
@@ -1438,7 +1399,6 @@ function launchApp(){
   updateSidebarUser();
   applyRolePermissions();
   loadFilters();
-  ensurePersonalBoardForUser(currentUser?.id);
   renderSidebarWorkboards();
   navigate('dashboard');
   updateNotifBadge();
@@ -1518,10 +1478,8 @@ function onGlobalSearch(){
   const q=document.getElementById('global-search').value.trim().toLowerCase();
   if(!q&&currentView==='list')return renderView('list');
   if(!q)return;
-  // Always search DB.tasks only — never DB.personalTasks (personal board excluded from global search)
-  const nonPersonalWb=currentWorkboard&&!isPersonalBoard(currentWorkboard)?currentWorkboard:null;
   let pool=DB.tasks.filter(t=>canViewTask(currentUser,t));
-  if(nonPersonalWb)pool=pool.filter(t=>(t.boardId||t.workboardId)===nonPersonalWb.id);
+  if(currentWorkboard)pool=pool.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
   const tasks=pool.filter(t=>t.name.toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
   renderListView(tasks);
   navigate('list');
@@ -1532,7 +1490,7 @@ function renderView(v){
   const _acBlocked=_acBlockedViews(currentUser);
   if(_acBlocked.has(v)||_acBlocked.has('*')){vc.innerHTML=_acDeniedHtml();return;}
   switch(v){
-    case 'dashboard': vc.innerHTML=renderDashboard();setTimeout(renderDashStatPanel,0);break;
+    case 'dashboard': vc.innerHTML=renderDashboard();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
     case 'schedule': vc.innerHTML=renderSchedule();break;
     case 'workspace': vc.innerHTML=renderWorkspace();break;
     case 'board': vc.innerHTML=renderBoard();break;
@@ -1554,14 +1512,6 @@ function renderView(v){
 // HELPERS
 // ═══════════════════════════════════════════════════════════
 function getVisibleTasks(){
-  // Personal board: tasks come from personalTasks, scoped to current user only
-  if(currentWorkboard?.personal){
-    if(currentWorkboard.ownerId!==currentUser.id)return[];
-    let pt=(DB.personalTasks||[]).filter(t=>t.workboardId===currentWorkboard.id);
-    if(!wsShowArchived)pt=pt.filter(t=>!t.archived);
-    return pt;
-  }
-  // AC: filter to only tasks this user is permitted to view
   let tasks=DB.tasks.filter(t=>canViewTask(currentUser,t));
   if(currentWorkboard) tasks=tasks.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
   if(!wsShowArchived) tasks=tasks.filter(t=>!t.archived);
@@ -1585,44 +1535,15 @@ function getEffectiveTaskPct(taskId){
   if(!children.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
   return Math.round(children.reduce((s,t)=>s+(t.percentComplete||0),0)/children.length);
 }
-// ── Personal Shenanigans helpers ──
-function isPersonalBoard(board){return !!(board&&(board.personal||board.isPersonalBoard));}
-function canViewPersonalBoard(user,board){
-  if(!user||!board||user.role==='client')return false;
-  return board.ownerUserId===user.id||board.ownerId===user.id;
-}
-function shouldExcludeFromReports(board){return isPersonalBoard(board);}
-function shouldExcludeFromSearch(board){return isPersonalBoard(board);}
-function shouldExcludeFromAuditTrail(entityId){
-  return !!(DB.personalTasks||[]).find(t=>t.id===entityId)||
-    !!(DB.boards||[]).find(b=>b.id===entityId&&isPersonalBoard(b));
-}
-function ensurePersonalBoardForUser(userId){
-  if(!userId)return;
-  const user=(DB.users||[]).find(u=>u.id===userId);
-  if(!user||user.role==='client')return;
-  const existing=(DB.boards||[]).find(b=>isPersonalBoard(b)&&(b.ownerId===userId||b.ownerUserId===userId));
-  if(existing){
-    // Stamp missing flags on older boards
-    if(existing.name==='Personal Organiser')existing.name='Personal Shenanigans';
-    existing.isPersonalBoard=true;existing.ownerUserId=existing.ownerUserId||userId;
-    existing.systemBoard=true;existing.visibility='private';
-    existing.excludeFromReports=true;existing.excludeFromSearch=true;
-    existing.excludeFromAuditTrail=true;existing.excludeFromTimesheets=true;
-    existing.excludeFromCapacity=true;existing.excludeFromClientPortal=true;
-    // Ensure at least one group exists
-    if(!(DB.groups||[]).some(g=>g.boardId===existing.id||g.workboardId===existing.id))
-      DB.groups.push({id:'g_ps_'+userId+'_'+uid(),boardId:existing.id,workboardId:existing.id,name:'To Do',order:0,clientId:null,color:existing.color||'#10b981',createdAt:new Date().toISOString()});
-    return existing;
-  }
-  const bId='wb_ps_'+userId+'_'+uid();
-  const nb={id:bId,clientId:null,name:'Personal Shenanigans',color:user.displayColor||user.color||'#10b981',archived:false,personal:true,isPersonalBoard:true,ownerUserId:userId,ownerId:userId,visibility:'private',systemBoard:true,excludeFromReports:true,excludeFromSearch:true,excludeFromAuditTrail:true,excludeFromTimesheets:true,excludeFromCapacity:true,excludeFromClientPortal:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-  if(!DB.boards)DB.boards=[];
-  DB.boards.push(nb);
-  if(!DB.groups)DB.groups=[];
-  DB.groups.push({id:'g_ps_'+userId+'_'+uid(),boardId:bId,workboardId:bId,name:'To Do',order:0,clientId:null,color:nb.color,createdAt:new Date().toISOString()});
-  saveDB(DB);
-  return nb;
+// ── Board access control ──
+function canViewBoard(user,board){
+  if(!user||!board)return false;
+  if(user.role==='client')return false;
+  if(user.role==='admin')return true;
+  if(board.visibility==='all_internal')return true;
+  if(board.ownerId===user.id)return true;
+  if((DB.boardShares||[]).some(s=>s.boardId===board.id&&s.userId===user.id))return true;
+  return false;
 }
 function getGroup(task){return DB.groups.find(g=>g.id===task.groupId);}
 // Return all Dependency entities for a given task (as dependentTaskId)
@@ -2256,6 +2177,7 @@ function updateNotifBadge(){
 function openWorkboard(id){
   currentWorkboard=DB.workboards.find(w=>w.id===id);
   if(!currentWorkboard)return;
+  if(!canViewBoard(currentUser,currentWorkboard)){currentWorkboard=null;showAlert('You do not have access to this board.');return;}
   wsCommsOpen=false;wsCommsFiles=[];
   wsInlineAddSectionId=null;wsInlineAddGroupId=null;
   wsCollapsed=new Set();wsExpanded=new Set();
@@ -2275,37 +2197,22 @@ function updateSidebarWorkboard(){
 function renderSidebarWorkboards(){
   const container=document.getElementById('sidebar-wb-list');
   if(!container)return;
-  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&!isPersonalBoard(wb));
-  const myPS=(DB.workboards||[]).find(wb=>isPersonalBoard(wb)&&canViewPersonalBoard(currentUser,wb)&&!wb.archived);
-  let html='';
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
   if(wbs.length===0){
-    html=`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
-  }else{
-    html=wbs.map(wb=>{
-      const count=DB.tasks.filter(t=>t.workboardId===wb.id).length;
-      const isActive=currentWorkboard?.id===wb.id;
-      return`<div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${wb.id}')" style="padding-left:14px;gap:8px">
-        <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${escHtml(wb.name)}</span>
-        ${count?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${count}</span>`:''}
-      </div>`;
-    }).join('');
+    container.innerHTML=`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
+    return;
   }
-  if(myPS){
-    const isActive=currentWorkboard?.id===myPS.id;
-    const ptCount=(DB.personalTasks||[]).filter(t=>t.workboardId===myPS.id&&!t.archived).length;
-    html+=`
-    <div style="margin-top:14px;padding:5px 14px 3px;font-size:10px;font-weight:700;color:#3a5068;letter-spacing:0.07em;text-transform:uppercase;display:flex;align-items:center;gap:5px">
-      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2.5" stroke="#3a5068" stroke-width="1.4"/><path d="M4 6l1.5 1.5L8 4" stroke="#3a5068" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Personal
-    </div>
-    <div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${myPS.id}')" style="padding-left:14px;gap:8px" title="Private — only visible to you">
-      <svg width="8" height="8" viewBox="0 0 10 10" fill="none" style="flex-shrink:0"><circle cx="5" cy="5" r="4" fill="${myPS.color}" opacity="0.9"/></svg>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">Personal Shenanigans</span>
-      ${ptCount?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${ptCount}</span>`:''}
+  container.innerHTML=wbs.map(wb=>{
+    const count=DB.tasks.filter(t=>(t.workboardId||t.boardId)===wb.id).length;
+    const isActive=currentWorkboard?.id===wb.id;
+    const isPrivate=wb.visibility==='private';
+    return`<div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${wb.id}')" style="padding-left:14px;gap:8px">
+      <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${escHtml(wb.name)}</span>
+      ${isPrivate?`<svg width="10" height="10" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;opacity:0.4" title="Private"><rect x="2" y="5" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`:''}
+      ${count?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${count}</span>`:''}
     </div>`;
-  }
-  container.innerHTML=html;
+  }).join('');
 }
 function sidebarNewWb(){
   navigate('dashboard');
@@ -2331,24 +2238,84 @@ function selectWbColor(c){
 function submitCreateWb(){
   const name=(document.getElementById('new-wb-name')?.value||'').trim();
   if(!name)return;
+  const visibility=document.getElementById('new-wb-visibility')?.value||'all_internal';
   const wbId=uid();
-  DB.workboards.push({id:wbId,name,color:selectedWbColor,createdAt:new Date().toISOString().slice(0,10),ownerId:currentUser.id});
-  // Auto-create a default group for the new workboard
-  DB.groups.push({id:uid(),clientId:DB.clients[0]?.id||'',workboardId:wbId,name:'Main',order:0});
+  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,ownerId:currentUser.id,description:'',archived:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+  DB.groups.push({id:uid(),clientId:DB.clients[0]?.id||'',workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
   saveDB(DB);closeCreateWbForm();renderSidebarWorkboards();renderView('dashboard');
 }
+// ── Board Sharing ──
+function openBoardShareModal(boardId){
+  const wb=DB.workboards.find(w=>w.id===boardId);if(!wb)return;
+  const shares=(DB.boardShares||[]).filter(s=>s.boardId===boardId);
+  const sharedIds=new Set(shares.map(s=>s.userId));
+  const staff=(DB.users||[]).filter(u=>u.role!=='client'&&u.id!==wb.ownerId&&u.active!==false);
+  const visLabels={'all_internal':'All internal staff','private':'Private (invite only)'};
+  document.getElementById('generic-modal-title').textContent=`Board Access — ${escHtml(wb.name)}`;
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="margin-bottom:16px">
+      <label class="form-label">Visibility</label>
+      <select id="bsm-vis" class="form-input" style="height:34px" onchange="saveBoardVisibility('${boardId}',this.value)">
+        <option value="all_internal"${wb.visibility==='all_internal'?' selected':''}>All internal staff</option>
+        <option value="private"${wb.visibility==='private'?' selected':''}>Private (invite only)</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Members with access</div>
+      <div style="font-size:12px;color:#0d1c33;display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:2px">
+        <span style="width:26px;height:26px;border-radius:50%;background:${(DB.users||[]).find(u=>u.id===wb.ownerId)?.displayColor||'#0d1c33'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${((DB.users||[]).find(u=>u.id===wb.ownerId)?.initials||'?')}</span>
+        <span>${escHtml((DB.users||[]).find(u=>u.id===wb.ownerId)?.name||'Owner')}</span>
+        <span style="font-size:11px;color:#8da2b2">Owner</span>
+      </div>
+      ${shares.map(s=>{const u=(DB.users||[]).find(x=>x.id===s.userId);if(!u)return'';return`
+      <div style="font-size:12px;color:#0d1c33;display:flex;align-items:center;gap:8px;padding:4px 0">
+        <span style="width:26px;height:26px;border-radius:50%;background:${u.displayColor||'#64748b'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${u.initials||'?'}</span>
+        <span style="flex:1">${escHtml(u.name)}</span>
+        <button onclick="removeBoardShare('${boardId}','${s.userId}')" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:11px;padding:2px 6px;border-radius:4px" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">Remove</button>
+      </div>`;}).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #f0f4f8">
+      <select id="bsm-add-user" class="form-input" style="height:32px;flex:1">
+        <option value="">Add staff member…</option>
+        ${staff.filter(u=>!sharedIds.has(u.id)).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+      </select>
+      <button onclick="addBoardShare('${boardId}')" class="btn btn-teal btn-sm" style="height:32px;white-space:nowrap">Add</button>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function saveBoardVisibility(boardId,visibility){
+  const wb=DB.workboards.find(w=>w.id===boardId);
+  if(!wb)return;
+  wb.visibility=visibility;
+  saveDB(DB);
+  renderSidebarWorkboards();
+  openBoardShareModal(boardId);
+}
+function addBoardShare(boardId){
+  const userId=document.getElementById('bsm-add-user')?.value;
+  if(!userId)return;
+  if(!DB.boardShares)DB.boardShares=[];
+  if(DB.boardShares.some(s=>s.boardId===boardId&&s.userId===userId))return;
+  DB.boardShares.push({id:'bs'+uid(),boardId,userId,addedAt:new Date().toISOString(),addedByUserId:currentUser.id});
+  saveDB(DB);
+  openBoardShareModal(boardId);
+}
+function removeBoardShare(boardId,userId){
+  DB.boardShares=(DB.boardShares||[]).filter(s=>!(s.boardId===boardId&&s.userId===userId));
+  saveDB(DB);
+  openBoardShareModal(boardId);
+}
+
 function toggleWbMenu(id){
   document.querySelectorAll('[id^="wb-menu-"]').forEach(el=>el.classList.add('hidden'));
   document.getElementById('wb-menu-'+id)?.classList.toggle('hidden');
 }
 function openRenameWb(id){
   const wb=DB.workboards.find(w=>w.id===id);if(!wb)return;
-  if(isPersonalBoard(wb)){showAlert('Personal Shenanigans cannot be renamed.','Cannot Rename');return;}
   showPrompt('Rename WorkBoard',wb.name,val=>{if(val){wb.name=val;saveDB(DB);renderSidebarWorkboards();renderView('dashboard');}});
 }
 function deleteWorkboard(id){
   const _wbToDelete=DB.workboards.find(w=>w.id===id);
-  if(_wbToDelete&&isPersonalBoard(_wbToDelete)){showAlert('Personal Shenanigans cannot be deleted.','Cannot Delete');return;}
   confirmCallback=()=>{
     DB.workboards=DB.workboards.filter(w=>w.id!==id);
     DB.tasks=DB.tasks.filter(t=>t.workboardId!==id);
@@ -2673,74 +2640,70 @@ function exportIcs(){
 // ═══════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════
-function poRenameStart(taskId){
-  const lbl=document.getElementById('po-lbl-'+taskId);
-  if(!lbl)return;
-  const task=(DB.personalTasks||[]).find(t=>t.id===taskId);
-  if(!task)return;
+
+// ── Personal Checklist (dashboard-only, flat list per user) ──
+function pclAdd(){
+  const inp=document.getElementById('pcl-new-input');
+  const name=(inp?.value||'').trim();
+  if(!name)return;
+  if(!DB.personalChecklist)DB.personalChecklist=[];
+  DB.personalChecklist.push({id:'pc'+uid(),userId:currentUser.id,name,done:false,order:DB.personalChecklist.filter(x=>x.userId===currentUser.id).length,createdAt:new Date().toISOString()});
+  saveDB(DB);
+  inp.value='';
+  renderPclWidget();
+}
+function pclToggle(id,checked){
+  const item=(DB.personalChecklist||[]).find(x=>x.id===id);
+  if(!item)return;
+  item.done=checked;
+  saveDB(DB);
+  renderPclWidget();
+}
+function pclDelete(id){
+  DB.personalChecklist=(DB.personalChecklist||[]).filter(x=>x.id!==id);
+  saveDB(DB);
+  renderPclWidget();
+}
+function pclRenameStart(id,span){
+  const item=(DB.personalChecklist||[]).find(x=>x.id===id);
+  if(!item)return;
   const inp=document.createElement('input');
-  inp.value=task.name;
-  inp.style.cssText='font-size:12px;color:#1a2940;flex:1;border:none;border-bottom:1.5px solid #97bcbd;outline:none;background:transparent;padding:0;font-family:Lato,sans-serif;width:100%';
-  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();poRenameCommit(taskId,inp.value);}if(e.key==='Escape')renderView('dashboard');e.stopPropagation();};
-  inp.onblur=()=>poRenameCommit(taskId,inp.value);
-  lbl.replaceWith(inp);inp.focus();inp.select();
+  inp.value=item.name;
+  inp.style.cssText='font-size:13px;color:#1a2940;flex:1;border:none;border-bottom:1.5px solid #97bcbd;outline:none;background:transparent;padding:0;font-family:Lato,sans-serif;width:100%';
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();pclRenameCommit(id,inp.value);}if(e.key==='Escape')renderPclWidget();e.stopPropagation();};
+  inp.onblur=()=>pclRenameCommit(id,inp.value);
+  span.replaceWith(inp);inp.focus();inp.select();
 }
-function poRenameCommit(taskId,name){
-  const task=(DB.personalTasks||[]).find(t=>t.id===taskId);
-  if(task&&name.trim()){task.name=name.trim();saveDB(DB);}
-  renderView('dashboard');
+function pclRenameCommit(id,name){
+  const item=(DB.personalChecklist||[]).find(x=>x.id===id);
+  if(item&&name.trim()){item.name=name.trim();saveDB(DB);}
+  renderPclWidget();
 }
-function poRenameColStart(groupId){
-  const lbl=document.getElementById('po-col-lbl-'+groupId);
-  if(!lbl)return;
-  const g=DB.groups.find(x=>x.id===groupId);
-  if(!g)return;
-  const inp=document.createElement('input');
-  inp.value=g.name;
-  inp.style.cssText='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;border:none;border-bottom:1.5px solid #97bcbd;outline:none;background:transparent;padding:0;font-family:Jost,sans-serif;width:80px';
-  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();poRenameColCommit(groupId,inp.value);}if(e.key==='Escape')renderView('dashboard');e.stopPropagation();};
-  inp.onblur=()=>poRenameColCommit(groupId,inp.value);
-  lbl.replaceWith(inp);inp.focus();inp.select();
-}
-function poRenameColCommit(groupId,name){
-  const g=DB.groups.find(x=>x.id===groupId);
-  if(g&&name.trim()){g.name=name.trim();saveDB(DB);}
-  renderView('dashboard');
-}
-function poToggle(taskId,checked){
-  if(!DB.personalTasks)return;
-  const t=DB.personalTasks.find(x=>x.id===taskId);
-  if(!t)return;
-  t.status=checked?'done':'todo';
-  t.completedAt=checked?new Date().toISOString():null;
-  saveDB(DB);
-  renderView('dashboard');
-}
-function poDelete(taskId){
-  if(!DB.personalTasks)return;
-  DB.personalTasks=DB.personalTasks.filter(t=>t.id!==taskId);
-  saveDB(DB);
-  renderView('dashboard');
-}
-function poAddItem(groupId){
-  document.getElementById('po-add-'+groupId)?.style && (document.getElementById('po-add-'+groupId).style.display='block');
-  setTimeout(()=>document.getElementById('po-input-'+groupId)?.focus(),30);
-}
-function poHideAdd(groupId){
-  const el=document.getElementById('po-add-'+groupId);
-  if(el)el.style.display='none';
-}
-function poSaveItem(groupId){
-  const input=document.getElementById('po-input-'+groupId);
-  const name=input?.value.trim();
-  if(!name)return poHideAdd(groupId);
-  const g=DB.groups.find(x=>x.id===groupId);
-  const wb=DB.workboards.find(w=>w.personal&&w.ownerId===currentUser.id);
-  if(!g||!wb)return;
-  if(!DB.personalTasks)DB.personalTasks=[];
-  DB.personalTasks.push({id:'pt'+uid(),groupId,workboardId:wb.id,name,status:'todo',ownerId:currentUser.id,priority:'med',percentComplete:0,endDate:'',tags:[],archived:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),completedAt:null,description:''});
-  saveDB(DB);
-  renderView('dashboard');
+function renderPclWidget(){
+  const container=document.getElementById('pcl-widget');
+  if(!container)return;
+  const items=(DB.personalChecklist||[]).filter(x=>x.userId===currentUser.id);
+  const todo=items.filter(x=>!x.done);
+  const done=items.filter(x=>x.done);
+  container.innerHTML=`
+    <div style="background:#fff;border:1.5px solid #e2eaf2;border-radius:12px;padding:16px 18px">
+      ${todo.map(item=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0" class="pcl-row">
+        <input type="checkbox" onchange="pclToggle('${item.id}',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#97bcbd;flex-shrink:0"/>
+        <span ondblclick="pclRenameStart('${item.id}',this)" style="font-size:13px;color:#1a2940;flex:1;line-height:1.4;cursor:text" title="Double-click to rename">${escHtml(item.name)}</span>
+        <button onclick="pclDelete('${item.id}')" style="background:none;border:none;cursor:pointer;color:#e0e0e0;font-size:12px;padding:0;opacity:0;transition:opacity 0.1s;flex-shrink:0" onmouseover="this.style.opacity=1;this.style.color='#dc2626'" onmouseout="this.style.opacity=0;this.style.color='#e0e0e0'" class="pcl-del">✕</button>
+      </div>`).join('')}
+      ${done.map(item=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;opacity:0.4" class="pcl-row">
+        <input type="checkbox" checked onchange="pclToggle('${item.id}',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#97bcbd;flex-shrink:0"/>
+        <span style="font-size:13px;color:#8da2b2;flex:1;text-decoration:line-through;line-height:1.4">${escHtml(item.name)}</span>
+        <button onclick="pclDelete('${item.id}')" style="background:none;border:none;cursor:pointer;color:#e0e0e0;font-size:12px;padding:0;opacity:0;transition:opacity 0.1s;flex-shrink:0" onmouseover="this.style.opacity=1;this.style.color='#dc2626'" onmouseout="this.style.opacity=0;this.style.color='#e0e0e0'" class="pcl-del">✕</button>
+      </div>`).join('')}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f4f8">
+        <input id="pcl-new-input" type="text" placeholder="Add item…" onkeydown="if(event.key==='Enter')pclAdd();if(event.key==='Escape')this.value=''" style="flex:1;border:none;outline:none;font-size:13px;color:#1a2940;font-family:'Lato',sans-serif;background:transparent;border-bottom:1.5px solid #e2eaf2;padding:3px 0;min-width:0" onfocus="this.style.borderBottomColor='#97bcbd'" onblur="this.style.borderBottomColor='#e2eaf2'"/>
+        <button onclick="pclAdd()" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;color:#97bcbd;font-family:'Jost',sans-serif;padding:0;white-space:nowrap" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Add</button>
+      </div>
+    </div>`;
 }
 function toggleDashStat(key){
   dashStatOpen=dashStatOpen===key?null:key;
@@ -2817,70 +2780,23 @@ function renderDashStatPanel(){
 function renderDashboard(){
   if(currentUser.role==='client') return renderClientDashboard();
   const allWbs=DB.workboards||[];
-  const myPersonalWb=allWbs.find(wb=>wb.personal&&wb.ownerId===currentUser.id);
-  const wbs=allWbs.filter(wb=>!wb.archived&&!wb.personal);
-  const archivedWbs=allWbs.filter(wb=>wb.archived&&!wb.personal);
+  const wbs=allWbs.filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
+  const archivedWbs=allWbs.filter(wb=>wb.archived&&canViewBoard(currentUser,wb));
   const allTasks=DB.tasks;
   const COLORS=['#0d1c33','#97bcbd','#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#f97316'];
-
-  const ptasks=DB.personalTasks||[];
-  const myPTasks=myPersonalWb?ptasks.filter(t=>t.workboardId===myPersonalWb.id):[];
-  const myPDone=myPTasks.filter(t=>t.status==='done').length;
-  const myPPct=myPTasks.length?Math.round(myPDone/myPTasks.length*100):0;
-  const myPGroups=myPersonalWb?(DB.groups||[]).filter(g=>g.workboardId===myPersonalWb.id):[];
-  const clr=myPersonalWb?.color||'#10b981';
+  const myPcl=(DB.personalChecklist||[]).filter(x=>x.userId===currentUser.id);
+  const myPclDone=myPcl.filter(x=>x.done).length;
 
   return`
-  <!-- Personal Organiser -->
-  ${myPersonalWb?`
+  <!-- Personal Checklist -->
   <div style="margin-bottom:28px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="3" stroke="${clr}" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="${clr}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <h2 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">Personal Shenanigans</h2>
-      <span style="font-size:10px;color:#b0bec5;background:#f0f4f8;padding:1px 8px;border-radius:8px">Private</span>
-      <span style="font-size:11px;color:#8da2b2;margin-left:auto">${myPDone}/${myPTasks.length} done</span>
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="3" stroke="#97bcbd" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="#97bcbd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h2 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">Personal Checklist</h2>
+      ${myPcl.length?`<span style="font-size:11px;color:#8da2b2;margin-left:auto">${myPclDone}/${myPcl.length} done</span>`:''}
     </div>
-    <div style="background:#fff;border:1.5px solid #e2eaf2;border-radius:12px;overflow:hidden">
-      <div style="height:3px;background:#f0f4f8"><div style="height:100%;background:${clr};width:${myPPct}%;transition:width 0.4s"></div></div>
-      <div style="display:grid;grid-template-columns:repeat(${myPGroups.length||1},1fr);gap:0">
-        ${myPGroups.map((g,gi)=>{
-          const gTasks=myPTasks.filter(t=>t.groupId===g.id);
-          const todo=gTasks.filter(t=>t.status!=='done');
-          const done=gTasks.filter(t=>t.status==='done');
-          return`
-          <div style="${gi>0?'border-left:1px solid #f0f4f8;':''}padding:12px 14px 10px;min-width:0">
-            <div class="po-col-hdr" style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-              <span id="po-col-lbl-${g.id}" style="font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap">${escHtml(g.name)}</span>
-              <button onclick="poRenameColStart('${g.id}')" style="background:none;border:none;cursor:pointer;padding:0 2px;color:#c8d4e0;font-size:10px;line-height:1;opacity:0;transition:opacity 0.15s" class="po-col-edit-btn" title="Rename column" onmouseover="this.style.color='#8da2b2'" onmouseout="this.style.color='#c8d4e0'">✎</button>
-              <span style="font-size:10px;color:#c8d4e0">${done.length}/${gTasks.length}</span>
-              <div style="flex:1"></div>
-              <button onclick="poAddItem('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#c8d4e0;padding:0;font-family:'Jost',sans-serif;font-weight:700;line-height:1" onmouseover="this.style.color='${clr}'" onmouseout="this.style.color='#c8d4e0'">+</button>
-            </div>
-            ${todo.map(t=>`
-            <div class="po-item" style="display:flex;align-items:center;gap:7px;padding:3px 0">
-              <input type="checkbox" onchange="poToggle('${t.id}',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:${clr};flex-shrink:0"/>
-              <span id="po-lbl-${t.id}" ondblclick="poRenameStart('${t.id}')" style="font-size:12px;color:#1a2940;flex:1;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text" title="Double-click to rename">${escHtml(t.name)}</span>
-              <button onclick="poDelete('${t.id}')" class="po-del" style="background:none;border:none;cursor:pointer;color:#e0e0e0;font-size:11px;opacity:0;transition:opacity 0.1s;padding:0;line-height:1;flex-shrink:0" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#e0e0e0'">✕</button>
-            </div>`).join('')}
-            ${done.map(t=>`
-            <div class="po-item" style="display:flex;align-items:center;gap:7px;padding:3px 0;opacity:0.4">
-              <input type="checkbox" checked onchange="poToggle('${t.id}',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:${clr};flex-shrink:0"/>
-              <span style="font-size:12px;color:#8da2b2;flex:1;text-decoration:line-through;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name)}</span>
-              <button onclick="poDelete('${t.id}')" class="po-del" style="background:none;border:none;cursor:pointer;color:#e0e0e0;font-size:11px;opacity:0;transition:opacity 0.1s;padding:0;line-height:1;flex-shrink:0" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#e0e0e0'">✕</button>
-            </div>`).join('')}
-            <div id="po-add-${g.id}" style="display:none;margin-top:6px">
-              <div style="display:flex;align-items:center;gap:6px">
-                <input id="po-input-${g.id}" type="text" placeholder="New item…" onkeydown="if(event.key==='Enter')poSaveItem('${g.id}');if(event.key==='Escape')poHideAdd('${g.id}')"
-                  style="flex:1;border:none;outline:none;font-size:12px;color:#1a2940;font-family:'Lato',sans-serif;background:transparent;border-bottom:1.5px solid ${clr};padding:2px 0;min-width:0"/>
-                <button onclick="poSaveItem('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:${clr};font-weight:700;font-family:'Jost',sans-serif;white-space:nowrap">Save</button>
-                <button onclick="poHideAdd('${g.id}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:#b0bec5">✕</button>
-              </div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>`:''}
+    <div id="pcl-widget"></div>
+  </div>
 
   <!-- Header -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap">
@@ -2907,6 +2823,13 @@ function renderDashboard(){
             style="width:22px;height:22px;border-radius:5px;background:${c};cursor:pointer;transition:transform 0.12s,outline 0.12s;outline:2px solid transparent;outline-offset:2px"
             title="${c}"></div>`).join('')}
         </div>
+      </div>
+      <div>
+        <label class="form-label">Access</label>
+        <select id="new-wb-visibility" class="form-input" style="height:36px">
+          <option value="all_internal">All internal staff</option>
+          <option value="private">Private (invite only)</option>
+        </select>
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="submitCreateWb()" class="btn btn-primary">Create</button>
@@ -4890,15 +4813,7 @@ let auditDateTo='';
 function renderAudit(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
-  // Exclude personal board entities from audit trail
-  const _personalTaskIds=new Set((DB.personalTasks||[]).map(t=>t.id));
-  const _personalBoardIds=new Set((DB.boards||[]).filter(b=>isPersonalBoard(b)).map(b=>b.id));
-  const log=[...(DB.auditLog||[])].filter(a=>{
-    if(!a.entityId)return true;
-    if(_personalTaskIds.has(a.entityId))return false;
-    if(_personalBoardIds.has(a.entityId))return false;
-    return true;
-  }).sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
+  const log=[...(DB.auditLog||[])].sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
 
   // Derive distinct entity types + actors
   const entityTypes=[...new Set(log.map(a=>a.entityType||'Unknown'))].sort();
@@ -5609,8 +5524,7 @@ function saveTask(){
   const _ed=document.getElementById('tm-end')?.value;
   if(_sd&&_ed&&_ed<_sd){showAlert('End date cannot be before start date.','Validation');return;}
   if(editingTaskId){
-    const _ptArr=DB.personalTasks||[];
-    const t=(currentWorkboard?.personal?_ptArr:DB.tasks).find(x=>x.id===editingTaskId)||DB.tasks.find(x=>x.id===editingTaskId)||_ptArr.find(x=>x.id===editingTaskId);
+    const t=DB.tasks.find(x=>x.id===editingTaskId);
     const old={status:t.status,ownerId:t.ownerId,currentlyWith:t.currentlyWith,startDate:t.startDate,endDate:t.endDate};
     t.name=name;
     t.groupId=document.getElementById('tm-group').value;
@@ -5728,10 +5642,7 @@ function saveTask(){
       dependencies:[],tags:[],archived:false,
       createdAt:_taskNow,updatedAt:_taskNow,completedAt:null
     };
-    if(currentWorkboard?.personal){
-      if(!DB.personalTasks)DB.personalTasks=[];
-      DB.personalTasks.push(newTask);
-    }else{
+    {
       DB.tasks.push(newTask);
       writeAuditEvent('Task',newTask.id,'created',null,{
         title:newTask.name,status:newTask.status,priority:newTask.priority,
@@ -5862,8 +5773,7 @@ function confirmDelete(type, id){
   confirmCallback=()=>{
     if(type==='task'){
       DB.tasks=DB.tasks.filter(t=>t.id!==id);
-      if(DB.personalTasks)DB.personalTasks=DB.personalTasks.filter(t=>t.id!==id);
-      DB.checklistItems=DB.checklistItems.filter(ci=>ci.taskId!==id);
+      DB.checklistItems=(DB.checklistItems||[]).filter(ci=>ci.taskId!==id);
       DB.comments=DB.comments.filter(c=>c.taskId!==id);
       DB.timeEntries=DB.timeEntries.filter(e=>e.taskId!==id);
     }else if(type==='client'){
@@ -5905,14 +5815,18 @@ function renderWbTabs(activeView){
     <div style="display:flex;align-items:center;gap:3px;padding:0 6px;border-right:1px solid #e2eaf2">
       <div style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0"></div>
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;padding:0 6px 0 4px;white-space:nowrap">${escHtml(wb.name)}</span>
-      ${isPersonalBoard(wb)?`<span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border:1px solid #e2eaf2;border-radius:8px;padding:1px 7px;margin-left:2px">Private</span>`:''}
+      ${wb.visibility==='private'?`<span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border:1px solid #e2eaf2;border-radius:8px;padding:1px 7px;margin-left:2px">Private</span>`:''}
     </div>
     ${tabs.map(t=>`<div class="ws-tab${activeView===t.v?' active':''}" onclick="navigate('${t.v}')">${t.icon} ${t.label}</div>`).join('')}
     <div style="margin-left:auto;padding:0 12px;display:flex;gap:7px;align-items:center;flex-shrink:0">
-      ${!isPersonalBoard(wb)?`<button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}">
+      ${(currentUser.role==='admin'||wb.ownerId===currentUser.id)?`<button onclick="openBoardShareModal('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Manage board access">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 8l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Shared with
+      </button>`:''}
+      <button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M14 9a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
         Comms${commsCount>0?` <span style="background:#97bcbd;color:#0d1c33;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${commsCount}</span>`:''}
-      </button>`:''}
+      </button>
       <button onclick="openTaskModal(null)" class="btn btn-teal btn-sm" style="font-size:12px;height:28px">+ New Item</button>
     </div>
   </div>`;
@@ -5937,7 +5851,7 @@ function wsSaveInlineTask(){
   const ownerId=document.getElementById('ws-inline-owner')?.value||currentUser.id;
   const _now=new Date().toISOString();
   const _inlineTask={id:'t'+uid(),groupId:wsInlineAddGroupId||getWbDefaultGroup(),workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',name,status,priority,ownerId,currentlyWith:ownerId,percentComplete:0,startDate:new Date().toISOString().slice(0,10),endDate:'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
-  if(currentWorkboard?.personal){if(!DB.personalTasks)DB.personalTasks=[];DB.personalTasks.push(_inlineTask);}else{DB.tasks.push(_inlineTask);}
+  DB.tasks.push(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
 }
 function wsCancelInlineAdd(){wsInlineAddSectionId=null;wsInlineAddGroupId=null;renderView('workspace');}
@@ -5949,17 +5863,11 @@ function wsSaveInlineGroup(){
   const wbId=currentWorkboard?.id;
   if(!wbId)return;
   const existing=DB.groups.filter(g=>g.workboardId===wbId||g.boardId===wbId);
-  if(isPersonalBoard(currentWorkboard)){
-    // Personal board — no client association
-    const color=currentWorkboard.color||'#97bcbd';
-    DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId:null,name,color,order:existing.length,createdAt:new Date().toISOString()});
-  }else{
-    const clientId=document.getElementById('ws-inline-group-client')?.value||(DB.clients[0]?.id||'');
-    if(!clientId)return;
-    const client=DB.clients.find(c=>c.id===clientId);
-    const color=client?.color||'#97bcbd';
-    DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
-  }
+  const clientId=document.getElementById('ws-inline-group-client')?.value||(DB.clients[0]?.id||'');
+  if(!clientId)return;
+  const client=DB.clients.find(c=>c.id===clientId);
+  const color=client?.color||'#97bcbd';
+  DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
   saveDB(DB);
   wsAddGroupInline=false;
   renderView('workspace');
@@ -6516,15 +6424,14 @@ function renderWorkspace(){
           ${wsMtSearch?`<div style="margin-top:6px"><button onclick="wsMtSearch='';renderView('workspace')" class="btn btn-ghost btn-sm">Clear search</button></div>`:''}
         </td></tr>`:''}
         ${wsAddGroupInline&&wsGroupBy==='group'?(()=>{
-          const _isPS=isPersonalBoard(currentWorkboard);
           const _igClient=DB.clients.find(c=>c.id===activeFilters.clientId)||DB.clients[0];
-          const _igColor=_isPS?(currentWorkboard?.color||'#97bcbd'):(_igClient?.color||'#97bcbd');
-          const _igClientOpts=!_isPS?DB.clients.map((c,i)=>`<option value="${c.id}"${(activeFilters.clientId===c.id||(activeFilters.clientId==='all'&&i===0))?' selected':''}>${escHtml(c.name)}</option>`).join(''):'';
+          const _igColor=_igClient?.color||'#97bcbd';
+          const _igClientOpts=DB.clients.map((c,i)=>`<option value="${c.id}"${(activeFilters.clientId===c.id||(activeFilters.clientId==='all'&&i===0))?' selected':''}>${escHtml(c.name)}</option>`).join('');
           return`<tr class="ws-inline-row">
             <td style="width:36px;padding:0 0 0 12px"><input type="checkbox" disabled style="opacity:.3"/></td>
             <td colspan="${totalCols-1}" id="ws-inline-group-border" style="padding:8px 12px 8px 16px;border-left:4px solid ${_igColor}">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                ${!_isPS?`<select id="ws-inline-group-client" class="ws-inline-select" onchange="wsInlineGroupClientChange(this)" style="height:28px;font-size:12px;flex-shrink:0">${_igClientOpts}</select>`:''}
+                <select id="ws-inline-group-client" class="ws-inline-select" onchange="wsInlineGroupClientChange(this)" style="height:28px;font-size:12px;flex-shrink:0">${_igClientOpts}</select>
                 <input id="ws-inline-group-name" type="text" class="ws-inline-input"
                   placeholder="Group name — press Enter to save, Esc to cancel"
                   style="flex:1;min-width:180px"
@@ -6765,7 +6672,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
 // TASK PANEL
 // ═══════════════════════════════════════════════════════════
 function openTaskPanel(taskId,tab){
-  const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
+  const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return;
   _tpCurrentTask=task;
   const panel=document.getElementById('task-panel');
@@ -7295,7 +7202,7 @@ function restoreWorkboard(id){
 let _wsCellTask=null,_wsCellField=null;
 
 function wsBuildDropdownHtml(taskId,field){
-  const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
+  const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return'';
   let html='';
   if(field==='status'){
@@ -7448,7 +7355,7 @@ function wsBuildDepsHtml(taskId){
     <div style="max-height:180px;overflow-y:auto">
       ${myDeps.length===0?`<div style="padding:8px 12px;font-size:12px;color:#8da2b2;font-style:italic">No dependencies</div>`:''}
       ${myDeps.map(d=>{
-        const pred=DB.tasks.find(t=>t.id===d.predecessorTaskId)||(DB.personalTasks||[]).find(t=>t.id===d.predecessorTaskId);
+        const pred=DB.tasks.find(t=>t.id===d.predecessorTaskId);
         const predName=pred?.name||pred?.title||d.predecessorTaskId;
         const sm=pred?getStatusMeta(pred.status):null;
         return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px;padding:6px 12px">
@@ -7550,7 +7457,7 @@ function wsCellOpen(taskId,field,evt){
 function wsCellSave(taskId,field,value){
   // Custom column values (cc_ prefix)
   if(field.startsWith('cc_')){mtSetCustomVal(taskId,field.slice(3),value);return;}
-  const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
+  const task=DB.tasks.find(t=>t.id===taskId);
   if(!canEditTask(currentUser,task||{}))return; // AC: block clients and archived tasks
   if(task){
     const oldVal=task[field];
@@ -7643,7 +7550,7 @@ function wsDeleteCustomLabel(fieldType,key){
 // ── Inline name editing ──
 function wsInlineEditName(taskId,span){
   closeTaskPanel();
-  const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
+  const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return;
   const inp=document.createElement('input');
   inp.value=task.name;
@@ -7655,7 +7562,7 @@ function wsInlineEditName(taskId,span){
 }
 function wsCommitInlineName(taskId,inp){
   const name=inp.value.trim();
-  const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
+  const task=DB.tasks.find(t=>t.id===taskId);
   if(task&&name){task.name=name;task.updatedAt=new Date().toISOString();saveDB(DB);}
   renderView('workspace');
 }
