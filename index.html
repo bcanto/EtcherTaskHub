@@ -1082,6 +1082,35 @@ let selectedNoteClientId=null;
 let selectedNoteSectionId=null;
 let editingTaskId=null;
 let confirmCallback=null;
+// ── Styled dialog helpers (replace native alert/confirm/prompt) ──────────────
+function showAlert(msg,title='Notice'){
+  document.getElementById('generic-modal-title').textContent=title;
+  document.getElementById('generic-modal-body').innerHTML=`<p style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:20px">${escHtml(msg)}</p><div style="display:flex;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-teal btn-sm">OK</button></div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+let _promptCb=null;
+function showPrompt(title,defaultVal,cb){
+  _promptCb=cb;
+  document.getElementById('generic-modal-title').textContent=title;
+  document.getElementById('generic-modal-body').innerHTML=`<input id="sp-val" class="form-input" value="${escHtml(defaultVal||'')}" style="margin-bottom:16px" onkeydown="if(event.key==='Enter')_spOk();if(event.key==='Escape')closeGenericModal()"/><div style="display:flex;gap:10px;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button><button onclick="_spOk()" class="btn btn-teal">OK</button></div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('sp-val')?.select(),40);
+}
+function _spOk(){
+  const val=(document.getElementById('sp-val')?.value||'').trim();
+  closeGenericModal();
+  if(_promptCb){_promptCb(val);_promptCb=null;}
+}
+function openConfirm(title,msg,okLabel,cb,danger=true){
+  confirmCallback=cb;
+  document.getElementById('confirm-title').textContent=title||'Confirm';
+  document.getElementById('confirm-msg').textContent=msg;
+  const btn=document.getElementById('confirm-ok-btn');
+  btn.textContent=okLabel||'Confirm';
+  btn.className='btn '+(danger?'btn-danger':'btn-teal');
+  btn.onclick=cb;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
 // WorkBoard state
 let currentWorkboard=null;
 let selectedWbColor='#0d1c33';
@@ -1272,7 +1301,9 @@ function renderUniversalToolbar(view,opts){
   const matched=typeof opts.itemCount==='number'?opts.itemCount:getFilteredTasks().length;
   const clientOpts=DB.clients.map(c=>`<option value="${c.id}"${f.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${f.staffId===s.id?' selected':''}>${escHtml(s.name.split(' ')[0])}</option>`).join('');
-  const gList=f.clientId!=='all'?DB.groups.filter(g=>g.clientId===f.clientId):DB.groups;
+  const _psWbIds=new Set((DB.boards||DB.workboards||[]).filter(b=>isPersonalBoard(b)).map(b=>b.id));
+  const _nonPsGroups=DB.groups.filter(g=>!_psWbIds.has(g.boardId||g.workboardId));
+  const gList=f.clientId!=='all'?_nonPsGroups.filter(g=>g.clientId===f.clientId):_nonPsGroups;
   const groupOpts=gList.map(g=>{const cl=DB.clients.find(c=>c.id===g.clientId);return`<option value="${g.id}"${f.groupId===g.id?' selected':''}>${cl?escHtml(cl.shortCode||cl.name)+' — ':''}${escHtml(g.name)}</option>`;}).join('');
   const viewControls=(opts.viewControlsHtml!=null?opts.viewControlsHtml:_utViewControls(view));
   const personChipsHtml=view==='workspace'?_utPersonChips():'';
@@ -1460,6 +1491,9 @@ function applyRolePermissions(){
     const el=document.getElementById(id);
     if(el)el.style.display=isClient?'none':'';
   });
+  // Capacity: only visible to admins or staff with allowMasterCapacity
+  const capEl=document.getElementById('nav-capacity-item');
+  if(capEl)capEl.style.display=canViewMasterCapacity(currentUser)?'':'none';
   if(isClient){
     document.getElementById('new-task-btn').classList.add('hidden');
   }
@@ -2309,13 +2343,12 @@ function toggleWbMenu(id){
 }
 function openRenameWb(id){
   const wb=DB.workboards.find(w=>w.id===id);if(!wb)return;
-  if(isPersonalBoard(wb)){alert('Personal Shenanigans cannot be renamed.');return;}
-  const name=prompt('Rename WorkBoard:',wb.name);
-  if(name&&name.trim()){wb.name=name.trim();saveDB(DB);renderSidebarWorkboards();renderView('dashboard');}
+  if(isPersonalBoard(wb)){showAlert('Personal Shenanigans cannot be renamed.','Cannot Rename');return;}
+  showPrompt('Rename WorkBoard',wb.name,val=>{if(val){wb.name=val;saveDB(DB);renderSidebarWorkboards();renderView('dashboard');}});
 }
 function deleteWorkboard(id){
   const _wbToDelete=DB.workboards.find(w=>w.id===id);
-  if(_wbToDelete&&isPersonalBoard(_wbToDelete)){alert('Personal Shenanigans cannot be deleted.');return;}
+  if(_wbToDelete&&isPersonalBoard(_wbToDelete)){showAlert('Personal Shenanigans cannot be deleted.','Cannot Delete');return;}
   confirmCallback=()=>{
     DB.workboards=DB.workboards.filter(w=>w.id!==id);
     DB.tasks=DB.tasks.filter(t=>t.workboardId!==id);
@@ -2580,7 +2613,7 @@ function schedTypeChanged(){
 
 function saveSchedEvent(existingId){
   const title=(document.getElementById('sched-title').value||'').trim();
-  if(!title)return alert('Title is required');
+  if(!title){showAlert('Title is required.','Validation');return;}
   if(!DB.scheduleEvents)DB.scheduleEvents=[];
   const attendees=DB.staff.filter(s=>{const el=document.getElementById('sched-att-'+s.id);return el&&el.checked;}).map(s=>s.id);
   const teamsEl=document.getElementById('sched-teams-link');
@@ -2605,14 +2638,15 @@ function saveSchedEvent(existingId){
 }
 
 function deleteSchedEvent(id){
-  if(!confirm('Delete this event?'))return;
-  DB.scheduleEvents=(DB.scheduleEvents||[]).filter(e=>e.id!==id);
-  saveDB(DB);closeGenericModal();renderView('schedule');
+  openConfirm('Delete Event','Delete this event? This cannot be undone.','Delete',()=>{
+    DB.scheduleEvents=(DB.scheduleEvents||[]).filter(e=>e.id!==id);
+    saveDB(DB);closeConfirm();closeGenericModal();renderView('schedule');
+  });
 }
 
 function exportIcs(){
   const evts=getMyEvents();
-  if(!evts.length){alert('No events to export.');return;}
+  if(!evts.length){showAlert('No events to export.');return;}
   const pad2=n=>String(n).padStart(2,'0');
   const toIcsDt=(ds,ts)=>{if(!ds)return'';const[y,m,d]=ds.split('-');if(!ts)return`${y}${m}${d}`;const[h,mn]=ts.split(':');return`${y}${m}${d}T${pad2(+h)}${pad2(+mn)}00`;};
   const esc=s=>(s||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
@@ -4059,11 +4093,17 @@ function openClientModal(id){
 }
 function saveClient(id){
   const name=document.getElementById('cm-name').value.trim();
-  if(!name)return alert('Name required');
+  if(!name){showAlert('Client name is required.','Validation');return;}
   if(id){
     const c=DB.clients.find(x=>x.id===id);
     c.name=name;c.shortCode=document.getElementById('cm-code').value.trim();
-    c.color=document.getElementById('cm-color').value;
+    const newColor=document.getElementById('cm-color').value;
+    if(newColor!==c.color){
+      c.color=newColor;
+      // Propagate colour to all boards and groups that belong to this client
+      (DB.boards||DB.workboards||[]).filter(b=>b.clientId===id).forEach(b=>{b.color=newColor;});
+      DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=newColor;});
+    }else{c.color=newColor;}
     c.loginEmail=document.getElementById('cm-email').value.trim();
     c.loginPassword=document.getElementById('cm-pw').value.trim();
   }else{
@@ -4088,7 +4128,7 @@ function applyHourBudgetPct(taskId){
 
 // Log a time entry from inside the task modal.
 function logTimeFromModal(taskId){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return;
   const date=document.getElementById('tte-date')?.value;
@@ -4097,9 +4137,9 @@ function logTimeFromModal(taskId){
   const billable=document.getElementById('tte-billable')?.checked!==false;
   const staffId=document.getElementById('tte-staff')?.value||currentUser.id;
   // Validate
-  if(!date)return alert('Date is required.');
-  if(isNaN(hours)||hours<=0)return alert('Hours must be greater than 0.');
-  if(!staffId)return alert('Staff member is required.');
+  if(!date){showAlert('Date is required.','Validation');return;}
+  if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
+  if(!staffId){showAlert('Staff member is required.','Validation');return;}
   const clientId=task.clientId||(getTaskClient(task)?.id)||'';
   const mEntry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   DB.timeEntries.push(mEntry);
@@ -4128,10 +4168,13 @@ function tmOnPercentModeChange(mode){
   if(mode==='hour_budget'){
     let bv=parseFloat(budgetInput?.value||'0');
     if(!bv){
-      const raw=prompt('Enter hour budget for this task (hours):','');
-      if(!raw||isNaN(parseFloat(raw))){document.getElementById('tm-pmode').value='manual';return;}
-      bv=parseFloat(raw);
-      if(budgetInput)budgetInput.value=bv;
+      showPrompt('Set Hour Budget','',val=>{
+        const n=parseFloat(val);
+        if(!val||isNaN(n)){document.getElementById('tm-pmode').value='manual';return;}
+        if(budgetInput)budgetInput.value=n;
+        tmOnPercentModeChange('hour_budget');
+      });
+      document.getElementById('tm-pmode').value='manual';return;
     }
     // Show computed pct, lock input
     if(pctInput&&editingTaskId){
@@ -4220,7 +4263,7 @@ function renderTime(){
 }
 
 function logTime(){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const taskId=document.getElementById('te-task')?.value;
   const staffId=document.getElementById('te-staff')?.value||currentUser.id;
   const hours=parseFloat(document.getElementById('te-hours')?.value||'0');
@@ -4228,10 +4271,10 @@ function logTime(){
   const note=(document.getElementById('te-note')?.value||'').trim();
   const billable=document.getElementById('te-billable')?.checked!==false;
   // Validation
-  if(!taskId)return alert('Task is required.');
-  if(!staffId)return alert('Staff member is required.');
-  if(!date)return alert('Date is required.');
-  if(isNaN(hours)||hours<=0)return alert('Hours must be greater than 0.');
+  if(!taskId){showAlert('Task is required.','Validation');return;}
+  if(!staffId){showAlert('Staff member is required.','Validation');return;}
+  if(!date){showAlert('Date is required.','Validation');return;}
+  if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
   const task=DB.tasks.find(t=>t.id===taskId);
   const clientId=(task?task.clientId||(getTaskClient(task)?.id):'')||'';
   const entry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
@@ -4536,7 +4579,7 @@ function _rptInvoiceHtml(){
 }
 
 function rptExportCSV(){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const rate=parseFloat(document.getElementById('rpt-rate')?.value)||150;
   const startDate=rptDateFrom||'0000-01-01';
   const endDate=rptDateTo||'9999-12-31';
@@ -4563,7 +4606,7 @@ function rptExportCSV(){
 }
 
 function rptPrintPDF(){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   window.print();
 }
 
@@ -4779,7 +4822,7 @@ function generateProFormaInvoicePdf(data){
 
 // Validates inputs, builds report data, generates and downloads the PDF.
 function rptExportPDF(){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
 
   const btn=document.getElementById('rpt-export-pdf-btn');
   const setBusy=(loading)=>{
@@ -4795,9 +4838,9 @@ function rptExportPDF(){
   setTimeout(()=>{
     try{
       const data=buildProFormaReportData();
-      if(data.error){alert(data.error);setBusy(false);return;}
+      if(data.error){showAlert(data.error,'PDF Error');setBusy(false);return;}
       if(!data.summaryRows.length&&!data.detailRows.length){
-        alert('No billable time entries found for the selected client and date range.');
+        showAlert('No billable time entries found for the selected client and date range.');
         setBusy(false);return;
       }
 
@@ -4826,7 +4869,7 @@ function rptExportPDF(){
 
     }catch(err){
       console.error('PDF generation error:',err);
-      alert('Could not generate PDF. Please try again.\n\n'+err.message);
+      showAlert('Could not generate PDF. Please try again.\n\n'+err.message,'PDF Error');
     }finally{
       setBusy(false);
     }
@@ -5144,7 +5187,7 @@ function openStaffModal(id){
 function saveStaff(id){
   const name=document.getElementById('sm-name').value.trim();
   const email=document.getElementById('sm-email').value.trim();
-  if(!name||!email)return alert('Name and email required');
+  if(!name||!email){showAlert('Name and email are required.','Validation');return;}
   if(id){
     const s=DB.staff.find(x=>x.id===id);
     s.name=name;s.email=email;s.password=document.getElementById('sm-pw').value;
@@ -5559,12 +5602,12 @@ function tmRemoveDep(depId,taskId){
   openTaskModal(taskId); // refresh modal
 }
 function saveTask(){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const name=document.getElementById('tm-name')?.value.trim();
-  if(!name)return alert('Task name is required.');
+  if(!name){showAlert('Task name is required.','Validation');return;}
   const _sd=document.getElementById('tm-start')?.value;
   const _ed=document.getElementById('tm-end')?.value;
-  if(_sd&&_ed&&_ed<_sd)return alert('End date cannot be before start date.');
+  if(_sd&&_ed&&_ed<_sd){showAlert('End date cannot be before start date.','Validation');return;}
   if(editingTaskId){
     const _ptArr=DB.personalTasks||[];
     const t=(currentWorkboard?.personal?_ptArr:DB.tasks).find(x=>x.id===editingTaskId)||DB.tasks.find(x=>x.id===editingTaskId)||_ptArr.find(x=>x.id===editingTaskId);
@@ -5603,7 +5646,7 @@ function saveTask(){
     if(depEl){
       const selected=[...depEl.selectedOptions].map(o=>o.value);
       const circular=selected.find(d=>wouldCycle(t.id,d));
-      if(circular){const bad=DB.tasks.find(x=>x.id===circular);alert(`Circular dependency detected with "${bad?bad.name:circular}". Dependency not saved.`);return;}
+      if(circular){const bad=DB.tasks.find(x=>x.id===circular);showAlert(`Circular dependency detected with "${bad?bad.name:circular}". Dependency not saved.`,'Circular Dependency');return;}
       t.dependencies=selected;
       // Keep DB.dependencies entity list in sync (Dependency model)
       if(!DB.dependencies) DB.dependencies=[];
@@ -5739,7 +5782,7 @@ function _renderCommentBody(body){
 }
 
 function addComment(taskId){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const inp=document.getElementById('tm-comment-new');
   const body=inp?.value.trim();
   if(!body)return;
@@ -5815,7 +5858,7 @@ function addComment(taskId){
 // CONFIRM + DELETE
 // ═══════════════════════════════════════════════════════════
 function confirmDelete(type, id){
-  try{requireInternalUser(currentUser);}catch(e){return alert(e.message);}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   confirmCallback=()=>{
     if(type==='task'){
       DB.tasks=DB.tasks.filter(t=>t.id!==id);
@@ -5937,7 +5980,7 @@ async function wsSendComms(){
   if(!body&&wsCommsFiles.length===0)return;
   const attachments=[];
   for(const file of wsCommsFiles){
-    if(file.size>4*1024*1024){alert(`"${file.name}" is over 4 MB — skipped to protect storage.`);continue;}
+    if(file.size>4*1024*1024){showAlert(`"${file.name}" is over 4 MB — skipped to protect storage.`,'File Too Large');continue;}
     const data=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
     attachments.push({name:file.name,type:file.type,data});
   }
@@ -6023,7 +6066,12 @@ function renderCommsPanel(){
 }
 
 function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);renderView('workspace');}
-function wsToggleExpand(id){wsExpanded.has(id)?wsExpanded.delete(id):wsExpanded.add(id);renderView('workspace');}
+function wsToggleExpand(id){
+  const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
+  if(!hasChildren&&!wsExpanded.has(id)){wsStartInlineSubitem(id);return;}
+  wsExpanded.has(id)?wsExpanded.delete(id):wsExpanded.add(id);
+  renderView('workspace');
+}
 function wsToggleDone(id,checked){
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   t.status=checked?'done':'not-started';
@@ -6088,11 +6136,13 @@ function wsBulkArchiveTasks(){
   wsSelected.clear();saveDB(DB);renderView('workspace');
 }
 function wsBulkDeleteTasks(){
-  if(!confirm(`Delete ${wsSelected.size} task${wsSelected.size!==1?'s':''}? This cannot be undone.`))return;
-  const ids=[...wsSelected];
-  DB.tasks=DB.tasks.filter(t=>!ids.includes(t.id));
-  DB.checklistItems=DB.checklistItems.filter(ci=>!ids.includes(ci.taskId));
-  wsSelected.clear();saveDB(DB);renderView('workspace');
+  const n=wsSelected.size;
+  openConfirm('Delete Tasks',`Delete ${n} task${n!==1?'s':''}? This cannot be undone.`,'Delete',()=>{
+    const ids=[...wsSelected];
+    DB.tasks=DB.tasks.filter(t=>!ids.includes(t.id));
+    DB.checklistItems=DB.checklistItems.filter(ci=>!ids.includes(ci.taskId));
+    wsSelected.clear();saveDB(DB);closeConfirm();renderView('workspace');
+  });
 }
 function wsSortBy(col){
   if(wsSort.col===col)wsSort.dir=wsSort.dir==='asc'?'desc':'asc';
@@ -6368,12 +6418,12 @@ function wsDeleteGroup(groupId){
   const msg=taskCount
     ?`Delete group "${g.name}" and its ${taskCount} task${taskCount!==1?'s':''}? This cannot be undone.`
     :`Delete group "${g.name}"? This cannot be undone.`;
-  if(!confirm(msg))return;
-  DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);
-  DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));
-  DB.groups=DB.groups.filter(g=>g.id!==groupId);
-  saveDB(DB);
-  renderView('workspace');
+  openConfirm('Delete Group',msg,'Delete',()=>{
+    DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);
+    DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));
+    DB.groups=DB.groups.filter(g=>g.id!==groupId);
+    saveDB(DB);closeConfirm();renderView('workspace');
+  });
 }
 function wsStartRenameGroup(secId){
   const nameEl=document.getElementById('ws-grp-name-'+secId);
@@ -7010,10 +7060,11 @@ function renderTpComments(taskId){
   // AC: internal comments are not visible to clients
   if(currentUser?.role==='client')
     return`<div style="text-align:center;padding:32px 0;color:#8da2b2;font-size:13px">Comments are not available in the client portal.</div>`;
-  const comments=(DB.comments||[]).filter(c=>c.taskId===taskId).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+  const comments=(DB.comments||[]).filter(c=>c.taskId===taskId).sort((a,b)=>(a.timestamp||a.createdAt||'').localeCompare(b.timestamp||b.createdAt||''));
   const isInternal=currentUser?.role==='admin'||currentUser?.role==='staff';
   return`<div>
     ${comments.length?comments.map(c=>{
+      const _cTs=c.timestamp||c.createdAt||'';
       const author=DB.staff.find(s=>s.id===c.authorId)||{name:'Unknown',initials:'?',color:'#8da2b2'};
       const canDel=currentUser&&(currentUser.id===c.authorId||currentUser.role==='admin');
       return`<div style="display:flex;gap:10px;margin-bottom:16px">
@@ -7021,7 +7072,7 @@ function renderTpComments(taskId){
         <div style="flex:1">
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
             <span style="font-size:13px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>
-            <span style="font-size:11px;color:#a0b4c7">${new Date(c.timestamp).toLocaleDateString()}</span>
+            <span style="font-size:11px;color:#a0b4c7">${_cTs?new Date(_cTs).toLocaleDateString():''}</span>
             ${canDel?`<button onclick="tpDeleteComment('${c.id}')" style="margin-left:auto;border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
           </div>
           <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:#f8fbff;border-radius:8px;padding:8px 12px">${escHtml(c.body)}</div>
@@ -7037,12 +7088,12 @@ function renderTpComments(taskId){
 }
 
 function renderTpActivity(task){
-  const comments=(DB.comments||[]).filter(c=>c.taskId===task.id).sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+  const comments=(DB.comments||[]).filter(c=>c.taskId===task.id).sort((a,b)=>(a.timestamp||a.createdAt||'').localeCompare(b.timestamp||b.createdAt||''));
   const items=[];
   if(task.createdAt) items.push({type:'created',ts:task.createdAt,label:'Task created'});
   comments.forEach(c=>{
     const author=DB.staff.find(s=>s.id===c.authorId)||{name:'Unknown',initials:'?',color:'#8da2b2'};
-    items.push({type:'comment',ts:c.timestamp,label:escHtml(author.name)+' commented: "'+escHtml(c.body.slice(0,60))+(c.body.length>60?'...':'')+'"'});
+    items.push({type:'comment',ts:c.timestamp||c.createdAt||'',label:escHtml(author.name)+' commented: "'+escHtml(c.body.slice(0,60))+(c.body.length>60?'...':'')+'"'});
   });
   if(task.completedAt) items.push({type:'completed',ts:task.completedAt,label:'Task completed'});
   items.sort((a,b)=>a.ts.localeCompare(b.ts));
@@ -7263,7 +7314,8 @@ function tpAddComment(){
   const inp=document.getElementById('tp-comment-input');
   const body=(inp?inp.value:'').trim();
   if(!body)return;
-  const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:new Date().toISOString()};
+  const _now=new Date().toISOString();
+  const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
   if(_tpCurrentTask.ownerId&&_tpCurrentTask.ownerId!==currentUser.id){
     DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:'New comment on: '+_tpCurrentTask.name,createdAt:new Date().toISOString()});
@@ -7293,16 +7345,16 @@ function tpArchiveTask(){
 function tpDeleteTask(){
   if(!_tpCurrentTask)return;
   const id=_tpCurrentTask.id;
-  if(!confirm('Delete this task and all its subitems? This cannot be undone.'))return;
-  function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
-  const ids=new Set(collectIds(id));
-  DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
-  DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
-  DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-  DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
-  saveDB(DB);
-  closeTaskPanel();
-  renderView(currentView);
+  const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
+  openConfirm('Delete Task',hasChildren?'Delete this task and all its subitems? This cannot be undone.':'Delete this task? This cannot be undone.','Delete',()=>{
+    function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
+    const ids=new Set(collectIds(id));
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
+    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    saveDB(DB);closeConfirm();closeTaskPanel();renderView(currentView);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -7317,11 +7369,11 @@ function saveWbColor(id,color){
   renderView('dashboard');
 }
 function archiveWorkboard(id){
-  if(!confirm('Archive this WorkBoard? It can be restored later.'))return;
-  const wb=DB.workboards.find(w=>w.id===id);
-  if(wb){wb.archived=true;saveDB(DB);}
-  renderSidebarWorkboards();
-  renderView('dashboard');
+  openConfirm('Archive WorkBoard','Archive this WorkBoard? It can be restored later.','Archive',()=>{
+    const wb=DB.workboards.find(w=>w.id===id);
+    if(wb){wb.archived=true;saveDB(DB);}
+    closeConfirm();renderSidebarWorkboards();renderView('dashboard');
+  },false);
 }
 
 function duplicateWorkboard(id){
@@ -7711,7 +7763,7 @@ function wsAddAttachment(taskId,input){
   const process=arr=>{
     if(!arr.length)return;
     const f=arr[0];const rest=arr.slice(1);
-    if(f.size>MAX){alert(`"${f.name}" exceeds the 500 KB limit and was skipped.`);process(rest);return;}
+    if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was skipped.`,'File Too Large');process(rest);return;}
     const reader=new FileReader();
     reader.onload=e=>{
       DB.taskFiles.push({id:uid(),taskId,name:f.name,size:f.size,type:f.type,dataUrl:e.target.result,addedAt:new Date().toISOString()});
@@ -7790,16 +7842,15 @@ function mtAddCustomCol(type,name){
   saveDB(DB);renderView('workspace');
 }
 function mtDeleteCustomCol(colId){
-  if(!confirm('Delete this column and all its data?'))return;
-  DB.customColumns=(DB.customColumns||[]).filter(c=>c.id!==colId);
-  DB.customColumnValues=(DB.customColumnValues||[]).filter(v=>v.columnId!==colId);
-  saveDB(DB);renderView('workspace');
+  openConfirm('Delete Column','Delete this column and all its data? This cannot be undone.','Delete',()=>{
+    DB.customColumns=(DB.customColumns||[]).filter(c=>c.id!==colId);
+    DB.customColumnValues=(DB.customColumnValues||[]).filter(v=>v.columnId!==colId);
+    saveDB(DB);closeConfirm();renderView('workspace');
+  });
 }
 function mtRenameCustomCol(colId){
   const col=(DB.customColumns||[]).find(c=>c.id===colId);if(!col)return;
-  const name=prompt('Rename column:',col.name);
-  if(!name||!name.trim())return;
-  col.name=name.trim();saveDB(DB);renderView('workspace');
+  showPrompt('Rename Column',col.name,val=>{if(val){col.name=val;saveDB(DB);renderView('workspace');}});
 }
 function mtColMenu(colId,evt){
   evt.stopPropagation();
