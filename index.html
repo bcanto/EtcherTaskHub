@@ -6711,7 +6711,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${escHtml(t.name)}</span>
-        ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}')" title="${commentCount} comment${commentCount!==1?'s':''}"
+        ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}','comments')" title="${commentCount} comment${commentCount!==1?'s':''} — click to open"
           style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0"
           onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M14 9a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
@@ -6828,7 +6828,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth){
 // ═══════════════════════════════════════════════════════════
 // TASK PANEL
 // ═══════════════════════════════════════════════════════════
-function openTaskPanel(taskId){
+function openTaskPanel(taskId,tab){
   const task=DB.tasks.find(t=>t.id===taskId)||(DB.personalTasks||[]).find(t=>t.id===taskId);
   if(!task)return;
   _tpCurrentTask=task;
@@ -6841,6 +6841,7 @@ function openTaskPanel(taskId){
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       panel.style.transform='translateX(0)';
+      if(tab)tpShowTab(tab);
     });
   });
   setTimeout(()=>{const el=document.getElementById('tp-title');if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}},300);
