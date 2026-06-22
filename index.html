@@ -134,6 +134,22 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-task-row{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:8px;transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease)}
 .cp-task-row:hover{border-color:#97bcbd;box-shadow:0 2px 10px rgba(151,188,189,0.14)}
 .cp-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;font-family:'Jost',sans-serif}
+/* ── Client Portal: new components ── */
+.cp-task-list-row{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.18s var(--ease),box-shadow 0.18s var(--ease);outline:none}
+.cp-task-list-row:hover{border-color:#97bcbd;box-shadow:var(--sh-sm)}
+.cp-task-list-row:focus-visible{border-color:#0d6e4e;box-shadow:0 0 0 3px rgba(13,110,78,0.14)}
+.cp-action-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:var(--r-md);font-family:'Jost',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:transform 0.13s var(--ease),box-shadow 0.13s var(--ease),background 0.15s;letter-spacing:0.01em}
+.cp-action-btn:hover{transform:translateY(-1px);box-shadow:var(--sh-sm)}
+.cp-action-btn:active{transform:scale(0.97);box-shadow:none}
+.cp-action-btn.approve{background:#0d6e4e;color:#fff}
+.cp-action-btn.approve:hover{background:#0a5a3e}
+.cp-action-btn.changes{background:#fef3c7;color:#b45309;border:1.5px solid #fde68a}
+.cp-action-btn.changes:hover{background:#fde68a}
+.cp-req-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:18px 22px;margin-bottom:10px;transition:box-shadow 0.15s var(--ease)}
+.cp-req-card:hover{box-shadow:var(--sh-sm)}
+.cp-form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;display:block}
+.cp-form-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s;box-sizing:border-box}
+.cp-form-input:focus{border-color:#0d6e4e;box-shadow:0 0 0 3px rgba(13,110,78,0.1)}
 /* ── Master Capacity ── */
 .mc-swimlane-hdr{display:flex;align-items:center;height:36px;padding:0 8px 0 10px;background:#f8fafb;border-bottom:1px solid var(--border);border-left:3px solid transparent;gap:7px;cursor:pointer;overflow:hidden;user-select:none;transition:background 0.15s}
 .mc-swimlane-hdr:hover{background:var(--surface-3)}
@@ -394,8 +410,8 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <!-- SIDEBAR -->
   <aside id="sidebar">
     <!-- Logo -->
-    <div style="padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,0.06)">
-      <img src="Etcher White Logo.png" alt="Etcher" style="width:100%;height:auto;display:block;margin-top:19px" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:18px;letter-spacing:0.06em\'>ETCHER</span>'"/>
+    <div style="padding:0 14px 14px;border-bottom:1px solid rgba(255,255,255,0.06)">
+      <img src="Etcher White Logo.png" alt="Etcher" style="width:100%;height:auto;display:block;margin-top:10px" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:18px;letter-spacing:0.06em\'>ETCHER</span>'"/>
       <p style="font-size:11px;color:#3a5a78;margin-top:4px;font-family:Jost,sans-serif;letter-spacing:0.28em;text-transform:uppercase;text-align:center;font-weight:600">Task Hub</p>
     </div>
 
@@ -512,10 +528,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 <!-- CLIENT PORTAL — completely separate shell, shown instead of app-shell for client logins -->
 <div id="client-portal" class="hidden">
   <header style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
-    <div style="display:flex;align-items:baseline;gap:6px">
-      <span style="font-family:'Jost',sans-serif;font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.01em">ETCHER</span>
-      <span style="font-size:9px;color:#2a4560;font-family:'Jost',sans-serif;letter-spacing:0.14em;text-transform:uppercase;font-weight:700">Solutions</span>
-    </div>
+    <img src="Etcher White Logo.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1);flex-shrink:0;margin:0 2px"></div>
     <div id="cp-client-name" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#97bcbd;letter-spacing:0.01em">Client Portal</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -525,9 +538,18 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   </header>
   <nav style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
+    <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <div class="cp-nav-tab" data-section="schedule" onclick="cpNavigate('schedule')">Schedule</div>
+    <div class="cp-nav-tab" data-section="requests" onclick="cpNavigate('requests')">Request Work</div>
   </nav>
   <div id="cp-body" style="flex:1;padding:28px 32px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box"></div>
+</div>
+
+<!-- CP Task Detail Modal -->
+<div id="cp-task-modal" class="modal-overlay hidden" onclick="if(event.target===this)cpCloseTaskModal()">
+  <div class="modal-box" style="max-width:620px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;padding:0">
+    <div id="cp-task-modal-body"></div>
+  </div>
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -823,9 +845,10 @@ function _migrateDB(data){
   if(!data.taskFiles)     data.taskFiles     = [];
   if(!data.scheduleEvents)data.scheduleEvents= [];
   if(!data.auditLog)      data.auditLog      = [];
-  if(!data.boardShares)       data.boardShares       = [];
-  if(!data.personalChecklist) data.personalChecklist = [];
-  if(!data.migrationFlags)    data.migrationFlags    = {};
+  if(!data.boardShares)         data.boardShares         = [];
+  if(!data.personalChecklist)  data.personalChecklist   = [];
+  if(!data.migrationFlags)     data.migrationFlags      = {};
+  if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
 
@@ -1469,7 +1492,8 @@ function navigate(view){
     el.classList.toggle('active',el.dataset.view===view);
   });
   const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Time Tracking',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail'};
-  document.getElementById('view-title').textContent=currentWorkboard?currentWorkboard.name:(viewTitles[view]||view);
+  const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
+  document.getElementById('view-title').textContent=(workboardViews.has(view)&&currentWorkboard)?currentWorkboard.name:(viewTitles[view]||view);
   const vc=document.getElementById('view-container');
   vc.style.padding=view==='notes'?'0':'24px';
   updateSidebarWorkboard();
@@ -3970,17 +3994,21 @@ function renderCapacity(){
 // CLIENT MANAGER
 // ═══════════════════════════════════════════════════════════
 function renderClients(){
-  return`<div style="display:grid;gap:14px">
+  const allRequests=(DB.clientWorkRequests||[]).slice().sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+  const pendingCount=allRequests.filter(r=>r.status==='pending').length;
+
+  return`<div style="display:grid;gap:24px">
     <div style="display:flex;justify-content:flex-end"><button onclick="openClientModal(null)" class="btn btn-primary">+ New Client</button></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
     ${DB.clients.map(c=>{
       const clientTasks=DB.tasks.filter(t=>{const g=getGroup(t);return g&&g.clientId===c.id;});
       const open=clientTasks.filter(t=>t.status!=='done').length;
       const done=clientTasks.filter(t=>t.status==='done').length;
+      const pendingReqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===c.id&&r.status==='pending').length;
       return`<div class="card" style="border-top:3px solid ${c.color}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div>
-            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${c.name}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;display:flex;align-items:center;gap:8px">${c.name}${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}</div>
             <div style="font-size:11px;color:#8da2b2;margin-top:2px">${c.shortCode||''}</div>
           </div>
           <div style="display:flex;gap:6px">
@@ -3997,7 +4025,231 @@ function renderClients(){
       </div>`;
     }).join('')}
     </div>
+
+    <!-- Work Requests panel -->
+    <div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <h2 style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33;margin:0">Client Work Requests</h2>
+        ${pendingCount?`<span style="background:#fef3c7;color:#b45309;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">${pendingCount} pending</span>`:''}
+      </div>
+      ${allRequests.length===0
+        ?`<div class="card" style="text-align:center;padding:36px 24px;color:#8da2b2;font-size:13px">No work requests yet. Clients can submit requests through their portal.</div>`
+        :`<div style="display:grid;gap:10px">${allRequests.map(r=>renderWorkRequestCard(r)).join('')}</div>`
+      }
+    </div>
   </div>`;
+}
+
+function renderWorkRequestCard(r){
+  const client=DB.clients.find(c=>c.id===r.clientId);
+  const statusMeta={
+    pending:   {label:'Pending Review',  bg:'#f1f5f9',color:'#64748b'},
+    reviewing: {label:'Under Review',    bg:'#dbeafe',color:'#1d4ed8'},
+    scoped:    {label:'Being Scoped',    bg:'#dcfce7',color:'#15803d'},
+    declined:  {label:'Not Progressing', bg:'#fee2e2',color:'#b91c1c'},
+  };
+  const sm=statusMeta[r.status]||statusMeta.pending;
+  const date=new Date(r.submittedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  return`<div class="card" style="border-left:4px solid ${client?.color||'#e2eaf2'}">
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">${escHtml(r.title)}</span>
+          ${r.priority==='urgent'?`<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Urgent</span>`:''}
+        </div>
+        <div style="font-size:11px;color:#8da2b2;margin-bottom:${r.description?10:0}px">
+          <span style="font-weight:600;color:${client?.color||'#8da2b2'}">${escHtml(client?.name||'Unknown')}</span>
+          &nbsp;·&nbsp;${date}
+        </div>
+        ${r.description?`<div style="font-size:12px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:10px">${escHtml(r.description)}</div>`:''}
+        ${r.attachments?.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${r.attachments.map(a=>`<a href="${a.data||'#'}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Status</label>
+          <div style="position:relative;display:inline-block" id="wr-sd-${r.id}">
+            <button onclick="wrToggleStatusDrop('${r.id}',event)" style="font-size:12px;font-weight:600;color:${sm.color};background:${sm.bg};border:none;border-radius:6px;padding:5px 12px 5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Jost',sans-serif;letter-spacing:0.01em">
+              <span style="width:7px;height:7px;border-radius:50%;background:${sm.color};flex-shrink:0"></span>
+              ${sm.label}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="wr-sm-${r.id}" class="hidden" style="position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #e2eaf2;border-radius:8px;box-shadow:0 6px 20px rgba(13,28,51,0.13);z-index:300;min-width:180px;overflow:hidden">
+              ${[{v:'pending',label:'Pending Review',bg:'#f1f5f9',color:'#64748b'},{v:'reviewing',label:'Under Review',bg:'#dbeafe',color:'#1d4ed8'},{v:'scoped',label:'Being Scoped',bg:'#dcfce7',color:'#15803d'},{v:'declined',label:'Not Progressing',bg:'#fee2e2',color:'#b91c1c'}].map(opt=>`<div onclick="wrUpdateStatus('${r.id}','${opt.v}',null)" style="padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:${opt.color};background:${r.status===opt.v?opt.bg:'#fff'};transition:background 0.1s" onmouseover="this.style.background='${opt.bg}'" onmouseout="this.style.background='${r.status===opt.v?opt.bg:'#fff'}'"><span style="width:7px;height:7px;border-radius:50%;background:${opt.color};flex-shrink:0"></span>${opt.label}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="min-width:260px;flex:1;max-width:380px">
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:5px">Note to client</label>
+        <textarea id="wr-note-${r.id}" style="width:100%;padding:8px 10px;border:1.5px solid #e2eaf2;border-radius:6px;font-size:12px;font-family:'Lato',sans-serif;color:#0d1c33;resize:vertical;min-height:70px;box-sizing:border-box;line-height:1.5;outline:none;transition:border-color 0.15s" onfocus="this.style.borderColor='#0d6e4e'" onblur="this.style.borderColor='#e2eaf2'" placeholder="Visible to the client in their portal…">${escHtml(r.adminNote||'')}</textarea>
+        <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+          <button onclick="wrUpdateStatus('${r.id}',null,document.getElementById('wr-note-${r.id}').value)" class="btn btn-primary btn-sm">Save note</button>
+          ${r.adminNote?`<span style="font-size:11px;color:#0d6e4e;display:flex;align-items:center;gap:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Note sent</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #f0f4f8;flex-wrap:wrap">
+      ${r.linkedItemId
+        ?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#0d6e4e;background:#f0fdf4;padding:4px 11px;border-radius:20px;border:1px solid #bbf7d0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Added as ${r.linkedItemType==='task'?'task':'group'}${r.linkedBoardId?` · ${escHtml((DB.boards||[]).find(b=>b.id===r.linkedBoardId)?.name||'')}`:''}</span>
+          <button onclick="wrOpenAddModal('${r.id}')" class="btn btn-ghost btn-sm">Add again</button>`
+        :`<button onclick="wrOpenAddModal('${r.id}')" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:5px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Add to Workboard
+          </button>`
+      }
+    </div>
+  </div>`;
+}
+
+function wrToggleStatusDrop(requestId,e){
+  e.stopPropagation();
+  const menu=document.getElementById('wr-sm-'+requestId);
+  if(!menu)return;
+  const wasOpen=!menu.classList.contains('hidden');
+  document.querySelectorAll('[id^="wr-sm-"]').forEach(m=>m.classList.add('hidden'));
+  if(!wasOpen)menu.classList.remove('hidden');
+}
+
+function wrUpdateStatus(requestId, status, note){
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
+  if(!r)return;
+  if(status!==null)r.status=status;
+  if(note!==null)r.adminNote=note.trim()||null;
+  saveDB(DB);
+  renderView('clients');
+}
+
+function wrOpenAddModal(requestId){
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
+  if(!r)return;
+  const boards=(DB.boards||[]).filter(b=>!b.archived);
+  const firstBoardId=boards[0]?.id||'';
+  const firstGroups=DB.groups.filter(g=>(g.boardId||g.workboardId)===firstBoardId);
+  const boardOpts=boards.map(b=>`<option value="${b.id}">${escHtml(b.name)}</option>`).join('')
+    +`<option value="__new__">＋ Create new board…</option>`;
+  const groupOpts=firstGroups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  document.getElementById('generic-modal-title').textContent='Add to Workboard';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:16px">
+      <div>
+        <label class="form-label">Add as</label>
+        <div style="display:flex;gap:16px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#0d1c33">
+            <input type="radio" name="wr-type" value="task" checked onchange="wrModalTypeChange(this.value)" style="accent-color:#0d6e4e"/>
+            New Task
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#0d1c33">
+            <input type="radio" name="wr-type" value="group" onchange="wrModalTypeChange(this.value)" style="accent-color:#0d6e4e"/>
+            New Group
+          </label>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Name</label>
+        <input id="wr-modal-name" class="form-input" value="${escHtml(r.title)}"/>
+      </div>
+      <div>
+        <label class="form-label">Workboard</label>
+        <select id="wr-modal-board" class="form-input" style="height:36px" onchange="wrModalBoardChange(this.value)">${boardOpts}</select>
+      </div>
+      <div id="wr-modal-newboard-row" class="hidden">
+        <label class="form-label">New Board Name</label>
+        <input id="wr-modal-newboard-name" class="form-input" placeholder="e.g. General Cranes — 2026"/>
+      </div>
+      <div id="wr-modal-group-row">
+        <label class="form-label">Group</label>
+        <select id="wr-modal-group" class="form-input" style="height:36px">${groupOpts||'<option value="">No groups yet</option>'}</select>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="wrDoAddToWorkboard('${requestId}')" class="btn btn-primary">Add to Workboard</button>
+      </div>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+
+function wrModalTypeChange(type){
+  const gr=document.getElementById('wr-modal-group-row');
+  if(gr)gr.style.display=type==='task'?'':'none';
+}
+
+function wrModalBoardChange(boardId){
+  const nbRow=document.getElementById('wr-modal-newboard-row');
+  const groupSel=document.getElementById('wr-modal-group');
+  if(boardId==='__new__'){
+    nbRow?.classList.remove('hidden');
+    if(groupSel)groupSel.innerHTML=`<option value="__main__">Main (auto-created)</option>`;
+  }else{
+    nbRow?.classList.add('hidden');
+    if(groupSel){
+      const groups=DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId);
+      groupSel.innerHTML=groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('')||`<option value="">No groups</option>`;
+    }
+  }
+}
+
+function wrDoAddToWorkboard(requestId){
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
+  if(!r)return;
+  const client=DB.clients.find(c=>c.id===r.clientId);
+  const type=document.querySelector('input[name="wr-type"]:checked')?.value||'task';
+  const name=(document.getElementById('wr-modal-name')?.value||'').trim();
+  if(!name){document.getElementById('wr-modal-name')?.focus();return;}
+  let boardId=document.getElementById('wr-modal-board')?.value;
+  const now=new Date().toISOString();
+
+  // Create new board if requested
+  if(boardId==='__new__'){
+    const nbName=(document.getElementById('wr-modal-newboard-name')?.value||'').trim()||name;
+    boardId=uid();
+    DB.workboards.push({id:boardId,name:nbName,color:client?.color||'#0d1c33',visibility:'all_internal',ownerId:currentUser.id,description:'',archived:false,createdAt:now,updatedAt:now});
+    const autoGroupId='g_'+uid();
+    DB.groups.push({id:autoGroupId,workboardId:boardId,boardId,clientId:r.clientId,name:'Main',color:client?.color||'#97bcbd',order:0,createdAt:now});
+    if(type==='task'){
+      _wrCreateTask(r,client,boardId,autoGroupId,name,now);
+    }else{
+      _wrCreateGroup(r,client,boardId,name,now);
+    }
+  }else{
+    if(type==='task'){
+      const groupId=document.getElementById('wr-modal-group')?.value;
+      if(!groupId||groupId===''){showAlert('Please select a group.');return;}
+      _wrCreateTask(r,client,boardId,groupId,name,now);
+    }else{
+      _wrCreateGroup(r,client,boardId,name,now);
+    }
+  }
+
+  r.status='scoped';
+  saveDB(DB);
+  closeGenericModal();
+  renderSidebarWorkboards();
+  renderView('clients');
+}
+
+function _wrCreateTask(r,client,boardId,groupId,name,now){
+  const taskId='t'+uid();
+  DB.tasks.push({
+    id:taskId,name,title:name,
+    clientId:r.clientId,boardId,workboardId:boardId,groupId,
+    parentTaskId:null,
+    status:'todo',priority:r.priority==='urgent'?'high':'med',
+    ownerId:null,currentlyWith:null,currentlyWithType:'none',currentlyWithUserId:null,
+    startDate:null,endDate:null,
+    percentComplete:0,percentMode:'manual',hourBudget:0,
+    lockedDates:false,order:0,
+    description:r.description||'',
+    dependencies:[],tags:[],archived:false,
+    createdAt:now,updatedAt:now,completedAt:null,
+  });
+  r.linkedItemId=taskId;r.linkedItemType='task';r.linkedBoardId=boardId;
+}
+
+function _wrCreateGroup(r,client,boardId,name,now){
+  const existing=DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId);
+  const groupId='g_'+uid();
+  DB.groups.push({id:groupId,workboardId:boardId,boardId,clientId:r.clientId,name,color:client?.color||'#97bcbd',order:existing.length,createdAt:now});
+  r.linkedItemId=groupId;r.linkedItemType='group';r.linkedBoardId=boardId;
 }
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',loginPassword:'',active:true};
@@ -5912,7 +6164,7 @@ function wsRefreshFileList(){
   const list=document.getElementById('comms-file-list');if(!list)return;
   list.innerHTML=wsCommsFiles.map((f,i)=>`
   <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4a5568;border:1px solid #e2eaf2">
-    ${f.type?.startsWith('image/')?'🖼':'📎'}<span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span>
+    ${f.type?.startsWith('image/')?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`}<span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span>
     <button onclick="wsRemoveFile(${i})" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:0 2px;font-size:13px;line-height:1">×</button>
   </span>`).join('');
 }
@@ -5952,7 +6204,7 @@ function renderCommsPanel(){
                 ${(m.attachments||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
                   ${m.attachments.map(att=>`
                   <a href="${att.data}" download="${escHtml(att.name)}" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#f0f4f8;border-radius:6px;font-size:11px;color:#1d4ed8;text-decoration:none;border:1px solid #e2eaf2;max-width:160px" title="${escHtml(att.name)}">
-                    <span style="flex-shrink:0">${att.type?.startsWith('image/')?'🖼':'📎'}</span>
+                    <span style="flex-shrink:0;display:inline-flex;align-items:center">${att.type?.startsWith('image/')?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`}</span>
                     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(att.name)}</span>
                   </a>`).join('')}
                 </div>`:''}
@@ -6559,6 +6811,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${escHtml(t.name)}</span>
+        ${hasChildren&&!isSubitem?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" title="${childTasks.length} subitem${childTasks.length!==1?'s':''} — click to expand" style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span style="font-size:10px;font-weight:700">${childTasks.length}</span></button>`:''}
         ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}','comments')" title="${commentCount} comment${commentCount!==1?'s':''} — click to open"
           style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0"
           onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'">
@@ -6605,7 +6858,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
     ${cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''}
     ${cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
       <div style="display:inline-flex;align-items:center;gap:3px">
-        ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">📎 ${attachCount}</span>`:`<span style="color:#d4dde8;font-size:14px">📎</span>`}
+        ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${attachCount}</span>`:`<span style="color:#d4dde8;display:inline-flex;align-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>`}
       </div>
     </td>`:''}
     ${cols.deps?(()=>{
@@ -6730,6 +6983,7 @@ function renderTaskPanel(task){
           ${['low','med','high','crit'].map(p=>`<option value="${p}" ${task.priority===p?'selected':''}>${PRIO_META[p]?.icon||''} ${PRIO_META[p]?.label||p}</option>`).join('')}
         </select>
         ${isOverdue?`<span style="font-size:11px;font-weight:700;color:#b91c1c;background:#fef2f2;padding:3px 8px;border-radius:20px">Overdue</span>`:''}
+        ${(()=>{const ca=task.clientApproval;if(!ca)return'';if(ca.status==='approved')return`<span title="Client approved this task" style="font-size:11px;font-weight:700;color:#15803d;background:#dcfce7;padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Client Approved</span>`;if(ca.status==='changes-requested')return`<span title="${escHtml(ca.note||'Client requested changes')}" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;cursor:help"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Changes Requested</span>`;return'';})()}
         <span id="tp-save-indicator" style="font-size:11px;color:#97bcbd;margin-left:auto;opacity:0;transition:opacity 0.3s">Saved &#10003;</span>
       </div>
     </div>
@@ -6749,7 +7003,14 @@ function renderTaskPanel(task){
 function renderTpDetails(task){
   const group=DB.groups.find(g=>g.id===task.groupId);
   const tags=(task.tags||[]);
+  const ca=task.clientApproval;
+  const clientFeedback=ca?`<div style="background:${ca.status==='approved'?'#f0fdf4':'#fffbeb'};border:1px solid ${ca.status==='approved'?'#bbf7d0':'#fde68a'};border-radius:8px;padding:12px 14px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${ca.status==='approved'?'#15803d':'#b45309'};margin-bottom:4px">${ca.status==='approved'?'✓ Client Approved':'↩ Client Requested Changes'}${ca.at?` · ${new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`:''}</div>
+    ${ca.note?`<div style="font-size:12px;color:#374151;line-height:1.6;font-style:italic">"${escHtml(ca.note)}"</div>`:''}
+    <button onclick="cpClearApproval('${task.id}')" style="margin-top:8px;background:none;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;color:#8da2b2;cursor:pointer;padding:2px 8px" title="Clear client approval state">Clear</button>
+  </div>`:'' ;
   return`<div>
+    ${clientFeedback}
     <div class="tp-field-row">
       <span class="tp-field-label">Assignee</span>
       <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('ownerId',this.value)">
@@ -7326,7 +7587,7 @@ function wsBuildDropdownHtml(taskId,field){
       <div class="ws-dd-sep"></div>
       <div style="padding:8px 14px" onclick="event.stopPropagation()">
         <label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:4px 10px;border:1.5px dashed #c8d4e0;border-radius:6px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d6e4e'" onmouseout="this.style.borderColor='#c8d4e0';this.style.color='#97bcbd'">📎 Attach file</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:4px 10px;border:1.5px dashed #c8d4e0;border-radius:6px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d6e4e'" onmouseout="this.style.borderColor='#c8d4e0';this.style.color='#97bcbd'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach file</span>
           <input type="file" multiple onchange="wsAddAttachment('${taskId}',this);event.stopPropagation()" style="display:none"/>
         </label>
         <div style="font-size:10px;color:#b0bec5;margin-top:4px">Max 500 KB per file</div>
@@ -7510,6 +7771,7 @@ function wsCellClose(){
   _wsCellTask=null;_wsCellField=null;
 }
 document.addEventListener('click',()=>wsCellClose());
+document.addEventListener('click',()=>document.querySelectorAll('[id^="wr-sm-"]').forEach(m=>m.classList.add('hidden')));
 
 // ── Label customisation ──
 function wsLabelColor(fieldType,key,newColor){
@@ -7816,9 +8078,9 @@ function mtBuildCustomCellHtml(taskId,cc,val){
       </div>`;
     case 'file':
       return label+`<div style="padding:0 14px 12px">
-        ${val?`<div style="font-size:12px;color:#4d6275;margin-bottom:6px">📎 ${escHtml(val)}</div>`:''}
+        ${val?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#4d6275;margin-bottom:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(val)}</div>`:''}
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-          <span style="font-size:12px;font-weight:600;color:#97bcbd;padding:4px 10px;border:1.5px dashed #c8d4e0;border-radius:6px">📎 Upload</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:4px 10px;border:1.5px dashed #c8d4e0;border-radius:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Upload</span>
           <input type="file" onchange="(function(inp){if(inp.files[0])mtSetCustomVal('${taskId}','${cc.id}',inp.files[0].name);})(this)" style="display:none" onclick="event.stopPropagation()"/>
         </label>
         <div style="font-size:10px;color:#b0bec5;margin-top:4px">Stores filename only</div>
@@ -7917,6 +8179,9 @@ function cpBroadStatus(key){
 //   percentMode, boardId, groupId, clientId, archived, checklistItems,
 //   auditLog, customColumnValues, comments, timeEntries.
 function sanitizeTaskForClient(task){
+  // Whitelist only — never spread the raw task object.
+  // clientApproval is a snapshot: only status/note/at — no internal fields.
+  const ca=task.clientApproval;
   return{
     id:              task.id,
     title:           task.title||task.name||'Untitled',
@@ -7925,6 +8190,11 @@ function sanitizeTaskForClient(task){
     startDate:       task.startDate??null,
     endDate:         task.endDate??null,
     awaitingClient:  task.currentlyWithType==='client',
+    // Additional safe fields
+    priority:        task.priority||'med',
+    description:     task.clientDescription||task.description||null,
+    clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
+    attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
   };
 }
 
@@ -7959,15 +8229,15 @@ function cpNavigate(section){
   portal.querySelectorAll('.cp-nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.section===section));
   const clientId=currentUser?.clientId;
   const client=DB.clients.find(c=>c.id===clientId);
-  // Sanitized tasks — no internal fields
   const tasks=getClientTasks(clientId);
   const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
-  // Board membership index built from internal DB before render
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
-  if(body)body.innerHTML=section==='schedule'
-    ?renderCpGantt(clientId,tasks,boards,client,boardIdx)
-    :renderCpOverview(clientId,tasks,boards,client,boardIdx);
+  if(!body)return;
+  if(section==='schedule')      body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
+  else if(section==='tasks')    body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  else if(section==='requests') body.innerHTML=renderCpRequests(clientId);
+  else                          body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
 }
 
 // ── SVG progress ring ─────────────────────────────────────
@@ -8214,6 +8484,424 @@ function cpGanttAutoFit(){
   const days=Math.ceil((Math.max(...allD)-Math.min(...allD))/86400000);
   cpGanttScale=days<=60?'days':days<=180?'weeks':days<=730?'months':'quarters';
   cpSetScale(cpGanttScale);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLIENT PORTAL — TASKS, APPROVAL & WORK REQUESTS
+// ═══════════════════════════════════════════════════════════
+
+function cpPriorityMeta(p){
+  return({
+    urgent:{label:'Urgent',    color:'#b91c1c',bg:'#fee2e2'},
+    high:  {label:'High',      color:'#c2410c',bg:'#ffedd5'},
+    med:   {label:'Medium',    color:'#0d6e4e',bg:'#dcfce7'},
+    medium:{label:'Medium',    color:'#0d6e4e',bg:'#dcfce7'},
+    low:   {label:'Low',       color:'#64748b',bg:'#f1f5f9'},
+  }[p])||{label:'Normal',color:'#0d6e4e',bg:'#dcfce7'};
+}
+
+// ── Tasks tab ────────────────────────────────────────────
+function renderCpTasks(clientId,tasks,boards,boardIdx){
+  const todayStr=new Date().toISOString().slice(0,10);
+  const awaiting=tasks.filter(t=>t.awaitingClient&&!t.clientApproval);
+  const active=tasks.filter(t=>t.status!=='done'&&t.status!=='completed'&&t.status!=='cancelled'&&!t.awaitingClient);
+  const completed=tasks.filter(t=>t.status==='done'||t.status==='completed');
+
+  function taskRow(t){
+    const bs=cpBroadStatus(t.status);
+    const overdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&t.status!=='completed';
+    const board=boards.find(b=>boardIdx.get(b.id)?.has(t.id));
+    const hasApproved=t.clientApproval?.status==='approved';
+    const hasChanges=t.clientApproval?.status==='changes-requested';
+    const drParts=[];
+    if(t.startDate&&t.endDate)drParts.push(`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`);
+    else if(t.endDate)drParts.push(`Due ${formatDate(t.endDate)}`);
+    return`<div class="cp-task-list-row" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')">
+      <div style="width:4px;min-height:44px;border-radius:2px;flex-shrink:0;align-self:stretch;background:${t.awaitingClient?'#f59e0b':bs.color}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.title)}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${drParts.length?`<span style="font-size:11px;color:${overdue?'#dc2626':'#8da2b2'}">${overdue?'⚠ Overdue — ':''}${drParts[0]}</span>`:''}
+          ${board?`<span style="font-size:10px;font-weight:600;color:${board.color||'#8da2b2'};background:${board.color||'#8da2b2'}18;padding:2px 8px;border-radius:10px">${escHtml(board.name)}</span>`:''}
+          ${hasApproved?`<span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:10px">✓ You Approved</span>`:''}
+          ${hasChanges?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:10px">↩ Changes Requested</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${t.attachmentCount?`<span style="font-size:11px;color:#8da2b2;display:inline-flex;align-items:center;gap:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${t.attachmentCount}</span>`:''}
+        <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
+        ${t.awaitingClient&&!t.clientApproval?`<span class="cp-badge" style="background:#fef3c7;color:#b45309">Action Needed</span>`:''}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8d4e0" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  }
+
+  const awaitingHTML=awaiting.length?`<div style="margin-bottom:32px">
+    <div class="cp-section-title" style="display:flex;align-items:center;gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>
+      Action Required
+      <span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:2px">${awaiting.length}</span>
+    </div>
+    ${awaiting.map(taskRow).join('')}
+  </div>`:'';
+
+  // tasks with approval already given also shown (awaiting but approved/changes)
+  const reviewed=tasks.filter(t=>t.awaitingClient&&t.clientApproval);
+  const reviewedHTML=reviewed.length?`<div style="margin-bottom:32px">
+    <div class="cp-section-title">Reviewed by You</div>
+    ${reviewed.map(taskRow).join('')}
+  </div>`:'';
+
+  const activeHTML=active.length?`<div style="margin-bottom:32px">
+    <div class="cp-section-title">In Progress</div>
+    ${active.map(taskRow).join('')}
+  </div>`:'';
+
+  const completedHTML=completed.length?`<div>
+    <div class="cp-section-title" style="color:#8da2b2">Completed (${completed.length})</div>
+    ${completed.map(taskRow).join('')}
+  </div>`:'';
+
+  const empty=!awaitingHTML&&!activeHTML&&!completedHTML&&!reviewedHTML;
+  return awaitingHTML+reviewedHTML+activeHTML+completedHTML+(empty?'<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No tasks assigned yet.</div>':'');
+}
+
+// ── Task detail modal ─────────────────────────────────────
+function cpOpenTaskModal(taskId){
+  if(currentUser?.role!=='client')return;
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!rawTask||!canViewTask(currentUser,rawTask))return;
+  const t=sanitizeTaskForClient(rawTask);
+  const bs=cpBroadStatus(t.status);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const overdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&t.status!=='completed';
+  const drParts=[];
+  if(t.startDate&&t.endDate)drParts.push(`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`);
+  else if(t.endDate)drParts.push(`Due ${formatDate(t.endDate)}`);
+  else if(t.startDate)drParts.push(`From ${formatDate(t.startDate)}`);
+  const prioMeta=cpPriorityMeta(t.priority||'med');
+  const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&!f.internalOnly);
+
+  // Approval / changes section
+  let approvalSection='';
+  if(t.awaitingClient&&!t.clientApproval){
+    approvalSection=`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
+      <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">Awaiting your review</div>
+      <p style="font-size:13px;color:#6b8399;margin-bottom:18px;line-height:1.6">Please review this task and either approve it or let us know what changes are needed.</p>
+      <div id="cp-changes-form" class="hidden" style="margin-bottom:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px">
+        <label class="cp-form-label" style="margin-bottom:8px">Describe the changes you'd like</label>
+        <textarea id="cp-changes-note" class="cp-form-input" rows="4" placeholder="e.g. Please adjust the timeline, include X, change Y…" style="resize:vertical;min-height:90px;margin-bottom:12px"></textarea>
+        <div style="display:flex;gap:10px">
+          <button class="cp-action-btn changes" onclick="cpSubmitChanges('${taskId}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Submit Feedback
+          </button>
+          <button onclick="document.getElementById('cp-changes-form').classList.add('hidden');document.getElementById('cp-approval-btns').classList.remove('hidden')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#8da2b2;padding:8px 12px;border-radius:6px" onmouseover="this.style.background='#f8fafb'" onmouseout="this.style.background='none'">Cancel</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:20px" id="cp-approval-btns">
+        <button class="cp-action-btn approve" onclick="cpApproveTask('${taskId}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve
+        </button>
+        <button class="cp-action-btn changes" onclick="document.getElementById('cp-changes-form').classList.remove('hidden');document.getElementById('cp-approval-btns').classList.add('hidden');setTimeout(()=>document.getElementById('cp-changes-note')?.focus(),50)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Request Changes
+        </button>
+      </div>
+    </div>`;
+  }else if(t.clientApproval?.status==='approved'){
+    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;display:flex;align-items:center;gap:10px;margin-bottom:0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#15803d">You approved this task</div>
+        ${t.clientApproval.at?`<div style="font-size:11px;color:#4ade80;margin-top:2px">${new Date(t.clientApproval.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>`:''}
+      </div>
+    </div>`;
+  }else if(t.clientApproval?.status==='changes-requested'){
+    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;margin-bottom:0">
+      <div style="font-size:13px;font-weight:700;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Changes Requested
+      </div>
+      ${t.clientApproval.note?`<div style="font-size:13px;color:#78350f;line-height:1.6;font-style:italic;border-left:3px solid #fde68a;padding-left:12px">"${escHtml(t.clientApproval.note)}"</div>`:''}
+      <div style="font-size:11px;color:#d97706;margin-top:8px">Your feedback has been sent to the Etcher team.</div>
+    </div>`;
+  }
+
+  // Attachments section
+  const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
+    <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
+    ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${t.awaitingClient?12:0}px">${attachments.map(f=>`<a href="${f.data||'#'}" download="${escHtml(f.name)}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f0f4f8;border-radius:6px;font-size:12px;color:#0d1c33;text-decoration:none;border:1px solid #e2eaf2;max-width:200px" title="${escHtml(f.name)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span></a>`).join('')}</div>`}
+    ${t.awaitingClient?`<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-top:${attachments.length?8:0}px">
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        Upload document
+      </span>
+      <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" style="display:none"/>
+    </label>
+    <div style="font-size:10px;color:#b0bec5;margin-top:5px">Max 1 MB per file · Visible to Etcher team</div>`:''}
+  </div>`;
+
+  const body=`
+  <div>
+    <div style="padding:24px 28px 18px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px">
+        <h2 style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33;line-height:1.3;margin:0;flex:1">${escHtml(t.title)}</h2>
+        <button onclick="cpCloseTaskModal()" style="background:none;border:none;cursor:pointer;color:#8da2b2;font-size:22px;line-height:1;flex-shrink:0;padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'" title="Close">&#215;</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${drParts.length||t.percentComplete>0?18:0}px">
+        <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
+        ${t.awaitingClient&&!t.clientApproval?`<span class="cp-badge" style="background:#fef3c7;color:#b45309">Awaiting Your Review</span>`:''}
+        ${t.priority&&t.priority!=='med'&&t.priority!=='medium'?`<span class="cp-badge" style="background:${prioMeta.bg};color:${prioMeta.color}">${prioMeta.label} Priority</span>`:''}
+        ${overdue?`<span class="cp-badge" style="background:#fee2e2;color:#b91c1c">Overdue</span>`:''}
+      </div>
+      ${drParts.length||t.percentComplete>0?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;background:#f8fafb;border-radius:8px;padding:14px 18px;margin-bottom:${t.description?18:0}px">
+        ${drParts.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Timeline</div><div style="font-size:13px;font-weight:600;color:#1a2940">${drParts[0]}</div></div>`:''}
+        ${t.percentComplete>0||t.status==='done'||t.status==='completed'?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Progress</div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:#e8eef4;border-radius:3px;overflow:hidden"><div style="height:100%;width:${t.percentComplete}%;background:#0d6e4e;border-radius:3px"></div></div><span style="font-size:12px;font-weight:700;color:#0d1c33;flex-shrink:0">${t.percentComplete}%</span></div></div>`:''}
+      </div>`:''}
+      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2">${escHtml(t.description).replace(/\n/g,'<br>')}</div>`:''}
+    </div>
+    ${attachSection}
+    ${approvalSection?approvalSection+'<div style="height:24px"></div>':''}
+  </div>`;
+
+  const modal=document.getElementById('cp-task-modal');
+  const mbody=document.getElementById('cp-task-modal-body');
+  if(!modal||!mbody)return;
+  mbody.innerHTML=body;
+  modal.classList.remove('hidden');
+}
+
+function cpCloseTaskModal(){
+  document.getElementById('cp-task-modal')?.classList.add('hidden');
+}
+
+function cpApproveTask(taskId){
+  if(currentUser?.role!=='client')return;
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task||!canViewTask(currentUser,task))return;
+  task.clientApproval={status:'approved',note:null,at:new Date().toISOString()};
+  if(task.ownerId)notify(task.ownerId,task.id,'client_approved',`Client approved: ${task.name||task.title}`);
+  saveDB(DB);
+  cpCloseTaskModal();
+  cpOpenTaskModal(taskId);
+  _cpRefreshCurrentSection();
+}
+
+function cpSubmitChanges(taskId){
+  if(currentUser?.role!=='client')return;
+  const note=(document.getElementById('cp-changes-note')?.value||'').trim();
+  if(!note){
+    const inp=document.getElementById('cp-changes-note');
+    if(inp){inp.style.borderColor='#dc2626';inp.focus();setTimeout(()=>inp.style.borderColor='',1600);}
+    return;
+  }
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task||!canViewTask(currentUser,task))return;
+  task.clientApproval={status:'changes-requested',note,at:new Date().toISOString()};
+  // Return task to internal team
+  if(task.currentlyWithType==='client'){
+    task.currentlyWithType='staff';
+    task.currentlyWith=task.ownerId||'';
+    task.currentlyWithUserId=task.ownerId||null;
+  }
+  if(task.ownerId)notify(task.ownerId,task.id,'client_changes_requested',`Client requested changes on: ${task.name||task.title}`);
+  saveDB(DB);
+  cpCloseTaskModal();
+  cpOpenTaskModal(taskId);
+  _cpRefreshCurrentSection();
+}
+
+function cpUploadToTask(taskId,input){
+  if(currentUser?.role!=='client')return;
+  const files=Array.from(input.files||[]);
+  if(!files.length)return;
+  const oversized=files.filter(f=>f.size>1048576);
+  if(oversized.length){showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} the 1 MB limit and were not uploaded.`);}
+  const valid=files.filter(f=>f.size<=1048576);
+  if(!valid.length){input.value='';return;}
+  let done=0;
+  valid.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      if(!DB.taskFiles)DB.taskFiles=[];
+      DB.taskFiles.push({
+        id:'cf-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+        taskId,name:file.name,type:file.type,size:file.size,
+        data:e.target.result,
+        uploadedAt:new Date().toISOString(),
+        uploadedByClientId:currentUser.clientId,
+        internalOnly:false,
+      });
+      done++;
+      if(done===valid.length){
+        saveDB(DB);
+        input.value='';
+        cpCloseTaskModal();
+        cpOpenTaskModal(taskId);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function cpClearApproval(taskId){
+  if(!currentUser||currentUser.role==='client')return;
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task)return;
+  delete task.clientApproval;
+  saveDB(DB);
+  openTaskPanel(taskId);
+}
+
+function _cpRefreshCurrentSection(){
+  if(!currentUser||currentUser.role!=='client')return;
+  const clientId=currentUser.clientId;
+  const tasks=getClientTasks(clientId);
+  const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
+  const boardIdx=_cpBuildBoardTaskIndex(clientId);
+  const body=document.getElementById('cp-body');
+  if(!body)return;
+  if(cpSection==='tasks')body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  else if(cpSection==='overview'){const client=DB.clients.find(c=>c.id===clientId);body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);}
+}
+
+// ── Work Requests ─────────────────────────────────────────
+let _cpReqFiles=[];
+
+function renderCpRequests(clientId){
+  _cpReqFiles=[];
+  const requests=(DB.clientWorkRequests||[]).filter(r=>r.clientId===clientId).sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+
+  function reqStatusMeta(s){
+    return({'pending':  {label:'Pending Review', bg:'#f1f5f9',color:'#64748b'},
+            'reviewing':{label:'Under Review',   bg:'#dbeafe',color:'#1d4ed8'},
+            'scoped':   {label:'Being Scoped',   bg:'#dcfce7',color:'#15803d'},
+            'declined': {label:'Not Progressing',bg:'#fee2e2',color:'#b91c1c'},
+    }[s])||{label:'Pending',bg:'#f1f5f9',color:'#64748b'};
+  }
+
+  const myRequests=requests.length?`<div style="margin-bottom:40px">
+    <div class="cp-section-title">My Requests</div>
+    ${requests.map(r=>{
+      const sm=reqStatusMeta(r.status);
+      return`<div class="cp-req-card">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:${r.description||r.adminNote?10:0}px">
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:600;color:#0d1c33;margin-bottom:3px">${escHtml(r.title)}</div>
+            <div style="font-size:11px;color:#8da2b2">Submitted ${new Date(r.submittedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})} · ${r.priority==='urgent'?'<span style="color:#b91c1c;font-weight:700">Urgent</span>':'Normal priority'}</div>
+          </div>
+          <span class="cp-badge" style="background:${sm.bg};color:${sm.color};flex-shrink:0">${sm.label}</span>
+        </div>
+        ${r.description?`<div style="font-size:13px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:${r.adminNote?8:0}px">${escHtml(r.description)}</div>`:''}
+        ${r.adminNote?`<div style="font-size:12px;color:#0d6e4e;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><span style="font-weight:700;display:block;margin-bottom:2px">Note from Etcher</span>${escHtml(r.adminNote)}</div></div>`:''}
+        ${r.attachments?.length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${r.attachments.map(a=>`<a href="${a.data||'#'}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`:'';
+
+  const form=`<div class="cp-stat-card">
+    <div class="cp-section-title" style="margin-bottom:6px">Submit a Work Request</div>
+    <p style="font-size:13px;color:#6b8399;margin-bottom:24px;line-height:1.65">Tell us what you need — we'll review, scope, and follow up. Once approved, it becomes a tracked task in your portal.</p>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div>
+        <label class="cp-form-label">Request Title <span style="color:#dc2626">*</span></label>
+        <input id="cp-req-title" class="cp-form-input" type="text" placeholder="e.g. Annual crane inspection report, Updated WHS documents…" maxlength="120"/>
+      </div>
+      <div>
+        <label class="cp-form-label">Description</label>
+        <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="Provide as much detail as possible — scope, deadline, references, any constraints…" style="resize:vertical;min-height:100px"></textarea>
+      </div>
+      <div>
+        <label class="cp-form-label">Urgency</label>
+        <select id="cp-req-priority" class="cp-form-input" style="height:40px;cursor:pointer">
+          <option value="normal">Normal — no specific deadline pressure</option>
+          <option value="urgent">Urgent — time-sensitive</option>
+        </select>
+      </div>
+      <div>
+        <label class="cp-form-label">Supporting Documents (optional)</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:6px 14px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Attach files
+          </span>
+          <input type="file" multiple onchange="cpReqFileChanged(this)" style="display:none"/>
+        </label>
+        <div id="cp-req-file-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+        <div style="font-size:10px;color:#b0bec5;margin-top:4px">Max 1 MB per file</div>
+      </div>
+      <div>
+        <button onclick="cpSubmitRequest('${clientId}')" class="cp-action-btn approve" style="padding:10px 28px;font-size:14px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Request
+        </button>
+      </div>
+      <div id="cp-req-success" class="hidden" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#15803d">Request submitted!</div>
+          <div style="font-size:12px;color:#86efac;margin-top:2px">The Etcher team will review your request and get back to you shortly.</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  return myRequests+form;
+}
+
+function cpReqFileChanged(input){
+  const incoming=Array.from(input.files||[]);
+  const oversized=incoming.filter(f=>f.size>1048576);
+  if(oversized.length)showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} 1 MB and were not added.`);
+  _cpReqFiles=[..._cpReqFiles,...incoming.filter(f=>f.size<=1048576)];
+  const list=document.getElementById('cp-req-file-list');
+  if(list)list.innerHTML=_cpReqFiles.map((f,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4a5568;border:1px solid #e2eaf2">${escHtml(f.name)}<button onclick="event.preventDefault();_cpReqFiles.splice(${i},1);const l=document.getElementById('cp-req-file-list');if(l){l.innerHTML=_cpReqFiles.map((ff,ii)=>l.innerHTML).join('');cpReqFileChanged({files:[]});}" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:0 2px 0 4px;font-size:13px;line-height:1">×</button></span>`).join('');
+  input.value='';
+}
+
+function cpSubmitRequest(clientId){
+  if(currentUser?.role!=='client')return;
+  const title=(document.getElementById('cp-req-title')?.value||'').trim();
+  if(!title){
+    const inp=document.getElementById('cp-req-title');
+    if(inp){inp.style.borderColor='#dc2626';inp.focus();setTimeout(()=>inp.style.borderColor='',1600);}
+    showAlert('Please enter a request title.');return;
+  }
+  const desc=(document.getElementById('cp-req-desc')?.value||'').trim();
+  const priority=document.getElementById('cp-req-priority')?.value||'normal';
+
+  function persist(attachments){
+    if(!DB.clientWorkRequests)DB.clientWorkRequests=[];
+    DB.clientWorkRequests.push({
+      id:'wr-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+      clientId,title,description:desc,priority,
+      submittedAt:new Date().toISOString(),
+      status:'pending',adminNote:null,
+      attachments,
+    });
+    _cpReqFiles=[];
+    saveDB(DB);
+    // Reset form
+    const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
+    if(t)t.value='';if(d)d.value='';if(fl)fl.innerHTML='';
+    const success=document.getElementById('cp-req-success');
+    if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate('requests');},3200);}
+  }
+
+  if(_cpReqFiles.length===0){persist([]);return;}
+  const results=new Array(_cpReqFiles.length).fill(null);
+  let done=0;
+  _cpReqFiles.forEach((f,i)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      results[i]={name:f.name,type:f.type,size:f.size,data:e.target.result};
+      done++;if(done===_cpReqFiles.length)persist(results);
+    };
+    r.readAsDataURL(f);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
