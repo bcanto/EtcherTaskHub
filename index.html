@@ -4160,6 +4160,13 @@ function wrOpenAddModal(requestId){
         <label class="form-label">Group</label>
         <select id="wr-modal-group" class="form-input" style="height:36px">${groupOpts||'<option value="">No groups yet</option>'}</select>
       </div>
+      <div>
+        <label class="form-label">Assign to</label>
+        <select id="wr-modal-owner" class="form-input" style="height:36px">
+          <option value="">Unassigned</option>
+          ${(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+        </select>
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
         <button onclick="wrDoAddToWorkboard('${requestId}')" class="btn btn-primary">Add to Workboard</button>
@@ -4196,6 +4203,7 @@ function wrDoAddToWorkboard(requestId){
   const name=(document.getElementById('wr-modal-name')?.value||'').trim();
   if(!name){document.getElementById('wr-modal-name')?.focus();return;}
   let boardId=document.getElementById('wr-modal-board')?.value;
+  const ownerId=document.getElementById('wr-modal-owner')?.value||null;
   const now=new Date().toISOString();
 
   // Create new board if requested
@@ -4206,7 +4214,7 @@ function wrDoAddToWorkboard(requestId){
     const autoGroupId='g_'+uid();
     DB.groups.push({id:autoGroupId,workboardId:boardId,boardId,clientId:r.clientId,name:'Main',color:client?.color||'#97bcbd',order:0,createdAt:now});
     if(type==='task'){
-      _wrCreateTask(r,client,boardId,autoGroupId,name,now);
+      _wrCreateTask(r,client,boardId,autoGroupId,name,ownerId,now);
     }else{
       _wrCreateGroup(r,client,boardId,name,now);
     }
@@ -4214,7 +4222,7 @@ function wrDoAddToWorkboard(requestId){
     if(type==='task'){
       const groupId=document.getElementById('wr-modal-group')?.value;
       if(!groupId||groupId===''){showAlert('Please select a group.');return;}
-      _wrCreateTask(r,client,boardId,groupId,name,now);
+      _wrCreateTask(r,client,boardId,groupId,name,ownerId,now);
     }else{
       _wrCreateGroup(r,client,boardId,name,now);
     }
@@ -4227,14 +4235,17 @@ function wrDoAddToWorkboard(requestId){
   renderView('clients');
 }
 
-function _wrCreateTask(r,client,boardId,groupId,name,now){
+function _wrCreateTask(r,client,boardId,groupId,name,ownerId,now){
   const taskId='t'+uid();
   DB.tasks.push({
     id:taskId,name,title:name,
     clientId:r.clientId,boardId,workboardId:boardId,groupId,
     parentTaskId:null,
     status:'todo',priority:r.priority==='urgent'?'high':'med',
-    ownerId:null,currentlyWith:null,currentlyWithType:'none',currentlyWithUserId:null,
+    ownerId:ownerId||null,
+    currentlyWith:ownerId||null,
+    currentlyWithType:ownerId?'staff':'none',
+    currentlyWithUserId:ownerId||null,
     startDate:null,endDate:null,
     percentComplete:0,percentMode:'manual',hourBudget:0,
     lockedDates:false,order:0,
@@ -4242,6 +4253,7 @@ function _wrCreateTask(r,client,boardId,groupId,name,now){
     dependencies:[],tags:[],archived:false,
     createdAt:now,updatedAt:now,completedAt:null,
   });
+  if(ownerId)notify(ownerId,taskId,'task_assigned',`Task assigned to you from client request: "${name}"`);
   r.linkedItemId=taskId;r.linkedItemType='task';r.linkedBoardId=boardId;
 }
 
@@ -5376,30 +5388,29 @@ function saveStaff(id){
 // ═══════════════════════════════════════════════════════════
 // ── Notification type registry ──────────────────────────────
 const NOTIF_TYPES={
-  task_assigned:        {label:'Assigned',          color:'#10b981',icon:'◉'},
-  owner_changed:        {label:'Owner Changed',      color:'#3b82f6',icon:'↪'},
-  currently_with:       {label:'Ball in Court',      color:'#8b5cf6',icon:'⇒'},
-  moved_to_client:      {label:'Sent to Client',     color:'#f59e0b',icon:'↗'},
+  task_assigned:        {label:'Assigned',           color:'#10b981',icon:'◉'},
+  owner_changed:        {label:'Owner Changed',       color:'#3b82f6',icon:'↪'},
+  currently_with:       {label:'Ball in Court',       color:'#8b5cf6',icon:'⇒'},
+  moved_to_client:      {label:'Sent to Client',      color:'#f59e0b',icon:'↗'},
   returned_from_client: {label:'Returned from Client',color:'#06b6d4',icon:'↙'},
-  comment:              {label:'Comment',             color:'#6366f1',icon:'💬'},
-  mention:              {label:'Mentioned',           color:'#ec4899',icon:'@'},
-  dep_cascade:          {label:'Date Shift',          color:'#ef4444',icon:'⚠'},
+  comment:              {label:'Comment',              color:'#6366f1',icon:'💬'},
+  mention:              {label:'Mentioned',            color:'#ec4899',icon:'@'},
+  dep_cascade:          {label:'Date Shift',           color:'#ef4444',icon:'⚠'},
+  work_request:         {label:'Work Request',         color:'#f59e0b',icon:'⊞'},
+  client_approved:      {label:'Client Approved',      color:'#10b981',icon:'✓'},
+  client_changes_requested:{label:'Changes Requested', color:'#f59e0b',icon:'↩'},
 };
 
 // Central notification creator — never self-notifies.
 function notify(recipientId, taskId, type, message){
   if(!recipientId||recipientId===currentUser?.id)return;
   if(!DB.notifications)DB.notifications=[];
-  DB.notifications.push({
-    id:'n'+uid(),
-    recipientId,
-    taskId,
-    type,
-    message,
-    read:false,
-    createdAt:new Date().toISOString(),
-  });
+  DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
   updateNotifBadge();
+}
+
+function _notifyAllStaff(type, message, taskId=null){
+  (DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
 }
 
 function renderNotifications(){
@@ -8883,6 +8894,8 @@ function cpSubmitRequest(clientId){
       attachments,
     });
     _cpReqFiles=[];
+    const client=DB.clients.find(c=>c.id===clientId);
+    _notifyAllStaff('work_request',`New work request from ${client?.name||'a client'}: "${title}"`);
     saveDB(DB);
     // Reset form
     const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
