@@ -710,10 +710,6 @@ const SEED = {
     {id:'dep18',predecessorTaskId:'t23',dependentTaskId:'t24',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
     {id:'dep19',predecessorTaskId:'t24',dependentTaskId:'t25',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
     {id:'dep20',predecessorTaskId:'t25',dependentTaskId:'t26',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
-    {id:'dep21',predecessorTaskId:'t26',dependentTaskId:'t27',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
-    {id:'dep22',predecessorTaskId:'t27',dependentTaskId:'t28',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
-    {id:'dep23',predecessorTaskId:'t28',dependentTaskId:'t29',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
-    {id:'dep24',predecessorTaskId:'t29',dependentTaskId:'t30',dependencyType:'finish_to_start',lagDays:0,createdAt:'2026-05-01T00:00:00.000Z'},
   ],
 
   // ── Checklist Items ────────────────────────────────────
@@ -851,6 +847,9 @@ function _migrateDB(data){
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
+  // Remove orphaned dependencies referencing tasks that were never created
+  const orphanDepIds=new Set(['dep21','dep22','dep23','dep24']);
+  if(data.dependencies)data.dependencies=data.dependencies.filter(d=>!orphanDepIds.has(d.id));
 
   // Remove Humanz Stage 2 (b4) — retired board
   if((data.boards||[]).find(b=>b.id==='b4')){
@@ -1488,6 +1487,7 @@ function applyRolePermissions(){
 // ═══════════════════════════════════════════════════════════
 function navigate(view){
   currentView=view;
+  closeTaskPanel();
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
@@ -1505,7 +1505,7 @@ function onGlobalSearch(){
   if(!q)return;
   let pool=DB.tasks.filter(t=>canViewTask(currentUser,t));
   if(currentWorkboard)pool=pool.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
-  const tasks=pool.filter(t=>t.name.toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
+  const tasks=pool.filter(t=>(t.name||t.title||'').toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
   renderListView(tasks);
   navigate('list');
 }
@@ -3509,7 +3509,7 @@ function ganttAutoFit(){
 
 // ── Drag / resize ────────────────────────────────────────
 function ganttBarMouseDown(evt,taskId,type){
-  if(!canEditTask||currentUser.role==='client')return;
+  if(currentUser.role==='client')return;
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canEditTask(currentUser,task)||task.lockedDates)return;
   evt.preventDefault();evt.stopPropagation();
@@ -6305,11 +6305,14 @@ function wsBulkAssignTo(staffId){
   saveDB(DB);renderView('workspace');
 }
 function wsBulkArchiveTasks(){
-  [...wsSelected].forEach(id=>{
-    const t=DB.tasks.find(x=>x.id===id);
-    if(t){t.archived=true;t.updatedAt=new Date().toISOString();}
+  const n=wsSelected.size;
+  openConfirm('Archive Tasks',`Archive ${n} task${n!==1?'s':''}? They will be hidden from all views but can be restored.`,'Archive',()=>{
+    [...wsSelected].forEach(id=>{
+      const t=DB.tasks.find(x=>x.id===id);
+      if(t){t.archived=true;t.updatedAt=new Date().toISOString();}
+    });
+    wsSelected.clear();saveDB(DB);closeConfirm();renderView('workspace');
   });
-  wsSelected.clear();saveDB(DB);renderView('workspace');
 }
 function wsBulkDeleteTasks(){
   const n=wsSelected.size;
@@ -8225,6 +8228,8 @@ function getClientTasks(clientId){
 // so the rendered client portal never needs boardId on the sanitized task.
 function _cpBuildBoardTaskIndex(clientId){
   const idx=new Map();
+  const clientObj=DB.clients.find(c=>c.id===clientId);
+  if(!clientObj?.portalEnabled)return idx;
   DB.boards.filter(b=>b.clientId===clientId&&!b.archived).forEach(b=>{
     const bid=b.id;
     const groupIds=new Set(DB.groups.filter(g=>(g.boardId||g.workboardId)===bid).map(g=>g.id));
