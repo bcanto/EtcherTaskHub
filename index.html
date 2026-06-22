@@ -587,7 +587,6 @@ const SEED = {
     {id:'b1', clientId:'c1', name:'Maintenance',       description:'Preventive maintenance, breakdown response and compliance.',   color:'#c2410c', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'b2', clientId:'c1', name:'SharePoint',        description:'SharePoint intranet design, build and rollout.',               color:'#e85d2f', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'b3', clientId:'c2', name:'Humanz Stage 1.5',  description:'Humanz HR platform — Stage 1.5 integration and data migration.',color:'#1d6fb8', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'b4', clientId:'c2', name:'Humanz Stage 2',    description:'Humanz Stage 2 — architecture, build and deployment.',         color:'#2c5282', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'b5', clientId:'c3', name:'Retained Services', description:'Monthly retained service delivery and ad hoc requests.',       color:'#7c3aed', archived:false, visibility:'all_internal', ownerId:'u1', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
@@ -599,8 +598,6 @@ const SEED = {
     {id:'bv4',boardId:'b2',name:'Gantt',     type:'gantt',      settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'bv5',boardId:'b3',name:'Main Table',type:'main_table',settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'bv6',boardId:'b3',name:'Gantt',     type:'gantt',      settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'bv7',boardId:'b4',name:'Main Table',type:'main_table',settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'bv8',boardId:'b4',name:'Gantt',     type:'gantt',      settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'bv9',boardId:'b5',name:'Main Table',type:'main_table',settingsJson:'{}',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
@@ -619,9 +616,6 @@ const SEED = {
     {id:'tg7', clientId:'c2',boardId:'b3',name:'Requirements',             color:'#7c3aed',order:0,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'tg8', clientId:'c2',boardId:'b3',name:'Development',              color:'#6b46c1',order:1,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'tg9', clientId:'c2',boardId:'b3',name:'UAT & Sign-off',           color:'#553c9a',order:2,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    // Daltech — Humanz Stage 2 (b4)
-    {id:'tg10',clientId:'c2',boardId:'b4',name:'Architecture',             color:'#2b6cb0',order:0,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'tg11',clientId:'c2',boardId:'b4',name:'Implementation',           color:'#2c5282',order:1,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     // Retained Services (b5)
     {id:'tg12',clientId:'c3',boardId:'b5',name:'Monthly Deliverables',     color:'#7c3aed',order:0,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'tg13',clientId:'c3',boardId:'b5',name:'Ad Hoc Requests',          color:'#553c9a',order:1,collapsed:false,createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'},
@@ -665,12 +659,6 @@ const SEED = {
     {id:'t24',clientId:'c2',boardId:'b3',groupId:'tg9',parentTaskId:null,title:'UAT Execution — Daltech Team',             ownerId:'u3',currentlyWithType:'client',currentlyWithUserId:null,status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:12,startDate:'2026-07-13',endDate:'2026-07-18',lockedDates:false,order:0,archived:false,description:'Daltech HR team executes structured UAT plan. Etcher Solutions manages defect log.',tags:[],dependencies:['t23'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
     {id:'t25',clientId:'c2',boardId:'b3',groupId:'tg9',parentTaskId:null,title:'Defect Triage & Resolution',               ownerId:'u2',currentlyWithType:'staff',currentlyWithUserId:'u2', status:'todo',       priority:'med', percentComplete:0,  percentMode:'manual',hourBudget:8, startDate:'2026-07-21',endDate:'2026-07-25',lockedDates:false,order:1,archived:false,description:'Triage UAT defects by severity. Fix critical and high priority items before sign-off.',tags:[],dependencies:['t24'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
     {id:'t26',clientId:'c2',boardId:'b3',groupId:'tg9',parentTaskId:null,title:'Stage 1.5 Sign-off & Handover',           ownerId:'u1',currentlyWithType:'client',currentlyWithUserId:null,status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:3, startDate:'2026-07-28',endDate:'2026-07-29',lockedDates:false,order:2,archived:false,description:'Formal sign-off meeting with Daltech. Handover documentation and support schedule.',tags:[],dependencies:['t25'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
-    // ─ Daltech / Humanz Stage 2 / Architecture (tg10) ─
-    {id:'t27',clientId:'c2',boardId:'b4',groupId:'tg10',parentTaskId:null,title:'Stage 2 Architecture Design',             ownerId:'u3',currentlyWithType:'staff',currentlyWithUserId:'u3', status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:10,startDate:'2026-07-28',endDate:'2026-08-08',lockedDates:false,order:0,archived:false,description:'Design technical architecture for Humanz Stage 2: performance, payroll analytics, mobile app.',tags:[],dependencies:['t26'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
-    {id:'t28',clientId:'c2',boardId:'b4',groupId:'tg10',parentTaskId:null,title:'Technical Specification Document',        ownerId:'u3',currentlyWithType:'staff',currentlyWithUserId:'u3', status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:8, startDate:'2026-08-11',endDate:'2026-08-15',lockedDates:false,order:1,archived:false,description:'Detailed technical spec for all Stage 2 modules. Includes API contracts and data schema.',tags:[],dependencies:['t27'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
-    // ─ Daltech / Humanz Stage 2 / Implementation (tg11) ─
-    {id:'t29',clientId:'c2',boardId:'b4',groupId:'tg11',parentTaskId:null,title:'Infrastructure Setup',                    ownerId:'u2',currentlyWithType:'staff',currentlyWithUserId:'u2', status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:6, startDate:'2026-08-18',endDate:'2026-08-22',lockedDates:false,order:0,archived:false,description:'Provision cloud infrastructure (Azure). Configure CI/CD pipeline and environments.',tags:[],dependencies:['t28'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
-    {id:'t30',clientId:'c2',boardId:'b4',groupId:'tg11',parentTaskId:null,title:'Module Configuration & Build',            ownerId:'u2',currentlyWithType:'staff',currentlyWithUserId:'u2', status:'todo',       priority:'high',percentComplete:0,  percentMode:'manual',hourBudget:40,startDate:'2026-08-25',endDate:'2026-09-12',lockedDates:false,order:1,archived:false,description:'Build and configure all Stage 2 modules: performance, analytics, mobile and reporting.',tags:[],dependencies:['t29'],createdAt:'2026-05-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
     // ─ Retained Services / Monthly Deliverables (tg12) ─
     {id:'t31',clientId:'c3',boardId:'b5',groupId:'tg12',parentTaskId:null,title:'June Monthly Report',                     ownerId:'u4',currentlyWithType:'staff',currentlyWithUserId:'u4', status:'in-progress',priority:'high',percentComplete:40, percentMode:'manual',hourBudget:4, startDate:'2026-06-25',endDate:'2026-06-30',lockedDates:false,order:0,archived:false,description:'Compile June operational activity report for Retained Services client delivery.',tags:[],dependencies:[],createdAt:'2026-06-01T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z',completedAt:null},
     {id:'t32',clientId:'c3',boardId:'b5',groupId:'tg12',parentTaskId:null,title:'Operational Review — Q2',                ownerId:'u1',currentlyWithType:'staff',currentlyWithUserId:'u1', status:'todo',       priority:'med', percentComplete:0,  percentMode:'manual',hourBudget:6, startDate:'2026-07-07',endDate:'2026-07-11',lockedDates:false,order:1,archived:false,description:'Quarterly review of retained services scope, KPIs and upcoming requirements.',tags:[],dependencies:[],createdAt:'2026-06-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z',completedAt:null},
@@ -837,8 +825,17 @@ function _migrateDB(data){
   if(!data.auditLog)      data.auditLog      = [];
   if(!data.boardShares)       data.boardShares       = [];
   if(!data.personalChecklist) data.personalChecklist = [];
+  if(!data.migrationFlags)    data.migrationFlags    = {};
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
+
+  // Remove Humanz Stage 2 (b4) — retired board
+  if((data.boards||[]).find(b=>b.id==='b4')){
+    data.boards     =(data.boards||[]).filter(b=>b.id!=='b4');
+    data.groups     =(data.groups||[]).filter(g=>(g.boardId||g.workboardId)!=='b4');
+    data.tasks      =(data.tasks||[]).filter(t=>(t.boardId||t.workboardId)!=='b4');
+    data.boardViews =(data.boardViews||[]).filter(v=>v.boardId!=='b4');
+  }
 
   // Enforce demo passwords — covers: missing field, legacy value, any old value on known demo accounts
   const _legacyPw=new Set(['admin123','staff123','client123','']);
@@ -2321,9 +2318,12 @@ function openRenameWb(id){
 function deleteWorkboard(id){
   const _wbToDelete=DB.workboards.find(w=>w.id===id);
   confirmCallback=()=>{
-    DB.workboards=DB.workboards.filter(w=>w.id!==id);
-    DB.tasks=DB.tasks.filter(t=>t.workboardId!==id);
-    DB.groups=DB.groups.filter(g=>g.workboardId!==id);
+    // Update the canonical array (boards) then re-alias workboards to it
+    DB.boards=DB.boards.filter(w=>w.id!==id);
+    DB.workboards=DB.boards;
+    DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);
+    DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);
+    DB.boardViews=(DB.boardViews||[]).filter(v=>v.boardId!==id);
     saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('dashboard');
   };
   document.getElementById('confirm-title').textContent='Delete WorkBoard';
@@ -8238,7 +8238,7 @@ document.getElementById('login-password').addEventListener('keypress',e=>{if(e.k
 
 // ── GCS Tracker one-time import ───────────────────────────────────────────────
 (async function _importGCSTracker(){
-  if(DB.boards.find(b=>b.id==='b-gcs-tracker'))return; // already imported
+  if(DB.migrationFlags&&DB.migrationFlags.gcsTrackerImported)return; // already ran
   let importData;
   try{
     const res=await fetch('/taskhub_gcs_tracker_import.json');
@@ -8346,9 +8346,13 @@ document.getElementById('login-password').addEventListener('keypress',e=>{if(e.k
       importedFrom:'monday.com',originalPostId:c.postId});
   });
 
+  // Mark as done so it never re-runs, even if the board is later deleted
+  if(!DB.migrationFlags)DB.migrationFlags={};
+  DB.migrationFlags.gcsTrackerImported=true;
+
   // Sync aliases
-  if(DB.users)DB.users=DB.staff;
-  if(DB.workboards)DB.workboards=DB.boards;
+  DB.staff=DB.users||DB.staff;
+  DB.workboards=DB.boards;
 
   saveDB(DB);
 
