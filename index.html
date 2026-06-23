@@ -5509,7 +5509,7 @@ function pfiGetLineRate(inv,li){
   if(li.rateOverride!==null&&li.rateOverride!==undefined)return+li.rateOverride;
   const ar=(inv.activityRates||{})[li.activity];if(ar!==undefined)return+ar;
   const mr=(inv.memberRates||{})[li.staffId];if(mr!==undefined)return+mr;
-  return+(inv.globalRate)||150;
+  return 0;
 }
 function pfiCalcTotals(inv){
   const bl=(inv.lineItems||[]).filter(l=>l.billable);
@@ -5593,11 +5593,12 @@ function pfiImportEntries(id){
   const existing=new Set((inv.lineItems||[]).map(l=>l.timeEntryId).filter(Boolean));
   const toImport=(DB.timeEntries||[]).filter(e=>{
     if(e.deletedAt||existing.has(e.id))return false;
+    if(e.status!=='approved')return false;
     if(e.date<inv.dateFrom||e.date>inv.dateTo)return false;
     const t=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
     return e.clientId===inv.clientId||(t&&t.clientId===inv.clientId);
   });
-  if(!toImport.length){showAlert('No new time entries found for this client and date range.');return;}
+  if(!toImport.length){showAlert('No approved time entries found for this client and date range.');return;}
   toImport.forEach(e=>{
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
     const staff=getStaff(e.staffId);
@@ -5906,7 +5907,6 @@ function _pfiEditorHtml(inv){
       <div><label style="${lbS}">Status</label><select style="${inS};cursor:pointer;width:180px" onchange="pfiSetStatus('${inv.id}',this.value)">
         ${['draft','ready','approved','sent','accepted','rejected','changes'].map(s=>`<option value="${s}"${inv.status===s?' selected':''}>${pfiStatusMeta(s).label}</option>`).join('')}
       </select></div>
-      <div><label style="${lbS}">Default Rate ($/hr)</label><input type="number" value="${inv.globalRate||150}" style="${inS};width:100px" min="0" step="1" onblur="pfiSaveField('${inv.id}','globalRate',this.value)"/></div>
       <div><label style="${lbS}">GST</label><div style="display:flex;align-items:center;gap:8px;height:30px">
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#1a2940"><input type="checkbox" ${inv.gstEnabled?'checked':''} style="accent-color:#0d1c33" onchange="pfiSaveField('${inv.id}','gstEnabled',this.checked)"/> Enabled</label>
         <input type="number" value="${inv.gstRate||10}" style="${inS};width:60px" min="0" step="0.5" onblur="pfiSaveField('${inv.id}','gstRate',this.value)"/>
@@ -5928,7 +5928,7 @@ function _pfiEditorHtml(inv){
   const uniqueActivities=[...new Set((inv.lineItems||[]).map(l=>l.activity||'Ordinary Hours'))];
   const ratesCard=(uniqueStaff.length||uniqueActivities.length)?`<div class="card" style="padding:16px 20px;margin-bottom:12px">
     <div style="font-size:12px;font-weight:700;color:#0d1c33;margin-bottom:4px">Rate Configuration</div>
-    <div style="font-size:11px;color:#8da2b2;margin-bottom:12px">Priority: Line override › Activity rate › Member rate › Default ($${inv.globalRate||150}/hr)</div>
+    <div style="font-size:11px;color:#8da2b2;margin-bottom:12px">Priority: Line override › Activity rate › Member rate — only approved time entries are imported</div>
     <div style="display:flex;flex-wrap:wrap;gap:24px">
       ${uniqueStaff.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Member Rates ($/hr)</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px">${uniqueStaff.map(s=>`<div style="display:flex;align-items:center;gap:6px">${avatarHtml(s,16)}<span style="font-size:11px;color:#1a2940;min-width:80px">${escHtml(s.name)}</span><input type="number" value="${(inv.memberRates||{})[s.id]||''}" placeholder="${inv.globalRate||150}" style="width:70px;height:28px;padding:0 8px;border:1.5px solid #e2eaf2;border-radius:6px;font-size:11px;font-family:inherit" min="0" step="1" onblur="pfiSaveMemberRate('${inv.id}','${s.id}',this.value)"/></div>`).join('')}</div></div>`:''}
