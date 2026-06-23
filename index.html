@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Etcher - Task Hub</title>
 <link rel="icon" type="image/png" href="favicon_taskapp.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js"></script>
+<!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
 <script>
 tailwind.config = {
   theme: {
@@ -847,6 +848,16 @@ function _migrateDB(data){
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
+  // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
+  if(data.taskFiles){
+    const _fs=JSON.parse(localStorage.getItem('etcher_files_v4')||'{}');
+    let _fsMig=false;
+    data.taskFiles.forEach(f=>{
+      const d=f.dataUrl||f.data;
+      if(d){_fs[f.id]=d;delete f.dataUrl;delete f.data;_fsMig=true;}
+    });
+    if(_fsMig)localStorage.setItem('etcher_files_v4',JSON.stringify(_fs));
+  }
   // Remove orphaned dependencies referencing tasks that were never created
   const orphanDepIds=new Set(['dep21','dep22','dep23','dep24']);
   if(data.dependencies)data.dependencies=data.dependencies.filter(d=>!orphanDepIds.has(d.id));
@@ -1056,7 +1067,41 @@ function _applyCompatAliases(data){
   });
 }
 
-function saveDB(data){localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data));}
+// ── Debounced DB write: batches rapid mutations into a single localStorage write ──
+let _saveDebounceTimer=null;
+function saveDB(data){
+  clearTimeout(_saveDebounceTimer);
+  _saveDebounceTimer=setTimeout(()=>localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data)),300);
+}
+// Flush on tab close so no in-flight debounce is lost
+window.addEventListener('beforeunload',()=>{
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));}
+});
+
+// ── Separate file-data store: keeps base64 blobs out of the main DB JSON ──
+const _FILE_STORE_KEY='etcher_files_v4';
+function _saveFileData(id,url){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');s[id]=url;localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));}catch(e){console.warn('File store write failed',e);}}
+function _getFileData(id){try{return JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}')[id]||null;}catch(e){return null;}}
+function _deleteFileData(id){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');delete s[id];localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));}catch(e){}}
+
+// ── Workspace render cache: O(1) lookups inside renderWsRow ──
+let _wsCache=null;
+
+// ── Lazy jsPDF loader: only fetches the ~600 KB of PDF libs when actually needed ──
+function _ensureJsPdf(callback){
+  if(window.jspdf&&window.jspdf.jsPDF){callback();return;}
+  const s1=document.createElement('script');
+  s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s1.onerror=()=>showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');
+  s1.onload=()=>{
+    const s2=document.createElement('script');
+    s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js';
+    s2.onerror=()=>showAlert('Failed to load PDF table plugin. Check your internet connection.','PDF Error');
+    s2.onload=callback;
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+}
 function uid(){return Math.random().toString(36).slice(2,10);}
 
 let DB=loadDB();
@@ -1517,7 +1562,7 @@ function renderView(v){
   switch(v){
     case 'dashboard': vc.innerHTML=renderDashboard();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
     case 'schedule': vc.innerHTML=renderSchedule();break;
-    case 'workspace': vc.innerHTML=renderWorkspace();break;
+    case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;break;
     case 'board': vc.innerHTML=renderBoard();break;
     case 'list': renderListView(getFilteredTasks());break;
     case 'gantt': vc.innerHTML=renderGantt();break;
@@ -1556,7 +1601,7 @@ function getTaskClient(task){
   return g?DB.clients.find(c=>c.id===g.clientId)||null:null;
 }
 function getEffectiveTaskPct(taskId){
-  const children=DB.tasks.filter(t=>t.parentTaskId===taskId&&!t.archived);
+  const children=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
   if(!children.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
   return Math.round(children.reduce((s,t)=>s+(t.percentComplete||0),0)/children.length);
 }
@@ -1621,10 +1666,13 @@ function avatarHtml(s,size=26){
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${s.color};font-size:${Math.floor(size*0.4)}px">${s.initials}</div>`;
 }
 function formatDate(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
-function hoursForTask(taskId){return DB.timeEntries.filter(e=>e.taskId===taskId).reduce((a,e)=>a+e.hours,0);}
+function hoursForTask(taskId){
+  if(_wsCache)return _wsCache.hoursMap.get(taskId)||0;
+  return DB.timeEntries.filter(e=>e.taskId===taskId).reduce((a,e)=>a+e.hours,0);
+}
 
 function checklistRatio(taskId){
-  const items=DB.tasks.filter(t=>t.parentTaskId===taskId&&!t.archived);
+  const items=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
   if(!items.length)return null;
   return{done:items.filter(t=>t.status==='done'||t.status==='completed'||t.percentComplete===100).length,total:items.length};
 }
@@ -2076,6 +2124,8 @@ function writeAuditEvent(entityType, entityId, action, before=null, after=null){
     afterValueJson: after ?JSON.stringify(after) :null,
     createdAt:      new Date().toISOString(),
   });
+  // Rolling cap: prevents unbounded growth inflating the stored JSON blob
+  if(DB.auditLog.length>1000)DB.auditLog=DB.auditLog.slice(-1000);
 }
 
 // Legacy shim — keeps existing callers working, writes to new AuditEvent shape
@@ -5025,6 +5075,8 @@ function rptExportPDF(){
 
   setBusy(true);
 
+  // Lazy-load jsPDF (only needed for PDF export; ~600 KB saved on initial page load)
+  _ensureJsPdf(()=>{
   // Yield to browser to paint the "Generating…" state before the synchronous PDF build
   setTimeout(()=>{
     try{
@@ -5065,6 +5117,7 @@ function rptExportPDF(){
       setBusy(false);
     }
   },60);
+  }); // _ensureJsPdf
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6531,6 +6584,16 @@ function wsDeleteTask(id){
 
 function renderWorkspace(){
   if(currentUser.role==='client') return renderClientDashboard();
+  // Pre-compute O(1) lookup maps — eliminates O(n²) scans inside renderWsRow
+  const _childMap=new Map();
+  const _commentCountMap=new Map();
+  const _fileCountMap=new Map();
+  const _hoursMap=new Map();
+  DB.tasks.forEach(t=>{if(t.parentTaskId){if(!_childMap.has(t.parentTaskId))_childMap.set(t.parentTaskId,[]);_childMap.get(t.parentTaskId).push(t);}});
+  (DB.comments||[]).forEach(c=>{_commentCountMap.set(c.taskId,(_commentCountMap.get(c.taskId)||0)+1);});
+  (DB.taskFiles||[]).forEach(f=>{_fileCountMap.set(f.taskId,(_fileCountMap.get(f.taskId)||0)+1);});
+  (DB.timeEntries||[]).forEach(e=>{_hoursMap.set(e.taskId,(_hoursMap.get(e.taskId)||0)+e.hours);});
+  _wsCache={childMap:_childMap,commentCountMap:_commentCountMap,fileCountMap:_fileCountMap,hoursMap:_hoursMap};
   const tasks=getFilteredTasks();
   const cols=wsColumns;
 
@@ -6785,7 +6848,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const isSubitem=depth>0;
   const owner=getStaff(t.ownerId);
   const client=isSubitem?null:getTaskClient(t);
-  const childTasks=!isSubitem?DB.tasks.filter(t2=>t2.parentTaskId===t.id&&!t2.archived).sort((a,b)=>(a.order||0)-(b.order||0)):[];
+  const childTasks=!isSubitem?(_wsCache?.childMap.get(t.id)||DB.tasks.filter(t2=>t2.parentTaskId===t.id)).filter(t2=>!t2.archived).sort((a,b)=>(a.order||0)-(b.order||0)):[];
   const hasChildren=childTasks.length>0;
   const isExpanded=wsExpanded.has(t.id)||wsInlineAddSubtaskId===t.id;
   const expanded=!isSubitem&&isExpanded&&(hasChildren||wsInlineAddSubtaskId===t.id);
@@ -6802,8 +6865,8 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const cr=checklistRatio(t.id);
   const isSelected=!isSubitem&&wsSelected.has(t.id);
   const isOverdue=t.endDate&&t.endDate<toDateStr(new Date())&&t.status!=='done'&&t.status!=='completed'&&!t.archived;
-  const commentCount=(DB.comments||[]).filter(c=>c.taskId===t.id).length;
-  const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
+  const commentCount=_wsCache?.commentCountMap.get(t.id)||( (DB.comments||[]).filter(c=>c.taskId===t.id).length );
+  const attachCount=_wsCache?.fileCountMap.get(t.id)||( (DB.taskFiles||[]).filter(f=>f.taskId===t.id).length );
   const tlStart=t.startDate?formatDate(t.startDate):'';
   const tlEnd=t.endDate?formatDate(t.endDate):'';
   const tlText=tlStart&&tlEnd?`${tlStart} → ${tlEnd}`:tlEnd||tlStart||'—';
@@ -7594,7 +7657,7 @@ function wsBuildDropdownHtml(taskId,field){
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
-            ${f.dataUrl?`<a href="${f.dataUrl}" download="${escHtml(f.name)}" style="font-size:11px;color:#97bcbd;text-decoration:none;padding:2px 7px;border-radius:4px;border:1px solid #e2eaf2" title="Download">↓</a>`:''}
+            ${`<a href="${_getFileData(f.id)||'#'}" download="${escHtml(f.name)}" style="font-size:11px;color:#97bcbd;text-decoration:none;padding:2px 7px;border-radius:4px;border:1px solid #e2eaf2;${_getFileData(f.id)?'':'pointer-events:none;opacity:0.4'}" title="Download">↓</a>`}
             <button onclick="wsDeleteAttachment('${f.id}')" style="background:none;border:none;cursor:pointer;color:#d0d8e4;font-size:11px;padding:2px 5px;line-height:1" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#d0d8e4'" title="Remove">✕</button>
           </div>
         </div>`).join('')}
@@ -7860,7 +7923,9 @@ function wsAddAttachment(taskId,input){
     if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was skipped.`,'File Too Large');process(rest);return;}
     const reader=new FileReader();
     reader.onload=e=>{
-      DB.taskFiles.push({id:uid(),taskId,name:f.name,size:f.size,type:f.type,dataUrl:e.target.result,addedAt:new Date().toISOString()});
+      const fid=uid();
+      _saveFileData(fid,e.target.result);
+      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString()});
       saveDB(DB);
       const body=document.getElementById('ws-cell-dd-body');
       if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
@@ -7872,6 +7937,7 @@ function wsAddAttachment(taskId,input){
   process(Array.from(input.files));
 }
 function wsDeleteAttachment(attId){
+  _deleteFileData(attId);
   DB.taskFiles=(DB.taskFiles||[]).filter(f=>f.id!==attId);
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
@@ -8649,7 +8715,7 @@ function cpOpenTaskModal(taskId){
   const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
     <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
     ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
-      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${t.awaitingClient?12:0}px">${attachments.map(f=>`<a href="${f.data||'#'}" download="${escHtml(f.name)}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f0f4f8;border-radius:6px;font-size:12px;color:#0d1c33;text-decoration:none;border:1px solid #e2eaf2;max-width:200px" title="${escHtml(f.name)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span></a>`).join('')}</div>`}
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${t.awaitingClient?12:0}px">${attachments.map(f=>{const fd=_getFileData(f.id);return`<a href="${fd||'#'}" download="${escHtml(f.name)}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f0f4f8;border-radius:6px;font-size:12px;color:#0d1c33;text-decoration:none;border:1px solid #e2eaf2;max-width:200px;${fd?'':'pointer-events:none;opacity:0.5'}" title="${escHtml(f.name)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.name)}</span></a>`;}).join('')}</div>`}
     ${t.awaitingClient?`<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-top:${attachments.length?8:0}px">
       <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -8743,10 +8809,11 @@ function cpUploadToTask(taskId,input){
     const reader=new FileReader();
     reader.onload=e=>{
       if(!DB.taskFiles)DB.taskFiles=[];
+      const fid='cf-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+      _saveFileData(fid,e.target.result);
       DB.taskFiles.push({
-        id:'cf-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+        id:fid,
         taskId,name:file.name,type:file.type,size:file.size,
-        data:e.target.result,
         uploadedAt:new Date().toISOString(),
         uploadedByClientId:currentUser.clientId,
         internalOnly:false,
