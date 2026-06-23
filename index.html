@@ -4111,7 +4111,7 @@ function renderWorkRequestCard(r){
           <span style="font-weight:600;color:${client?.color||'#8da2b2'}">${escHtml(client?.name||'Unknown')}</span>
           &nbsp;·&nbsp;${date}
         </div>
-        ${r.description?`<div style="font-size:12px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:10px">${escHtml(r.description)}</div>`:''}
+        ${r.description?`<div style="font-size:12px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:10px;white-space:pre-wrap;word-break:break-word">${escHtml(r.description)}</div>`:''}
         ${r.attachments?.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${r.attachments.map(a=>`<a href="${a.data||'#'}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Status</label>
@@ -6156,7 +6156,8 @@ function renderWbTabs(activeView){
 // ═══════════════════════════════════════════════════════════
 // BLOCKS (Workspace) view
 // ═══════════════════════════════════════════════════════════
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// Escapes for both text content and attribute values (& must be first)
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');}
 
 // ── Inline add ──
 function wsStartInlineAdd(sectionId,groupId){
@@ -8743,7 +8744,7 @@ function cpOpenTaskModal(taskId){
         ${drParts.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Timeline</div><div style="font-size:13px;font-weight:600;color:#1a2940">${drParts[0]}</div></div>`:''}
         ${t.percentComplete>0||t.status==='done'||t.status==='completed'?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Progress</div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:#e8eef4;border-radius:3px;overflow:hidden"><div style="height:100%;width:${t.percentComplete}%;background:#0d6e4e;border-radius:3px"></div></div><span style="font-size:12px;font-weight:700;color:#0d1c33;flex-shrink:0">${t.percentComplete}%</span></div></div>`:''}
       </div>`:''}
-      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2">${escHtml(t.description).replace(/\n/g,'<br>')}</div>`:''}
+      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;white-space:pre-wrap;word-break:break-word">${escHtml(t.description)}</div>`:''}
     </div>
     ${attachSection}
     ${approvalSection?approvalSection+'<div style="height:24px"></div>':''}
@@ -8878,7 +8879,7 @@ function renderCpRequests(clientId){
           </div>
           <span class="cp-badge" style="background:${sm.bg};color:${sm.color};flex-shrink:0">${sm.label}</span>
         </div>
-        ${r.description?`<div style="font-size:13px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:${r.adminNote?8:0}px">${escHtml(r.description)}</div>`:''}
+        ${r.description?`<div style="font-size:13px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:${r.adminNote?8:0}px;white-space:pre-wrap;word-break:break-word">${escHtml(r.description)}</div>`:''}
         ${r.adminNote?`<div style="font-size:12px;color:#0d6e4e;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><span style="font-weight:700;display:block;margin-bottom:2px">Note from Etcher</span>${escHtml(r.adminNote)}</div></div>`:''}
         ${r.attachments?.length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${r.attachments.map(a=>`<a href="${a.data||'#'}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
       </div>`;

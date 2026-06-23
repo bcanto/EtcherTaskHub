@@ -1,11 +1,30 @@
-# Dev/test scripts
+# ── Environment & Secrets ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+# Never commit real secrets. Use .env.example for documentation only.
+
+# ── Dependencies ───────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Dev/test scripts ───────────────────────────────────────────────────────────
 screenshot*.mjs
 temporary screenshots/
 
-# Office/spec docs
+# ── Office/spec docs ───────────────────────────────────────────────────────────
 *.docx
 *.xlsx
 
-# OS
+# ── OS ────────────────────────────────────────────────────────────────────────
 Thumbs.db
 .DS_Store
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+.next/
+out/
+
+# ── Supabase ──────────────────────────────────────────────────────────────────
+supabase/.branches
+supabase/.temp
