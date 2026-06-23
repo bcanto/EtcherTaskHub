@@ -731,20 +731,30 @@ const SEED = {
     {id:'ci14',taskId:'t24',title:'Test leave accrual logic',              completed:false,order:2,createdAt:'2026-06-01T00:00:00.000Z',updatedAt:'2026-06-01T00:00:00.000Z'},
   ],
 
+  // ── Earnings Rates ─────────────────────────────────────
+  earningsRates:[
+    {id:'er1',name:'Ordinary Hours',xeroEarningsRateName:'Ordinary Hours',active:true,defaultForStaff:true, createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er2',name:'Overtime',      xeroEarningsRateName:'Overtime',       active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er3',name:'Travel',        xeroEarningsRateName:'Travel Time',    active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er4',name:'Training',      xeroEarningsRateName:'Training',       active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er5',name:'Leave',         xeroEarningsRateName:'Annual Leave',   active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er6',name:'Admin',         xeroEarningsRateName:'Admin',          active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+  ],
+
   // ── Time Entries ───────────────────────────────────────
   timeEntries:[
-    {id:'te1', taskId:'t18',clientId:'c2',staffId:'u3',date:'2026-05-28',hours:1.5,note:'API documentation review session',       billable:true, createdAt:'2026-05-28T00:00:00.000Z',updatedAt:'2026-05-28T00:00:00.000Z'},
-    {id:'te2', taskId:'t19',clientId:'c2',staffId:'u3',date:'2026-06-04',hours:3.0,note:'Integration requirements document draft', billable:true, createdAt:'2026-06-04T00:00:00.000Z',updatedAt:'2026-06-04T00:00:00.000Z'},
-    {id:'te3', taskId:'t19',clientId:'c2',staffId:'u3',date:'2026-06-06',hours:2.5,note:'Requirements document revision and review',billable:true,createdAt:'2026-06-06T00:00:00.000Z',updatedAt:'2026-06-06T00:00:00.000Z'},
-    {id:'te4', taskId:'t20',clientId:'c2',staffId:'u1',date:'2026-06-11',hours:1.0,note:'Sign-off call with Daltech',             billable:true, createdAt:'2026-06-11T00:00:00.000Z',updatedAt:'2026-06-11T00:00:00.000Z'},
-    {id:'te5', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-13',hours:4.0,note:'HR module initial configuration',        billable:true, createdAt:'2026-06-13T00:00:00.000Z',updatedAt:'2026-06-13T00:00:00.000Z'},
-    {id:'te6', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-17',hours:3.0,note:'Org chart and leave module setup',       billable:true, createdAt:'2026-06-17T00:00:00.000Z',updatedAt:'2026-06-17T00:00:00.000Z'},
-    {id:'te7', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-20',hours:2.5,note:'Continued payroll integration config',   billable:true, createdAt:'2026-06-20T00:00:00.000Z',updatedAt:'2026-06-20T00:00:00.000Z'},
-    {id:'te8', taskId:'t9', clientId:'c1',staffId:'u3',date:'2026-06-03',hours:2.0,note:'Stakeholder workshop facilitation',      billable:true, createdAt:'2026-06-03T00:00:00.000Z',updatedAt:'2026-06-03T00:00:00.000Z'},
-    {id:'te9', taskId:'t10',clientId:'c1',staffId:'u3',date:'2026-06-10',hours:6.0,note:'Information architecture design',        billable:true, createdAt:'2026-06-10T00:00:00.000Z',updatedAt:'2026-06-10T00:00:00.000Z'},
-    {id:'te10',taskId:'t11',clientId:'c1',staffId:'u4',date:'2026-06-18',hours:2.0,note:'Permissions matrix draft',               billable:true, createdAt:'2026-06-18T00:00:00.000Z',updatedAt:'2026-06-18T00:00:00.000Z'},
-    {id:'te11',taskId:'t4', clientId:'c1',staffId:'u2',date:'2026-06-19',hours:3.0,note:'On-site hydraulic leak assessment',      billable:true, createdAt:'2026-06-19T00:00:00.000Z',updatedAt:'2026-06-19T00:00:00.000Z'},
-    {id:'te12',taskId:'t7', clientId:'c1',staffId:'u5',date:'2026-06-19',hours:2.5,note:'SWMS revision — crane erection & dismantling',billable:true,createdAt:'2026-06-19T00:00:00.000Z',updatedAt:'2026-06-19T00:00:00.000Z'},
+    {id:'te1', taskId:'t18',clientId:'c2',staffId:'u3',date:'2026-05-28',hours:1.5,note:'API documentation review session',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'submitted',submittedAt:'2026-05-28T17:00:00.000Z',createdAt:'2026-05-28T00:00:00.000Z',updatedAt:'2026-05-28T17:00:00.000Z'},
+    {id:'te2', taskId:'t19',clientId:'c2',staffId:'u3',date:'2026-06-04',hours:3.0,note:'Integration requirements document draft',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'draft',createdAt:'2026-06-04T00:00:00.000Z',updatedAt:'2026-06-04T00:00:00.000Z'},
+    {id:'te3', taskId:'t19',clientId:'c2',staffId:'u3',date:'2026-06-06',hours:2.5,note:'Requirements document revision and review',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'submitted',submittedAt:'2026-06-06T17:00:00.000Z',createdAt:'2026-06-06T00:00:00.000Z',updatedAt:'2026-06-06T17:00:00.000Z'},
+    {id:'te4', taskId:'t20',clientId:'c2',staffId:'u1',date:'2026-06-11',hours:1.0,note:'Sign-off call with Daltech',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-12T08:00:00.000Z',submittedAt:'2026-06-11T17:00:00.000Z',createdAt:'2026-06-11T00:00:00.000Z',updatedAt:'2026-06-12T08:00:00.000Z'},
+    {id:'te5', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-13',hours:4.0,note:'HR module initial configuration',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-15T09:00:00.000Z',submittedAt:'2026-06-13T17:00:00.000Z',createdAt:'2026-06-13T00:00:00.000Z',updatedAt:'2026-06-15T09:00:00.000Z'},
+    {id:'te6', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-17',hours:3.0,note:'Org chart and leave module setup',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'rejected',rejectedByUserId:'u1',rejectedAt:'2026-06-18T09:00:00.000Z',rejectionReason:'Please resubmit — session ran 2h not 3h per the calendar invite',submittedAt:'2026-06-17T17:00:00.000Z',createdAt:'2026-06-17T00:00:00.000Z',updatedAt:'2026-06-18T09:00:00.000Z'},
+    {id:'te7', taskId:'t21',clientId:'c2',staffId:'u2',date:'2026-06-20',hours:2.5,note:'Continued payroll integration config',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'submitted',submittedAt:'2026-06-20T17:00:00.000Z',createdAt:'2026-06-20T00:00:00.000Z',updatedAt:'2026-06-20T17:00:00.000Z'},
+    {id:'te8', taskId:'t9', clientId:'c1',staffId:'u3',date:'2026-06-03',hours:2.0,note:'Stakeholder workshop facilitation',billable:true,earningsRateId:'er4',earningsRateName:'Training',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-05T08:00:00.000Z',submittedAt:'2026-06-03T17:00:00.000Z',createdAt:'2026-06-03T00:00:00.000Z',updatedAt:'2026-06-05T08:00:00.000Z'},
+    {id:'te9', taskId:'t10',clientId:'c1',staffId:'u3',date:'2026-06-10',hours:6.0,note:'Information architecture design',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-11T08:00:00.000Z',submittedAt:'2026-06-10T17:00:00.000Z',createdAt:'2026-06-10T00:00:00.000Z',updatedAt:'2026-06-11T08:00:00.000Z'},
+    {id:'te10',taskId:'t11',clientId:'c1',staffId:'u4',date:'2026-06-18',hours:2.0,note:'Permissions matrix draft',billable:true,earningsRateId:'er6',earningsRateName:'Admin',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-19T08:00:00.000Z',submittedAt:'2026-06-18T17:00:00.000Z',createdAt:'2026-06-18T00:00:00.000Z',updatedAt:'2026-06-19T08:00:00.000Z'},
+    {id:'te11',taskId:'t4', clientId:'c1',staffId:'u2',date:'2026-06-19',hours:3.0,note:'On-site hydraulic leak assessment',billable:true,earningsRateId:'er3',earningsRateName:'Travel',status:'approved',approvedByUserId:'u1',approvedAt:'2026-06-20T08:00:00.000Z',submittedAt:'2026-06-19T17:00:00.000Z',createdAt:'2026-06-19T00:00:00.000Z',updatedAt:'2026-06-20T08:00:00.000Z'},
+    {id:'te12',taskId:'t7', clientId:'c1',staffId:'u5',date:'2026-06-19',hours:2.5,note:'SWMS revision — crane erection & dismantling',billable:true,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'submitted',submittedAt:'2026-06-19T17:00:00.000Z',createdAt:'2026-06-19T00:00:00.000Z',updatedAt:'2026-06-19T17:00:00.000Z'},
   ],
 
   // ── Comments ───────────────────────────────────────────
@@ -1006,7 +1016,7 @@ function _migrateDB(data){
     data._ciMigrated=true;
   }
 
-  // Upgrade time entries: add billable, clientId
+  // Upgrade time entries: add billable, clientId, status, earningsRate
   (data.timeEntries||[]).forEach(te=>{
     if(te.billable===undefined) te.billable=true;
     if(!te.clientId){
@@ -1015,7 +1025,21 @@ function _migrateDB(data){
     }
     if(!te.createdAt) te.createdAt=new Date().toISOString();
     if(!te.updatedAt) te.updatedAt=te.createdAt;
+    if(!te.status)           te.status='approved';
+    if(!te.earningsRateId)   te.earningsRateId='er1';
+    if(!te.earningsRateName) te.earningsRateName='Ordinary Hours';
+    if(!te.submittedAt&&(te.status==='submitted'||te.status==='approved'||te.status==='rejected'))
+      te.submittedAt=te.createdAt;
   });
+  // Earnings rates: seed if missing
+  if(!data.earningsRates||!data.earningsRates.length) data.earningsRates=[
+    {id:'er1',name:'Ordinary Hours',xeroEarningsRateName:'Ordinary Hours',active:true,defaultForStaff:true, createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er2',name:'Overtime',      xeroEarningsRateName:'Overtime',       active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er3',name:'Travel',        xeroEarningsRateName:'Travel Time',    active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er4',name:'Training',      xeroEarningsRateName:'Training',       active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er5',name:'Leave',         xeroEarningsRateName:'Annual Leave',   active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+    {id:'er6',name:'Admin',         xeroEarningsRateName:'Admin',          active:true,defaultForStaff:false,createdAt:'2026-01-01T00:00:00.000Z'},
+  ];
 
   // Upgrade comments: add visibility
   (data.comments||[]).forEach(c=>{
@@ -1200,6 +1224,20 @@ let rptClientFilter='all';
 let rptDateFrom='';
 let rptDateTo='';
 let rptShowDetail=false;
+// ── Timesheets enhanced state ──
+let tsStatusTab='all';
+let tsViewMode='detailed';
+let tsStaffFilter='all';
+let tsClientFilter='all';
+let tsBoardFilter='all';
+let tsEarningsRateFilter='all';
+let tsBillableFilter='all';
+let tsDateFrom='';
+let tsDateTo='';
+let tsSearch='';
+let tsFortnightEnding='';
+let tsWeekOffset=0;
+let tsSelectedIds=new Set();
 
 // ── Filter system ──
 function freshFilters(){
@@ -4642,7 +4680,7 @@ function logTime(){
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
   const task=DB.tasks.find(t=>t.id===taskId);
   const clientId=(task?task.clientId||(getTaskClient(task)?.id):'')||'';
-  const entry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const entry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'draft',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   DB.timeEntries.push(entry);
   writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId,staffId,date,hours,billable,note:note||null});
   applyHourBudgetPct(taskId);
@@ -4675,14 +4713,7 @@ function renderReports(){
 
   let filterRow='';
   if(rptTab==='timesheet'){
-    filterRow=`
-      <div><label class="form-label">Staff</label>
-        <select id="rpt-staff" class="form-input" style="width:170px" onchange="rptStaffFilter=this.value;renderView('reports')">
-          ${staffOpts}
-        </select>
-      </div>
-      <div><label class="form-label">From</label><input id="rpt-from" type="date" class="form-input" value="${rptDateFrom}" onchange="rptDateFrom=this.value;renderView('reports')"/></div>
-      <div><label class="form-label">To</label><input id="rpt-to" type="date" class="form-input" value="${rptDateTo}" onchange="rptDateTo=this.value;renderView('reports')"/></div>`;
+    filterRow=''; // filter bar is fully embedded inside _rptTimesheetHtml()
   } else {
     filterRow=`
       <div><label class="form-label">Client</label>
@@ -4793,75 +4824,689 @@ function buildDetailReport(entries){
     });
 }
 
-// ── Timesheet filter (not part of the invoice typed layer) ───────────────────
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Week / Fortnight helpers
+// Week cycle: Friday → Thursday. Every Thursday ends a week.
+// Reference fortnight end: 2026-07-02 (known Thursday).
+// ══════════════════════════════════════════════════════════════════════════
 
-function _rptFilterEntries(){
-  return DB.timeEntries.filter(e=>{
-    if(rptStaffFilter!=='all'&&e.staffId!==rptStaffFilter)return false;
-    if(rptClientFilter!=='all'&&e.clientId!==rptClientFilter){
-      const task=DB.tasks.find(t=>t.id===e.taskId);
-      if(!task||task.clientId!==rptClientFilter)return false;
+function tsGetWeekDates(thursdayStr){
+  const thu=new Date(thursdayStr+'T00:00:00Z');
+  return Array.from({length:7},(_,i)=>new Date(thu.getTime()-(6-i)*86400000).toISOString().slice(0,10));
+}
+function tsGetWeekEnding(dateStr){
+  const d=new Date(dateStr+'T00:00:00Z');
+  const dow=d.getUTCDay();
+  return new Date(d.getTime()+((4-dow+7)%7)*86400000).toISOString().slice(0,10);
+}
+const _TS_REF_FN=new Date('2026-07-02T00:00:00Z');
+function tsGetFortnightEnding(dateStr){
+  const d=new Date(dateStr+'T00:00:00Z');
+  const diffForts=Math.ceil((d-_TS_REF_FN)/(14*86400000));
+  return new Date(_TS_REF_FN.getTime()+diffForts*14*86400000).toISOString().slice(0,10);
+}
+function tsGetFortnightWeeks(fortnightEndingStr){
+  const w2=new Date(fortnightEndingStr+'T00:00:00Z');
+  return[new Date(w2.getTime()-7*86400000).toISOString().slice(0,10),fortnightEndingStr];
+}
+function tsDefaultFortnightEnding(){return tsGetFortnightEnding(new Date().toISOString().slice(0,10));}
+function tsFmtDayCol(dateStr){
+  return new Date(dateStr+'T00:00:00Z').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'});
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Status meta
+// ══════════════════════════════════════════════════════════════════════════
+function tsStatusMeta(status){
+  return({
+    draft:    {label:'Draft',   bg:'#f1f5f9',color:'#64748b'},
+    submitted:{label:'Pending', bg:'#dbeafe',color:'#1d4ed8'},
+    approved: {label:'Approved',bg:'#dcfce7',color:'#166534'},
+    rejected: {label:'Rejected',bg:'#fee2e2',color:'#b91c1c'},
+  }[status||'draft'])||{label:'Draft',bg:'#f1f5f9',color:'#64748b'};
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Filter
+// ══════════════════════════════════════════════════════════════════════════
+function _tsFilterEntries(){
+  const isAdmin=currentUser?.role==='admin';
+  return (DB.timeEntries||[]).filter(e=>{
+    if(e.deletedAt) return false;
+    if(!isAdmin&&e.staffId!==currentUser?.id) return false;
+    if(tsStaffFilter!=='all'&&e.staffId!==tsStaffFilter) return false;
+    if(tsClientFilter!=='all'){
+      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      if(e.clientId!==tsClientFilter&&(!task||task.clientId!==tsClientFilter)) return false;
     }
-    if(rptDateFrom&&e.date<rptDateFrom)return false;
-    if(rptDateTo&&e.date>rptDateTo)return false;
+    if(tsBoardFilter!=='all'){
+      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      if(!task||task.boardId!==tsBoardFilter) return false;
+    }
+    if(tsEarningsRateFilter!=='all'&&(e.earningsRateId||'er1')!==tsEarningsRateFilter) return false;
+    if(tsBillableFilter==='billable'&&e.billable===false) return false;
+    if(tsBillableFilter==='nonbillable'&&e.billable!==false) return false;
+    if(tsDateFrom&&e.date<tsDateFrom) return false;
+    if(tsDateTo&&e.date>tsDateTo) return false;
+    if(tsStatusTab==='pending'&&e.status!=='submitted') return false;
+    if(tsStatusTab==='approved'&&e.status!=='approved') return false;
+    if(tsStatusTab==='rejected'&&e.status!=='rejected') return false;
+    if(tsStatusTab==='draft'&&(e.status&&e.status!=='draft')) return false;
+    if(tsSearch){
+      const q=tsSearch.toLowerCase();
+      const staff=getStaff(e.staffId);
+      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const client=DB.clients.find(c=>c.id===e.clientId);
+      if(!(
+        (staff?.name||'').toLowerCase().includes(q)||
+        (task?.name||task?.title||'').toLowerCase().includes(q)||
+        (client?.name||'').toLowerCase().includes(q)||
+        (e.note||'').toLowerCase().includes(q)||
+        (e.earningsRateName||'').toLowerCase().includes(q)
+      )) return false;
+    }
     return true;
   });
 }
 
-function _rptTimesheetHtml(){
-  const staffId=rptStaffFilter;
-  const entries=[..._rptFilterEntries()].sort((a,b)=>a.date.localeCompare(b.date));
-  if(entries.length===0)return`<div class="card" style="text-align:center;padding:40px;color:#8da2b2">No time entries match the selected filters.</div>`;
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Period presets
+// ══════════════════════════════════════════════════════════════════════════
+function tsSetPeriod(period){
+  const today=new Date().toISOString().slice(0,10);
+  const d=new Date(today+'T00:00:00Z');
+  const dow=d.getUTCDay();
+  if(period==='today'){tsDateFrom=today;tsDateTo=today;}
+  else if(period==='this-week'){
+    const thu=new Date(d.getTime()+((4-dow+7)%7)*86400000);
+    tsDateTo=thu.toISOString().slice(0,10);
+    tsDateFrom=new Date(thu.getTime()-6*86400000).toISOString().slice(0,10);
+  }else if(period==='last-week'){
+    const thu=new Date(d.getTime()+((4-dow+7)%7)*86400000);
+    const prevThu=new Date(thu.getTime()-7*86400000);
+    tsDateTo=prevThu.toISOString().slice(0,10);
+    tsDateFrom=new Date(prevThu.getTime()-6*86400000).toISOString().slice(0,10);
+  }else if(period==='this-fortnight'){
+    const fe=tsGetFortnightEnding(today);
+    const[w1]=tsGetFortnightWeeks(fe);
+    tsDateFrom=new Date(new Date(w1+'T00:00:00Z').getTime()-6*86400000).toISOString().slice(0,10);
+    tsDateTo=fe;
+  }else if(period==='last-fortnight'){
+    const fe=tsGetFortnightEnding(today);
+    const prevFe=new Date(new Date(fe+'T00:00:00Z').getTime()-14*86400000).toISOString().slice(0,10);
+    const[w1]=tsGetFortnightWeeks(prevFe);
+    tsDateFrom=new Date(new Date(w1+'T00:00:00Z').getTime()-6*86400000).toISOString().slice(0,10);
+    tsDateTo=prevFe;
+  }else if(period==='this-month'){
+    const y=d.getUTCFullYear(),m=d.getUTCMonth();
+    tsDateFrom=new Date(Date.UTC(y,m,1)).toISOString().slice(0,10);
+    tsDateTo=new Date(Date.UTC(y,m+1,0)).toISOString().slice(0,10);
+  }else if(period==='last-month'){
+    const y=d.getUTCFullYear(),m=d.getUTCMonth();
+    tsDateFrom=new Date(Date.UTC(y,m-1,1)).toISOString().slice(0,10);
+    tsDateTo=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
+  }else{tsDateFrom='';tsDateTo='';}
+  renderView('reports');
+}
 
-  // Group by date
-  const byDate=new Map();
-  entries.forEach(e=>{
-    if(!byDate.has(e.date))byDate.set(e.date,[]);
-    byDate.get(e.date).push(e);
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Approval actions
+// ══════════════════════════════════════════════════════════════════════════
+function tsApproveEntry(id){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  if(currentUser.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
+  const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
+  e.status='approved';e.approvedAt=new Date().toISOString();e.approvedByUserId=currentUser.id;
+  delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
+  e.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
+}
+function openTsRejectModal(id){
+  const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
+  const staff=getStaff(e.staffId);
+  document.getElementById('generic-modal-title').textContent='Reject Timesheet Entry';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <p style="font-size:13px;color:#4a5568;margin-bottom:14px">Rejecting entry for <strong>${escHtml(staff?.name||'Unknown')}</strong> on <strong>${formatDate(e.date)}</strong> — ${e.hours}h</p>
+    <label class="form-label">Rejection reason <span style="color:#ef4444">*</span></label>
+    <textarea id="ts-reject-reason" class="form-input" rows="3" placeholder="Explain why this entry is being rejected..." style="resize:vertical;margin-bottom:16px"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="tsRejectEntry('${id}')" class="btn btn-danger">Reject Entry</button>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('ts-reject-reason')?.focus(),40);
+}
+function tsRejectEntry(id){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  if(currentUser.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
+  const reason=(document.getElementById('ts-reject-reason')?.value||'').trim();
+  if(!reason){showAlert('Please enter a rejection reason.');return;}
+  const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
+  e.status='rejected';e.rejectedAt=new Date().toISOString();e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
+  delete e.approvedAt;delete e.approvedByUserId;
+  e.updatedAt=new Date().toISOString();saveDB(DB);closeGenericModal();renderView('reports');
+}
+function tsSubmitEntry(id){
+  const e=DB.timeEntries.find(t=>t.id===id);
+  if(!e||(e.staffId!==currentUser?.id&&currentUser?.role!=='admin'))return;
+  e.status='submitted';e.submittedAt=new Date().toISOString();
+  delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
+  e.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
+}
+function openTsBulkApproveModal(){
+  const ids=[...tsSelectedIds];
+  if(!ids.length){showAlert('Select entries to approve.');return;}
+  if(currentUser?.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
+  document.getElementById('generic-modal-title').textContent='Bulk Approve Timesheets';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <p style="font-size:13px;color:#4a5568;margin-bottom:10px">Approve <strong>${ids.length}</strong> selected timesheet entr${ids.length!==1?'ies':'y'}?</p>
+    <p style="font-size:12px;color:#6b8399;margin-bottom:20px">Only submitted entries will be approved. Draft and already-approved entries are skipped.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="tsBulkApprove()" class="btn btn-teal">Approve ${ids.length} Entr${ids.length!==1?'ies':'y'}</button>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function tsBulkApprove(){
+  const ids=[...tsSelectedIds];const now=new Date().toISOString();let count=0;
+  ids.forEach(id=>{
+    const e=DB.timeEntries.find(t=>t.id===id);
+    if(e&&e.status==='submitted'){
+      e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
+      delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
+      e.updatedAt=now;count++;
+    }
   });
+  saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
+  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved.`,'Timesheets Approved');
+}
+function openTsBulkRejectModal(){
+  const ids=[...tsSelectedIds];
+  if(!ids.length){showAlert('Select entries to reject.');return;}
+  if(currentUser?.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
+  document.getElementById('generic-modal-title').textContent='Bulk Reject Timesheets';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <p style="font-size:13px;color:#4a5568;margin-bottom:12px">Reject <strong>${ids.length}</strong> selected timesheet entr${ids.length!==1?'ies':'y'}?</p>
+    <label class="form-label">Rejection reason <span style="color:#ef4444">*</span></label>
+    <textarea id="ts-bulk-reject-reason" class="form-input" rows="3" placeholder="Enter reason for rejection..." style="resize:vertical;margin-bottom:16px"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="tsBulkReject()" class="btn btn-danger">Reject ${ids.length} Entr${ids.length!==1?'ies':'y'}</button>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('ts-bulk-reject-reason')?.focus(),40);
+}
+function tsBulkReject(){
+  const ids=[...tsSelectedIds];
+  const reason=(document.getElementById('ts-bulk-reject-reason')?.value||'').trim();
+  if(!reason){showAlert('Please enter a rejection reason.');return;}
+  const now=new Date().toISOString();let count=0;
+  ids.forEach(id=>{
+    const e=DB.timeEntries.find(t=>t.id===id);
+    if(e&&(e.status==='submitted'||e.status==='draft')){
+      e.status='rejected';e.rejectedAt=now;e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
+      delete e.approvedAt;delete e.approvedByUserId;
+      e.updatedAt=now;count++;
+    }
+  });
+  saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
+  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} rejected.`,'Timesheets Rejected');
+}
+function tsClearFilters(){
+  tsStaffFilter='all';tsClientFilter='all';tsBoardFilter='all';tsEarningsRateFilter='all';
+  tsBillableFilter='all';tsDateFrom='';tsDateTo='';tsSearch='';tsStatusTab='all';
+  tsSelectedIds=new Set();renderView('reports');
+}
+function tsToggleSelected(id,checked){
+  if(checked)tsSelectedIds.add(id);else tsSelectedIds.delete(id);
+  const bar=document.getElementById('ts-bulk-bar');
+  if(bar)bar.innerHTML=_tsBulkBarHtml();
+}
+function tsToggleAllSelected(checked){
+  if(checked)_tsFilterEntries().forEach(e=>tsSelectedIds.add(e.id));
+  else tsSelectedIds=new Set();
+  renderView('reports');
+}
+function tsBulkApproveForStaff(staffId,fortnightEnding){
+  const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
+  const allDays=[...tsGetWeekDates(w1),...tsGetWeekDates(w2)];
+  const now=new Date().toISOString();let count=0;
+  (DB.timeEntries||[]).forEach(e=>{
+    if(e.staffId===staffId&&allDays.includes(e.date)&&e.status==='submitted'){
+      e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
+      delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
+      e.updatedAt=now;count++;
+    }
+  });
+  saveDB(DB);renderView('reports');
+  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved for this fortnight.`,'Timesheets Approved');
+}
+function openTsBulkRejectForStaff(staffId,fortnightEnding){
+  const staff=getStaff(staffId);
+  document.getElementById('generic-modal-title').textContent='Reject Fortnight Timesheets';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <p style="font-size:13px;color:#4a5568;margin-bottom:12px">Reject all submitted entries for <strong>${escHtml(staff?.name||'')}</strong> in this fortnight?</p>
+    <label class="form-label">Rejection reason <span style="color:#ef4444">*</span></label>
+    <textarea id="ts-staff-reject-reason" class="form-input" rows="3" placeholder="Explain why this timesheet is being rejected..." style="resize:vertical;margin-bottom:16px"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="tsBulkRejectForStaff('${staffId}','${fortnightEnding}')" class="btn btn-danger">Reject</button>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('ts-staff-reject-reason')?.focus(),40);
+}
+function tsBulkRejectForStaff(staffId,fortnightEnding){
+  const reason=(document.getElementById('ts-staff-reject-reason')?.value||'').trim();
+  if(!reason){showAlert('Please enter a rejection reason.');return;}
+  const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
+  const allDays=[...tsGetWeekDates(w1),...tsGetWeekDates(w2)];
+  const now=new Date().toISOString();let count=0;
+  (DB.timeEntries||[]).forEach(e=>{
+    if(e.staffId===staffId&&allDays.includes(e.date)&&(e.status==='submitted'||e.status==='draft')){
+      e.status='rejected';e.rejectedAt=now;e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
+      delete e.approvedAt;delete e.approvedByUserId;e.updatedAt=now;count++;
+    }
+  });
+  saveDB(DB);closeGenericModal();renderView('reports');
+}
 
-  const totalH=entries.reduce((s,e)=>s+e.hours,0);
-  const sections=[...byDate.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,dayEntries])=>{
-    const dayTotal=dayEntries.reduce((s,e)=>s+e.hours,0);
-    const rows=dayEntries.map(e=>{
-      const task=DB.tasks.find(t=>t.id===e.taskId);
-      const staff=getStaff(e.staffId);
-      const client=(task?getTaskClient(task):null)||DB.clients.find(c=>c.id===e.clientId);
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — CSV Exports
+// ══════════════════════════════════════════════════════════════════════════
+function tsExportCSV(){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  const entries=_tsFilterEntries().sort((a,b)=>a.date.localeCompare(b.date));
+  const rows=[['Date','Staff Member','Staff Email','Client','Board','Group','Parent Task','Task','Earnings Rate','Hours','Billable','Status','Note','Submitted At','Approved At','Approved By','Rejected At','Rejected By','Rejection Reason']];
+  entries.forEach(e=>{
+    const staff=getStaff(e.staffId);
+    const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
+    const board=task?DB.boards.find(b=>b.id===task.boardId):null;
+    const group=task?DB.groups.find(g=>g.id===task.groupId):null;
+    const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
+    const parent=task?.parentTaskId?DB.tasks.find(t=>t.id===task.parentTaskId):null;
+    const approvedBy=e.approvedByUserId?getStaff(e.approvedByUserId):null;
+    const rejectedBy=e.rejectedByUserId?getStaff(e.rejectedByUserId):null;
+    rows.push([e.date,staff?.name||'',staff?.email||'',client?.name||'',board?.name||'',group?.name||'',
+      parent?parent.name||parent.title||'':'',task?task.name||task.title||'':'',
+      e.earningsRateName||'Ordinary Hours',e.hours,e.billable!==false?'Yes':'No',e.status||'draft',
+      e.note||'',e.submittedAt||'',e.approvedAt||'',approvedBy?.name||'',
+      e.rejectedAt||'',rejectedBy?.name||'',e.rejectionReason||'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+  const from=tsDateFrom||entries[0]?.date||new Date().toISOString().slice(0,10);
+  const to=tsDateTo||entries[entries.length-1]?.date||new Date().toISOString().slice(0,10);
+  const sn=tsStaffFilter!=='all'?'_'+(getStaff(tsStaffFilter)?.name||'').replace(/\s+/g,'_'):'';
+  const cn=tsClientFilter!=='all'?'_'+(DB.clients.find(c=>c.id===tsClientFilter)?.name||'').replace(/\s+/g,'_'):'';
+  a.download=`Timesheets${sn}${cn}_${from}_to_${to}.csv`;a.click();
+}
+function tsExportXeroCSV(){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  const fe=tsFortnightEnding||tsDefaultFortnightEnding();
+  const[w1,w2]=tsGetFortnightWeeks(fe);
+  const week1Days=tsGetWeekDates(w1);const week2Days=tsGetWeekDates(w2);
+  const allDays=[...week1Days,...week2Days];
+  const entries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date)&&(tsStaffFilter==='all'||e.staffId===tsStaffFilter));
+  const rows=[['Employee','Employee Email','Timesheet Status','Fortnight Ending','Week Ending','Earnings Rate','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Hours','Notes']];
+  const staffInScope=DB.staff.filter(s=>entries.some(e=>e.staffId===s.id));
+  staffInScope.forEach(staff=>{
+    const staffEntries=entries.filter(e=>e.staffId===staff.id);
+    const allStatuses=staffEntries.map(e=>e.status||'draft');
+    const overallStatus=allStatuses.every(s=>s==='approved')?'Approved':allStatuses.some(s=>s==='submitted')?'Submitted':allStatuses.some(s=>s==='rejected')?'Rejected':'Draft';
+    const erNames=new Set(['Ordinary Hours']);staffEntries.forEach(e=>erNames.add(e.earningsRateName||'Ordinary Hours'));
+    [week1Days,week2Days].forEach((wkDays,wi)=>{
+      const weekEnding=wi===0?w1:w2;
+      erNames.forEach(erName=>{
+        const dailyHrs=wkDays.map(day=>staffEntries.filter(e=>e.date===day&&(e.earningsRateName||'Ordinary Hours')===erName).reduce((s,e)=>s+e.hours,0));
+        const weekTotal=dailyHrs.reduce((s,h)=>s+h,0);
+        const notes=wkDays.map(day=>staffEntries.filter(e=>e.date===day&&(e.earningsRateName||'Ordinary Hours')===erName).map(e=>e.note).filter(Boolean).join('; ')).filter(Boolean).join(' | ');
+        rows.push([staff.name,staff.email||'',overallStatus,fe,weekEnding,erName,...dailyHrs.map(h=>h.toFixed(2)),weekTotal.toFixed(2),notes]);
+      });
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+  const sn=tsStaffFilter!=='all'?'_'+(getStaff(tsStaffFilter)?.name||'').replace(/\s+/g,'_'):'';
+  a.download=`Xero_Timesheets${sn}_Fortnight_${fe}.csv`;a.click();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Bulk bar HTML
+// ══════════════════════════════════════════════════════════════════════════
+function _tsBulkBarHtml(){
+  const n=tsSelectedIds.size;
+  if(!n||currentUser?.role!=='admin')return'';
+  return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d1c33;border-radius:8px;margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#97bcbd">${n} selected</span>
+    <button onclick="openTsBulkApproveModal()" style="padding:0 12px;height:28px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#22c55e;color:#fff">Approve</button>
+    <button onclick="openTsBulkRejectModal()" style="padding:0 12px;height:28px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#ef4444;color:#fff">Reject</button>
+    <button onclick="tsSelectedIds=new Set();renderView('reports')" style="padding:0 10px;height:28px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#97bcbd">Clear selection</button>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Detail table view
+// ══════════════════════════════════════════════════════════════════════════
+function _tsDetailTable(entries,isAdmin){
+  if(!entries.length)return`<div class="card" style="text-align:center;padding:48px;color:#8da2b2"><p style="font-size:14px">No timesheet entries match the current filters.</p><p style="font-size:12px;margin-top:8px;color:#b0bec5">Try adjusting your filters or date range.</p></div>`;
+  const sorted=[...entries].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffId||'').localeCompare(b.staffId||''));
+  const thS='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
+  const tdS='padding:10px 12px;font-size:12px;border-bottom:1px solid #f4f6fa;vertical-align:middle';
+  const allSel=sorted.length>0&&sorted.every(e=>tsSelectedIds.has(e.id));
+  const rows=sorted.map(e=>{
+    const staff=getStaff(e.staffId);
+    const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
+    const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
+    const sm=tsStatusMeta(e.status);
+    const checked=tsSelectedIds.has(e.id);
+    const approvedBy=e.approvedByUserId?getStaff(e.approvedByUserId):null;
+    const rejectedBy=e.rejectedByUserId?getStaff(e.rejectedByUserId):null;
+    const isOwn=e.staffId===currentUser?.id;
+    const canAct=isAdmin;
+    const actionBtns=canAct?`
+      ${e.status!=='approved'?`<button onclick="tsApproveEntry('${e.id}')" title="Approve" style="padding:3px 8px;height:24px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:none;background:#dcfce7;color:#166534">✓</button>`:''}
+      ${e.status!=='rejected'?`<button onclick="openTsRejectModal('${e.id}')" title="Reject" style="padding:3px 8px;height:24px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c">✕</button>`:''}
+    `:((!canAct&&(e.status==='draft'||e.status==='rejected')&&isOwn)?`<button onclick="tsSubmitEntry('${e.id}')" style="padding:3px 8px;height:24px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #3b82f6;background:#eff6ff;color:#1d4ed8">Submit</button>`:'');
+    let approvalNote='';
+    if(e.status==='approved'&&approvedBy) approvalNote=`<div style="font-size:9px;color:#8da2b2;margin-top:2px">${escHtml(approvedBy.name)}</div>`;
+    if(e.status==='rejected'&&e.rejectionReason) approvalNote=`<div style="font-size:9px;color:#b91c1c;margin-top:2px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.rejectionReason)}">${escHtml(e.rejectionReason)}</div>`;
+    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
+      ${isAdmin?`<td style="${tdS};width:36px"><input type="checkbox" ${checked?'checked':''} onchange="tsToggleSelected('${e.id}',this.checked)" style="accent-color:#0d1c33"/></td>`:''}
+      <td style="${tdS};white-space:nowrap;font-weight:600;color:#1a2940">${formatDate(e.date)}</td>
+      <td style="${tdS}"><div style="display:flex;align-items:center;gap:6px">${avatarHtml(staff,18)}<span>${escHtml(staff?.name||'Unknown')}</span></div></td>
+      <td style="${tdS}">${client?`<span style="color:${client.color};font-weight:700;background:${client.color}18;padding:2px 7px;border-radius:8px;font-size:11px">${escHtml(client.shortCode||client.name)}</span>`:'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(task?.name||task?.title||'')}">${task?escHtml(task.name||task.title||'Untitled'):'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};color:#6b8399;white-space:nowrap">${escHtml(e.earningsRateName||'Ordinary Hours')}</td>
+      <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif;text-align:right;white-space:nowrap">${e.hours.toFixed(1)}h</td>
+      <td style="${tdS};text-align:center">${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:8px;font-weight:700">Bill.</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:8px;font-weight:700">N/B</span>`}</td>
+      <td style="${tdS}"><span style="font-size:10px;font-weight:700;background:${sm.bg};color:${sm.color};padding:2px 8px;border-radius:8px;white-space:nowrap">${sm.label}</span>${approvalNote}</td>
+      <td style="${tdS};max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b8399" title="${escHtml(e.note||'')}">${escHtml(e.note||'—')}</td>
+      <td style="${tdS}"><div style="display:flex;gap:5px;align-items:center">${actionBtns}</div></td>
+    </tr>`;
+  }).join('');
+  const grandTotal=entries.reduce((s,e)=>s+e.hours,0);
+  return`<div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:820px">
+      <thead><tr>
+        ${isAdmin?`<th style="${thS};width:36px"><input type="checkbox" ${allSel?'checked':''} onchange="tsToggleAllSelected(this.checked)" style="accent-color:#0d1c33"/></th>`:''}
+        <th style="${thS}">Date</th>
+        <th style="${thS}">Staff</th>
+        <th style="${thS}">Client</th>
+        <th style="${thS}">Task</th>
+        <th style="${thS}">Earnings Rate</th>
+        <th style="${thS};text-align:right">Hours</th>
+        <th style="${thS};text-align:center">Type</th>
+        <th style="${thS}">Status</th>
+        <th style="${thS}">Note</th>
+        <th style="${thS}">Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="padding:12px 16px;background:#0d1c33;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:#97bcbd">${entries.length} entr${entries.length!==1?'ies':'y'}</span>
+      <span style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#fff">${grandTotal.toFixed(1)}h</span>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Summary view
+// ══════════════════════════════════════════════════════════════════════════
+function _tsSummaryView(entries){
+  if(!entries.length)return`<div class="card" style="text-align:center;padding:48px;color:#8da2b2">No timesheet entries match the current filters.</div>`;
+  const map=new Map();
+  entries.forEach(e=>{
+    const key=`${e.staffId}|${e.clientId||''}|${e.earningsRateName||'Ordinary Hours'}`;
+    if(!map.has(key))map.set(key,{staffId:e.staffId,clientId:e.clientId,earningsRate:e.earningsRateName||'Ordinary Hours',total:0,billable:0,nonBillable:0,pending:0,approved:0,rejected:0});
+    const r=map.get(key);
+    r.total+=e.hours;
+    if(e.billable!==false)r.billable+=e.hours;else r.nonBillable+=e.hours;
+    if(e.status==='submitted')r.pending+=e.hours;
+    else if(e.status==='approved')r.approved+=e.hours;
+    else if(e.status==='rejected')r.rejected+=e.hours;
+  });
+  const rows=[...map.values()].sort((a,b)=>(getStaff(a.staffId)?.name||'').localeCompare(getStaff(b.staffId)?.name||'')||a.earningsRate.localeCompare(b.earningsRate));
+  const thS='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
+  const tdS='padding:10px 12px;font-size:12px;border-bottom:1px solid #f4f6fa;vertical-align:middle';
+  const trs=rows.map(r=>{
+    const staff=getStaff(r.staffId);
+    const client=DB.clients.find(c=>c.id===r.clientId);
+    return`<tr>
+      <td style="${tdS}"><div style="display:flex;align-items:center;gap:7px">${avatarHtml(staff,22)}<span style="font-weight:500">${escHtml(staff?.name||'Unknown')}</span></div></td>
+      <td style="${tdS}">${client?`<span style="color:${client.color};font-weight:700;background:${client.color}18;padding:2px 7px;border-radius:8px">${escHtml(client.name)}</span>`:'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};color:#6b8399">${escHtml(r.earningsRate)}</td>
+      <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif">${r.total.toFixed(1)}h</td>
+      <td style="${tdS};color:#166534">${r.billable.toFixed(1)}h</td>
+      <td style="${tdS};color:#64748b">${r.nonBillable.toFixed(1)}h</td>
+      <td style="${tdS}"><span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:2px 7px;border-radius:8px;font-weight:600">${r.pending.toFixed(1)}h</span></td>
+      <td style="${tdS}"><span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:8px;font-weight:600">${r.approved.toFixed(1)}h</span></td>
+      <td style="${tdS}"><span style="font-size:10px;background:#fee2e2;color:#b91c1c;padding:2px 7px;border-radius:8px;font-weight:600">${r.rejected.toFixed(1)}h</span></td>
+    </tr>`;
+  }).join('');
+  const grand=entries.reduce((s,e)=>s+e.hours,0);
+  return`<div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:700px">
+      <thead><tr>
+        <th style="${thS}">Staff</th><th style="${thS}">Client</th><th style="${thS}">Earnings Rate</th>
+        <th style="${thS}">Total</th><th style="${thS}">Billable</th><th style="${thS}">Non-Bill.</th>
+        <th style="${thS}">Pending</th><th style="${thS}">Approved</th><th style="${thS}">Rejected</th>
+      </tr></thead>
+      <tbody>${trs}</tbody>
+    </table>
+    </div>
+    <div style="padding:12px 16px;background:#0d1c33;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:#97bcbd">${entries.length} entr${entries.length!==1?'ies':'y'} · ${rows.length} groups</span>
+      <span style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#fff">${grand.toFixed(1)}h</span>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Xero format view
+// ══════════════════════════════════════════════════════════════════════════
+function _tsXeroView(){
+  const fe=tsFortnightEnding||tsDefaultFortnightEnding();
+  const[w1,w2]=tsGetFortnightWeeks(fe);
+  const week1Days=tsGetWeekDates(w1);const week2Days=tsGetWeekDates(w2);
+  const allDays=[...week1Days,...week2Days];
+  const isAdmin=currentUser?.role==='admin';
+  let ftEntries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date));
+  if(!isAdmin)ftEntries=ftEntries.filter(e=>e.staffId===currentUser?.id);
+  if(tsStaffFilter!=='all')ftEntries=ftEntries.filter(e=>e.staffId===tsStaffFilter);
+  if(tsClientFilter!=='all')ftEntries=ftEntries.filter(e=>{
+    const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+    return e.clientId===tsClientFilter||(!!(task&&task.clientId===tsClientFilter));
+  });
+  const prevFe=new Date(new Date(fe+'T00:00:00Z').getTime()-14*86400000).toISOString().slice(0,10);
+  const nextFe=new Date(new Date(fe+'T00:00:00Z').getTime()+14*86400000).toISOString().slice(0,10);
+  const fmtFe=d=>new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  const navBar=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <button onclick="tsFortnightEnding='${prevFe}';renderView('reports')" style="padding:0 12px;height:30px;border-radius:7px;font-size:12px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#1a2940">← Prev</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;font-weight:700;color:#0d1c33;font-family:'Jost',sans-serif">Fortnight ending ${fmtFe(fe)}</span>
+      <input type="date" value="${fe}" onchange="tsFortnightEnding=this.value;renderView('reports')" style="height:28px;padding:0 8px;border:1.5px solid #e2eaf2;border-radius:7px;font-size:12px;color:#1a2940"/>
+    </div>
+    <button onclick="tsFortnightEnding='${nextFe}';renderView('reports')" style="padding:0 12px;height:30px;border-radius:7px;font-size:12px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#1a2940">Next →</button>
+    <button onclick="tsExportXeroCSV()" class="btn btn-teal btn-sm" style="margin-left:auto">↓ Xero CSV</button>
+  </div>`;
+  const staffInScope=(isAdmin?DB.staff:DB.staff.filter(s=>s.id===currentUser?.id))
+    .filter(s=>(tsStaffFilter==='all'||s.id===tsStaffFilter)&&ftEntries.some(e=>e.staffId===s.id));
+  if(!staffInScope.length)return navBar+`<div class="card" style="text-align:center;padding:48px;color:#8da2b2">No timesheet data for this fortnight.<br><span style="font-size:12px;margin-top:8px;display:block">Navigate to another fortnight or adjust filters.</span></div>`;
+  const thSty='font-size:10px;font-weight:700;color:#8da2b2;padding:8px 10px;text-align:center;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
+  const tdSty='padding:8px 10px;text-align:center;font-size:12px;border-bottom:1px solid #f4f6fa;font-family:"Jost",sans-serif;font-weight:600';
+  const cards=staffInScope.map(staff=>{
+    const staffEntries=ftEntries.filter(e=>e.staffId===staff.id);
+    const fortnightTotal=staffEntries.reduce((s,e)=>s+e.hours,0);
+    const allStatuses=staffEntries.map(e=>e.status||'draft');
+    const overallStatus=!allStatuses.length?'draft':allStatuses.every(s=>s==='approved')?'approved':allStatuses.some(s=>s==='submitted')?'submitted':allStatuses.some(s=>s==='rejected')?'rejected':'draft';
+    const sm=tsStatusMeta(overallStatus);
+    const erNames=new Set(['Ordinary Hours']);staffEntries.forEach(e=>erNames.add(e.earningsRateName||'Ordinary Hours'));
+    const activeWeekDays=tsWeekOffset===1?week2Days:week1Days;
+    const activeWeekEnding=tsWeekOffset===1?w2:w1;
+    const erRows=[...erNames].map(erName=>{
+      const dailyHrs=activeWeekDays.map(day=>staffEntries.filter(e=>e.date===day&&(e.earningsRateName||'Ordinary Hours')===erName).reduce((s,e)=>s+e.hours,0));
+      const weekTotal=dailyHrs.reduce((s,h)=>s+h,0);
       return`<tr>
-        <td style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${task?escHtml(task.name):'—'}</td>
-        <td style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${client?`<span style="color:${client.color};font-weight:600">${escHtml(client.shortCode||client.name)}</span>`:'—'}</td>
-        <td style="overflow:hidden;max-width:0"><div style="display:flex;align-items:center;gap:5px;overflow:hidden">${avatarHtml(staff,18)}<span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(staff.name.split(' ')[0])}</span></div></td>
-        <td style="font-size:12px;color:#6b8399;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">${escHtml(e.note||'—')}</td>
-        <td>${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:8px;font-weight:700">Billable</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:8px;font-weight:700">Non-bill.</span>`}</td>
-        <td style="font-size:13px;font-weight:700;color:#0d1c33;text-align:right">${e.hours}h</td>
+        <td style="${tdSty};text-align:left;color:#1a2940">${escHtml(erName)}</td>
+        ${dailyHrs.map(h=>`<td style="${tdSty};color:${h>0?'#0d1c33':'#c8d7e1'}">${h>0?h.toFixed(2):'—'}</td>`).join('')}
+        <td style="${tdSty};font-weight:700;color:#0d1c33;border-left:2px solid #e4ecf4">${weekTotal.toFixed(2)}</td>
       </tr>`;
     }).join('');
-    return`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-      <div style="padding:10px 18px;background:#f8fbff;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${formatDate(date)}</span>
-        <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${dayTotal.toFixed(1)}h</span>
+    const actBtns=isAdmin?`<div style="display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e4ecf4">
+      ${overallStatus!=='approved'?`<button onclick="tsBulkApproveForStaff('${staff.id}','${fe}')" style="padding:0 14px;height:30px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#22c55e;color:#fff">Approve All</button>`:''}
+      ${overallStatus==='submitted'?`<button onclick="openTsBulkRejectForStaff('${staff.id}','${fe}')" style="padding:0 14px;height:30px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#ef4444;color:#fff">Reject</button>`:''}
+    </div>`:'';
+    return`<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:14px 18px;background:#f8fbff;border-bottom:2px solid #e4ecf4;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">${avatarHtml(staff,32)}
+          <div><div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">${escHtml(staff.name)}</div>
+          <div style="font-size:11px;color:#8da2b2">${escHtml(staff.email||'')}</div></div>
+        </div>
+        <div style="display:flex;gap:20px;margin-left:auto;align-items:center">
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Status</div>
+            <span style="font-size:11px;font-weight:700;background:${sm.bg};color:${sm.color};padding:3px 10px;border-radius:8px">${sm.label}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Fortnight</div>
+            <div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33">${fortnightTotal.toFixed(2)}h</div>
+          </div>
+        </div>
       </div>
-      <table class="data-table" style="table-layout:fixed;width:100%">
-        <colgroup>
-          <col style="width:30%"/>
-          <col style="width:12%"/>
-          <col style="width:15%"/>
-          <col style="width:28%"/>
-          <col style="width:8%"/>
-          <col style="width:7%"/>
-        </colgroup>
+      <div style="padding:8px 18px;background:#fff;border-bottom:1px solid #e4ecf4;display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;font-weight:700;color:#6b8399">Week ending:</span>
+        <div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden">
+          <button onclick="tsWeekOffset=0;renderView('reports')" class="g2-scale-btn${tsWeekOffset===0?' active':''}" style="font-size:11px">Week 1 — ${fmtFe(w1)}</button>
+          <button onclick="tsWeekOffset=1;renderView('reports')" class="g2-scale-btn${tsWeekOffset===1?' active':''}" style="font-size:11px">Week 2 — ${fmtFe(w2)}</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:600px">
         <thead><tr>
-          <th>Task</th><th>Client</th><th>Staff</th><th>Note</th><th>Type</th><th style="text-align:right">Hours</th>
+          <th style="${thSty};text-align:left;min-width:140px">Earnings Rate</th>
+          ${activeWeekDays.map(d=>`<th style="${thSty}">${tsFmtDayCol(d)}</th>`).join('')}
+          <th style="${thSty};border-left:2px solid #e4ecf4">Hours</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${erRows}</tbody>
       </table>
+      </div>
+      ${actBtns}
     </div>`;
   }).join('');
+  return navBar+cards;
+}
 
-  return sections+`<div class="card" style="background:#0d1c33;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 22px">
-    <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#97bcbd">Total Hours — ${entries.length} entr${entries.length!==1?'ies':'y'}</span>
-    <span style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700">${totalH.toFixed(1)}h</span>
+// ══════════════════════════════════════════════════════════════════════════
+// TIMESHEETS — Main render function
+// ══════════════════════════════════════════════════════════════════════════
+function _rptTimesheetHtml(){
+  const isAdmin=currentUser?.role==='admin';
+  const entries=_tsFilterEntries();
+  const allEntries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&(isAdmin||e.staffId===currentUser?.id));
+  const cnt={
+    all:allEntries.length,
+    pending:allEntries.filter(e=>e.status==='submitted').length,
+    approved:allEntries.filter(e=>e.status==='approved').length,
+    rejected:allEntries.filter(e=>e.status==='rejected').length,
+    draft:allEntries.filter(e=>!e.status||e.status==='draft').length,
+  };
+  const totalHrs=entries.reduce((s,e)=>s+e.hours,0);
+  const billableHrs=entries.filter(e=>e.billable!==false).reduce((s,e)=>s+e.hours,0);
+  const nonBillHrs=entries.filter(e=>e.billable===false).reduce((s,e)=>s+e.hours,0);
+  const pendingHrs=entries.filter(e=>e.status==='submitted').reduce((s,e)=>s+e.hours,0);
+  const approvedHrs=entries.filter(e=>e.status==='approved').reduce((s,e)=>s+e.hours,0);
+  const rejectedHrs=entries.filter(e=>e.status==='rejected').reduce((s,e)=>s+e.hours,0);
+  const draftHrs=entries.filter(e=>!e.status||e.status==='draft').reduce((s,e)=>s+e.hours,0);
+
+  const inSty='height:30px;padding:0 8px;border:1.5px solid #e2eaf2;border-radius:7px;font-size:12px;color:#1a2940;background:#fff';
+  const lbSty='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px';
+  const selSty=`style="${inSty};cursor:pointer;font-family:'Jost',sans-serif"`;
+  const staffOpts='<option value="all">All Staff</option>'+DB.staff.map(s=>`<option value="${s.id}"${tsStaffFilter===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const clientOpts='<option value="all">All Clients</option>'+DB.clients.map(c=>`<option value="${c.id}"${tsClientFilter===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  const boardOpts='<option value="all">All Boards</option>'+(DB.boards||[]).filter(b=>!b.archived).map(b=>`<option value="${b.id}"${tsBoardFilter===b.id?' selected':''}>${escHtml(b.name)}</option>`).join('');
+  const erOpts='<option value="all">All Rates</option>'+(DB.earningsRates||[]).map(er=>`<option value="${er.id}"${tsEarningsRateFilter===er.id?' selected':''}>${escHtml(er.name)}</option>`).join('');
+  const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
+
+  const filterBar=`<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:12px 14px;background:#f8fbff;border:1.5px solid #e4ecf4;border-radius:8px;margin-bottom:12px">
+    <div style="position:relative">
+      <label style="${lbSty}">Search</label>
+      <div style="position:relative">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" value="${escHtml(tsSearch)}" placeholder="Search..." oninput="tsSearch=this.value;renderView('reports')" style="${inSty};padding-left:26px;width:150px"/>
+        ${tsSearch?`<button onclick="tsSearch='';renderView('reports')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0">×</button>`:''}
+      </div>
+    </div>
+    ${isAdmin?`<div><label style="${lbSty}">Staff</label><select ${selSty} onchange="tsStaffFilter=this.value;renderView('reports')">${staffOpts}</select></div>`:''}
+    <div><label style="${lbSty}">Client</label><select ${selSty} onchange="tsClientFilter=this.value;renderView('reports')">${clientOpts}</select></div>
+    <div><label style="${lbSty}">Board</label><select ${selSty} onchange="tsBoardFilter=this.value;renderView('reports')">${boardOpts}</select></div>
+    <div><label style="${lbSty}">Earnings Rate</label><select ${selSty} onchange="tsEarningsRateFilter=this.value;renderView('reports')">${erOpts}</select></div>
+    <div><label style="${lbSty}">Billable</label><select ${selSty} onchange="tsBillableFilter=this.value;renderView('reports')">
+      <option value="all"${tsBillableFilter==='all'?' selected':''}>All</option>
+      <option value="billable"${tsBillableFilter==='billable'?' selected':''}>Billable only</option>
+      <option value="nonbillable"${tsBillableFilter==='nonbillable'?' selected':''}>Non-billable only</option>
+    </select></div>
+    <div><label style="${lbSty}">From</label><input type="date" value="${tsDateFrom}" onchange="tsDateFrom=this.value;renderView('reports')" style="${inSty};width:128px"/></div>
+    <div><label style="${lbSty}">To</label><input type="date" value="${tsDateTo}" onchange="tsDateTo=this.value;renderView('reports')" style="${inSty};width:128px"/></div>
+    <div><label style="${lbSty}">Period</label><select ${selSty} onchange="if(this.value)tsSetPeriod(this.value);this.selectedIndex=0">
+      <option value="">Quick…</option>
+      <option value="today">Today</option>
+      <option value="this-week">This Week</option>
+      <option value="last-week">Last Week</option>
+      <option value="this-fortnight">This Fortnight</option>
+      <option value="last-fortnight">Last Fortnight</option>
+      <option value="this-month">This Month</option>
+      <option value="last-month">Last Month</option>
+    </select></div>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:flex-end">
+      <button onclick="tsExportCSV()" class="btn btn-ghost btn-sm" style="white-space:nowrap">↓ CSV</button>
+      <button onclick="tsExportXeroCSV()" class="btn btn-teal btn-sm" style="white-space:nowrap">↓ Xero CSV</button>
+      ${anyFilter?`<button onclick="tsClearFilters()" style="padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:#fee2e2;color:#991b1b;white-space:nowrap">✕ Clear</button>`:''}
+    </div>
   </div>`;
+
+  const tabPill=(key,label,count,color,bg)=>`<button onclick="tsStatusTab='${key}';tsSelectedIds=new Set();renderView('reports')" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${tsStatusTab===key?color:'#e2eaf2'};background:${tsStatusTab===key?bg:'transparent'};color:${tsStatusTab===key?color:'#8da2b2'};font-family:'Jost',sans-serif">${label}<span style="background:${tsStatusTab===key?color:'#e2eaf2'};color:${tsStatusTab===key?'#fff':'#8da2b2'};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${count}</span></button>`;
+  const vmBtn=(mode,label)=>`<button onclick="tsViewMode='${mode}';renderView('reports')" class="g2-scale-btn${tsViewMode===mode?' active':''}">${label}</button>`;
+  const controlBar=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="display:flex;gap:5px;flex-wrap:wrap;flex:1">
+      ${tabPill('all','All',cnt.all,'#0d1c33','#f1f5f9')}
+      ${tabPill('pending','Pending Approval',cnt.pending,'#1d4ed8','#dbeafe')}
+      ${tabPill('approved','Approved',cnt.approved,'#166534','#dcfce7')}
+      ${tabPill('rejected','Rejected',cnt.rejected,'#b91c1c','#fee2e2')}
+      ${tabPill('draft','Draft',cnt.draft,'#64748b','#f8fafc')}
+    </div>
+    <div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
+      ${vmBtn('detailed','Detailed')}
+      ${vmBtn('summary','Summary')}
+      ${vmBtn('xero','Xero Format')}
+    </div>
+  </div>`;
+
+  const card=(label,val,color,bg)=>`<div style="padding:14px 16px;background:${bg};border:1.5px solid ${color}22;border-radius:10px;min-width:0">
+    <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">${label}</div>
+    <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:${color==='#64748b'||color==='#8da2b2'?'#0d1c33':color}">${val}</div>
+  </div>`;
+  const summaryCards=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:14px">
+    ${card('Total Hours',totalHrs.toFixed(1)+'h','#0d1c33','#f8fbff')}
+    ${card('Billable',billableHrs.toFixed(1)+'h','#166534','#f0fdf4')}
+    ${card('Non-Billable',nonBillHrs.toFixed(1)+'h','#64748b','#f8fafc')}
+    ${card('Pending',pendingHrs.toFixed(1)+'h','#1d4ed8','#eff6ff')}
+    ${card('Approved',approvedHrs.toFixed(1)+'h','#166534','#dcfce7')}
+    ${card('Rejected',rejectedHrs.toFixed(1)+'h','#b91c1c','#fef2f2')}
+    ${card('Draft',draftHrs.toFixed(1)+'h','#b45309','#fffbeb')}
+  </div>`;
+
+  const bulkBar=`<div id="ts-bulk-bar">${_tsBulkBarHtml()}</div>`;
+
+  let content='';
+  if(tsViewMode==='summary')content=_tsSummaryView(entries);
+  else if(tsViewMode==='xero')content=_tsXeroView();
+  else content=_tsDetailTable(entries,isAdmin);
+
+  return filterBar+controlBar+summaryCards+bulkBar+content;
 }
 
 function _rptInvoiceHtml(){
