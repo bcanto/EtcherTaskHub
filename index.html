@@ -5515,7 +5515,7 @@ function pfiCalcTotals(inv){
   const bl=(inv.lineItems||[]).filter(l=>l.billable);
   const totalHrs=bl.reduce((s,l)=>s+l.hours,0);
   const totalAmt=bl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-  const gstAmt=inv.gstEnabled?(totalAmt*(+(inv.gstRate)||10)/100):0;
+  const gstAmt=totalAmt*0.1;
   return{totalHrs,totalAmt,gstAmt,grandTotal:totalAmt+gstAmt};
 }
 function pfiStatusMeta(s){
@@ -5695,7 +5695,7 @@ function pfiExportCSV(id){
   rows.push(['','','','','','','','','','','','','','','']);
   rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','','','']);
   rows.push(['','','','Subtotal','','','','','','','','$'+t.totalAmt.toFixed(2),'','','']);
-  if(inv.gstEnabled)rows.push(['','','','GST ('+inv.gstRate+'%)','','','','','','','','$'+t.gstAmt.toFixed(2),'','','']);
+  rows.push(['','','','GST (10%)','','','','','','','','$'+t.gstAmt.toFixed(2),'','','']);
   rows.push(['','','','TOTAL','','','','','','','','$'+t.grandTotal.toFixed(2),'','','']);
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
@@ -5734,7 +5734,7 @@ ${inv.clientNotes?`<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">
 ${dataRows}
 <tr><td colspan="15" style="height:8px"></td></tr>
 <tr><td colspan="9" style="padding:4px 8px;font-weight:bold;background:#f8fbff">Total Hours</td><td style="text-align:right;font-weight:bold;padding:4px 8px;background:#f8fbff">${t.totalHrs.toFixed(2)}</td><td style="text-align:right;font-weight:bold;padding:4px 8px;background:#f8fbff">$${t.totalAmt.toFixed(2)}</td><td colspan="4"></td></tr>
-${inv.gstEnabled?`<tr><td colspan="9" style="padding:4px 8px;background:#f8fbff">GST (${inv.gstRate}%)</td><td></td><td style="text-align:right;padding:4px 8px;background:#f8fbff">$${gstAmt}</td><td colspan="4"></td></tr>`:''}
+<tr><td colspan="9" style="padding:4px 8px;background:#f8fbff">GST (10%)</td><td></td><td style="text-align:right;padding:4px 8px;background:#f8fbff">$${gstAmt}</td><td colspan="4"></td></tr>
 <tr><td colspan="9" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL</td><td style="background:#0d1c33"></td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">$${t.grandTotal.toFixed(2)}</td><td colspan="4" style="background:#0d1c33"></td></tr>
 </table></body></html>`;
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
@@ -5800,19 +5800,14 @@ function pfiExportPDF(id){
         foot:[['','','','','Total Hours: '+t.totalHrs.toFixed(2),'','','','']],
         columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{halign:'right',cellWidth:12},6:{halign:'right',cellWidth:14},7:{halign:'right',cellWidth:16},8:{cellWidth:'auto'}},
       });
-      const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=inv.gstEnabled?28:20;
+      const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=28;
       doc.setFillColor(248,251,255);doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);
       doc.roundedRect(bX,tY,bW,bH,2,2,'FD');
       doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...DARK);
       doc.text('Subtotal',bX+4,tY+7);doc.setFont('helvetica','normal');doc.text('$'+t.totalAmt.toFixed(2),bX+bW-4,tY+7,{align:'right'});
-      if(inv.gstEnabled){
-        doc.setFont('helvetica','bold');doc.text('GST ('+inv.gstRate+'%)',bX+4,tY+14);doc.setFont('helvetica','normal');doc.text('$'+t.gstAmt.toFixed(2),bX+bW-4,tY+14,{align:'right'});
-        doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
-        doc.text('TOTAL',bX+4,tY+23);doc.text('$'+t.grandTotal.toFixed(2),bX+bW-4,tY+23,{align:'right'});
-      }else{
-        doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
-        doc.text('TOTAL',bX+4,tY+16);doc.text('$'+t.grandTotal.toFixed(2),bX+bW-4,tY+16,{align:'right'});
-      }
+      doc.setFont('helvetica','bold');doc.text('GST (10%)',bX+4,tY+14);doc.setFont('helvetica','normal');doc.text('$'+t.gstAmt.toFixed(2),bX+bW-4,tY+14,{align:'right'});
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
+      doc.text('TOTAL',bX+4,tY+23);doc.text('$'+t.grandTotal.toFixed(2),bX+bW-4,tY+23,{align:'right'});
       const tp=doc.internal.getNumberOfPages();
       for(let pg=1;pg<=tp;pg++){
         doc.setPage(pg);doc.setDrawColor(...BORDER);doc.setLineWidth(0.2);doc.line(mX,H-13,W-mX,H-13);
@@ -5907,11 +5902,6 @@ function _pfiEditorHtml(inv){
       <div><label style="${lbS}">Status</label><select style="${inS};cursor:pointer;width:180px" onchange="pfiSetStatus('${inv.id}',this.value)">
         ${['draft','ready','approved','sent','accepted','rejected','changes'].map(s=>`<option value="${s}"${inv.status===s?' selected':''}>${pfiStatusMeta(s).label}</option>`).join('')}
       </select></div>
-      <div><label style="${lbS}">GST</label><div style="display:flex;align-items:center;gap:8px;height:30px">
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:#1a2940"><input type="checkbox" ${inv.gstEnabled?'checked':''} style="accent-color:#0d1c33" onchange="pfiSaveField('${inv.id}','gstEnabled',this.checked)"/> Enabled</label>
-        <input type="number" value="${inv.gstRate||10}" style="${inS};width:60px" min="0" step="0.5" onblur="pfiSaveField('${inv.id}','gstRate',this.value)"/>
-        <span style="font-size:12px;color:#6b8399">%</span>
-      </div></div>
     </div>
   </div>`;
 
@@ -6004,7 +5994,7 @@ function _pfiEditorHtml(inv){
       <div style="min-width:260px">
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">Total Hours</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">${t.totalHrs.toFixed(2)}h</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">Subtotal</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">$${t.totalAmt.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
-        ${inv.gstEnabled?`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">GST (${inv.gstRate}%)</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">$${t.gstAmt.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">GST (10%)</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">$${t.gstAmt.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
         <div style="display:flex;justify-content:space-between;padding:12px 0"><span style="font-size:16px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">TOTAL</span><span style="font-size:20px;font-weight:700;font-family:'Jost',sans-serif;color:#178082">$${t.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
       </div>
     </div>
