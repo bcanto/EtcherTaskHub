@@ -45,7 +45,7 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text-1);-web
 h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .hidden{display:none!important}
 /* ── Sidebar ── */
-#sidebar{width:220px;min-height:100vh;background:linear-gradient(180deg,#0c1b31 0%,#071422 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.04)}
+#sidebar{width:220px;height:100vh;background:linear-gradient(180deg,#0c1b31 0%,#071422 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.04);overflow:hidden}
 #app-shell{display:flex;min-height:100vh}
 #main-content{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border-radius:8px;transition:background 0.2s var(--ease),color 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
