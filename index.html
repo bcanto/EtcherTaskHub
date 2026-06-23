@@ -1187,6 +1187,9 @@ let mcGroupBy='staff';
 let mcCollapsed=new Set();
 let mcThreshold=4;
 let mcOverAllocOnly=false;
+let mcView='gantt'; // 'gantt' | 'list'
+let mcDateFrom='';
+let mcDateTo='';
 // Universal toolbar state
 let utFilterOpen=false;
 
@@ -1304,14 +1307,20 @@ function _utViewControls(view){
     </label>`;
   }
   if(view==='capacity'){
-    return`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
+    const swimCtls=mcView==='gantt'?`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
       ${['days','weeks','months'].map(s=>`<button class="g2-scale-btn ${mcScale===s?'active':''}" onclick="mcSetScale('${s}')">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}
     </div>
+    <button onclick="mcAutoFit()" class="btn btn-ghost btn-sm" style="flex-shrink:0">⊞ Fit</button>`:'';
+    return`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
+      <button class="g2-scale-btn ${mcView==='gantt'?'active':''}" onclick="mcSetView('gantt')">Swimlane</button>
+      <button class="g2-scale-btn ${mcView==='list'?'active':''}" onclick="mcSetView('list')">List</button>
+    </div>
+    <div style="width:1px;height:20px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
     <div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
       <button class="g2-scale-btn ${mcGroupBy==='staff'?'active':''}" onclick="mcSetGroupBy('staff')">By Staff</button>
       <button class="g2-scale-btn ${mcGroupBy==='client'?'active':''}" onclick="mcSetGroupBy('client')">By Client</button>
     </div>
-    <button onclick="mcAutoFit()" class="btn btn-ghost btn-sm" style="flex-shrink:0">⊞ Fit</button>
+    ${swimCtls}
     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
       <span style="font-size:11px;color:#6b8399;font-weight:600;white-space:nowrap">Threshold:</span>
       <input type="number" value="${mcThreshold}" min="1" max="20" onchange="mcThreshold=+this.value;renderView('capacity')" style="width:46px;height:28px;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;text-align:center;color:#1a2940"/>
@@ -3796,7 +3805,21 @@ function mcShowTooltip(evt,staffId,dateStr){
 function mcHideTooltip(){const tt=document.getElementById('mc-tooltip');if(tt)tt.style.display='none';}
 function mcSetScale(s){mcScale=s;renderView('capacity');}
 function mcSetGroupBy(g){mcGroupBy=g;mcCollapsed=new Set();renderView('capacity');}
+function mcSetView(v){mcView=v;renderView('capacity');}
 function mcToggleGroup(id){if(mcCollapsed.has(id))mcCollapsed.delete(id);else mcCollapsed.add(id);renderView('capacity');}
+function _mcDateFilterBarHtml(){
+  const dfa=!!(mcDateFrom||mcDateTo);
+  const s="height:30px;padding:0 10px;border:1.5px solid #e2eaf2;border-radius:7px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;background:#fff;cursor:pointer";
+  return`<div style="display:flex;align-items:center;gap:8px;margin:8px 0 0;padding:7px 12px;background:${dfa?'#f0f7f4':'#f8fbff'};border:1.5px solid ${dfa?'#97bcbd':'#e4ecf4'};border-radius:8px;flex-wrap:wrap">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="color:#97bcbd;flex-shrink:0"><rect x="1" y="2" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="1" x2="5" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="1" x2="11" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.5"/></svg>
+    <span style="font-size:11px;font-weight:700;color:#6b8399;white-space:nowrap;letter-spacing:0.04em">Date range</span>
+    <input type="date" value="${mcDateFrom}" onchange="mcDateFrom=this.value;renderView('capacity')" style="${s};width:136px" title="Show tasks active from this date"/>
+    <span style="font-size:13px;color:#c8d7e1">→</span>
+    <input type="date" value="${mcDateTo}" onchange="mcDateTo=this.value;renderView('capacity')" style="${s};width:136px" title="Show tasks active to this date"/>
+    ${dfa?`<button onclick="mcDateFrom='';mcDateTo='';renderView('capacity')" style="padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:#fee2e2;color:#991b1b;flex-shrink:0">✕ Clear</button>`:''}
+    <span style="font-size:11px;color:#8da2b2;flex:1;min-width:60px;text-align:right;white-space:nowrap">${dfa?'Showing tasks overlapping range':'Showing all dates'}</span>
+  </div>`;
+}
 function mcAutoFit(){
   const ts=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate);
   if(!ts.length)return;
@@ -3806,6 +3829,88 @@ function mcAutoFit(){
   renderView('capacity');
 }
 function mcApplyFilters(){renderView('capacity');}// no-op: capacity now uses shared activeFilters
+
+function renderCapacityList(pool){
+  const CS=`flex:1;min-width:0;padding:0 10px;font-size:11px`;
+  const CH=(label,w)=>`<div style="flex:${w||'1'};min-width:0;padding:0 10px;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap">${label}</div>`;
+  const tblHdr=`<div style="display:flex;align-items:center;min-height:30px;background:#f8fbff;border-bottom:2px solid #e4ecf4;border-top:1px solid #e4ecf4">
+    ${CH('Task','3')}
+    ${mcGroupBy==='staff'?CH('Client','2'):CH('Owner','2')}
+    ${CH('Status','1.5')}
+    ${CH('Priority','1')}
+    ${CH('Start','1.5')}
+    ${CH('End','1.5')}
+    ${CH('Days','0 0 56px')}
+  </div>`;
+
+  const groups=[];
+  if(mcGroupBy==='staff'){
+    DB.staff.filter(s=>pool.some(t=>t.ownerId===s.id)).forEach(staff=>{
+      groups.push({key:staff.id,color:staff.color,label:staff.name,tasks:pool.filter(t=>t.ownerId===staff.id).sort((a,b)=>a.startDate<b.startDate?-1:1),isStaff:true,staff});
+    });
+  } else {
+    DB.clients.filter(c=>pool.some(t=>(t.clientId||getTaskClient(t)?.id)===c.id)).forEach(client=>{
+      groups.push({key:client.id,color:client.color,label:client.name,tasks:pool.filter(t=>(t.clientId||getTaskClient(t)?.id)===client.id).sort((a,b)=>a.startDate<b.startDate?-1:1),isStaff:false});
+    });
+  }
+
+  return`<div style="display:grid;gap:10px;margin-top:12px;padding-bottom:32px">${groups.map(g=>{
+    const col=mcCollapsed.has(g.key);
+    // Overload badge (staff mode): peak concurrent tasks in the capacity map
+    let overBadge='';
+    if(g.isStaff){
+      let peak=0;
+      _mcCapacityMap.forEach((d,k)=>{if(k.startsWith(g.key+':')&&(d.taskCount||0)>peak)peak=d.taskCount;});
+      if(peak>=mcThreshold)overBadge=`<span style="background:#fee2e2;color:#b91c1c;font-size:9px;font-weight:700;padding:1px 7px;border-radius:8px;flex-shrink:0">⚠ ${peak}/${mcThreshold}</span>`;
+    }
+    const totalHrs=g.tasks.reduce((s,t)=>(DB.timeEntries||[]).filter(e=>e.taskId===t.id).reduce((a,e)=>a+e.hours,s),0);
+    const hdr=g.isStaff
+      ?`<div class="mc-swimlane-hdr" style="border-left-color:${g.color}" onclick="mcToggleGroup('${g.key}')">
+          <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0;display:inline-block;transform:${col?'rotate(-90deg)':'rotate(0)'};transition:transform 0.15s">▾</span>
+          ${avatarHtml(g.staff,22)}
+          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:${g.color};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(g.label)}</span>
+          ${overBadge}
+          ${totalHrs?`<span style="font-size:10px;color:#6b8399;white-space:nowrap;flex-shrink:0">${totalHrs%1?totalHrs.toFixed(1):totalHrs}h</span>`:''}
+          <span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border-radius:8px;padding:1px 6px;flex-shrink:0">${g.tasks.length}</span>
+        </div>`
+      :`<div class="mc-swimlane-hdr" style="border-left-color:${g.color}" onclick="mcToggleGroup('${g.key}')">
+          <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0;display:inline-block;transform:${col?'rotate(-90deg)':'rotate(0)'}">▾</span>
+          <div style="width:8px;height:8px;border-radius:2px;background:${g.color};flex-shrink:0"></div>
+          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(g.label)}</span>
+          <span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border-radius:8px;padding:1px 6px;flex-shrink:0">${g.tasks.length}</span>
+        </div>`;
+    const rows=col?'':tblHdr+g.tasks.map(t=>{
+      const cl=getTaskClient(t);
+      const owner=DB.staff.find(s=>s.id===t.ownerId);
+      const sm=getStatusMeta(t.status);
+      const pm=getPrioMeta(t.priority);
+      const days=t.startDate&&t.endDate?Math.max(1,Math.round(depDiffDays(t.startDate,t.endDate))):0;
+      const sd=t.startDate?new Date(t.startDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'—';
+      const ed=t.endDate?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'—';
+      return`<div style="display:flex;align-items:center;min-height:40px;border-bottom:1px solid #f4f6fa;cursor:pointer;transition:background 0.1s" onclick="openTaskModal('${t.id}')" onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
+        <div style="${CS};flex:3;padding:6px 10px">
+          <div style="font-size:12px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'Untitled')}</div>
+        </div>
+        <div style="${CS};flex:2">
+          ${mcGroupBy==='staff'
+            ?(cl?`<span style="font-size:11px;color:${cl.color};font-weight:700;background:${cl.color}18;padding:2px 7px;border-radius:8px;white-space:nowrap;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis">${escHtml(cl.name)}</span>`:'<span style="color:#c8d7e1">—</span>')
+            :(owner?`<div style="display:flex;align-items:center;gap:5px">${avatarHtml(owner,16)}<span style="font-size:11px;color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(owner.name)}</span></div>`:'<span style="color:#c8d7e1">—</span>')
+          }
+        </div>
+        <div style="${CS};flex:1.5">
+          <span style="font-size:10px;background:${sm.bg};color:${sm.color};padding:2px 7px;border-radius:8px;font-weight:600;white-space:nowrap">${sm.label}</span>
+        </div>
+        <div style="${CS};flex:1">
+          <span style="font-size:12px;font-weight:700;color:${pm.color||'#94a3b8'}">${pm.icon||''}</span>
+        </div>
+        <div style="${CS};flex:1.5"><span style="color:#4a5568">${sd}</span></div>
+        <div style="${CS};flex:1.5"><span style="color:#4a5568">${ed}</span></div>
+        <div style="flex:0 0 56px;padding:0 10px"><span style="font-size:11px;color:#8da2b2;white-space:nowrap">${days?days+'d':'—'}</span></div>
+      </div>`;
+    }).join('');
+    return`<div style="border:1.5px solid #e4ecf4;border-radius:10px;background:#fff;overflow:hidden">${hdr}${rows}</div>`;
+  }).join('')}</div>`;
+}
 
 function renderCapacity(){
   if(!canViewMasterCapacity(currentUser))return _acDeniedHtml();
@@ -3825,6 +3930,24 @@ function renderCapacity(){
   if(_cf.dateTo)   pool=pool.filter(t=>t.startDate<=_cf.dateTo);
   if(_cf.awaitingClient) pool=pool.filter(t=>t.currentlyWithType==='client'||t.currentlyWith==='client');
   if(_cf.overdue){const td=new Date().toISOString().slice(0,10);pool=pool.filter(t=>t.endDate&&t.endDate<td&&t.status!=='done'&&t.status!=='completed'&&t.status!=='cancelled');}
+  if(mcDateFrom) pool=pool.filter(t=>t.endDate>=mcDateFrom);
+  if(mcDateTo)   pool=pool.filter(t=>t.startDate<=mcDateTo);
+
+  if(mcView==='list'){
+    const _tc=pool.length,_sc=new Set(pool.map(t=>t.ownerId).filter(Boolean)).size;
+    const _empty=!_tc?`<div class="card" style="text-align:center;padding:48px;margin-top:12px"><p style="color:#8da2b2;font-size:14px">No tasks match the current filters.</p></div>`:'';
+    return`<div id="mc-tooltip"></div>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+    <div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#0d1c33;margin-bottom:2px">Master Capacity</h2>
+      <p style="font-size:12px;color:#8da2b2">${_tc} task${_tc!==1?'s':''} \xb7 ${_sc} staff member${_sc!==1?'s':''} \xb7 Admin view only</p>
+    </div>
+  </div>
+  ${renderUniversalToolbar('capacity',{itemCount:_tc})}
+  ${_mcDateFilterBarHtml()}
+  ${_empty}
+  ${_tc?renderCapacityList(pool):''}`;
+  }
 
   // ── Pixel-per-day ──
   const DW={days:24,weeks:12,months:4}[mcScale]||12;
@@ -4018,6 +4141,7 @@ function renderCapacity(){
     ${legend}
   </div>
   ${renderUniversalToolbar('capacity',{itemCount:taskCount})}
+  ${_mcDateFilterBarHtml()}
   ${emptyMsg}
   ${pool.length?`<div style="border:1.5px solid #e4ecf4;border-radius:10px;background:#fff;overflow:hidden;height:calc(100vh - 296px);min-height:360px;display:flex;margin-top:12px">
     <div style="width:280px;flex-shrink:0;border-right:2px solid #e4ecf4;display:flex;flex-direction:column;z-index:2;background:#fff">
