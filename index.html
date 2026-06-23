@@ -5505,18 +5505,9 @@ function pfiNextNumber(){
   const nums=(DB.proFormaInvoices||[]).map(i=>{const m=i.number?.match(/(\d+)$/);return m?parseInt(m[1]):0;});
   return'PFI-'+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
 }
-function pfiGetLineRate(inv,li){
-  if(li.rateOverride!==null&&li.rateOverride!==undefined)return+li.rateOverride;
-  const ar=(inv.activityRates||{})[li.activity];if(ar!==undefined)return+ar;
-  const mr=(inv.memberRates||{})[li.staffId];if(mr!==undefined)return+mr;
-  return 0;
-}
 function pfiCalcTotals(inv){
-  const bl=(inv.lineItems||[]).filter(l=>l.billable);
-  const totalHrs=bl.reduce((s,l)=>s+l.hours,0);
-  const totalAmt=bl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-  const gstAmt=totalAmt*0.1;
-  return{totalHrs,totalAmt,gstAmt,grandTotal:totalAmt+gstAmt};
+  const totalHrs=(inv.lineItems||[]).filter(l=>l.billable).reduce((s,l)=>s+l.hours,0);
+  return{totalHrs};
 }
 function pfiStatusMeta(s){
   return({draft:{label:'Draft',bg:'#f1f5f9',color:'#64748b'},ready:{label:'Ready for Review',bg:'#dbeafe',color:'#1d4ed8'},approved:{label:'Approved',bg:'#dcfce7',color:'#166534'},sent:{label:'Sent to Client',bg:'#e0e7ff',color:'#4338ca'},accepted:{label:'Accepted',bg:'#d1fae5',color:'#065f46'},rejected:{label:'Rejected',bg:'#fee2e2',color:'#b91c1c'},changes:{label:'Changes Required',bg:'#fef3c7',color:'#b45309'}}[s||'draft'])||{label:'Draft',bg:'#f1f5f9',color:'#64748b'};
@@ -5558,24 +5549,10 @@ function pfiDuplicate(id){
 function pfiSaveField(id,field,value){
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===id);if(!inv)return;
   const prev=inv[field];
-  if(field==='globalRate'||field==='gstRate')inv[field]=parseFloat(value)||0;
-  else if(field==='gstEnabled')inv[field]=value===true||value==='true';
-  else inv[field]=value;
+  inv[field]=value;
   inv.updatedAt=new Date().toISOString();
   (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'field_changed',field,prev,next:inv[field],actorId:currentUser.id,at:new Date().toISOString()});
   saveDB(DB);renderView('reports');
-}
-function pfiSaveMemberRate(id,staffId,val){
-  const inv=(DB.proFormaInvoices||[]).find(i=>i.id===id);if(!inv)return;
-  const v=parseFloat(val);inv.memberRates=inv.memberRates||{};
-  if(isNaN(v)||!(val+'').trim())delete inv.memberRates[staffId];else inv.memberRates[staffId]=v;
-  inv.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
-}
-function pfiSaveActivityRate(id,act,val){
-  const inv=(DB.proFormaInvoices||[]).find(i=>i.id===id);if(!inv)return;
-  const v=parseFloat(val);inv.activityRates=inv.activityRates||{};
-  if(isNaN(v)||!(val+'').trim())delete inv.activityRates[act];else inv.activityRates[act]=v;
-  inv.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
 }
 function pfiSetStatus(id,status){
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===id);if(!inv)return;
@@ -5656,9 +5633,7 @@ function pfiValidate(inv){
   const issues=[];
   if(!inv.clientId)issues.push('Client not selected');
   if(!inv.dateFrom||!inv.dateTo)issues.push('Date range not set');
-  const bl=(inv.lineItems||[]).filter(l=>l.billable);
-  if(!bl.length)issues.push('No billable line items');
-  bl.forEach(li=>{if(!pfiGetLineRate(inv,li))issues.push('No rate for '+li.staffName+' on '+li.date);});
+  if(!(inv.lineItems||[]).filter(l=>l.billable).length)issues.push('No line items included');
   return issues;
 }
 
@@ -5669,34 +5644,30 @@ function pfiExportCSV(id){
   const sorted=[...(inv.lineItems||[])].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffName||'').localeCompare(b.staffName||''));
   const t=pfiCalcTotals(inv);
   const rows=[
-    ['PRO FORMA INVOICE','','','','','','','','','','','','','',''],
-    ['Invoice Number',inv.number,'','','','','','','','','','','','',''],
-    ['Client',client?.name||'','Code',client?.shortCode||'','','','','','','','','','','',''],
-    ['Period',inv.dateFrom+' to '+inv.dateTo,'','Issue Date',inv.issueDate,'','','','','','','','','',''],
-    ['Status',pfiStatusMeta(inv.status).label,'','','','','','','','','','','','',''],
-    inv.clientNotes?['Notes',inv.clientNotes,'','','','','','','','','','','','','']:null,
-    ['','','','','','','','','','','','','','',''],
-    ['Date','Day','Team Member','Member Code','Activity','Act. Code','Project','Client','Client Code','Location','Hours','Rate ($/hr)','Amount','Billable','Notes / Description'],
+    ['PRO FORMA HOURS REPORT','','','','','','','','','','','',''],
+    ['Invoice Number',inv.number,'','','','','','','','','','',''],
+    ['Client',client?.name||'','Code',client?.shortCode||'','','','','','','','',''],
+    ['Period',inv.dateFrom+' to '+inv.dateTo,'','Issue Date',inv.issueDate,'','','','','','',''],
+    ['Status',pfiStatusMeta(inv.status).label,'','','','','','','','','','',''],
+    inv.clientNotes?['Notes',inv.clientNotes,'','','','','','','','','','','']:null,
+    ['','','','','','','','','','','','',''],
+    ['Date','Day','Team Member','Member Code','Activity','Act. Code','Project','Client','Client Code','Location','Hours','Included','Notes / Description'],
   ].filter(Boolean);
   let lastDate='';
   sorted.forEach(li=>{
     if(li.date!==lastDate){
       if(lastDate){
         const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);
-        rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','$'+dbl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0).toFixed(2),'','']);
-        rows.push(['','','','','','','','','','','','','','','']);
+        rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);
+        rows.push(['','','','','','','','','','','','','']);
       }
       lastDate=li.date;
     }
-    const rate=pfiGetLineRate(inv,li);const amt=li.billable?li.hours*rate:0;
-    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',li.location||'',li.hours.toFixed(2),li.billable?rate.toFixed(2):'',li.billable?'$'+amt.toFixed(2):'',li.billable?'Yes':'No',li.description||li.note||'']);
+    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',li.location||'',li.hours.toFixed(2),li.billable?'Yes':'No',li.description||li.note||'']);
   });
-  if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','$'+dbl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0).toFixed(2),'','']);}
-  rows.push(['','','','','','','','','','','','','','','']);
-  rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','','','']);
-  rows.push(['','','','Subtotal','','','','','','','','$'+t.totalAmt.toFixed(2),'','','']);
-  rows.push(['','','','GST (10%)','','','','','','','','$'+t.gstAmt.toFixed(2),'','','']);
-  rows.push(['','','','TOTAL','','','','','','','','$'+t.grandTotal.toFixed(2),'','','']);
+  if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);}
+  rows.push(['','','','','','','','','','','','','']);
+  rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','']);
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
   a.download=(inv.number+'_'+(client?.name||'Invoice').replace(/\s+/g,'_')+'_'+inv.dateFrom+'_'+inv.dateTo+'.csv');a.click();
@@ -5715,27 +5686,22 @@ function pfiExportExcel(id){
     let grpRow='';
     if(li.date!==lastDate){
       lastDate=li.date;
-      const dbl=sorted.filter(l=>l.date===li.date&&l.billable);
-      const dH=dbl.reduce((s,l)=>s+l.hours,0),dA=dbl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-      grpRow=`<tr style="background:#f1f5f9"><td colspan="10" style="padding:5px 8px;font-weight:bold;font-size:11px">${escHtml(pfiDayName(li.date)+', '+pfiFmtDate(li.date))}</td><td style="text-align:right;font-weight:bold;padding:5px 8px;font-size:11px">${dH.toFixed(2)}</td><td></td><td style="text-align:right;font-weight:bold;padding:5px 8px;font-size:11px">$${dA.toFixed(2)}</td><td colspan="2"></td></tr>`;
+      const dH=sorted.filter(l=>l.date===li.date&&l.billable).reduce((s,l)=>s+l.hours,0);
+      grpRow=`<tr style="background:#f1f5f9"><td colspan="10" style="padding:5px 8px;font-weight:bold;font-size:11px">${escHtml(pfiDayName(li.date)+', '+pfiFmtDate(li.date))}</td><td style="text-align:right;font-weight:bold;padding:5px 8px;font-size:11px">${dH.toFixed(2)}</td><td colspan="2"></td></tr>`;
     }
-    const rate=pfiGetLineRate(inv,li);const amt=li.billable?li.hours*rate:0;
-    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(li.location||'')}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?rate.toFixed(2):'',false,'right')}${d(li.billable?'$'+amt.toFixed(2):'',li.billable,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
+    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(li.location||'')}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
   }).join('');
-  const gstAmt=t.gstAmt.toFixed(2);
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>table{border-collapse:collapse}td,th{border:1px solid #dee2e6}</style></head><body><table>
-<tr><td colspan="15" style="background:#0d1c33;color:#fff;font-size:15px;font-weight:bold;padding:8px">PRO FORMA INVOICE — ${escHtml(inv.number)}</td></tr>
-<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Client</td><td colspan="4">${escHtml(client?.name||'')}</td><td colspan="3" style="font-weight:bold">Client Code</td><td colspan="5">${escHtml(client?.shortCode||'')}</td></tr>
-<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Period</td><td colspan="4">${escHtml(inv.dateFrom+' to '+inv.dateTo)}</td><td colspan="3" style="font-weight:bold">Issue Date</td><td colspan="5">${escHtml(inv.issueDate)}</td></tr>
-<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Status</td><td colspan="12">${escHtml(pfiStatusMeta(inv.status).label)}</td></tr>
-${inv.clientNotes?`<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Notes</td><td colspan="12">${escHtml(inv.clientNotes)}</td></tr>`:''}
-<tr><td colspan="15" style="height:8px"></td></tr>
-<tr>${h('Date')}${h('Day')}${h('Team Member')}${h('Member Code')}${h('Activity')}${h('Act. Code')}${h('Project')}${h('Client')}${h('Client Code')}${h('Location')}${h('Hours')}${h('Rate ($/hr)')}${h('Amount')}${h('Billable')}${h('Notes / Description')}</tr>
+<tr><td colspan="13" style="background:#0d1c33;color:#fff;font-size:15px;font-weight:bold;padding:8px">PRO FORMA HOURS REPORT — ${escHtml(inv.number)}</td></tr>
+<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Client</td><td colspan="4">${escHtml(client?.name||'')}</td><td colspan="3" style="font-weight:bold">Client Code</td><td colspan="3">${escHtml(client?.shortCode||'')}</td></tr>
+<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Period</td><td colspan="4">${escHtml(inv.dateFrom+' to '+inv.dateTo)}</td><td colspan="3" style="font-weight:bold">Issue Date</td><td colspan="3">${escHtml(inv.issueDate)}</td></tr>
+<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Status</td><td colspan="10">${escHtml(pfiStatusMeta(inv.status).label)}</td></tr>
+${inv.clientNotes?`<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">Notes</td><td colspan="10">${escHtml(inv.clientNotes)}</td></tr>`:''}
+<tr><td colspan="13" style="height:8px"></td></tr>
+<tr>${h('Date')}${h('Day')}${h('Team Member')}${h('Member Code')}${h('Activity')}${h('Act. Code')}${h('Project')}${h('Client')}${h('Client Code')}${h('Location')}${h('Hours')}${h('Included')}${h('Notes / Description')}</tr>
 ${dataRows}
-<tr><td colspan="15" style="height:8px"></td></tr>
-<tr><td colspan="9" style="padding:4px 8px;font-weight:bold;background:#f8fbff">Total Hours</td><td style="text-align:right;font-weight:bold;padding:4px 8px;background:#f8fbff">${t.totalHrs.toFixed(2)}</td><td style="text-align:right;font-weight:bold;padding:4px 8px;background:#f8fbff">$${t.totalAmt.toFixed(2)}</td><td colspan="4"></td></tr>
-<tr><td colspan="9" style="padding:4px 8px;background:#f8fbff">GST (10%)</td><td></td><td style="text-align:right;padding:4px 8px;background:#f8fbff">$${gstAmt}</td><td colspan="4"></td></tr>
-<tr><td colspan="9" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL</td><td style="background:#0d1c33"></td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">$${t.grandTotal.toFixed(2)}</td><td colspan="4" style="background:#0d1c33"></td></tr>
+<tr><td colspan="13" style="height:8px"></td></tr>
+<tr><td colspan="9" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL HOURS</td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">${t.totalHrs.toFixed(2)}</td><td colspan="3" style="background:#0d1c33"></td></tr>
 </table></body></html>`;
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
   a.download=(inv.number+'_'+(client?.name||'Invoice').replace(/[^a-z0-9]/gi,'_')+'_'+inv.dateFrom+'_'+inv.dateTo+'.xls');a.click();
@@ -5751,7 +5717,7 @@ function pfiExportPDF(id){
   _ensureJsPdf(()=>{setTimeout(()=>{
     try{
       const client=DB.clients.find(c=>c.id===inv.clientId);
-      const sorted=[...(inv.lineItems||[])].filter(l=>l.billable).sort((a,b)=>a.date.localeCompare(b.date)||(a.staffName||'').localeCompare(b.staffName||''));
+      const sorted=[...(inv.lineItems||[])].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffName||'').localeCompare(b.staffName||''));
       const t=pfiCalcTotals(inv);
       if(!window.jspdf)throw new Error('PDF library not loaded.');
       const{jsPDF}=window.jspdf;
@@ -5762,7 +5728,7 @@ function pfiExportPDF(id){
       doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...DARK);
       doc.text('Etcher Solutions Pty Ltd',mX,y);
       doc.setFontSize(18);doc.setTextColor(...TEAL);
-      doc.text('PRO FORMA INVOICE',W-mX,y,{align:'right'});y+=5;
+      doc.text('PRO FORMA HOURS REPORT',W-mX,y,{align:'right'});y+=5;
       doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...GREY);
       doc.text('admin@etchersolutions.com',mX,y+=4);
       doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...DARK);
@@ -5795,19 +5761,16 @@ function pfiExportPDF(id){
         alternateRowStyles:{fillColor:[250,251,253]},
         margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
         showHead:'everyPage',showFoot:'lastPage',
-        head:[['Date','Day','Team Member','Activity','Project','Hrs','Rate','Amount','Notes']],
-        body:sorted.map(li=>{const r=pfiGetLineRate(inv,li);return[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',li.hours.toFixed(2),'$'+r.toFixed(0),'$'+(li.hours*r).toFixed(2),li.description||li.note||''];}),
-        foot:[['','','','','Total Hours: '+t.totalHrs.toFixed(2),'','','','']],
-        columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{halign:'right',cellWidth:12},6:{halign:'right',cellWidth:14},7:{halign:'right',cellWidth:16},8:{cellWidth:'auto'}},
+        head:[['Date','Day','Team Member','Activity','Project','Hours','Incl.','Notes']],
+        body:sorted.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',li.hours.toFixed(2),li.billable?'✓':'—',li.description||li.note||'']),
+        foot:[['','','','','Total Hours',t.totalHrs.toFixed(2),'','']],
+        columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:36},3:{cellWidth:24},4:{cellWidth:24},5:{halign:'right',cellWidth:14},6:{halign:'center',cellWidth:12},7:{cellWidth:'auto'}},
       });
-      const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=28;
+      const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=16;
       doc.setFillColor(248,251,255);doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);
       doc.roundedRect(bX,tY,bW,bH,2,2,'FD');
-      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...DARK);
-      doc.text('Subtotal',bX+4,tY+7);doc.setFont('helvetica','normal');doc.text('$'+t.totalAmt.toFixed(2),bX+bW-4,tY+7,{align:'right'});
-      doc.setFont('helvetica','bold');doc.text('GST (10%)',bX+4,tY+14);doc.setFont('helvetica','normal');doc.text('$'+t.gstAmt.toFixed(2),bX+bW-4,tY+14,{align:'right'});
       doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
-      doc.text('TOTAL',bX+4,tY+23);doc.text('$'+t.grandTotal.toFixed(2),bX+bW-4,tY+23,{align:'right'});
+      doc.text('TOTAL HOURS',bX+4,tY+10);doc.text(t.totalHrs.toFixed(2),bX+bW-4,tY+10,{align:'right'});
       const tp=doc.internal.getNumberOfPages();
       for(let pg=1;pg<=tp;pg++){
         doc.setPage(pg);doc.setDrawColor(...BORDER);doc.setLineWidth(0.2);doc.line(mX,H-13,W-mX,H-13);
@@ -5839,7 +5802,6 @@ function _pfiListHtml(){
       <td style="${tdS}" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${c?`<span style="color:${c.color};font-weight:700;background:${c.color}18;padding:2px 8px;border-radius:8px">${escHtml(c.name)}</span>`:'<span style="color:#c8d7e1;font-size:11px">No client</span>'}</td>
       <td style="${tdS};color:#6b8399;white-space:nowrap;font-size:11px" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${inv.dateFrom&&inv.dateTo?inv.dateFrom+' → '+inv.dateTo:'—'}</td>
       <td style="${tdS};text-align:right;font-weight:700;font-family:'Jost',sans-serif" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${t.totalHrs>0?t.totalHrs.toFixed(1)+'h':'—'}</td>
-      <td style="${tdS};text-align:right;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${t.grandTotal>0?'$'+t.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2}):'—'}</td>
       <td style="${tdS}" onclick="pfiCurrentId='${inv.id}';renderView('reports')"><span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;background:${sm.bg};color:${sm.color}">${sm.label}</span></td>
       <td style="${tdS}" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${issues.length?`<span style="font-size:10px;background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:8px;font-weight:600">⚠ ${issues.length} issue${issues.length!==1?'s':''}</span>`:`<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:8px;font-weight:600">✓</span>`}</td>
       <td style="${tdS};font-size:11px;color:#8da2b2;white-space:nowrap" onclick="pfiCurrentId='${inv.id}';renderView('reports')">${new Date(inv.updatedAt||inv.createdAt).toLocaleDateString('en-AU')}</td>
@@ -5859,7 +5821,7 @@ function _pfiListHtml(){
   ${!filtered.length
     ?`<div class="card" style="text-align:center;padding:48px;color:#8da2b2"><p style="font-size:14px;margin-bottom:12px">${invs.length?'No invoices match the selected filters.':'No pro forma invoices yet.'}</p><button onclick="pfiCreate()" class="btn btn-teal" style="font-size:13px">Create First Invoice</button></div>`
     :`<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">
-      <thead><tr><th style="${thS}">Invoice #</th><th style="${thS}">Client</th><th style="${thS}">Period</th><th style="${thS};text-align:right">Hours</th><th style="${thS};text-align:right">Total (incl. GST)</th><th style="${thS}">Status</th><th style="${thS}">Valid</th><th style="${thS}">Updated</th><th style="${thS}">Actions</th></tr></thead>
+      <thead><tr><th style="${thS}">Invoice #</th><th style="${thS}">Client</th><th style="${thS}">Period</th><th style="${thS};text-align:right">Hours</th><th style="${thS}">Status</th><th style="${thS}">Valid</th><th style="${thS}">Updated</th><th style="${thS}">Actions</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div></div>`}`;
 }
@@ -5888,9 +5850,9 @@ function _pfiEditorHtml(inv){
         </div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Total (incl. GST)</div>
-        <div style="font-family:'Jost',sans-serif;font-size:32px;font-weight:700;color:#0d1c33;line-height:1">$${t.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2})}</div>
-        <div style="font-size:11px;color:#8da2b2;margin-top:3px">${t.totalHrs.toFixed(1)}h billable</div>
+        <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Total Hours</div>
+        <div style="font-family:'Jost',sans-serif;font-size:36px;font-weight:700;color:#178082;line-height:1">${t.totalHrs.toFixed(2)}<span style="font-size:16px;font-weight:500;color:#8da2b2;margin-left:3px">h</span></div>
+        <div style="font-size:11px;color:#8da2b2;margin-top:3px">${(inv.lineItems||[]).filter(l=>l.billable).length} of ${(inv.lineItems||[]).length} entries included</div>
       </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:14px;padding-top:16px;border-top:1.5px solid #f4f6fa">
@@ -5914,18 +5876,7 @@ function _pfiEditorHtml(inv){
     </div>
   </div>`;
 
-  const uniqueStaff=[...new Set((inv.lineItems||[]).map(l=>l.staffId))].map(sid=>getStaff(sid)).filter(Boolean);
-  const uniqueActivities=[...new Set((inv.lineItems||[]).map(l=>l.activity||'Ordinary Hours'))];
-  const ratesCard=(uniqueStaff.length||uniqueActivities.length)?`<div class="card" style="padding:16px 20px;margin-bottom:12px">
-    <div style="font-size:12px;font-weight:700;color:#0d1c33;margin-bottom:4px">Rate Configuration</div>
-    <div style="font-size:11px;color:#8da2b2;margin-bottom:12px">Priority: Line override › Activity rate › Member rate — only approved time entries are imported</div>
-    <div style="display:flex;flex-wrap:wrap;gap:24px">
-      ${uniqueStaff.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Member Rates ($/hr)</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px">${uniqueStaff.map(s=>`<div style="display:flex;align-items:center;gap:6px">${avatarHtml(s,16)}<span style="font-size:11px;color:#1a2940;min-width:80px">${escHtml(s.name)}</span><input type="number" value="${(inv.memberRates||{})[s.id]||''}" placeholder="${inv.globalRate||150}" style="width:70px;height:28px;padding:0 8px;border:1.5px solid #e2eaf2;border-radius:6px;font-size:11px;font-family:inherit" min="0" step="1" onblur="pfiSaveMemberRate('${inv.id}','${s.id}',this.value)"/></div>`).join('')}</div></div>`:''}
-      ${uniqueActivities.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Activity Rates ($/hr)</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px">${uniqueActivities.map(a=>`<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#1a2940;min-width:110px">${escHtml(a)}</span><input type="number" value="${(inv.activityRates||{})[a]||''}" placeholder="${inv.globalRate||150}" style="width:70px;height:28px;padding:0 8px;border:1.5px solid #e2eaf2;border-radius:6px;font-size:11px;font-family:inherit" min="0" step="1" onblur="pfiSaveActivityRate('${inv.id}','${escHtml(a)}',this.value)"/></div>`).join('')}</div></div>`:''}
-    </div>
-  </div>`:'';
+
 
   const validationBar=issues.length
     ?`<div style="padding:10px 14px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:4px">⚠ ${issues.length} issue${issues.length!==1?'s':''} must be fixed before exporting</div><ul style="margin:0;padding-left:18px;font-size:11px;color:#b91c1c">${issues.map(i=>`<li>${escHtml(i)}</li>`).join('')}</ul></div>`
@@ -5933,7 +5884,7 @@ function _pfiEditorHtml(inv){
 
   const importBar=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
     <button onclick="pfiImportEntries('${inv.id}')" class="btn btn-teal btn-sm">↓ Import Time Entries</button>
-    <span style="font-size:11px;color:#8da2b2">${inv.lineItems?.length||0} line item${(inv.lineItems?.length||0)!==1?'s':''} · ${(inv.lineItems||[]).filter(l=>l.billable).length} billable</span>
+    <span style="font-size:11px;color:#8da2b2">${inv.lineItems?.length||0} line item${(inv.lineItems?.length||0)!==1?'s':''} · ${(inv.lineItems||[]).filter(l=>l.billable).length} included</span>
     <div style="margin-left:auto;display:flex;gap:8px">
       <button onclick="pfiExportCSV('${inv.id}')" class="btn btn-ghost btn-sm">↓ CSV</button>
       <button onclick="pfiExportExcel('${inv.id}')" class="btn btn-ghost btn-sm">↓ Excel</button>
@@ -5948,54 +5899,44 @@ function _pfiEditorHtml(inv){
   sorted.forEach(li=>{
     if(li.date!==lastDate2){
       if(lastDate2){
-        const dbl=sorted.filter(l=>l.date===lastDate2&&l.billable);
-        const dH=dbl.reduce((s,l)=>s+l.hours,0),dA=dbl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-        lineRows+=`<tr style="background:#f8fbff"><td colspan="7" style="padding:4px 10px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Daily Total</td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a2940;text-align:right">${dH.toFixed(2)}</td><td></td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#166534;text-align:right">$${dA.toFixed(2)}</td><td colspan="3"></td></tr><tr><td colspan="13" style="height:4px;background:#eef2f7"></td></tr>`;
+        const dH=sorted.filter(l=>l.date===lastDate2&&l.billable).reduce((s,l)=>s+l.hours,0);
+        lineRows+=`<tr style="background:#f8fbff"><td colspan="6" style="padding:4px 10px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Daily Total</td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a2940;text-align:right">${dH.toFixed(2)}</td><td colspan="3"></td></tr><tr><td colspan="10" style="height:4px;background:#eef2f7"></td></tr>`;
       }
-      const dayLines=sorted.filter(l=>l.date===li.date&&l.billable);
-      const dH=dayLines.reduce((s,l)=>s+l.hours,0),dA=dayLines.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-      lineRows+=`<tr style="background:#f1f5f9"><td colspan="7" style="padding:7px 10px;font-size:12px;font-weight:700;color:#0d1c33">${escHtml(pfiDayName(li.date)+', '+new Date(li.date+'T00:00:00Z').toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}))}</td><td style="padding:7px 10px;font-size:12px;font-weight:600;color:#0d1c33;text-align:right">${dH.toFixed(2)}</td><td></td><td style="padding:7px 10px;font-size:12px;font-weight:600;color:#0d1c33;text-align:right">$${dA.toFixed(2)}</td><td colspan="3"></td></tr>`;
+      const dH=sorted.filter(l=>l.date===li.date&&l.billable).reduce((s,l)=>s+l.hours,0);
+      lineRows+=`<tr style="background:#f1f5f9"><td colspan="6" style="padding:7px 10px;font-size:12px;font-weight:700;color:#0d1c33">${escHtml(pfiDayName(li.date)+', '+new Date(li.date+'T00:00:00Z').toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}))}</td><td style="padding:7px 10px;font-size:12px;font-weight:600;color:#0d1c33;text-align:right">${dH.toFixed(2)}</td><td colspan="3"></td></tr>`;
       lastDate2=li.date;
     }
-    const rate=pfiGetLineRate(inv,li);const amt=li.billable?li.hours*rate:0;
     const staffObj=getStaff(li.staffId);
     lineRows+=`<tr onmouseenter="this.style.background='${li.billable?'#f8fbff':'#fef2f2'}'" onmouseleave="this.style.background='${li.billable?'':'#fef2f2'}'">
       <td style="${tdS2}${li.billable?'':';opacity:0.7'}"><div style="display:flex;align-items:center;gap:5px">${avatarHtml(staffObj,16)}<span style="white-space:nowrap;font-weight:500">${escHtml(li.staffName)}</span></div></td>
       <td style="${tdS2};color:#8da2b2;font-size:10px;white-space:nowrap${li.billable?'':';opacity:0.7'}">${escHtml(li.memberCode||'')}</td>
       <td style="${tdS2};color:#6b8399;font-size:11px${li.billable?'':';opacity:0.7'}">${escHtml(li.activity||'')}</td>
-      <td style="${tdS2};color:#8da2b2;font-size:10px${li.billable?'':';opacity:0.7'}">${escHtml(li.activityCode||'')}</td>
       <td style="${tdS2};color:#6b8399;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${li.billable?'':';opacity:0.7'}" title="${escHtml(li.boardName||li.taskTitle||'')}">${escHtml(li.boardName||li.taskTitle||'—')}</td>
       <td style="${tdS2};max-width:180px"><input type="text" value="${escHtml(li.description||li.note||'')}" style="width:100%;padding:2px 6px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','description',this.value)" placeholder="Description…"/></td>
       <td style="${tdS2}"><input type="number" value="${li.hours.toFixed(2)}" style="width:55px;padding:2px 5px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;text-align:right;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','hours',this.value)" min="0" step="0.25"/></td>
-      <td style="${tdS2};text-align:right;font-size:11px;color:#6b8399;white-space:nowrap">${li.billable?li.hours.toFixed(2):'—'}</td>
-      <td style="${tdS2}"><input type="number" value="${li.rateOverride!==null&&li.rateOverride!==undefined?li.rateOverride:''}" placeholder="${rate.toFixed(0)}" style="width:65px;padding:2px 5px;border:1px solid ${li.rateOverride!==null&&li.rateOverride!==undefined?'#178082':'#e2eaf2'};border-radius:4px;font-size:11px;text-align:right;font-family:inherit;color:${li.rateOverride!==null&&li.rateOverride!==undefined?'#178082':'#8da2b2'}" onblur="pfiSaveLineField('${inv.id}','${li.id}','rateOverride',this.value)" min="0" step="1" title="Leave empty to use member/activity/default rate"/></td>
-      <td style="${tdS2};text-align:right;font-weight:700;color:${li.billable?'#166534':'#c8d7e1'};white-space:nowrap;font-size:12px">${li.billable?'$'+amt.toFixed(2):'—'}</td>
-      <td style="${tdS2};text-align:center"><label style="cursor:pointer"><input type="checkbox" ${li.billable?'checked':''} style="accent-color:#0d1c33" onchange="pfiToggleBillable('${inv.id}','${li.id}')"/></label></td>
+      <td style="${tdS2};text-align:right;font-size:12px;font-weight:700;color:${li.billable?'#178082':'#c8d7e1'};white-space:nowrap">${li.hours.toFixed(2)}</td>
+      <td style="${tdS2};text-align:center"><label style="cursor:pointer"><input type="checkbox" ${li.billable?'checked':''} style="accent-color:#0d1c33" onchange="pfiToggleBillable('${inv.id}','${li.id}')" title="Include in total"/></label></td>
       <td style="${tdS2};color:#8da2b2;font-size:10px;white-space:nowrap">${escHtml(li.location||'')}</td>
       <td style="${tdS2}"><button onclick="pfiRemoveLine('${inv.id}','${li.id}')" style="padding:0 7px;height:22px;border-radius:4px;font-size:10px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c" title="Remove">✕</button></td>
     </tr>`;
   });
   if(lastDate2){
-    const dbl=sorted.filter(l=>l.date===lastDate2&&l.billable);
-    const dH=dbl.reduce((s,l)=>s+l.hours,0),dA=dbl.reduce((s,l)=>s+l.hours*pfiGetLineRate(inv,l),0);
-    lineRows+=`<tr style="background:#f8fbff"><td colspan="7" style="padding:4px 10px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Daily Total</td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a2940;text-align:right">${dH.toFixed(2)}</td><td></td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#166534;text-align:right">$${dA.toFixed(2)}</td><td colspan="3"></td></tr>`;
+    const dH=sorted.filter(l=>l.date===lastDate2&&l.billable).reduce((s,l)=>s+l.hours,0);
+    lineRows+=`<tr style="background:#f8fbff"><td colspan="6" style="padding:4px 10px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Daily Total</td><td style="padding:4px 10px;font-size:11px;font-weight:700;color:#1a2940;text-align:right">${dH.toFixed(2)}</td><td colspan="3"></td></tr>`;
   }
   const lineTable=!sorted.length
-    ?`<div style="text-align:center;padding:32px;color:#8da2b2;border:2px dashed #e2eaf2;border-radius:8px;margin-bottom:12px"><p style="font-size:13px;margin-bottom:8px">No line items yet. Import tracked time entries to build the invoice.</p><button onclick="pfiImportEntries('${inv.id}')" class="btn btn-teal btn-sm">↓ Import Time Entries</button></div>`
-    :`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:900px">
+    ?`<div style="text-align:center;padding:32px;color:#8da2b2;border:2px dashed #e2eaf2;border-radius:8px;margin-bottom:12px"><p style="font-size:13px;margin-bottom:8px">No line items yet. Import tracked time entries to build the hours report.</p><button onclick="pfiImportEntries('${inv.id}')" class="btn btn-teal btn-sm">↓ Import Time Entries</button></div>`
+    :`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:700px">
       <thead><tr>
-        <th style="${thS2}">Team Member</th><th style="${thS2}">Code</th><th style="${thS2}">Activity</th><th style="${thS2}">Act.</th><th style="${thS2}">Project</th><th style="${thS2}">Notes / Description</th><th style="${thS2}">Edit Hrs</th><th style="${thS2};text-align:right">Hrs</th><th style="${thS2};text-align:right">Rate Override</th><th style="${thS2};text-align:right">Amount</th><th style="${thS2};text-align:center">Bill.</th><th style="${thS2}">Location</th><th style="${thS2}"></th>
+        <th style="${thS2}">Team Member</th><th style="${thS2}">Code</th><th style="${thS2}">Activity</th><th style="${thS2}">Project</th><th style="${thS2}">Notes / Description</th><th style="${thS2}">Edit Hrs</th><th style="${thS2};text-align:right">Hours</th><th style="${thS2};text-align:center">Incl.</th><th style="${thS2}">Location</th><th style="${thS2}"></th>
       </tr></thead>
       <tbody>${lineRows}</tbody>
     </table></div></div>`;
 
   const totalsCard=`<div class="card" style="padding:16px 20px;margin-bottom:12px">
     <div style="display:flex;justify-content:flex-end">
-      <div style="min-width:260px">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">Total Hours</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">${t.totalHrs.toFixed(2)}h</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">Subtotal</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">$${t.totalAmt.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f6fa"><span style="font-size:13px;color:#6b8399">GST (10%)</span><span style="font-size:13px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">$${t.gstAmt.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:12px 0"><span style="font-size:16px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">TOTAL</span><span style="font-size:20px;font-weight:700;font-family:'Jost',sans-serif;color:#178082">$${t.grandTotal.toLocaleString(undefined,{minimumFractionDigits:2})}</span></div>
+      <div style="min-width:220px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:2px solid #e4ecf4"><span style="font-size:15px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">TOTAL HOURS</span><span style="font-size:28px;font-weight:700;font-family:'Jost',sans-serif;color:#178082">${t.totalHrs.toFixed(2)}<span style="font-size:14px;font-weight:500;color:#8da2b2">h</span></span></div>
       </div>
     </div>
   </div>`;
@@ -6023,7 +5964,7 @@ function _pfiEditorHtml(inv){
     ${auditRows||'<div style="color:#b0bec5;font-size:11px">No events recorded.</div>'}
   </div>`;
 
-  return header+notesCard+ratesCard+validationBar+importBar+lineTable+totalsCard+commentsCard+auditCard;
+  return header+notesCard+validationBar+importBar+lineTable+totalsCard+commentsCard+auditCard;
 }
 
 function _rptInvoiceHtml(){
