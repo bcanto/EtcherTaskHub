@@ -4,11 +4,19 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Etcher - Task Hub</title>
+<!-- B3: Content Security Policy — restricts what can load/execute in this page -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff"/>
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <link rel="icon" type="image/png" href="favicon_taskapp.png"/>
+<!-- B7: Preload critical assets to eliminate render-blocking fetches -->
+<link rel="preload" href="Etcher White Logo.png" as="image" type="image/png"/>
+<link rel="preload" href="favicon_taskapp.png" as="image" type="image/png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind CDN play-mode: dynamic JIT, crossorigin for CORS compliance. SRI not possible with this loader (use production build + SRI when moving off CDN). -->
+<script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
 <!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
 <script>
 tailwind.config = {
@@ -1121,8 +1129,19 @@ function _applyCompatAliases(data){
 }
 
 // ── Debounced DB write: batches rapid mutations into a single localStorage write ──
+// ── B8: View render cache — invalidated on every DB write ─────────────
+const _vc={};
+function _vcGet(k){const c=_vc[k];return(c&&Date.now()-c.t<8000)?c.h:null;}
+function _vcSet(k,h){_vc[k]={h,t:Date.now()};}
+function _vcClear(){for(const k in _vc)delete _vc[k];}
+function _renderCached(el,key,fn){
+  const h=_vcGet(key);if(h){el.innerHTML=h;return;}
+  el.innerHTML=fn();_vcSet(key,el.innerHTML);
+}
+
 let _saveDebounceTimer=null;
 function saveDB(data){
+  _vcClear(); // invalidate render cache whenever data changes
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=setTimeout(()=>localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data)),300);
 }
@@ -1163,10 +1182,25 @@ function showToast(msg,type,duration){
   const icons={info:'ℹ',success:'✓',warning:'⚠',error:'✕'};
   const t=document.createElement('div');
   t.className='app-toast app-toast-'+type;
-  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+(typeof escHtml==='function'?escHtml(msg):msg)+'</span><button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button>';
+  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+escHtml(msg)+'</span><button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button>';
   root.appendChild(t);
   setTimeout(()=>{try{t.style.animation='_toastOut 0.22s ease-in forwards';setTimeout(()=>{try{t.remove();}catch(_){}},240);}catch(_){}},duration);
 }
+
+// ── B1: Session inactivity timeout (30 minutes) ───────────────────────
+let _lastActivity=Date.now();
+const _INACTIVITY_MS=30*60*1000;
+function _resetActivity(){_lastActivity=Date.now();}
+['mousedown','keydown','touchstart','wheel','click','scroll'].forEach(ev=>
+  document.addEventListener(ev,_resetActivity,{passive:true,capture:true})
+);
+setInterval(()=>{
+  if(!currentUser)return;
+  if(Date.now()-_lastActivity>=_INACTIVITY_MS){
+    try{doLogout();}catch(_){}
+    showToast('You were signed out after 30 minutes of inactivity.','warning',10000);
+  }
+},60000); // check every 60 s — fast enough, quiet enough
 
 // ── Comment / form draft auto-save to sessionStorage ──────────────────
 document.addEventListener('input',function(e){
@@ -1195,10 +1229,12 @@ function _ensureJsPdf(callback){
   if(window.jspdf&&window.jspdf.jsPDF){callback();return;}
   const s1=document.createElement('script');
   s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s1.crossOrigin='anonymous'; // B4: CORS attribute (prerequisite for adding SRI integrity hash)
   s1.onerror=()=>showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');
   s1.onload=()=>{
     const s2=document.createElement('script');
     s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js';
+    s2.crossOrigin='anonymous';
     s2.onerror=()=>showAlert('Failed to load PDF table plugin. Check your internet connection.','PDF Error');
     s2.onload=callback;
     document.head.appendChild(s2);
@@ -1692,19 +1728,21 @@ function renderView(v){
   if(_acBlocked.has(v)||_acBlocked.has('*')){vc.innerHTML=_acDeniedHtml();return;}
   try{
     switch(v){
-      case 'dashboard': vc.innerHTML=renderDashboard();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
-      case 'schedule':  vc.innerHTML=renderSchedule();break;
+      // Cacheable views: read-heavy, rarely edited inline — 8 s TTL, invalidated on saveDB
+      case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
+      case 'gantt':     _renderCached(vc,'gantt',renderGantt);break;
+      case 'capacity':  _renderCached(vc,'capacity',renderCapacity);break;
+      case 'schedule':  _renderCached(vc,'schedule',renderSchedule);break;
+      case 'staff':     _renderCached(vc,'staff',renderStaff);break;
+      // Live views: always fresh (mutations happen inline)
       case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;break;
       case 'board':     vc.innerHTML=renderBoard();break;
       case 'list':      renderListView(getFilteredTasks());break;
-      case 'gantt':     vc.innerHTML=renderGantt();break;
-      case 'capacity':  vc.innerHTML=renderCapacity();break;
       case 'clients':   vc.innerHTML=renderClients();break;
       case 'time':      vc.innerHTML=renderTime();break;
       case 'reports':   vc.innerHTML=renderReports();break;
       case 'audit':     vc.innerHTML=renderAudit();break;
       case 'notes':     renderNotes();break;
-      case 'staff':     vc.innerHTML=renderStaff();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
       default: vc.innerHTML=_render404Html(v);break;
     }
