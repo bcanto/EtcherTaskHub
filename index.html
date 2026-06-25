@@ -6826,12 +6826,30 @@ function openStaffModal(id){
         </select></div>
         <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color}" style="height:36px;padding:2px 4px"/></div>
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        ${id?`<button onclick="deleteStaff('${id}')" class="btn btn-danger" style="margin-right:auto">Remove</button>`:''}
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
         <button onclick="saveStaff('${id||''}')" class="btn btn-primary">Save</button>
       </div>
     </div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
+}
+function deleteStaff(id){
+  if(id===currentUser.id){showAlert('You cannot remove your own account while logged in.','Remove Staff');return;}
+  const s=DB.staff.find(x=>x.id===id);
+  if(!s){closeGenericModal();return;}
+  const adminCount=DB.staff.filter(x=>x.role==='admin').length;
+  if(s.role==='admin'&&adminCount<=1){showAlert('Cannot remove the last admin account.','Remove Staff');return;}
+  const taskCount=DB.tasks.filter(t=>t.ownerId===id&&!t.archived).length;
+  const msg=taskCount
+    ?`Remove ${s.name}? They have ${taskCount} open task${taskCount!==1?'s':''} which will become unassigned.`
+    :`Remove ${s.name}? This cannot be undone.`;
+  openConfirm('Remove Staff',msg,'Remove',()=>{
+    DB.tasks.forEach(t=>{if(t.ownerId===id)t.ownerId=null;});
+    DB.users=DB.users.filter(x=>x.id!==id);
+    DB.staff=DB.users;
+    saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
+  });
 }
 function saveStaff(id){
   const name=document.getElementById('sm-name').value.trim();
