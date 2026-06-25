@@ -408,11 +408,13 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <span id="login-error-text"></span>
       </div>
 
+      <!-- form wrapper enables browser "Save password?" prompt -->
+      <form id="login-form" onsubmit="doLogin();return false;" autocomplete="on">
       <div style="margin-bottom:14px">
         <label style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;letter-spacing:0.07em;text-transform:uppercase;display:block;margin-bottom:6px">Email address</label>
         <div class="login-input-wrap" style="margin-bottom:0">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 5.5l6.5 4 6.5-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-          <input id="login-email" type="email" class="login-input" placeholder="you@etchersolutions.com" value="admin@etchersolutions.com"
+          <input id="login-email" type="email" name="email" autocomplete="username" class="login-input" placeholder="you@etchersolutions.com"
             onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()"/>
         </div>
       </div>
@@ -420,19 +422,19 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div style="margin-bottom:26px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <label style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;letter-spacing:0.07em;text-transform:uppercase">Password</label>
-          <button onclick="toggleLoginPw()" id="login-pw-toggle" style="background:none;border:none;cursor:pointer;font-size:11px;color:#97bcbd;font-family:'Jost',sans-serif;font-weight:500;padding:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'">Show</button>
+          <button type="button" onclick="toggleLoginPw()" id="login-pw-toggle" style="background:none;border:none;cursor:pointer;font-size:11px;color:#97bcbd;font-family:'Jost',sans-serif;font-weight:500;padding:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'">Show</button>
         </div>
         <div class="login-input-wrap" style="margin-bottom:0">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
-          <input id="login-password" type="password" class="login-input" placeholder="••••••••"
-            onkeydown="if(event.key==='Enter')doLogin()"/>
+          <input id="login-password" type="password" name="password" autocomplete="current-password" class="login-input" placeholder="••••••••"/>
         </div>
       </div>
 
-      <button onclick="doLogin()" class="login-btn">
+      <button type="submit" class="login-btn">
         Sign In
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+      </form>
 
     </div>
 
@@ -1190,6 +1192,35 @@ function showToast(msg,type,duration){
   setTimeout(()=>{try{t.style.animation='_toastOut 0.22s ease-in forwards';setTimeout(()=>{try{t.remove();}catch(_){}},240);}catch(_){}},duration);
 }
 
+// ── Persistent session (remain logged in across page loads) ──────────────
+const _SESSION_KEY='etcher_session_v1';
+function _saveSession(){
+  if(!currentUser)return;
+  try{localStorage.setItem(_SESSION_KEY,JSON.stringify({id:currentUser.id,type:currentUser.type,role:currentUser.role,clientId:currentUser.clientId||null,savedAt:Date.now()}));}catch(_){}
+}
+function _clearSession(){
+  try{localStorage.removeItem(_SESSION_KEY);}catch(_){}
+}
+function _restoreSession(){
+  try{
+    const raw=localStorage.getItem(_SESSION_KEY);
+    if(!raw)return false;
+    const sess=JSON.parse(raw);
+    if(!sess||!sess.id)return false;
+    if(sess.type==='client'){
+      const client=DB.clients.find(c=>c.id===sess.id);
+      if(!client){_clearSession();return false;}
+      currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};
+      launchClientView();return true;
+    } else {
+      const user=(DB.users||DB.staff||[]).find(u=>u.id===sess.id&&u.active!==false);
+      if(!user){_clearSession();return false;}
+      currentUser={...user,type:user.role==='admin'?'admin':'staff',color:user.displayColor||user.color||'#64748b',initials:user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?'};
+      launchApp();return true;
+    }
+  }catch(_){_clearSession();return false;}
+}
+
 // ── B1: Session inactivity timeout (30 minutes) ───────────────────────
 let _lastActivity=Date.now();
 const _INACTIVITY_MS=30*60*1000;
@@ -1200,7 +1231,17 @@ function _resetActivity(){_lastActivity=Date.now();}
 setInterval(()=>{
   if(!currentUser)return;
   if(Date.now()-_lastActivity>=_INACTIVITY_MS){
-    try{doLogout();}catch(_){}
+    // Soft logout: clear in-memory state but keep stored session so the user
+    // is auto-logged back in on next page refresh instead of losing their spot.
+    try{
+      currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
+      const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
+      if(ctx){ctx.style.display='none';ctx.innerHTML='';}if(mn)mn.style.display='';
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('client-portal')?.classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('login-password').value='';
+    }catch(_){}
     showToast('You were signed out after 30 minutes of inactivity.','warning',10000);
   }
 },60000); // check every 60 s — fast enough, quiet enough
@@ -1609,12 +1650,13 @@ function doLogin(){
       color: user.displayColor||user.color||'#64748b',
       initials: user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?',
     };
+    _saveSession();
     launchApp();
     return;
   }
   // Legacy client portal login (loginEmail on client object — retained for backward compat)
   const client=DB.clients.find(c=>c.loginEmail&&c.loginEmail.toLowerCase()===email&&c.loginPassword===pass);
-  if(client){currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};launchClientView();return;}
+  if(client){currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};_saveSession();launchClientView();return;}
   showLoginError('Invalid email or password.');
 }
 function showLoginError(msg){
@@ -1660,6 +1702,7 @@ function launchClientView(){
   if(body)body.innerHTML=renderCpOverview(currentUser.clientId,tasks,boards,client);
 }
 function doLogout(){
+  _clearSession();
   currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
   const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
   if(ctx){ctx.style.display='none';ctx.innerHTML='';}if(mn)mn.style.display='';
@@ -10378,8 +10421,8 @@ document.addEventListener('keydown',e=>{
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
 });
-// Enter on login
-document.getElementById('login-password').addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();});
+// Auto-restore session so users stay logged in across page reloads
+_restoreSession();
 
 // ── GCS Tracker one-time import ───────────────────────────────────────────────
 (async function _importGCSTracker(){
