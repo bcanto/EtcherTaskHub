@@ -1136,7 +1136,7 @@ function _vcSet(k,h){_vc[k]={h,t:Date.now()};}
 function _vcClear(){for(const k in _vc)delete _vc[k];}
 function _renderCached(el,key,fn){
   const h=_vcGet(key);if(h){el.innerHTML=h;return;}
-  el.innerHTML=fn();_vcSet(key,el.innerHTML);
+  const html=fn();el.innerHTML=html;_vcSet(key,html);
 }
 
 let _saveDebounceTimer=null;
@@ -1145,11 +1145,13 @@ function saveDB(data){
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=setTimeout(()=>localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data)),300);
 }
-// Flush on tab close; warn if textareas have uncommitted content
+// Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
   if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));}
   let hasUnsaved=false;
-  document.querySelectorAll('#view-container textarea').forEach(ta=>{if((ta.value||'').trim())hasUnsaved=true;});
+  document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
+    try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
+  });
   if(hasUnsaved){e.preventDefault();e.returnValue='';}
 });
 
@@ -1159,10 +1161,11 @@ window.addEventListener('beforeunload',e=>{
 
 // ── Error logging ──────────────────────────────────────────────────────
 function _logAppError(detail){
-  const entry={id:'err'+(Date.now().toString(36)),at:new Date().toISOString(),view:typeof currentView!=='undefined'?currentView:'unknown',userId:typeof currentUser!=='undefined'?currentUser?.id:null,...detail};
+  const entry={id:'ERR-'+Date.now().toString(36).toUpperCase(),at:new Date().toISOString(),view:typeof currentView!=='undefined'?currentView:'unknown',userId:typeof currentUser!=='undefined'?currentUser?.id:null,...detail};
   try{if(typeof DB!=='undefined'&&DB){(DB.errorLog=DB.errorLog||[]).unshift(entry);if(DB.errorLog.length>100)DB.errorLog.splice(100);saveDB(DB);}}catch(_){}
   console.error('[AppError]',detail.type||'error',detail.message||detail);
   if(detail.type!=='render')showToast('Something went wrong. Use "Report Issue" in the topbar if this keeps happening.','error',7000);
+  return entry.id;
 }
 
 // ── Global error handlers ──────────────────────────────────────────────
@@ -1225,17 +1228,17 @@ function _deleteFileData(id){try{const s=JSON.parse(localStorage.getItem(_FILE_S
 let _wsCache=null;
 
 // ── Lazy jsPDF loader: only fetches the ~600 KB of PDF libs when actually needed ──
-function _ensureJsPdf(callback){
+function _ensureJsPdf(callback,onerror){
   if(window.jspdf&&window.jspdf.jsPDF){callback();return;}
   const s1=document.createElement('script');
   s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
   s1.crossOrigin='anonymous'; // B4: CORS attribute (prerequisite for adding SRI integrity hash)
-  s1.onerror=()=>showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');
+  s1.onerror=()=>{showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');if(onerror)onerror();};
   s1.onload=()=>{
     const s2=document.createElement('script');
     s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js';
     s2.crossOrigin='anonymous';
-    s2.onerror=()=>showAlert('Failed to load PDF table plugin. Check your internet connection.','PDF Error');
+    s2.onerror=()=>{showAlert('Failed to load PDF table plugin. Check your internet connection.','PDF Error');if(onerror)onerror();};
     s2.onload=callback;
     document.head.appendChild(s2);
   };
@@ -1751,8 +1754,10 @@ function renderView(v){
     void vc.offsetWidth;
     vc.classList.add('view-entering');
   }catch(err){
-    _logAppError({type:'render',message:err.message,stack:err.stack,view:v});
-    vc.innerHTML=_renderErrorFallbackHtml(v,err);
+    // Clear pfiCurrentId so "Try Again" on Reports doesn't re-enter a crash loop
+    if(v==='reports')pfiCurrentId=null;
+    const _eid=_logAppError({type:'render',message:err.message,stack:err.stack,view:v});
+    vc.innerHTML=_renderErrorFallbackHtml(v,err,_eid);
   }
 }
 
@@ -1769,8 +1774,8 @@ function _render404Html(v){
   </div>`;
 }
 
-function _renderErrorFallbackHtml(v,err){
-  const errId='ERR-'+Date.now().toString(36).toUpperCase();
+function _renderErrorFallbackHtml(v,err,errId){
+  errId=errId||('ERR-'+Date.now().toString(36).toUpperCase());
   const isAdmin=currentUser?.role==='admin';
   return`<div class="err-page">
     <div class="err-page-code" style="font-size:64px;color:#fecaca">⚠</div>
@@ -1789,6 +1794,8 @@ function openReportIssueModal(presetErrId){
   const modal=document.getElementById('report-issue-modal');
   const body=document.getElementById('report-issue-body');
   if(!modal||!body)return;
+  // Preserve any description the user already typed before rebuilding
+  const _savedDesc=document.getElementById('rpt-desc')?.value||'';
   const errId=presetErrId||('RPT-'+Date.now().toString(36).toUpperCase());
   const recent=(DB.errorLog||[]).slice(0,4);
   body.innerHTML=`
@@ -1814,6 +1821,9 @@ function openReportIssueModal(presetErrId){
       <a href="mailto:admin@etchersolutions.com?subject=${encodeURIComponent('Issue Report '+errId)}&body=${encodeURIComponent('Reference ID: '+errId+'\nView: '+(currentView||'—')+'\nUser: '+(currentUser?.name||'—')+'\n\nWhat happened:\n')}" style="font-size:12px;color:#178082;text-decoration:none;font-weight:600" target="_blank">✉ Email support</a>
       <button onclick="document.getElementById('report-issue-modal').classList.add('hidden')" class="btn btn-teal btn-sm">Done</button>
     </div>`;
+  // Restore any description the user had typed before this rebuild
+  const descEl=document.getElementById('rpt-desc');
+  if(descEl&&_savedDesc)descEl.value=_savedDesc;
   modal.classList.remove('hidden');
 }
 function _rptCopyId(){
@@ -5713,8 +5723,7 @@ function pfiCreate(){
   const now=new Date().toISOString();
   const inv={id:'pfi'+uid(),number:pfiNextNumber(),clientId:'',dateFrom:'',dateTo:'',
     issueDate:now.slice(0,10),status:'draft',preparedById:currentUser.id,
-    globalRate:150,gstEnabled:true,gstRate:10,notes:'',clientNotes:'',
-    memberRates:{},activityRates:{},lineItems:[],comments:[],
+    notes:'',clientNotes:'',lineItems:[],comments:[],
     auditEvents:[{id:'ae'+uid(),event:'created',actorId:currentUser.id,at:now}],
     createdAt:now,createdByUserId:currentUser.id,updatedAt:now};
   (DB.proFormaInvoices=DB.proFormaInvoices||[]).push(inv);
@@ -5860,8 +5869,10 @@ function pfiExportCSV(id){
   rows.push(['','','','','','','','','','','','','']);
   rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','']);
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+  const _csvUrl=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+  const a=document.createElement('a');a.href=_csvUrl;
   a.download=(inv.number+'_'+(client?.name||'Invoice').replace(/\s+/g,'_')+'_'+inv.dateFrom+'_'+inv.dateTo+'.csv');a.click();
+  URL.revokeObjectURL(_csvUrl);
 }
 
 function pfiExportExcel(id){
@@ -5894,8 +5905,10 @@ ${dataRows}
 <tr><td colspan="13" style="height:8px"></td></tr>
 <tr><td colspan="9" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL HOURS</td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">${t.totalHrs.toFixed(2)}</td><td colspan="3" style="background:#0d1c33"></td></tr>
 </table></body></html>`;
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
+  const _xlsUrl=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
+  const a=document.createElement('a');a.href=_xlsUrl;
   a.download=(inv.number+'_'+(client?.name||'Invoice').replace(/[^a-z0-9]/gi,'_')+'_'+inv.dateFrom+'_'+inv.dateTo+'.xls');a.click();
+  URL.revokeObjectURL(_xlsUrl);
 }
 
 function pfiExportPDF(id){
@@ -5905,6 +5918,7 @@ function pfiExportPDF(id){
   if(issues.length){showAlert('Fix these issues before exporting:\n\n• '+issues.join('\n• '),'Validation');return;}
   const btn=document.getElementById('pfi-pdf-'+id);
   if(btn){btn.disabled=true;btn.textContent='Generating…';}
+  const _pdfBtnReset=()=>{if(btn){btn.disabled=false;btn.textContent='↓ PDF';}};
   _ensureJsPdf(()=>{setTimeout(()=>{
     try{
       const client=DB.clients.find(c=>c.id===inv.clientId);
@@ -5974,8 +5988,8 @@ function pfiExportPDF(id){
       (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'pdf_exported',actorId:currentUser.id,at:new Date().toISOString()});
       saveDB(DB);
     }catch(err){console.error(err);showAlert('PDF error: '+err.message,'PDF Error');}
-    finally{if(btn){btn.disabled=false;btn.textContent='↓ PDF';}}
-  },60);});
+    finally{_pdfBtnReset();}
+  },60);},_pdfBtnReset);
 }
 
 function _pfiListHtml(){

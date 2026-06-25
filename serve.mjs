@@ -68,18 +68,26 @@ const SECURITY_HEADERS = {
   'Content-Security-Policy': CSP,
 };
 
+const _ROOT = path.resolve(__dirname);
+
 http.createServer((req, res) => {
-  // Reject obviously malicious paths before touching the filesystem
-  if (req.url.includes('..')) {
+  let urlPath;
+  try {
+    urlPath = decodeURIComponent(req.url.split('?')[0]);
+  } catch {
     res.writeHead(400, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
     res.end('Bad Request');
     return;
   }
-
-  let urlPath = decodeURIComponent(req.url.split('?')[0]);
   if (urlPath === '/') urlPath = '/index.html';
 
-  const filePath = path.join(__dirname, urlPath);
+  const filePath = path.resolve(__dirname, '.' + urlPath);
+  // Prevent path traversal: resolved path must stay inside the project root
+  if (!filePath.startsWith(_ROOT + path.sep) && filePath !== _ROOT) {
+    res.writeHead(400, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
+    res.end('Bad Request');
+    return;
+  }
   const ext = path.extname(filePath).toLowerCase();
   const contentType  = MIME[ext]          || 'application/octet-stream';
   const cacheControl = CACHE_CONTROL[ext] || 'no-cache, must-revalidate';
