@@ -6,6 +6,33 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3001;
 
+// ── Load .env file (no npm dotenv needed) ────────────────────────────────────
+// Falls back to process.env — works in both local dev and hosted environments.
+const _env = {};
+try {
+  const envText = fs.readFileSync(path.join(__dirname, '.env'), 'utf-8');
+  for (const line of envText.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+    _env[key] = val;
+  }
+} catch (_) {
+  // .env not found — Supabase features will be disabled until credentials are added
+}
+
+const SUPABASE_URL      = _env.SUPABASE_URL      || process.env.SUPABASE_URL      || '';
+const SUPABASE_ANON_KEY = _env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+if (SUPABASE_URL) {
+  console.log(`  Supabase: ${SUPABASE_URL}`);
+} else {
+  console.log('  Supabase: not configured (add .env to enable)');
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
@@ -24,9 +51,6 @@ const MIME = {
 };
 
 // B6: Cache-Control per asset type
-// HTML: always revalidate (app is a single-file SPA — any deploy changes it)
-// Fonts/images: long-lived immutable (content-addressed in practice)
-// JS/CSS: 1-day cache (reasonable for dev server; production CDN adds fingerprinting)
 const CACHE_CONTROL = {
   '.html': 'no-cache, must-revalidate',
   '.css':  'public, max-age=86400',
@@ -45,14 +69,14 @@ const CACHE_CONTROL = {
 };
 
 // B2: Security headers applied to every response
-// frame-ancestors: must be HTTP header (meta CSP cannot set this directive)
+// Supabase domains added to script-src (CDN), connect-src (API + realtime), img-src (storage)
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https://placehold.co",
-  "connect-src 'self'",
+  "img-src 'self' data: https://placehold.co https://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -79,6 +103,23 @@ http.createServer((req, res) => {
     res.end('Bad Request');
     return;
   }
+
+  // ── /api/config — exposes ONLY the public (anon) Supabase credentials ──────
+  // The service role key NEVER goes here — it stays server-side only.
+  if (req.method === 'GET' && urlPath === '/api/config') {
+    const payload = JSON.stringify({
+      supabaseUrl:      SUPABASE_URL,
+      supabaseAnonKey:  SUPABASE_ANON_KEY,
+    });
+    res.writeHead(200, {
+      'Content-Type':  'application/json; charset=utf-8',
+      'Cache-Control': 'no-cache, must-revalidate',
+      ...SECURITY_HEADERS,
+    });
+    res.end(payload);
+    return;
+  }
+
   if (urlPath === '/') urlPath = '/index.html';
 
   const filePath = path.resolve(__dirname, '.' + urlPath);

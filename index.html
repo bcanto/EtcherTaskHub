@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Etcher - Task Hub</title>
 <!-- B3: Content Security Policy — restricts what can load/execute in this page -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <link rel="icon" type="image/png" href="favicon_taskapp.png"/>
@@ -17,6 +17,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
 <!-- Tailwind CDN play-mode: dynamic JIT, crossorigin for CORS compliance. SRI not possible with this loader (use production build + SRI when moving off CDN). -->
 <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+<!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
+     the client is only initialized when /api/config returns valid credentials. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
 <script>
 tailwind.config = {
@@ -1193,14 +1196,21 @@ function showToast(msg,type,duration){
 }
 
 // ── Persistent session (remain logged in across page loads) ──────────────
+// Phase 2: Supabase Auth is the primary session store when _supabase is
+// available. The localStorage fallback (_SESSION_KEY) is kept for the
+// period before Supabase credentials are configured.
 const _SESSION_KEY='etcher_session_v1';
 function _saveSession(){
   if(!currentUser)return;
+  // Supabase Auth handles its own persistence — only write localStorage when
+  // Supabase is not configured (offline / pre-migration mode).
+  if(window._supabase)return;
   try{localStorage.setItem(_SESSION_KEY,JSON.stringify({id:currentUser.id,type:currentUser.type,role:currentUser.role,clientId:currentUser.clientId||null,savedAt:Date.now()}));}catch(_){}
 }
 function _clearSession(){
   try{localStorage.removeItem(_SESSION_KEY);}catch(_){}
 }
+// Fallback: restore session from localStorage (no Supabase configured)
 function _restoreSession(){
   try{
     const raw=localStorage.getItem(_SESSION_KEY);
@@ -1219,6 +1229,58 @@ function _restoreSession(){
       launchApp();return true;
     }
   }catch(_){_clearSession();return false;}
+}
+// Supabase path: called after Supabase session is confirmed
+async function _supabaseRestoreSession(session){
+  try{
+    const sb=window._supabase;
+    if(!sb||!session)return false;
+    const {data:profileData,error}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+    if(error||!profileData)return false;
+    const p=profileData;
+    const isClient=p.role==='client';
+    if(isClient){
+      // Fetch client record for portal
+      const {data:clientData}=await sb.from('clients').select('*').eq('id',p.client_id).single();
+      if(!clientData||!clientData.portal_enabled){return false;}
+      currentUser={id:p.id,name:p.name,role:'client',type:'client',clientId:p.client_id,
+        initials:p.initials||clientData.short_code||'CL',color:p.display_color||clientData.color||'#64748b'};
+      launchClientView();
+    } else {
+      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
+        type:p.role==='admin'||p.role==='pm'?p.role:'staff',
+        displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
+        initials:p.initials||(p.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?',
+        capacityHoursPerDay:p.capacity_hours_per_day||8,active:true,clientId:null};
+      // Phase 3: load all data from Supabase into DB (replaces localStorage blob)
+      if(window._dbSync){
+        try{
+          showToast('Syncing data…','info',3000);
+          const remoteData=await window._dbSync.fetchAllData(sb);
+          // Merge remote data into DB, keeping local-only fields (earningsRates, etc.)
+          Object.assign(DB,{
+            users:remoteData.users,staff:remoteData.users,
+            clients:remoteData.clients,
+            boards:remoteData.boards,workboards:remoteData.boards,
+            groups:remoteData.groups,
+            tasks:remoteData.tasks,
+            comments:remoteData.comments,
+            timeEntries:remoteData.timeEntries,
+            taskFiles:remoteData.taskFiles,
+            scheduleEvents:remoteData.scheduleEvents,
+            clientWorkRequests:remoteData.clientWorkRequests,
+            personalChecklist:remoteData.personalChecklist,
+            dependencies:remoteData.dependencies,
+            boardShares:remoteData.boardShares,
+          });
+        }catch(syncErr){
+          console.warn('[Supabase] Data sync failed, using localStorage cache:',syncErr.message);
+        }
+      }
+      launchApp();
+    }
+    return true;
+  }catch(e){console.warn('[Supabase] Session restore error:',e.message);return false;}
 }
 
 // ── B1: Session inactivity timeout (30 minutes) ───────────────────────
@@ -1641,20 +1703,27 @@ function renderAdvancedFilterPanel(view){
 function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
-  // Check users (staff + admin)
+  // ── Supabase Auth path (Phase 2) ─────────────────────────────────────────
+  if(window._supabase){
+    const btn=document.querySelector('#login-form button[type="submit"]');
+    if(btn){btn.disabled=true;btn.textContent='Signing in…';}
+    window._supabase.auth.signInWithPassword({email,password:pass}).then(async({data,error})=>{
+      if(btn){btn.disabled=false;btn.innerHTML='Sign In <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+      if(error){showLoginError(error.message);return;}
+      const restored=await _supabaseRestoreSession(data.session);
+      if(!restored)showLoginError('Account not found or not active. Contact your administrator.');
+    });
+    return; // async — Supabase callback handles the rest
+  }
+  // ── localStorage fallback (no Supabase configured) ───────────────────────
   const user=(DB.users||DB.staff||[]).find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
   if(user){
-    currentUser={
-      ...user,
-      type: user.role==='admin'?'admin':'staff',
-      color: user.displayColor||user.color||'#64748b',
-      initials: user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?',
-    };
-    _saveSession();
-    launchApp();
-    return;
+    currentUser={...user,type:user.role==='admin'?'admin':'staff',
+      color:user.displayColor||user.color||'#64748b',
+      initials:user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?'};
+    _saveSession();launchApp();return;
   }
-  // Legacy client portal login (loginEmail on client object — retained for backward compat)
+  // Legacy client portal login (loginEmail on client object)
   const client=DB.clients.find(c=>c.loginEmail&&c.loginEmail.toLowerCase()===email&&c.loginPassword===pass);
   if(client){currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};_saveSession();launchClientView();return;}
   showLoginError('Invalid email or password.');
@@ -1703,6 +1772,8 @@ function launchClientView(){
 }
 function doLogout(){
   _clearSession();
+  // Sign out of Supabase Auth when configured (clears the JWT from storage)
+  if(window._supabase){window._supabase.auth.signOut().catch(()=>{});}
   currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
   const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
   if(ctx){ctx.style.display='none';ctx.innerHTML='';}if(mn)mn.style.display='';
@@ -10439,8 +10510,35 @@ document.addEventListener('keydown',e=>{
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
 });
-// Auto-restore session so users stay logged in across page reloads
-_restoreSession();
+// Auto-restore session so users stay logged in across page reloads.
+// Tries Supabase first (if configured), falls back to localStorage.
+(async function _startApp(){
+  try{
+    // supabase-client.js is deferred — wait up to 2 s for it to finish init
+    const _waitForSupabase=()=>new Promise(resolve=>{
+      if(window._supabase!==undefined)return resolve();
+      const t=Date.now();
+      const tick=()=>{
+        if(window._supabase!==undefined||Date.now()-t>2000)return resolve();
+        setTimeout(tick,50);
+      };
+      tick();
+    });
+    await _waitForSupabase();
+    if(window._supabase){
+      const{data:{session}}=await window._supabase.auth.getSession();
+      if(session){
+        const restored=await _supabaseRestoreSession(session);
+        if(restored)return;
+      }
+      // No active Supabase session — show login (don't fall back to localStorage
+      // when Supabase is configured, as that would bypass server-side auth)
+      return;
+    }
+  }catch(e){console.warn('[startup]',e.message);}
+  // No Supabase — use localStorage session
+  _restoreSession();
+})();
 
 // ── GCS Tracker one-time import ───────────────────────────────────────────────
 (async function _importGCSTracker(){
@@ -10570,6 +10668,11 @@ _restoreSession();
   }
 })();
 </script>
+
+<!-- Supabase client init (reads /api/config; sets window._supabase) -->
+<script src="/supabase-client.js" defer></script>
+<!-- Data sync layer (Supabase ↔ localStorage DB mapping; sets window._dbSync) -->
+<script src="/db-sync.js" defer></script>
 
 <!-- TOAST NOTIFICATIONS ROOT -->
 <div id="app-toast-root"></div>

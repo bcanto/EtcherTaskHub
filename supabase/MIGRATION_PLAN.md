@@ -42,41 +42,41 @@ This is not fixable by writing more client-side code. A backend is required.
 - [x] Write `003_storage_policies.sql` — bucket setup + storage RLS
 - [x] Harden `escHtml()` to escape quotes
 - [x] Remove `<br>` injection patterns → use `white-space:pre-wrap`
-- [ ] Set up Supabase project (https://app.supabase.com)
-- [ ] Run migrations against Supabase project
-- [ ] Configure storage buckets
-- [ ] Add Supabase JS client to the app
+- [x] Add Supabase JS client to the app (`cdn.jsdelivr.net` CDN, UMD build)
+- [x] Add `/api/config` endpoint to `serve.mjs` (serves `SUPABASE_URL` + `SUPABASE_ANON_KEY`)
+- [x] Update CSP in `serve.mjs` and `index.html` to allow Supabase domains
+- [ ] **YOU MUST DO THIS**: Set up Supabase project (https://app.supabase.com)
+- [ ] **YOU MUST DO THIS**: Copy URL + anon key → create `.env` from `.env.example`
+- [ ] Run migrations against Supabase project (paste SQL files into Supabase SQL Editor)
+- [ ] Configure storage bucket (Dashboard → Storage → New bucket → `task-attachments`)
 
-### Phase 2 — Authentication
+### Phase 2 — Authentication ✅ Code Complete (awaiting Supabase project)
 
-Replace the current `doLogin()` / localStorage session with Supabase Auth:
+`doLogin()`, `doLogout()`, and session restore have been rewritten with a
+**progressive enhancement** pattern:
 
-```js
-// REPLACE THIS:
-function doLogin(){
-  const user = DB.users.find(u => u.email === email && u.password === pass);
-  currentUser = user; // ← trivially bypassable
-}
+- **When `.env` is present** (Supabase configured): authenticates via Supabase Auth JWT.
+  `currentUser` role comes from the `profiles` table, not the client JS. The localStorage
+  comparison path is completely bypassed.
+- **When `.env` is absent** (offline / pre-migration): falls back to the existing
+  localStorage comparison. The app works exactly as before.
 
-// WITH THIS:
-async function doLogin(){
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) { showLoginError(error.message); return; }
-  // currentUser is now set from the server-verified JWT session
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-  currentUser = profile; // role comes from the database, not the client
-}
-```
+Files changed:
+- `serve.mjs` — loads `.env`, exposes `/api/config`
+- `supabase-client.js` (**new**) — initializes `window._supabase` from `/api/config`
+- `db-sync.js` (**new**) — data mapping layer (Phase 3 is already written here)
+- `index.html` — Supabase CDN tag, updated CSP, rewritten auth functions, async startup
 
-Steps:
-- [ ] Install `@supabase/supabase-js`
-- [ ] Create `supabase-client.js` with URL + anon key from `.env`
-- [ ] Replace `doLogin()` with Supabase Auth
-- [ ] Replace `doLogout()` with `supabase.auth.signOut()`
-- [ ] Add `supabase.auth.onAuthStateChange()` handler
-- [ ] Remove all localStorage-based session logic
-- [ ] Remove hardcoded passwords from seed data
-- [ ] Invite real users through Supabase Auth (email + magic link or set password)
+Remaining Phase 2 steps (need Supabase project first):
+- [ ] Run `001_initial_schema.sql` in Supabase SQL Editor
+- [ ] Run `002_rls_policies.sql` in Supabase SQL Editor
+- [ ] Run `003_storage_policies.sql` in Supabase SQL Editor
+- [ ] Create first admin user: Supabase Dashboard → Authentication → Users → Invite user
+- [ ] In Supabase SQL Editor: `UPDATE profiles SET role = 'admin' WHERE email = 'b.canto@etchersolutions.com';`
+- [ ] Create `.env` with real credentials and restart `node serve.mjs`
+- [ ] Test: login should now use Supabase Auth instead of localStorage comparison
+- [ ] Invite remaining staff through Supabase Dashboard → Authentication → Users
+- [ ] Once all staff are in Supabase Auth, remove hardcoded passwords from SEED data
 
 ### Phase 3 — Data Layer
 
