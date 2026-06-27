@@ -7121,28 +7121,29 @@ function renderStaff(){
   </div>`;
 }
 function openStaffModal(id){
-  const s=id?DB.staff.find(x=>x.id===id):{id:'',name:'',email:'',password:'',role:'staff',color:'#7aa3a4',initials:''};
-  document.getElementById('generic-modal-title').textContent=id?'Edit Staff':'Add Staff';
+  const s=id?DB.staff.find(x=>x.id===id):{id:'',name:'',email:'',role:'staff',color:'#7aa3a4',initials:''};
+  document.getElementById('generic-modal-title').textContent=id?'Edit Staff':'Invite Staff';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Full Name</label><input id="sm-name" class="form-input" value="${escHtml(s.name)}"/></div>
         <div><label class="form-label">Initials</label><input id="sm-init" class="form-input" value="${escHtml(s.initials||'')}" maxlength="3"/></div>
       </div>
-      <div><label class="form-label">Email</label><input id="sm-email" class="form-input" value="${escHtml(s.email)}"/></div>
-      <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" value="${escHtml(s.password||'')}"/></div>
+      <div><label class="form-label">Email</label><input id="sm-email" class="form-input" value="${escHtml(s.email)}" ${id?'readonly style="opacity:0.6"':''}/></div>
+      ${id?`<div><label class="form-label">Password (leave blank to keep current)</label><input id="sm-pw" class="form-input" type="password" placeholder="••••••••"/></div>`
+          :`<div style="background:#f0f9f4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534">An invitation email will be sent so they can set their own password.</div>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Role</label><select id="sm-role" class="form-input">
           <option value="restricted" ${s.role==='restricted'?'selected':''}>Restricted — view only</option>
           <option value="staff" ${s.role==='staff'?'selected':''}>Staff — standard access</option>
           <option value="admin" ${s.role==='admin'?'selected':''}>Admin — full access</option>
         </select></div>
-        <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color}" style="height:36px;padding:2px 4px"/></div>
+        <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color||'#7aa3a4'}" style="height:36px;padding:2px 4px"/></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         ${id?`<button onclick="deleteStaff('${id}')" class="btn btn-danger" style="margin-right:auto">Remove</button>`:''}
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
-        <button onclick="saveStaff('${id||''}')" class="btn btn-primary">Save</button>
+        <button id="sm-save-btn" onclick="saveStaff('${id||''}')" class="btn btn-primary">${id?'Save':'Send Invitation'}</button>
       </div>
     </div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
@@ -7164,20 +7165,37 @@ function deleteStaff(id){
     saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
   });
 }
-function saveStaff(id){
+async function saveStaff(id){
   const name=document.getElementById('sm-name').value.trim();
   const email=document.getElementById('sm-email').value.trim();
   if(!name||!email){showAlert('Name and email are required.','Validation');return;}
+  const role=document.getElementById('sm-role').value;
+  const color=document.getElementById('sm-color').value;
+  const initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
   if(id){
+    // Edit existing — update DB only (Supabase profile update not required for now)
     const s=DB.staff.find(x=>x.id===id);
-    s.name=name;s.email=email;s.password=document.getElementById('sm-pw').value;
-    s.role=document.getElementById('sm-role').value;s.color=document.getElementById('sm-color').value;
-    s.initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+    s.name=name;s.role=role;s.color=color;s.initials=initials;
+    const pw=document.getElementById('sm-pw')?.value;if(pw)s.password=pw;
+    saveDB(DB);closeGenericModal();renderView('staff');
   }else{
-    const initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
-    DB.staff.push({id:'s'+uid(),name,email,password:document.getElementById('sm-pw').value,role:document.getElementById('sm-role').value,color:document.getElementById('sm-color').value,initials});
+    // New user — send invitation via server
+    const btn=document.getElementById('sm-save-btn');
+    if(btn){btn.disabled=true;btn.textContent='Sending…';}
+    try{
+      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role,color,initials})});
+      const result=await resp.json();
+      if(!resp.ok)throw new Error(result.error||'Invite failed');
+      // Add to DB using the Supabase UUID so login matches
+      DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      DB.staff=DB.users;
+      saveDB(DB);closeGenericModal();renderView('staff');
+      showToast(`Invitation sent to ${email}`,'success',4000);
+    }catch(e){
+      showAlert(e.message,'Invite Failed');
+      if(btn){btn.disabled=false;btn.textContent='Send Invitation';}
+    }
   }
-  saveDB(DB);closeGenericModal();renderView('staff');
 }
 
 // ═══════════════════════════════════════════════════════════
