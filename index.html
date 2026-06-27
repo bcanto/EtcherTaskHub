@@ -5101,15 +5101,21 @@ function openClientModal(id){
         <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
         <div style="display:grid;gap:10px">
           <div style="display:flex;align-items:flex-end;gap:8px">
-            <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com"/></div>
+            <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com" ${id?'readonly style="opacity:0.6"':''}/></div>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;padding-bottom:8px;white-space:nowrap">
               <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled?'checked':''}/> Enabled
             </label>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="font-size:11px;color:#8da2b2;flex:1">${id?'Save to update the email. Use "Send Invite" to (re)send the login email.':'Leave blank for no portal access.'}</div>
-            ${id?`<button type="button" onclick="resendClientInvite('${id}',this)" id="cm-invite-btn" class="btn btn-ghost btn-sm">Send Invite</button>`:''}
-          </div>
+          ${id
+            ?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"/></div>
+                <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+              </div>`
+            :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>
+                <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+              </div>
+              <div style="font-size:11px;color:#8da2b2">Leave password blank to create client without portal access.</div>`}
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
@@ -5134,24 +5140,44 @@ async function saveClient(id){
     }else{c.color=color;}
     const enabledEl=document.getElementById('cm-portal-enabled');
     if(enabledEl)c.portal_enabled=enabledEl.checked;
-    const newEmail=(document.getElementById('cm-email')?.value||'').trim();
-    if(newEmail)c.loginEmail=newEmail;
+    // Handle optional password update for existing client
+    const pw=(document.getElementById('cm-pw')?.value||'').trim();
+    const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
+    if(pw){
+      if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+      if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
+      if(!c.supabaseUserId){showAlert('No Supabase account linked to this client. Create a new client with a password instead.','Error');return;}
+      const btn=document.getElementById('cm-save-btn');
+      if(btn){btn.disabled=true;btn.textContent='Saving…';}
+      try{
+        const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:c.supabaseUserId,password:pw})});
+        if(!resp.ok){const r=await resp.json();throw new Error(r.error||'Failed to update password');}
+      }catch(e){
+        showAlert(e.message,'Password Update Failed');
+        if(btn){btn.disabled=false;btn.textContent='Save';}
+        return;
+      }
+    }
     saveDB(DB);closeGenericModal();renderView('clients');
   }else{
     const email=(document.getElementById('cm-email')?.value||'').trim();
+    const pw=(document.getElementById('cm-pw')?.value||'').trim();
+    const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     const cid='c'+uid();
-    if(email){
+    if(email&&pw){
+      if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+      if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
       const btn=document.getElementById('cm-save-btn');
-      if(btn){btn.disabled=true;btn.textContent='Sending…';}
+      if(btn){btn.disabled=true;btn.textContent='Creating…';}
       try{
-        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid})});
+        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid,password:pw})});
         const result=await resp.json();
-        if(!resp.ok)throw new Error(result.error||'Invite failed');
-        DB.clients.push({id:cid,name,shortCode,color,loginEmail:email,active:true,portal_enabled:true});
+        if(!resp.ok)throw new Error(result.error||'Failed to create account');
+        DB.clients.push({id:cid,name,shortCode,color,loginEmail:email,active:true,portal_enabled:true,supabaseUserId:result.id});
         saveDB(DB);closeGenericModal();renderView('clients');
-        showToast(`Portal invitation sent to ${email}`,'success',4000);
+        showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
-        showAlert(e.message,'Invite Failed');
+        showAlert(e.message,'Add Client Failed');
         if(btn){btn.disabled=false;btn.textContent='Save';}
       }
     }else{
@@ -5161,24 +5187,6 @@ async function saveClient(id){
   }
 }
 
-async function resendClientInvite(clientId,btn){
-  const c=DB.clients.find(x=>x.id===clientId);
-  if(!c)return;
-  const email=(document.getElementById('cm-email')?.value||c.loginEmail||'').trim();
-  if(!email){showAlert('Enter an email address first.','Invite');return;}
-  if(btn){btn.disabled=true;btn.textContent='Sending…';}
-  try{
-    const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,email,clientId})});
-    const result=await resp.json();
-    if(!resp.ok)throw new Error(result.error||'Invite failed');
-    c.loginEmail=email;c.portal_enabled=true;
-    saveDB(DB);closeGenericModal();renderView('clients');
-    showToast(`Invitation sent to ${email}`,'success',4000);
-  }catch(e){
-    showAlert(e.message,'Invite Failed');
-    if(btn){btn.disabled=false;btn.textContent='Send Invite';}
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 // TIME + PERCENT HELPERS
