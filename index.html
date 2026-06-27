@@ -1160,8 +1160,9 @@ function getUserColor(u){return u.displayColor||u.color||'#64748b';}
 function taskTitle(t){return t.name||t.title||'Untitled';}
 
 let _saveDebounceTimer=null;
+let _supabaseSyncEnabled=false; // only true after post-login app_state load confirms data
 function _syncToSupabase(data){
-  if(!window._supabase)return;
+  if(!window._supabase||!_supabaseSyncEnabled)return;
   window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{if(error)console.warn('[sync]',error.message);});
 }
 function saveDB(data){
@@ -1282,6 +1283,7 @@ async function _supabaseRestoreSession(session){
           localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
+      _supabaseSyncEnabled=true; // safe to write back to Supabase now
       launchApp();
     }
     return true;
