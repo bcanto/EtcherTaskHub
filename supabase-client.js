@@ -43,6 +43,11 @@
         // If the page is already on the login screen, nothing to do
         const loginVisible = !document.getElementById('login-screen')?.classList.contains('hidden');
         if (!loginVisible && typeof doLogout === 'function') doLogout();
+        return;
+      }
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked a recovery/invite link — flag so startup shows set-password form
+        window._supabasePendingPasswordReset = true;
       }
     });
 

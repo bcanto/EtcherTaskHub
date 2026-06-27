@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
 <!-- Tailwind CDN play-mode: dynamic JIT, crossorigin for CORS compliance. SRI not possible with this loader (use production build + SRI when moving off CDN). -->
-<script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
@@ -1288,6 +1288,56 @@ async function _supabaseRestoreSession(session){
     }
     return true;
   }catch(e){console.warn('[Supabase] Session restore error:',e.message);return false;}
+}
+
+function _showSetPasswordForm(session){
+  const overlay=document.createElement('div');
+  overlay.id='set-pw-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Jost,sans-serif';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(13,28,51,0.12)">
+      <div style="text-align:center;margin-bottom:28px">
+        <img src="Etcher White Logo.png" style="height:36px;filter:invert(1) sepia(1) saturate(0) brightness(0.3);margin-bottom:16px"/>
+        <div style="font-size:20px;font-weight:700;color:#0d1c33">Set your password</div>
+        <div style="font-size:13px;color:#8da2b2;margin-top:6px">Choose a password to log in next time</div>
+      </div>
+      <div style="display:grid;gap:14px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#8da2b2;letter-spacing:0.07em;text-transform:uppercase;display:block;margin-bottom:6px">New Password</label>
+          <input id="spf-pw" type="password" autocomplete="new-password" placeholder="Min 6 characters"
+            style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;font-family:Jost,sans-serif"
+            oninput="document.getElementById('spf-err').textContent=''"/>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#8da2b2;letter-spacing:0.07em;text-transform:uppercase;display:block;margin-bottom:6px">Confirm Password</label>
+          <input id="spf-pw2" type="password" autocomplete="new-password" placeholder="Repeat password"
+            style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;font-family:Jost,sans-serif"
+            oninput="document.getElementById('spf-err').textContent=''"/>
+        </div>
+        <div id="spf-err" style="font-size:12px;color:#dc2626;min-height:16px"></div>
+        <button id="spf-btn" onclick="_submitSetPassword()"
+          style="width:100%;padding:12px;background:#0d1c33;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif">
+          Set Password &amp; Continue
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('spf-pw')?.focus(),100);
+
+  window._spfSession=session;
+  window._submitSetPassword=async function(){
+    const pw=document.getElementById('spf-pw').value;
+    const pw2=document.getElementById('spf-pw2').value;
+    const err=document.getElementById('spf-err');
+    const btn=document.getElementById('spf-btn');
+    if(pw.length<6){err.textContent='Password must be at least 6 characters.';return;}
+    if(pw!==pw2){err.textContent='Passwords do not match.';return;}
+    btn.disabled=true;btn.textContent='Saving…';
+    const{error}=await window._supabase.auth.updateUser({password:pw});
+    if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Set Password & Continue';return;}
+    overlay.remove();
+    await _supabaseRestoreSession(window._spfSession);
+  };
 }
 
 // ── B1: Session inactivity timeout (30 minutes) ───────────────────────
@@ -7175,7 +7225,7 @@ function renderStaff(){
 }
 function openStaffModal(id){
   const s=id?DB.staff.find(x=>x.id===id):{id:'',name:'',email:'',role:'staff',color:'#7aa3a4',initials:''};
-  document.getElementById('generic-modal-title').textContent=id?'Edit Staff':'Invite Staff';
+  document.getElementById('generic-modal-title').textContent=id?'Edit Staff':'Add Staff';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -7183,8 +7233,12 @@ function openStaffModal(id){
         <div><label class="form-label">Initials</label><input id="sm-init" class="form-input" value="${escHtml(s.initials||'')}" maxlength="3"/></div>
       </div>
       <div><label class="form-label">Email</label><input id="sm-email" class="form-input" value="${escHtml(s.email)}" ${id?'readonly style="opacity:0.6"':''}/></div>
-      ${id?`<div><label class="form-label">Password (leave blank to keep current)</label><input id="sm-pw" class="form-input" type="password" placeholder="••••••••"/></div>`
-          :`<div style="background:#f0f9f4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534">An invitation email will be sent so they can set their own password.</div>`}
+      ${id
+        ?`<div><label class="form-label">New Password (leave blank to keep current)</label><input id="sm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="••••••••"/></div>`
+        :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>
+            <div><label class="form-label">Confirm Password</label><input id="sm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+          </div>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Role</label><select id="sm-role" class="form-input">
           <option value="restricted" ${s.role==='restricted'?'selected':''}>Restricted — view only</option>
@@ -7196,7 +7250,7 @@ function openStaffModal(id){
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         ${id?`<button onclick="deleteStaff('${id}')" class="btn btn-danger" style="margin-right:auto">Remove</button>`:''}
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
-        <button id="sm-save-btn" onclick="saveStaff('${id||''}')" class="btn btn-primary">${id?'Save':'Send Invitation'}</button>
+        <button id="sm-save-btn" onclick="saveStaff('${id||''}')" class="btn btn-primary">${id?'Save':'Add Staff'}</button>
       </div>
     </div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
@@ -7226,27 +7280,30 @@ async function saveStaff(id){
   const color=document.getElementById('sm-color').value;
   const initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
   if(id){
-    // Edit existing — update DB only (Supabase profile update not required for now)
+    // Edit existing — update DB only
     const s=DB.staff.find(x=>x.id===id);
     s.name=name;s.role=role;s.color=color;s.initials=initials;
     const pw=document.getElementById('sm-pw')?.value;if(pw)s.password=pw;
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
-    // New user — send invitation via server
+    // New user — create account directly (no email needed)
+    const pw=document.getElementById('sm-pw')?.value||'';
+    const pw2=document.getElementById('sm-pw2')?.value||'';
+    if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+    if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
     const btn=document.getElementById('sm-save-btn');
-    if(btn){btn.disabled=true;btn.textContent='Sending…';}
+    if(btn){btn.disabled=true;btn.textContent='Creating…';}
     try{
-      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role,color,initials})});
+      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role,color,initials,password:pw})});
       const result=await resp.json();
-      if(!resp.ok)throw new Error(result.error||'Invite failed');
-      // Add to DB using the Supabase UUID so login matches
+      if(!resp.ok)throw new Error(result.error||'Failed to create account');
       DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       DB.staff=DB.users;
       saveDB(DB);closeGenericModal();renderView('staff');
-      showToast(`Invitation sent to ${email}`,'success',4000);
+      showToast(`Account created for ${name}`,'success',4000);
     }catch(e){
-      showAlert(e.message,'Invite Failed');
-      if(btn){btn.disabled=false;btn.textContent='Send Invitation';}
+      showAlert(e.message,'Add Staff Failed');
+      if(btn){btn.disabled=false;btn.textContent='Add Staff';}
     }
   }
 }
@@ -10848,6 +10905,11 @@ document.addEventListener('keydown',e=>{
       }catch(e){console.warn('[sync load]',e.message);}
       const{data:{session}}=await window._supabase.auth.getSession();
       if(session){
+        if(window._supabasePendingPasswordReset){
+          window._supabasePendingPasswordReset=false;
+          _showSetPasswordForm(session);
+          return;
+        }
         const restored=await _supabaseRestoreSession(session);
         if(restored)return;
       }
