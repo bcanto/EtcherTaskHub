@@ -1,3 +1,5 @@
+module.exports.config = { api: { bodyParser: { sizeLimit: '20mb' } } };
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   if (req.headers['x-upload-secret'] !== process.env.UPLOAD_SECRET)
