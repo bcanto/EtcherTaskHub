@@ -5058,7 +5058,7 @@ function openClientModal(id){
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="font-size:11px;color:#8da2b2;flex:1">${id?'Save to update the email. Use "Send Invite" to (re)send the login email.':'Leave blank for no portal access.'}</div>
-            ${id?`<button type="button" onclick="resendClientInvite('${id}')" id="cm-invite-btn" class="btn btn-ghost btn-sm">Send Invite</button>`:''}
+            ${id?`<button type="button" onclick="resendClientInvite('${id}',this)" id="cm-invite-btn" class="btn btn-ghost btn-sm">Send Invite</button>`:''}
           </div>
         </div>
       </div>
@@ -5111,13 +5111,12 @@ async function saveClient(id){
   }
 }
 
-async function resendClientInvite(clientId){
+async function resendClientInvite(clientId,btn){
   const c=DB.clients.find(x=>x.id===clientId);
   if(!c)return;
   const email=(document.getElementById('cm-email')?.value||c.loginEmail||'').trim();
   if(!email){showAlert('Enter an email address first.','Invite');return;}
-  const btn=event.target;
-  btn.disabled=true;btn.textContent='Sending…';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
   try{
     const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,email,clientId})});
     const result=await resp.json();
@@ -5127,7 +5126,7 @@ async function resendClientInvite(clientId){
     showToast(`Invitation sent to ${email}`,'success',4000);
   }catch(e){
     showAlert(e.message,'Invite Failed');
-    btn.disabled=false;btn.textContent='Re-send Invite';
+    if(btn){btn.disabled=false;btn.textContent='Send Invite';}
   }
 }
 
