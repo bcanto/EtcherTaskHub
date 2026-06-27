@@ -1236,7 +1236,7 @@ function _restoreSession(){
     } else {
       const user=allStaff().find(u=>u.id===sess.id&&u.active!==false);
       if(!user){_clearSession();return false;}
-      currentUser={...user,type:user.role==='admin'?'admin':'staff',color:getUserColor(user),initials:user.initials||getInitials(user.name)};
+      currentUser={...user,type:user.role==='admin'?'admin':user.role==='restricted'?'restricted':'staff',color:getUserColor(user),initials:user.initials||getInitials(user.name)};
       launchApp();return true;
     }
   }catch(_){_clearSession();return false;}
@@ -1731,7 +1731,7 @@ function doLogin(){
   // ── localStorage fallback (no Supabase configured) ───────────────────────
   const user=allStaff().find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
   if(user){
-    currentUser={...user,type:user.role==='admin'?'admin':'staff',
+    currentUser={...user,type:user.role==='admin'?'admin':user.role==='restricted'?'restricted':'staff',
       color:getUserColor(user),
       initials:user.initials||getInitials(user.name)};
     _saveSession();launchApp();return;
@@ -1802,23 +1802,27 @@ function updateSidebarUser(){
   document.getElementById('sidebar-role').textContent=currentUser.role;
 }
 function applyRolePermissions(){
-  const isClient=currentUser.role==='client';
-  const isAdmin=currentUser.role==='admin';
-  ['nav-staff-item','nav-admin-section'].forEach(id=>{
+  const r=currentUser.role;
+  const isAdmin=r==='admin';
+  const isMedium=r==='staff';
+  const isRestricted=r==='restricted';
+  const isClient=r==='client';
+
+  // Admin-only nav: staff management, capacity, reports, audit trail, clients
+  ['nav-staff-item','nav-admin-section','nav-capacity-item',
+   'nav-reports-item','nav-audit-item','nav-clients-item','nav-clients-section'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display=isAdmin?'':'none';
   });
-  // Audit trail: admin + internal staff; not clients
-  const auditEl=document.getElementById('nav-audit-item');
-  if(auditEl)auditEl.style.display=isClient?'none':'';
-  ['nav-time-item','nav-reports-item','nav-notes-item','nav-clients-item','nav-clients-section'].forEach(id=>{
+
+  // Time tracking & notes: admin + medium staff only
+  ['nav-time-item','nav-notes-item'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el)el.style.display=isClient?'none':'';
+    if(el)el.style.display=(isAdmin||isMedium)?'':'none';
   });
-  // Capacity: only visible to admins or staff with allowMasterCapacity
-  const capEl=document.getElementById('nav-capacity-item');
-  if(capEl)capEl.style.display=canViewMasterCapacity(currentUser)?'':'none';
-  if(isClient){
+
+  // New task + create actions: hidden for restricted and client
+  if(isRestricted||isClient){
     document.getElementById('new-task-btn')?.classList.add('hidden');
   }
 }
@@ -2544,9 +2548,10 @@ function assertAdmin(user){
     throw new AccessDeniedError('Admin access required.');
 }
 
-// assertInternalUser — throws if user is not admin or staff
+// assertInternalUser — throws if user is not admin, staff, or restricted
 function assertInternalUser(user){
-  if(user?.role!=='admin'&&user?.role!=='staff')
+  const r=user?.role;
+  if(r!=='admin'&&r!=='staff'&&r!=='restricted')
     throw new AccessDeniedError('Internal access required.');
 }
 
@@ -2567,7 +2572,7 @@ function requireClientScopedAccess(user,clientId){ assertClientCanAccessClientDa
 function canViewTask(user,task){
   if(!user||!task)return false;
   if(user.role==='admin')return true;
-  if(user.role==='staff')return true; // all non-archived client tasks are visible to staff
+  if(user.role==='staff'||user.role==='restricted')return true;
   if(user.role==='client'){
     const taskClientId=task.clientId||(()=>{
       const g=(DB.groups||[]).find(g=>g.id===task.groupId);
@@ -2579,8 +2584,8 @@ function canViewTask(user,task){
 }
 function canEditTask(user,task){
   if(!user||!task)return false;
-  if(user.role==='client')return false;   // clients are read-only
-  if(task.archived)return false;          // archived tasks are immutable
+  if(user.role==='client'||user.role==='restricted')return false;
+  if(task.archived)return false;
   return user.role==='admin'||user.role==='staff';
 }
 function canViewClientPortal(user,clientId){
@@ -2591,23 +2596,19 @@ function canViewClientPortal(user,clientId){
 }
 function canViewMasterCapacity(user){
   if(!user)return false;
-  if(user.role==='admin')return true;
-  if(user.role==='staff')return user.allowMasterCapacity===true;
-  return false;
+  return user.role==='admin';
 }
 
 // ── Route-level blocked-views per role ───────────────────────
+const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients']);
 function _acBlockedViews(user){
   if(!user)return new Set(['*']);
   if(user.role==='admin')return new Set();
   if(user.role==='client')
     return new Set(['schedule','workspace','board','list','gantt',
                     'capacity','clients','time','reports','notes','staff','audit','notifications']);
-  if(user.role==='staff'){
-    const blocked=new Set();
-    if(!canViewMasterCapacity(user))blocked.add('capacity');
-    return blocked;
-  }
+  if(user.role==='staff')   return _STAFF_BLOCKED;
+  if(user.role==='restricted') return _STAFF_BLOCKED;
   return new Set(['*']);
 }
 // Shared "access denied" HTML for the view container
@@ -6874,17 +6875,18 @@ function renderStaff(){
       const myTasks=DB.tasks.filter(t=>t.ownerId===s.id);
       const open=myTasks.filter(t=>t.status!=='done').length;
       const totalH=DB.timeEntries.filter(e=>e.staffId===s.id).reduce((a,e)=>a+e.hours,0);
+      const _badgeBg=s.role==='admin'?'#fee2e2':s.role==='restricted'?'#fef3c7':'#f0f9f4';
+      const _badgeFg=s.role==='admin'?'#991b1b':s.role==='restricted'?'#92400e':'#166534';
+      const _roleLabel=s.role==='admin'?'Admin':s.role==='restricted'?'Restricted':'Staff';
       return`<div class="card" style="border-top:3px solid ${s.color}">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          ${avatarHtml(s,38)}
-          <div style="flex:1">
-            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${escHtml(s.name)}</div>
-            <div style="font-size:12px;color:#8da2b2">${escHtml(s.email)}</div>
-            <span class="badge" style="background:${s.role==='admin'?'#fee2e2':'#f0f4f8'};color:${s.role==='admin'?'#991b1b':'#6b8399'};margin-top:4px">${escHtml(s.role)}</span>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
+          <div style="flex-shrink:0;margin-top:2px">${avatarHtml(s,36)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.name)}</div>
+            <div style="font-size:11px;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.email)}</div>
+            <span class="badge" style="background:${_badgeBg};color:${_badgeFg};margin-top:4px">${_roleLabel}</span>
           </div>
-          <div style="display:flex;gap:4px">
-            <button onclick="openStaffModal('${s.id}')" class="btn btn-ghost btn-sm">Edit</button>
-          </div>
+          <button onclick="openStaffModal('${s.id}')" class="btn btn-ghost btn-sm" style="flex-shrink:0">Edit</button>
         </div>
         <div style="display:flex;gap:16px">
           <div><div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">${open}</div><div style="font-size:10px;color:#8da2b2">Open Tasks</div></div>
@@ -6908,8 +6910,9 @@ function openStaffModal(id){
       <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" value="${escHtml(s.password||'')}"/></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Role</label><select id="sm-role" class="form-input">
-          <option value="staff" ${s.role==='staff'?'selected':''}>Staff</option>
-          <option value="admin" ${s.role==='admin'?'selected':''}>Admin</option>
+          <option value="restricted" ${s.role==='restricted'?'selected':''}>Restricted — view only</option>
+          <option value="staff" ${s.role==='staff'?'selected':''}>Staff — standard access</option>
+          <option value="admin" ${s.role==='admin'?'selected':''}>Admin — full access</option>
         </select></div>
         <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color}" style="height:36px;padding:2px 4px"/></div>
       </div>
