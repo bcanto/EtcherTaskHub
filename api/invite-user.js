@@ -9,24 +9,41 @@ module.exports = async function handler(req, res) {
   if (!name || !email)
     return res.status(400).json({ error: 'name and email are required' });
 
-  // Create Supabase Auth user and send invitation email
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  };
+
+  // Try to invite the user (creates new Supabase Auth account + sends email)
+  let userId = null;
   const inviteResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_SERVICE_ROLE_KEY,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    },
+    headers: authHeaders,
     body: JSON.stringify({ email, invite: true, data: { name } }),
   });
-
   const inviteBody = await inviteResp.json();
-  if (!inviteResp.ok)
-    return res.status(400).json({ error: inviteBody.msg || inviteBody.message || JSON.stringify(inviteBody) });
 
-  const userId = inviteBody.id;
+  if (inviteResp.ok) {
+    userId = inviteBody.id;
+  } else {
+    // User already exists — look them up by email and just upsert the profile
+    const listResp = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,
+      { headers: authHeaders }
+    );
+    if (!listResp.ok)
+      return res.status(400).json({ error: inviteBody.msg || inviteBody.message || 'Invite failed' });
 
-  // Build profile — clients get role='client' and a client_id link
+    const listBody = await listResp.json();
+    const existing = (listBody.users || []).find(u => u.email === email);
+    if (!existing)
+      return res.status(400).json({ error: inviteBody.msg || inviteBody.message || 'Invite failed' });
+
+    userId = existing.id;
+  }
+
+  // Upsert profile (insert or update if already exists)
   const profile = {
     id: userId,
     name,
@@ -38,12 +55,7 @@ module.exports = async function handler(req, res) {
 
   const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_SERVICE_ROLE_KEY,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      'Prefer': 'return=minimal',
-    },
+    headers: { ...authHeaders, 'Prefer': 'resolution=merge-duplicates' },
     body: JSON.stringify(profile),
   });
 
