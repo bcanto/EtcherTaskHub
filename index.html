@@ -901,6 +901,7 @@ function _migrateDB(data){
   if(!data.proFormaInvoices)   data.proFormaInvoices    = [];
   if(!data.errorLog)           data.errorLog            = [];
   if(!data.emailIntake)        data.emailIntake         = [];
+  if(!data.clientNotes)        data.clientNotes         = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
