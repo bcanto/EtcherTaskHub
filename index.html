@@ -1271,33 +1271,17 @@ async function _supabaseRestoreSession(session){
         displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
         initials:p.initials||getInitials(p.name),
         capacityHoursPerDay:p.capacity_hours_per_day||8,active:true,clientId:null};
-      // Phase 3: load all data from Supabase into DB (replaces localStorage blob)
-      if(window._dbSync&&!window._appStateLoaded){
-        try{
-          showToast('Syncing data…','info',3000);
-          const remoteData=await window._dbSync.fetchAllData(sb);
-          // Only overwrite if remote tables have real data (skip if Supabase tables are empty)
-          if(!remoteData.users||remoteData.users.length===0)throw new Error('Remote tables empty — keeping app_state data');
-          // Merge remote data into DB, keeping local-only fields (earningsRates, etc.)
-          Object.assign(DB,{
-            users:remoteData.users,staff:remoteData.users,
-            clients:remoteData.clients,
-            boards:remoteData.boards,workboards:remoteData.boards,
-            groups:remoteData.groups,
-            tasks:remoteData.tasks,
-            comments:remoteData.comments,
-            timeEntries:remoteData.timeEntries,
-            taskFiles:remoteData.taskFiles,
-            scheduleEvents:remoteData.scheduleEvents,
-            clientWorkRequests:remoteData.clientWorkRequests,
-            personalChecklist:remoteData.personalChecklist,
-            dependencies:remoteData.dependencies,
-            boardShares:remoteData.boardShares,
-          });
-        }catch(syncErr){
-          console.warn('[Supabase] Data sync failed, using localStorage cache:',syncErr.message);
+      // Load from app_state — single source of truth for all app data
+      try{
+        const{data:stateRow,error:stateErr}=await sb.from('app_state').select('data').eq('id',1).single();
+        if(!stateErr&&stateRow?.data&&(stateRow.data.users?.length>0||stateRow.data.tasks?.length>0)){
+          const fresh=stateRow.data;
+          _migrateDB(fresh);_applyCompatAliases(fresh);
+          clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
+          for(const k in DB)delete DB[k];Object.assign(DB,fresh);
+          localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
-      }
+      }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
       launchApp();
     }
     return true;
