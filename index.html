@@ -1150,7 +1150,7 @@ function _renderCached(el,key,fn){
 }
 
 // ── Ponytail helpers — canonical one-liners used 4–8× each ─────────────
-function getStaff(){return DB.users||DB.staff||[];}
+function allStaff(){return DB.users||DB.staff||[];}
 function getInitials(n){return(n||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';}
 function getUserColor(u){return u.displayColor||u.color||'#64748b';}
 function taskTitle(t){return t.name||t.title||'Untitled';}
@@ -1234,7 +1234,7 @@ function _restoreSession(){
       currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};
       launchClientView();return true;
     } else {
-      const user=getStaff().find(u=>u.id===sess.id&&u.active!==false);
+      const user=allStaff().find(u=>u.id===sess.id&&u.active!==false);
       if(!user){_clearSession();return false;}
       currentUser={...user,type:user.role==='admin'?'admin':'staff',color:getUserColor(user),initials:user.initials||getInitials(user.name)};
       launchApp();return true;
@@ -1729,7 +1729,7 @@ function doLogin(){
     return; // async — Supabase callback handles the rest
   }
   // ── localStorage fallback (no Supabase configured) ───────────────────────
-  const user=getStaff().find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
+  const user=allStaff().find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
   if(user){
     currentUser={...user,type:user.role==='admin'?'admin':'staff',
       color:getUserColor(user),
@@ -2005,7 +2005,7 @@ function getDependentTasks(taskId){
   return (DB.dependencies||[]).filter(d=>d.predecessorTaskId===taskId).map(d=>DB.tasks.find(t=>t.id===d.dependentTaskId)).filter(Boolean);
 }
 function getStaff(id){
-  const u=getStaff().find(u=>u.id===id);
+  const u=allStaff().find(u=>u.id===id);
   if(!u) return {name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
   return {...u, color: getUserColor(u)};
 }
@@ -2516,7 +2516,7 @@ function addAudit(taskId,field,oldVal,newVal){
     if(!v||v==='none') return '—';
     if(v==='client')   return 'Client';
     if(v==='approver') return 'Approver';
-    const u=getStaff().find(x=>x.id===v);
+    const u=allStaff().find(x=>x.id===v);
     return u?u.name:v;
   };
   const label=LABELS[field]||field;
@@ -4718,7 +4718,7 @@ function wrOpenAddModal(requestId){
         <label class="form-label">Assign to</label>
         <select id="wr-modal-owner" class="form-input" style="height:36px">
           <option value="">Unassigned</option>
-          ${getStaff().filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+          ${allStaff().filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
         </select>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
@@ -6981,7 +6981,7 @@ function notify(recipientId, taskId, type, message){
 }
 
 function _notifyAllStaff(type, message, taskId=null){
-  getStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
+  allStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
 }
 
 function renderNotifications(){
