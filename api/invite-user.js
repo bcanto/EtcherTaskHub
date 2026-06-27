@@ -36,7 +36,26 @@ module.exports = async function handler(req, res) {
     if (adminResp.ok) {
       userId = adminBody.id;
     } else if (adminBody.error_code === 'user_already_exists' || adminResp.status === 422) {
-      return res.status(400).json({ error: 'An account with that email already exists.' });
+      // User exists — look up their UUID via profiles table then upsert profile
+      const lookupResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id&limit=1`,
+        { headers: adminHeaders }
+      );
+      if (lookupResp.ok) {
+        const rows = await lookupResp.json();
+        if (rows[0]?.id) userId = rows[0].id;
+      }
+      // If profile doesn't exist yet, try admin list as fallback
+      if (!userId) {
+        const listResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=200`, { headers: adminHeaders });
+        if (listResp.ok) {
+          const listBody = await listResp.json();
+          const users = listBody.users || (Array.isArray(listBody) ? listBody : []);
+          const found = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+          if (found) userId = found.id;
+        }
+      }
+      if (!userId) return res.status(400).json({ error: 'Account already exists but could not retrieve ID. Check Supabase dashboard.' });
     } else {
       // Admin API unavailable — fall back to public signup with the supplied password
       if (!SUPABASE_ANON_KEY)
@@ -101,18 +120,18 @@ module.exports = async function handler(req, res) {
 
   if (!userId) return res.status(400).json({ error: 'Could not resolve user ID' });
 
-  // ── Upsert profile ────────────────────────────────────────────────────────
-  const profile = {
-    id: userId, name, email,
-    role: clientId ? 'client' : (role || 'staff'),
-    display_color: color || '#7aa3a4',
-    ...(clientId ? { client_id: clientId } : {}),
-  };
-
-  const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+  // ── Upsert profile via SECURITY DEFINER function (bypasses RLS) ───────────
+  const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_profile`, {
     method: 'POST',
-    headers: { ...adminHeaders, 'Prefer': 'resolution=merge-duplicates' },
-    body: JSON.stringify(profile),
+    headers: adminHeaders,
+    body: JSON.stringify({
+      p_id: userId,
+      p_name: name,
+      p_email: email,
+      p_role: clientId ? 'client' : (role || 'staff'),
+      p_display_color: color || '#7aa3a4',
+      p_client_id: clientId || null,
+    }),
   });
 
   if (!profileResp.ok) {
