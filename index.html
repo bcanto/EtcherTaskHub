@@ -5051,12 +5051,15 @@ function openClientModal(id){
       <div style="border-top:1px solid #e8eef4;padding-top:14px">
         <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
         ${hasPortal
-          ?`<div style="display:flex;align-items:center;gap:10px;background:#f0f9f4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <div style="flex:1;font-size:12px;color:#166534">Portal active — <strong>${escHtml(c.loginEmail)}</strong></div>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#166534">
-                <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled!==false?'checked':''}/> Enabled
-              </label>
+          ?`<div style="display:grid;gap:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail)}"/></div>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;margin-top:18px;white-space:nowrap">
+                  <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled!==false?'checked':''}/> Portal enabled
+                </label>
+              </div>
+              <div style="font-size:11px;color:#8da2b2">If you change the email, click "Re-send Invite" to create a new login for the new address.</div>
+              <button onclick="resendClientInvite('${id}')" class="btn btn-ghost btn-sm" style="align-self:start">Re-send Invite</button>
             </div>`
           :`<div style="display:grid;gap:10px">
               <div><label class="form-label">Portal Email (leave blank to skip)</label><input id="cm-email" class="form-input" placeholder="client@example.com"/></div>
@@ -5085,6 +5088,8 @@ async function saveClient(id){
     }else{c.color=color;}
     const enabledEl=document.getElementById('cm-portal-enabled');
     if(enabledEl)c.portal_enabled=enabledEl.checked;
+    const newEmail=(document.getElementById('cm-email')?.value||'').trim();
+    if(newEmail)c.loginEmail=newEmail;
     saveDB(DB);closeGenericModal();renderView('clients');
   }else{
     const email=(document.getElementById('cm-email')?.value||'').trim();
@@ -5107,6 +5112,26 @@ async function saveClient(id){
       DB.clients.push({id:cid,name,shortCode,color,active:true,portal_enabled:false});
       saveDB(DB);closeGenericModal();renderView('clients');
     }
+  }
+}
+
+async function resendClientInvite(clientId){
+  const c=DB.clients.find(x=>x.id===clientId);
+  if(!c)return;
+  const email=(document.getElementById('cm-email')?.value||c.loginEmail||'').trim();
+  if(!email){showAlert('Enter an email address first.','Invite');return;}
+  const btn=event.target;
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,email,clientId})});
+    const result=await resp.json();
+    if(!resp.ok)throw new Error(result.error||'Invite failed');
+    c.loginEmail=email;c.portal_enabled=true;
+    saveDB(DB);closeGenericModal();renderView('clients');
+    showToast(`Invitation sent to ${email}`,'success',4000);
+  }catch(e){
+    showAlert(e.message,'Invite Failed');
+    btn.disabled=false;btn.textContent='Re-send Invite';
   }
 }
 
