@@ -472,9 +472,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <!-- Nav -->
     <nav id="main-nav" style="flex:1;padding:8px 0;overflow-y:auto">
       <div class="section-header">Overview</div>
-      <div class="nav-item" data-view="dashboard" onclick="navigate('dashboard')">
+      <div class="nav-item" data-view="dashboard" onclick="navigate('dashboard')" style="position:relative">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/></svg></span>
         Dashboard
+        <span id="intake-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;line-height:1"></span>
       </div>
       <div class="nav-item" data-view="schedule" onclick="navigate('schedule')">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/><rect x="9" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/></svg></span>
@@ -898,6 +899,7 @@ function _migrateDB(data){
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   if(!data.proFormaInvoices)   data.proFormaInvoices    = [];
   if(!data.errorLog)           data.errorLog            = [];
+  if(!data.emailIntake)        data.emailIntake         = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
@@ -1763,6 +1765,7 @@ function launchApp(){
   renderSidebarWorkboards();
   navigate('dashboard');
   updateNotifBadge();
+  startIntakePoller();
 }
 function launchClientView(){
   document.getElementById('login-screen').classList.add('hidden');
@@ -3243,6 +3246,225 @@ function renderDashStatPanel(){
     </div>`;
   }
 }
+// ═══════════════════════════════════════════════════════════
+// EMAIL INTAKE / TRIAGE ZONE
+// ═══════════════════════════════════════════════════════════
+
+let _intakePoller=null;
+let _triageCollapsed=false;
+
+function _timeAgo(iso){
+  if(!iso)return'';
+  const s=Math.floor((Date.now()-new Date(iso))/1000);
+  if(s<60)return'just now';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+function startIntakePoller(){
+  if(_intakePoller||currentUser.role==='client'||currentUser.role==='restricted')return;
+  _fetchIntakePending();
+  _intakePoller=setInterval(_fetchIntakePending,30000);
+}
+
+async function _fetchIntakePending(){
+  try{
+    const r=await fetch('/api/intake/pending');
+    if(!r.ok)return;
+    const items=await r.json();
+    if(!items.length)return;
+    const existing=new Set((DB.emailIntake||[]).map(x=>x.id));
+    let added=0;
+    items.forEach(item=>{if(!existing.has(item.id)){DB.emailIntake.push(item);added++;}});
+    if(added>0){saveDB(DB);updateInboxBadge();if(currentView==='dashboard')renderView('dashboard');showToast(`${added} new email${added>1?'s':''} in Triage Zone`,'info');}
+  }catch(_){}
+}
+
+function updateInboxBadge(){
+  const pending=(DB.emailIntake||[]).filter(x=>x.status==='pending').length;
+  const badge=document.getElementById('intake-badge');
+  if(!badge)return;
+  badge.textContent=pending||'';
+  badge.style.display=pending?'inline-flex':'none';
+}
+
+function triageToggle(){_triageCollapsed=!_triageCollapsed;if(currentView==='dashboard')renderView('dashboard');}
+
+function renderTriageZone(){
+  if(!currentUser||currentUser.role==='client'||currentUser.role==='restricted')return'';
+  const items=(DB.emailIntake||[]).filter(x=>x.status==='pending');
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived);
+  return`<div style="margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:${_triageCollapsed?'0':'12px'}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#97bcbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>
+      <h2 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">Email Triage Zone</h2>
+      ${items.length?`<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${items.length} pending</span>`:`<span style="font-size:11px;color:#8da2b2">No pending items</span>`}
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button onclick="triageAddTest()" class="btn btn-ghost btn-sm" title="Add a sample email to test the Triage Zone">+ Test email</button>
+        <button onclick="_fetchIntakePending()" class="btn btn-ghost btn-sm" title="Refresh from server">↻ Refresh</button>
+        <button onclick="triageToggle()" class="btn btn-ghost btn-sm">${_triageCollapsed?'▸ Show':'▾ Hide'}</button>
+      </div>
+    </div>
+    ${_triageCollapsed?'':`<div style="display:grid;gap:10px">
+      ${items.length===0?`<div style="background:#f8fbff;border:1.5px dashed #e2eaf2;border-radius:10px;padding:28px 24px;text-align:center">
+        <div style="font-size:32px;margin-bottom:10px;opacity:0.3">📧</div>
+        <div style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;margin-bottom:4px">No incoming emails yet</div>
+        <div style="font-size:12px;color:#8da2b2;max-width:380px;margin:0 auto;line-height:1.6">When configured, emails forwarded to <strong>taskhub@etchersolutions.com</strong> will appear here for routing. Click "+ Test email" to preview the experience.</div>
+      </div>`:items.map(item=>_renderTriageCard(item,wbs)).join('')}
+    </div>`}
+  </div>`;
+}
+
+function _renderTriageCard(item,wbs){
+  const sugWb=wbs.find(w=>w.id===item.suggestedBoardId);
+  const ago=_timeAgo(item.receivedAt);
+  return`<div class="card" style="border-left:3px solid #97bcbd;padding:14px 16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.subject||'(no subject)')}</div>
+        <div style="font-size:11px;color:#8da2b2;margin-top:2px">From: ${escHtml(item.fromName||item.from||'Unknown')} · ${ago}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="triageOpenRoute('${item.id}')" class="btn btn-primary btn-sm">Route →</button>
+        <button onclick="triageDiscard('${item.id}')" class="btn btn-danger btn-sm" title="Discard">✕</button>
+      </div>
+    </div>
+    ${item.snippet?`<div style="font-size:12px;color:#4a5568;line-height:1.5;background:#f8fbff;border-radius:6px;padding:8px 10px;margin-bottom:8px;max-height:54px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${escHtml(item.snippet)}</div>`:''}
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      ${sugWb?`<span style="font-size:10px;background:${sugWb.color}18;color:${sugWb.color};border:1px solid ${sugWb.color}40;padding:2px 7px;border-radius:8px;font-weight:600">✦ ${escHtml(sugWb.name)}</span>`:''}
+      ${item.suggestedDueDate?`<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:8px">📅 ${item.suggestedDueDate}</span>`:''}
+      ${(item.actionItems||[]).length?`<span style="font-size:10px;background:#f0f9f4;color:#166534;padding:2px 7px;border-radius:8px">${item.actionItems.length} action item${item.actionItems.length>1?'s':''}</span>`:''}
+      ${(item.attachments||[]).length?`<span style="font-size:10px;color:#8da2b2">📎 ${item.attachments.length} file${item.attachments.length>1?'s':''}</span>`:''}
+      ${item.isTest?`<span style="font-size:10px;background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:8px">test</span>`:''}
+    </div>
+  </div>`;
+}
+
+function triageOpenRoute(itemId){
+  const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
+  if(!item)return;
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived);
+  const staff=allStaff().filter(u=>u.active!==false&&u.role!=='client');
+  document.getElementById('generic-modal-title').textContent='Route Email to WorkBoard';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#f8fbff;border:1px solid #e2eaf2;border-radius:8px;padding:10px 12px;font-size:11px;color:#4a5568">
+        <span style="font-weight:600;color:#0d1c33">From:</span> ${escHtml(item.fromName||item.from||'')}
+        <span style="color:#8da2b2;margin:0 6px">·</span>
+        <span style="font-weight:600;color:#0d1c33">Received:</span> ${_timeAgo(item.receivedAt)}
+      </div>
+      <div><label class="form-label">Task Title</label>
+        <input id="tr-title" class="form-input" value="${escHtml(item.suggestedTitle||item.subject||'')}"/></div>
+      <div><label class="form-label">Description</label>
+        <textarea id="tr-desc" class="form-textarea" style="min-height:80px"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">WorkBoard *</label>
+          <select id="tr-board" class="form-input" onchange="triageUpdateGroups()">
+            <option value="">Select board…</option>
+            ${wbs.map(wb=>`<option value="${wb.id}"${wb.id===item.suggestedBoardId?' selected':''}>${escHtml(wb.name)}</option>`).join('')}
+          </select></div>
+        <div><label class="form-label">Group</label>
+          <select id="tr-group" class="form-input"><option value="">No group</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Assign to</label>
+          <select id="tr-owner" class="form-input">
+            <option value="">Unassigned</option>
+            ${staff.map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+          </select></div>
+        <div><label class="form-label">Priority</label>
+          <select id="tr-priority" class="form-input">
+            <option value="low">Low</option><option value="med" selected>Medium</option><option value="high">High</option>
+          </select></div>
+      </div>
+      <div><label class="form-label">Due Date</label>
+        <input id="tr-due" type="date" class="form-input" value="${escHtml(item.suggestedDueDate||'')}"/></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="triageConfirmRoute('${itemId}')" class="btn btn-primary">Create Task & Route</button>
+      </div>
+    </div>`;
+  // Populate textarea safely + pre-populate groups
+  const descTA=document.getElementById('tr-desc');
+  if(descTA)descTA.value=item.suggestedDescription||item.snippet||'';
+  triageUpdateGroups();
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+
+function triageUpdateGroups(){
+  const boardId=document.getElementById('tr-board')?.value;
+  const sel=document.getElementById('tr-group');
+  if(!sel)return;
+  const groups=(DB.groups||[]).filter(g=>(g.boardId||g.workboardId)===boardId);
+  sel.innerHTML=`<option value="">No group</option>${groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('')}`;
+}
+
+function triageConfirmRoute(itemId){
+  const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
+  if(!item)return;
+  const boardId=document.getElementById('tr-board')?.value;
+  if(!boardId){showAlert('Please select a WorkBoard.','Validation');return;}
+  const title=document.getElementById('tr-title').value.trim()||item.subject||'Email task';
+  const desc=document.getElementById('tr-desc').value.trim();
+  const groupId=document.getElementById('tr-group').value||null;
+  const ownerId=document.getElementById('tr-owner').value||null;
+  const dueDate=document.getElementById('tr-due').value||null;
+  const priority=document.getElementById('tr-priority').value||'med';
+  const task={
+    id:'t'+uid(),workboardId:boardId,boardId,groupId,
+    title,name:title,description:desc,status:'not-started',priority,
+    ownerId,startDate:null,endDate:dueDate,
+    archived:false,order:0,tags:['email-intake'],
+    emailSource:{from:item.from,fromName:item.fromName,subject:item.subject,receivedAt:item.receivedAt,originalEmailId:item.originalEmailId},
+    createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+    percentComplete:0,percentMode:'manual',lockedDates:false,dependencies:[],
+  };
+  DB.tasks.push(task);
+  item.status='routed';item.routedToTaskId=task.id;item.routedAt=new Date().toISOString();item.routedBy=currentUser.id;
+  fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'routed',taskId:task.id})}).catch(()=>{});
+  saveDB(DB);updateInboxBadge();closeGenericModal();renderView('dashboard');
+  const wb=(DB.workboards||[]).find(w=>w.id===boardId);
+  showToast(`Task created → ${escHtml(wb?.name||'WorkBoard')}`,'success');
+}
+
+function triageDiscard(itemId){
+  if(!confirm('Discard this email? It will not become a task.'))return;
+  const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
+  if(!item)return;
+  item.status='discarded';item.discardedAt=new Date().toISOString();item.discardedBy=currentUser.id;
+  fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'discarded'})}).catch(()=>{});
+  saveDB(DB);updateInboxBadge();renderView('dashboard');
+}
+
+const _TEST_EMAILS=[
+  {fromName:'John Smith',from:'john.smith@client.com',subject:'Quote Request — overhead crane installation',body:'Hi team,\n\nWe need a quote for installing two overhead cranes at our new facility. Site visit required before the end of next month.\n\nPlease get back to me by Friday with availability.\n\nThanks,\nJohn',actionItems:['Get back to John by Friday','Arrange site visit before end of month']},
+  {fromName:'Sarah Jones',from:'sarah.jones@etchersolutions.com',subject:'Meeting notes — project kickoff',body:'Hi all,\n\nAction items from today\'s kickoff:\n\n- Send project schedule by Wednesday EOD\n- Confirm subcontractor availability by Thursday\n- Site induction required before 15 July\n\nNext meeting: Monday 14 July 10am.',actionItems:['Send project schedule by Wednesday EOD','Confirm subcontractor availability by Thursday','Complete site induction before 15 July']},
+  {fromName:'Compliance Team',from:'compliance@etchersolutions.com',subject:'ACTION REQUIRED: ISO 9001 document review',body:'Reminder: The following documents require review and sign-off this week:\n\n1. Quality Manual v4.2\n2. Corrective Action Register\n3. Internal audit schedule\n\nPlease complete your section and return by COB Friday.',actionItems:['Review Quality Manual v4.2','Review Corrective Action Register','Review Internal audit schedule']},
+];
+
+function triageAddTest(){
+  const template=_TEST_EMAILS[Math.floor(Math.random()*_TEST_EMAILS.length)];
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived);
+  const item={
+    id:'ei_'+uid(),status:'pending',
+    from:template.from,fromName:template.fromName,
+    subject:template.subject,body:template.body,
+    snippet:template.body.replace(/\n/g,' ').trim().slice(0,250),
+    attachments:[],receivedAt:new Date().toISOString(),
+    suggestedTitle:template.subject,
+    suggestedDescription:template.actionItems.join('\n'),
+    suggestedBoardId:wbs[0]?.id||null,suggestedGroupId:null,suggestedDueDate:null,
+    extractedDates:[],actionItems:template.actionItems,
+    routedToTaskId:null,routedAt:null,routedBy:null,
+    discardedAt:null,discardedBy:null,
+    originalEmailId:null,emailHeaders:{},isTest:true,
+  };
+  if(!DB.emailIntake)DB.emailIntake=[];
+  DB.emailIntake.push(item);
+  saveDB(DB);updateInboxBadge();renderView('dashboard');
+}
+
 function renderDashboard(){
   if(currentUser.role==='client') return renderClientDashboard();
   const allWbs=DB.workboards||[];
@@ -3254,6 +3476,7 @@ function renderDashboard(){
   const myPclDone=myPcl.filter(x=>x.done).length;
 
   return`
+  ${renderTriageZone()}
   <!-- Personal Checklist -->
   <div style="margin-bottom:28px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">

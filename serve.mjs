@@ -94,7 +94,27 @@ const SECURITY_HEADERS = {
 
 const _ROOT = path.resolve(__dirname);
 
-http.createServer((req, res) => {
+// ── Email Intake Queue (file-backed in-memory store) ─────────────────────────
+// email-intake.mjs POSTs to /api/intake; browser polls /api/intake/pending.
+// When Supabase is live this moves to the email_intake table (see 004_email_intake.sql).
+const _INTAKE_PATH = path.join(__dirname, 'intake-queue.json');
+let _intakeQueue = [];
+try { _intakeQueue = JSON.parse(fs.readFileSync(_INTAKE_PATH, 'utf-8')); } catch (_) {}
+function _saveIntakeQueue() {
+  try { fs.writeFileSync(_INTAKE_PATH, JSON.stringify(_intakeQueue, null, 2)); } catch (_) {}
+}
+
+// Helper: read entire request body as string
+function _readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 1e6) reject(new Error('body too large')); });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+http.createServer(async (req, res) => {
   let urlPath;
   try {
     urlPath = decodeURIComponent(req.url.split('?')[0]);
@@ -102,6 +122,83 @@ http.createServer((req, res) => {
     res.writeHead(400, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
     res.end('Bad Request');
     return;
+  }
+
+  // ── Email Intake API ─────────────────────────────────────────────────────────
+
+  // POST /api/intake — email-intake.mjs posts a parsed email here
+  if (urlPath === '/api/intake' && req.method === 'POST') {
+    try {
+      const body = await _readBody(req);
+      const item = JSON.parse(body);
+      if (!item.id)         item.id         = 'ei_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      if (!item.status)     item.status     = 'pending';
+      if (!item.receivedAt) item.receivedAt = new Date().toISOString();
+      _intakeQueue.push(item);
+      _saveIntakeQueue();
+      console.log(`[Intake] Queued: "${item.subject}" from ${item.from}`);
+      res.writeHead(201, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ ok: true, id: item.id }));
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
+      res.end('Bad Request');
+    }
+    return;
+  }
+
+  // GET /api/intake/pending — browser polls this every 30 s
+  if (urlPath === '/api/intake/pending' && req.method === 'GET') {
+    const pending = _intakeQueue.filter(x => x.status === 'pending');
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', ...SECURITY_HEADERS });
+    res.end(JSON.stringify(pending));
+    return;
+  }
+
+  // POST /api/intake/ack/:id — browser marks an item as routed or discarded
+  if (urlPath.startsWith('/api/intake/ack/') && req.method === 'POST') {
+    const id = urlPath.slice('/api/intake/ack/'.length);
+    try {
+      const body = await _readBody(req);
+      const { status, taskId } = JSON.parse(body);
+      const item = _intakeQueue.find(x => x.id === id);
+      if (item) {
+        item.status   = status || 'routed';
+        item.ackedAt  = new Date().toISOString();
+        if (taskId) item.routedToTaskId = taskId;
+        _saveIntakeQueue();
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ ok: true }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
+      res.end('Bad Request');
+    }
+    return;
+  }
+
+  // GET /api/webhook/graph — Microsoft's subscription validation handshake
+  // POST /api/webhook/graph — incoming change notification from Graph
+  if (urlPath === '/api/webhook/graph') {
+    if (req.method === 'GET') {
+      const token = new URL(req.url, 'http://localhost').searchParams.get('validationToken');
+      if (token) {
+        res.writeHead(200, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
+        res.end(token); // must echo back token within 10 s for subscription to activate
+      } else {
+        res.writeHead(400, SECURITY_HEADERS); res.end();
+      }
+      return;
+    }
+    if (req.method === 'POST') {
+      // Acknowledge immediately (Graph requires 202 within 3 s)
+      res.writeHead(202, SECURITY_HEADERS); res.end();
+      // Process asynchronously — email-intake.mjs will poll and do the real work
+      _readBody(req).then(b => {
+        try { console.log('[Webhook] Graph notification:', JSON.stringify(JSON.parse(b)).slice(0, 160)); }
+        catch (_) {}
+      }).catch(() => {});
+      return;
+    }
   }
 
   // ── /api/config — exposes ONLY the public (anon) Supabase credentials ──────
