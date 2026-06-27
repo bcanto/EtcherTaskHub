@@ -929,11 +929,16 @@ function _migrateDB(data){
     if(u.email&&_demoUsers[u.email.toLowerCase()]&&(!u.password||_legacyPw.has(u.password)))
       u.password='TaskHub123';
   });
-  // Always stamp loginEmail + loginPassword on the three seed clients regardless of stored value
+  // Seed defaults for client portal — only applied when the field is genuinely missing,
+  // so that admin-set credentials are never silently overwritten on page load.
   const _clientCreds={'c1':{e:'client@generalcranes.com.au',p:'TaskHub123'},'c2':{e:'client@daltech.com.au',p:'TaskHub123'},'c3':{e:'client@retained.com.au',p:'TaskHub123'}};
   (data.clients||[]).forEach(c=>{
     const cr=_clientCreds[c.id];
-    if(cr){c.loginEmail=cr.e;c.loginPassword=cr.p;c.portalEnabled=true;}
+    if(cr){
+      if(!c.loginEmail)    c.loginEmail=cr.e;
+      if(!c.loginPassword) c.loginPassword=cr.p;
+      if(c.portalEnabled===undefined) c.portalEnabled=true;
+    }
   });
 
   // Upgrade users: add new fields if missing, normalise color
@@ -1147,8 +1152,8 @@ function _renderCached(el,key,fn){
 // ── Ponytail helpers — canonical one-liners used 4–8× each ─────────────
 function getStaff(){return DB.users||DB.staff||[];}
 function getInitials(n){return(n||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';}
-function getUserColor(u){return getUserColor(u);}
-function taskTitle(t){return taskTitle(t);}
+function getUserColor(u){return u.displayColor||u.color||'#64748b';}
+function taskTitle(t){return t.name||t.title||'Untitled';}
 
 let _saveDebounceTimer=null;
 function saveDB(data){
@@ -1341,12 +1346,14 @@ function _ensureJsPdf(callback,onerror){
   if(window.jspdf&&window.jspdf.jsPDF){callback();return;}
   const s1=document.createElement('script');
   s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-  s1.crossOrigin='anonymous'; // B4: CORS attribute (prerequisite for adding SRI integrity hash)
+  s1.crossOrigin='anonymous';
+  s1.integrity='sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTHgtNA==';
   s1.onerror=()=>{showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');if(onerror)onerror();};
   s1.onload=()=>{
     const s2=document.createElement('script');
     s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js';
     s2.crossOrigin='anonymous';
+    s2.integrity='sha512-CNhbAXGrvqmSMpgydAOp7SFP50hdDaIMir76cuptjMdG0V4Hq7h+JzpSudrD2mRC38tawkA8aQSU8dQ0H6hzdQ==';
     s2.onerror=()=>{showAlert('Failed to load PDF table plugin. Check your internet connection.','PDF Error');if(onerror)onerror();};
     s2.onload=callback;
     document.head.appendChild(s2);
@@ -4555,8 +4562,8 @@ function renderClients(){
       return`<div class="card" style="border-top:3px solid ${c.color}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div>
-            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;display:flex;align-items:center;gap:8px">${c.name}${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}</div>
-            <div style="font-size:11px;color:#8da2b2;margin-top:2px">${c.shortCode||''}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;display:flex;align-items:center;gap:8px">${escHtml(c.name)}${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}</div>
+            <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}</div>
           </div>
           <div style="display:flex;gap:6px">
             <button onclick="openClientModal('${c.id}')" class="btn btn-ghost btn-sm">Edit</button>
@@ -4568,7 +4575,7 @@ function renderClients(){
           <div style="text-align:center"><div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:600;color:#166534">${done}</div><div style="font-size:10px;color:#8da2b2">Done</div></div>
           <div style="text-align:center"><div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:600;color:#6b8399">${clientTasks.length}</div><div style="font-size:10px;color:#8da2b2">Total</div></div>
         </div>
-        <div style="font-size:11px;color:#8da2b2">Login: ${c.loginEmail||'—'}</div>
+        <div style="font-size:11px;color:#8da2b2">Login: ${escHtml(c.loginEmail||'—')}</div>
       </div>`;
     }).join('')}
     </div>
@@ -4815,13 +4822,13 @@ function openClientModal(id){
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
-      <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${c.name}"/></div>
+      <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"/></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${c.shortCode||''}"/></div>
+        <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
         <div><label class="form-label">Color</label><input id="cm-color" type="color" class="form-input" value="${c.color}" style="height:36px;padding:2px 4px"/></div>
       </div>
-      <div><label class="form-label">Client Portal Email</label><input id="cm-email" class="form-input" value="${c.loginEmail||''}"/></div>
-      <div><label class="form-label">Client Portal Password</label><input id="cm-pw" class="form-input" type="text" value="${c.loginPassword||''}"/></div>
+      <div><label class="form-label">Client Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}"/></div>
+      <div><label class="form-label">Client Portal Password</label><input id="cm-pw" class="form-input" type="password" value="${escHtml(c.loginPassword||'')}"/></div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
         <button onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
@@ -6772,7 +6779,7 @@ function renderNotes(){
         return`<div class="notes-list-item ${selectedNoteClientId===c.id?'active':''}" onclick="selectNoteClient('${c.id}')">
           <div style="display:flex;align-items:center;gap:6px">
             <div class="client-dot" style="background:${c.color}"></div>
-            <span>${c.name}</span>
+            <span>${escHtml(c.name)}</span>
           </div>
         </div>`;
       }).join('')}
@@ -6785,7 +6792,7 @@ function renderNotes(){
       </div>
       ${noteObj?noteObj.sections.map(s=>`<div class="notes-list-item ${selectedNoteSectionId===s.id?'active':''}" onclick="selectNoteSection('${s.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <span>${s.title}</span>
+          <span>${escHtml(s.title)}</span>
           <button onclick="event.stopPropagation();deleteNoteSection('${s.id}')" style="background:none;border:none;color:${selectedNoteSectionId===s.id?'#fff':'#dc2626'};cursor:pointer;font-size:12px;opacity:0.7">✕</button>
         </div>
       </div>`).join(''):`<div style="padding:12px 14px;font-size:12px;color:#8da2b2">No notes yet.</div>`}
@@ -6794,14 +6801,17 @@ function renderNotes(){
     <div class="notes-editor">
       ${section?`
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-          <input id="note-title-input" class="form-input" value="${section.title}" onchange="saveNoteTitle('${section.id}')" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600;border:none;border-bottom:2px solid #e2eaf2;border-radius:0;padding:4px 0"/>
+          <input id="note-title-input" class="form-input" value="${escHtml(section.title)}" onchange="saveNoteTitle('${section.id}')" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600;border:none;border-bottom:2px solid #e2eaf2;border-radius:0;padding:4px 0"/>
           <span style="font-size:11px;color:#b0bec5">Last saved: ${section.updatedAt?new Date(section.updatedAt).toLocaleString():''}</span>
         </div>
-        <textarea id="note-content-input" class="form-textarea" style="width:100%;min-height:calc(100vh - 220px);border:1.5px solid #e2eaf2;border-radius:8px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;line-height:1.7;color:#1a2940" onblur="saveNoteContent('${section.id}')" oninput="notesDirty()">${section.content||''}</textarea>
+        <textarea id="note-content-input" class="form-textarea" style="width:100%;min-height:calc(100vh - 220px);border:1.5px solid #e2eaf2;border-radius:8px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;line-height:1.7;color:#1a2940" onblur="saveNoteContent('${section.id}')" oninput="notesDirty()"></textarea>
         <div style="margin-top:8px;font-size:11px;color:#b0bec5;display:flex;align-items:center;gap:8px">Supports plain text or Markdown. <span id="notes-save-status" style="color:#97bcbd;font-weight:600;opacity:0;transition:opacity 0.4s">✓ Saved</span></div>
       `:`<div style="color:#8da2b2;font-size:14px;padding-top:40px;text-align:center">Select or create a section to begin.</div>`}
     </div>
   </div>`;
+  // Set textarea value via DOM property — prevents </textarea> breakout via innerHTML
+  const noteTA=document.getElementById('note-content-input');
+  if(noteTA&&section) noteTA.value=section.content||'';
 }
 function selectNoteClient(clientId){
   selectedNoteClientId=clientId;
@@ -6868,9 +6878,9 @@ function renderStaff(){
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
           ${avatarHtml(s,38)}
           <div style="flex:1">
-            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${s.name}</div>
-            <div style="font-size:12px;color:#8da2b2">${s.email}</div>
-            <span class="badge" style="background:${s.role==='admin'?'#fee2e2':'#f0f4f8'};color:${s.role==='admin'?'#991b1b':'#6b8399'};margin-top:4px">${s.role}</span>
+            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${escHtml(s.name)}</div>
+            <div style="font-size:12px;color:#8da2b2">${escHtml(s.email)}</div>
+            <span class="badge" style="background:${s.role==='admin'?'#fee2e2':'#f0f4f8'};color:${s.role==='admin'?'#991b1b':'#6b8399'};margin-top:4px">${escHtml(s.role)}</span>
           </div>
           <div style="display:flex;gap:4px">
             <button onclick="openStaffModal('${s.id}')" class="btn btn-ghost btn-sm">Edit</button>
@@ -6891,11 +6901,11 @@ function openStaffModal(id){
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Full Name</label><input id="sm-name" class="form-input" value="${s.name}"/></div>
-        <div><label class="form-label">Initials</label><input id="sm-init" class="form-input" value="${s.initials||''}" maxlength="3"/></div>
+        <div><label class="form-label">Full Name</label><input id="sm-name" class="form-input" value="${escHtml(s.name)}"/></div>
+        <div><label class="form-label">Initials</label><input id="sm-init" class="form-input" value="${escHtml(s.initials||'')}" maxlength="3"/></div>
       </div>
-      <div><label class="form-label">Email</label><input id="sm-email" class="form-input" value="${s.email}"/></div>
-      <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="text" value="${s.password||''}"/></div>
+      <div><label class="form-label">Email</label><input id="sm-email" class="form-input" value="${escHtml(s.email)}"/></div>
+      <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" value="${escHtml(s.password||'')}"/></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Role</label><select id="sm-role" class="form-input">
           <option value="staff" ${s.role==='staff'?'selected':''}>Staff</option>
@@ -7728,7 +7738,10 @@ async function wsSendComms(){
   renderView('workspace');
   setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);
 }
+const _BLOCKED_MIME=new Set(['image/svg+xml','text/html','application/xhtml+xml','text/xml','application/xml']);
 function wsHandleAttachments(input){
+  const blocked=Array.from(input.files).filter(f=>_BLOCKED_MIME.has(f.type)||(f.name.match(/\.(svg|html?|xml)$/i)));
+  if(blocked.length){showToast(`File type not allowed: ${blocked.map(f=>f.name).join(', ')}`,'error');input.value='';return;}
   wsCommsFiles=[...wsCommsFiles,...Array.from(input.files)];
   wsRefreshFileList();input.value='';
 }
