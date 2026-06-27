@@ -25,6 +25,9 @@ dist/
 .next/
 out/
 
+# ── Runtime data ──────────────────────────────────────────────────────────────
+intake-queue.json
+
 # ── Supabase ──────────────────────────────────────────────────────────────────
 supabase/.branches
 supabase/.temp
