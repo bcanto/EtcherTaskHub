@@ -1276,6 +1276,8 @@ async function _supabaseRestoreSession(session){
         try{
           showToast('Syncing data…','info',3000);
           const remoteData=await window._dbSync.fetchAllData(sb);
+          // Only overwrite if remote tables have real data (skip if Supabase tables are empty)
+          if(!remoteData.users||remoteData.users.length===0)throw new Error('Remote tables empty — keeping app_state data');
           // Merge remote data into DB, keeping local-only fields (earningsRates, etc.)
           Object.assign(DB,{
             users:remoteData.users,staff:remoteData.users,
