@@ -15,8 +15,9 @@ module.exports = async function handler(req, res) {
     'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
   };
 
-  // Try to invite the user (creates new Supabase Auth account + sends email)
   let userId = null;
+
+  // Try invite first (new users)
   const inviteResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
     method: 'POST',
     headers: authHeaders,
@@ -27,23 +28,23 @@ module.exports = async function handler(req, res) {
   if (inviteResp.ok) {
     userId = inviteBody.id;
   } else {
-    // User already exists — look them up by email and just upsert the profile
-    const listResp = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,
-      { headers: authHeaders }
-    );
-    if (!listResp.ok)
-      return res.status(400).json({ error: inviteBody.msg || inviteBody.message || 'Invite failed' });
+    // User already exists — send a password recovery link instead
+    const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ type: 'recovery', email }),
+    });
+    const genBody = await genResp.json();
 
-    const listBody = await listResp.json();
-    const existing = (listBody.users || []).find(u => u.email === email);
-    if (!existing)
-      return res.status(400).json({ error: inviteBody.msg || inviteBody.message || 'Invite failed' });
+    if (!genResp.ok)
+      return res.status(400).json({ error: genBody.msg || genBody.message || 'Failed to send invite' });
 
-    userId = existing.id;
+    userId = genBody.user?.id || genBody.properties?.user_id;
+    if (!userId)
+      return res.status(400).json({ error: 'Could not resolve user ID' });
   }
 
-  // Upsert profile (insert or update if already exists)
+  // Upsert profile
   const profile = {
     id: userId,
     name,
