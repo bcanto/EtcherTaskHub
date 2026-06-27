@@ -5040,7 +5040,6 @@ function _wrCreateGroup(r,client,boardId,name,now){
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
-  const hasPortal=!!(c.loginEmail);
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"/></div>
@@ -5050,21 +5049,18 @@ function openClientModal(id){
       </div>
       <div style="border-top:1px solid #e8eef4;padding-top:14px">
         <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
-        ${hasPortal
-          ?`<div style="display:grid;gap:10px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail)}"/></div>
-                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;margin-top:18px;white-space:nowrap">
-                  <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled!==false?'checked':''}/> Portal enabled
-                </label>
-              </div>
-              <div style="font-size:11px;color:#8da2b2">If you change the email, click "Re-send Invite" to create a new login for the new address.</div>
-              <button onclick="resendClientInvite('${id}')" class="btn btn-ghost btn-sm" style="align-self:start">Re-send Invite</button>
-            </div>`
-          :`<div style="display:grid;gap:10px">
-              <div><label class="form-label">Portal Email (leave blank to skip)</label><input id="cm-email" class="form-input" placeholder="client@example.com"/></div>
-              <div style="font-size:11px;color:#8da2b2">If an email is entered, an invitation will be sent so they can set their own password.</div>
-            </div>`}
+        <div style="display:grid;gap:10px">
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com"/></div>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;padding-bottom:8px;white-space:nowrap">
+              <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled?'checked':''}/> Enabled
+            </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-size:11px;color:#8da2b2;flex:1">${id?'Save to update the email. Use "Send Invite" to (re)send the login email.':'Leave blank for no portal access.'}</div>
+            ${id?`<button type="button" onclick="resendClientInvite('${id}')" id="cm-invite-btn" class="btn btn-ghost btn-sm">Send Invite</button>`:''}
+          </div>
+        </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
