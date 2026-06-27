@@ -1260,11 +1260,11 @@ async function _supabaseRestoreSession(session){
     const p=profileData;
     const isClient=p.role==='client';
     if(isClient){
-      // Fetch client record for portal
-      const {data:clientData}=await sb.from('clients').select('*').eq('id',p.client_id).single();
+      // Look up client from app_state (Supabase clients table is not used as source of truth)
+      const clientData=DB.clients.find(c=>c.id===p.client_id);
       if(!clientData||!clientData.portal_enabled){return false;}
       currentUser={id:p.id,name:p.name,role:'client',type:'client',clientId:p.client_id,
-        initials:p.initials||clientData.short_code||'CL',color:p.display_color||clientData.color||'#64748b'};
+        initials:p.initials||clientData.shortCode||'CL',color:p.display_color||clientData.color||'#64748b'};
       launchClientView();
     } else {
       currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
@@ -5038,43 +5038,76 @@ function _wrCreateGroup(r,client,boardId,name,now){
   r.linkedItemId=groupId;r.linkedItemType='group';r.linkedBoardId=boardId;
 }
 function openClientModal(id){
-  const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',loginPassword:'',active:true};
+  const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
+  const hasPortal=!!(c.loginEmail);
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"/></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
-        <div><label class="form-label">Color</label><input id="cm-color" type="color" class="form-input" value="${c.color}" style="height:36px;padding:2px 4px"/></div>
+        <div><label class="form-label">Color</label><input id="cm-color" type="color" class="form-input" value="${c.color||'#3b82f6'}" style="height:36px;padding:2px 4px"/></div>
       </div>
-      <div><label class="form-label">Client Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}"/></div>
-      <div><label class="form-label">Client Portal Password</label><input id="cm-pw" class="form-input" type="password" value="${escHtml(c.loginPassword||'')}"/></div>
+      <div style="border-top:1px solid #e8eef4;padding-top:14px">
+        <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
+        ${hasPortal
+          ?`<div style="display:flex;align-items:center;gap:10px;background:#f0f9f4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <div style="flex:1;font-size:12px;color:#166534">Portal active — <strong>${escHtml(c.loginEmail)}</strong></div>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#166534">
+                <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled!==false?'checked':''}/> Enabled
+              </label>
+            </div>`
+          :`<div style="display:grid;gap:10px">
+              <div><label class="form-label">Portal Email (leave blank to skip)</label><input id="cm-email" class="form-input" placeholder="client@example.com"/></div>
+              <div style="font-size:11px;color:#8da2b2">If an email is entered, an invitation will be sent so they can set their own password.</div>
+            </div>`}
+      </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
-        <button onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
+        <button id="cm-save-btn" onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
       </div>
     </div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
 }
-function saveClient(id){
+async function saveClient(id){
   const name=document.getElementById('cm-name').value.trim();
   if(!name){showAlert('Client name is required.','Validation');return;}
+  const shortCode=document.getElementById('cm-code').value.trim();
+  const color=document.getElementById('cm-color').value;
   if(id){
     const c=DB.clients.find(x=>x.id===id);
-    c.name=name;c.shortCode=document.getElementById('cm-code').value.trim();
-    const newColor=document.getElementById('cm-color').value;
-    if(newColor!==c.color){
-      c.color=newColor;
-      // Propagate colour to all boards and groups that belong to this client
-      (DB.boards||DB.workboards||[]).filter(b=>b.clientId===id).forEach(b=>{b.color=newColor;});
-      DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=newColor;});
-    }else{c.color=newColor;}
-    c.loginEmail=document.getElementById('cm-email').value.trim();
-    c.loginPassword=document.getElementById('cm-pw').value.trim();
+    c.name=name;c.shortCode=shortCode;
+    if(color!==c.color){
+      c.color=color;
+      (DB.boards||DB.workboards||[]).filter(b=>b.clientId===id).forEach(b=>{b.color=color;});
+      DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=color;});
+    }else{c.color=color;}
+    const enabledEl=document.getElementById('cm-portal-enabled');
+    if(enabledEl)c.portal_enabled=enabledEl.checked;
+    saveDB(DB);closeGenericModal();renderView('clients');
   }else{
-    DB.clients.push({id:'c'+uid(),name,shortCode:document.getElementById('cm-code').value.trim(),color:document.getElementById('cm-color').value,loginEmail:document.getElementById('cm-email').value.trim(),loginPassword:document.getElementById('cm-pw').value.trim(),active:true});
+    const email=(document.getElementById('cm-email')?.value||'').trim();
+    const cid='c'+uid();
+    if(email){
+      const btn=document.getElementById('cm-save-btn');
+      if(btn){btn.disabled=true;btn.textContent='Sending…';}
+      try{
+        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid})});
+        const result=await resp.json();
+        if(!resp.ok)throw new Error(result.error||'Invite failed');
+        DB.clients.push({id:cid,name,shortCode,color,loginEmail:email,active:true,portal_enabled:true});
+        saveDB(DB);closeGenericModal();renderView('clients');
+        showToast(`Portal invitation sent to ${email}`,'success',4000);
+      }catch(e){
+        showAlert(e.message,'Invite Failed');
+        if(btn){btn.disabled=false;btn.textContent='Save';}
+      }
+    }else{
+      DB.clients.push({id:cid,name,shortCode,color,active:true,portal_enabled:false});
+      saveDB(DB);closeGenericModal();renderView('clients');
+    }
   }
-  saveDB(DB);closeGenericModal();renderView('clients');
 }
 
 // ═══════════════════════════════════════════════════════════

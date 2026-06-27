@@ -5,7 +5,7 @@ module.exports = async function handler(req, res) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
     return res.status(500).json({ error: 'Server not configured' });
 
-  const { name, email, role, color, initials } = req.body || {};
+  const { name, email, role, color, initials, clientId } = req.body || {};
   if (!name || !email)
     return res.status(400).json({ error: 'name and email are required' });
 
@@ -26,7 +26,16 @@ module.exports = async function handler(req, res) {
 
   const userId = inviteBody.id;
 
-  // Insert profile record
+  // Build profile — clients get role='client' and a client_id link
+  const profile = {
+    id: userId,
+    name,
+    email,
+    role: clientId ? 'client' : (role || 'staff'),
+    display_color: color || '#7aa3a4',
+    ...(clientId ? { client_id: clientId } : {}),
+  };
+
   const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
     method: 'POST',
     headers: {
@@ -35,7 +44,7 @@ module.exports = async function handler(req, res) {
       'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       'Prefer': 'return=minimal',
     },
-    body: JSON.stringify({ id: userId, name, email, role: role || 'staff', display_color: color || '#7aa3a4' }),
+    body: JSON.stringify(profile),
   });
 
   if (!profileResp.ok)
