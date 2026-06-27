@@ -1,6 +1,4 @@
-module.exports.config = { api: { bodyParser: { sizeLimit: '20mb' } } };
-
-module.exports = async function handler(req, res) {
+const handler = async function(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   if (req.headers['x-upload-secret'] !== process.env.UPLOAD_SECRET)
     return res.status(401).json({ error: 'unauthorized' });
@@ -19,3 +17,6 @@ module.exports = async function handler(req, res) {
   if (!resp.ok) return res.status(500).json({ error: await resp.text() });
   res.json({ ok: true });
 };
+
+handler.config = { api: { bodyParser: { sizeLimit: '20mb' } } };
+module.exports = handler;
