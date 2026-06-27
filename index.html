@@ -1159,14 +1159,18 @@ function getUserColor(u){return u.displayColor||u.color||'#64748b';}
 function taskTitle(t){return t.name||t.title||'Untitled';}
 
 let _saveDebounceTimer=null;
+function _syncToSupabase(data){
+  if(!window._supabase)return;
+  window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{if(error)console.warn('[sync]',error.message);});
+}
 function saveDB(data){
   _vcClear(); // invalidate render cache whenever data changes
   clearTimeout(_saveDebounceTimer);
-  _saveDebounceTimer=setTimeout(()=>localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data)),300);
+  _saveDebounceTimer=setTimeout(()=>{localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data));_syncToSupabase(data);},300);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));}
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));_syncToSupabase(DB);}
   let hasUnsaved=false;
   document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
     try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
@@ -10778,6 +10782,10 @@ document.addEventListener('keydown',e=>{
     });
     await _waitForSupabase();
     if(window._supabase){
+      try{
+        const{data:row,error}=await window._supabase.from('app_state').select('data').eq('id',1).single();
+        if(!error&&row?.data){const fresh=row.data;_migrateDB(fresh);_applyCompatAliases(fresh);for(const k in DB)delete DB[k];Object.assign(DB,fresh);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));}
+      }catch(e){console.warn('[sync load]',e.message);}
       const{data:{session}}=await window._supabase.auth.getSession();
       if(session){
         const restored=await _supabaseRestoreSession(session);
