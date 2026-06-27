@@ -942,8 +942,8 @@ function _migrateDB(data){
     if(u.active===undefined)              u.active=true;
     if(!u.clientId)                       u.clientId=null;
     if(!u.displayColor)                   u.displayColor=u.color||'#64748b';
-    u.color = u.displayColor||u.color||'#64748b'; // ensure avatarHtml always has s.color
-    if(!u.initials)                       u.initials=(u.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
+    u.color = getUserColor(u); // ensure avatarHtml always has s.color
+    if(!u.initials)                       u.initials=getInitials(u.name);
     if(!u.createdAt)                      u.createdAt=new Date().toISOString();
     if(!u.updatedAt)                      u.updatedAt=u.createdAt;
   });
@@ -1102,7 +1102,7 @@ function _applyCompatAliases(data){
   (data.users||[]).forEach(u=>{
     if(!u.color) u.color = u.displayColor||'#64748b';
     if(!u.displayColor) u.displayColor = u.color;
-    if(!u.initials) u.initials=(u.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';
+    if(!u.initials) u.initials=getInitials(u.name);
   });
   // These aliases let old render code (DB.staff, DB.workboards, DB.groups) continue to work.
   // They reference the SAME arrays so mutations propagate correctly.
@@ -1143,6 +1143,12 @@ function _renderCached(el,key,fn){
   const h=_vcGet(key);if(h){el.innerHTML=h;return;}
   const html=fn();el.innerHTML=html;_vcSet(key,html);
 }
+
+// ── Ponytail helpers — canonical one-liners used 4–8× each ─────────────
+function getStaff(){return DB.users||DB.staff||[];}
+function getInitials(n){return(n||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?';}
+function getUserColor(u){return getUserColor(u);}
+function taskTitle(t){return taskTitle(t);}
 
 let _saveDebounceTimer=null;
 function saveDB(data){
@@ -1223,9 +1229,9 @@ function _restoreSession(){
       currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};
       launchClientView();return true;
     } else {
-      const user=(DB.users||DB.staff||[]).find(u=>u.id===sess.id&&u.active!==false);
+      const user=getStaff().find(u=>u.id===sess.id&&u.active!==false);
       if(!user){_clearSession();return false;}
-      currentUser={...user,type:user.role==='admin'?'admin':'staff',color:user.displayColor||user.color||'#64748b',initials:user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?'};
+      currentUser={...user,type:user.role==='admin'?'admin':'staff',color:getUserColor(user),initials:user.initials||getInitials(user.name)};
       launchApp();return true;
     }
   }catch(_){_clearSession();return false;}
@@ -1250,7 +1256,7 @@ async function _supabaseRestoreSession(session){
       currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
         type:p.role==='admin'||p.role==='pm'?p.role:'staff',
         displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
-        initials:p.initials||(p.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?',
+        initials:p.initials||getInitials(p.name),
         capacityHoursPerDay:p.capacity_hours_per_day||8,active:true,clientId:null};
       // Phase 3: load all data from Supabase into DB (replaces localStorage blob)
       if(window._dbSync){
@@ -1716,11 +1722,11 @@ function doLogin(){
     return; // async — Supabase callback handles the rest
   }
   // ── localStorage fallback (no Supabase configured) ───────────────────────
-  const user=(DB.users||DB.staff||[]).find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
+  const user=getStaff().find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
   if(user){
     currentUser={...user,type:user.role==='admin'?'admin':'staff',
-      color:user.displayColor||user.color||'#64748b',
-      initials:user.initials||(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?'};
+      color:getUserColor(user),
+      initials:user.initials||getInitials(user.name)};
     _saveSession();launchApp();return;
   }
   // Legacy client portal login (loginEmail on client object)
@@ -1992,9 +1998,9 @@ function getDependentTasks(taskId){
   return (DB.dependencies||[]).filter(d=>d.predecessorTaskId===taskId).map(d=>DB.tasks.find(t=>t.id===d.dependentTaskId)).filter(Boolean);
 }
 function getStaff(id){
-  const u=(DB.users||DB.staff||[]).find(u=>u.id===id);
+  const u=getStaff().find(u=>u.id===id);
   if(!u) return {name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
-  return {...u, color: u.displayColor||u.color||'#64748b'};
+  return {...u, color: getUserColor(u)};
 }
 const STATUS_META = {
   'not-started':    { label: 'Not Started',        color: '#64748b', bg: '#f1f5f9', dot: '#94a3b8' },
@@ -2503,7 +2509,7 @@ function addAudit(taskId,field,oldVal,newVal){
     if(!v||v==='none') return '—';
     if(v==='client')   return 'Client';
     if(v==='approver') return 'Approver';
-    const u=(DB.users||DB.staff||[]).find(x=>x.id===v);
+    const u=getStaff().find(x=>x.id===v);
     return u?u.name:v;
   };
   const label=LABELS[field]||field;
@@ -3844,7 +3850,7 @@ function renderGantt(){
 
       leftRows+=`<div style="height:40px;display:flex;align-items:center;padding:0 6px 0 20px;gap:5px;border-bottom:1px solid #f4f6fa;overflow:hidden;cursor:pointer" onclick="openTaskPanel('${t.id}')">
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:500;color:${t.status==='done'?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${t.status==='done'?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'Untitled')}</div>
+          <div style="font-size:12px;font-weight:500;color:${t.status==='done'?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${t.status==='done'?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
             <span style="font-size:10px;color:${isOverdue?'#dc2626':'#8da2b2'};font-weight:${isOverdue?700:400}">${isOverdue?'⚠ ':''}${dateLabel}</span>
             ${cr?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
@@ -4256,7 +4262,7 @@ function renderCapacityList(pool){
       const ed=t.endDate?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'—';
       return`<div style="display:flex;align-items:center;min-height:40px;border-bottom:1px solid #f4f6fa;cursor:pointer;transition:background 0.1s" onclick="openTaskModal('${t.id}')" onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
         <div style="${CS};flex:3;padding:6px 10px">
-          <div style="font-size:12px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'Untitled')}</div>
+          <div style="font-size:12px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
         </div>
         <div style="${CS};flex:2">
           ${mcGroupBy==='staff'
@@ -4413,7 +4419,7 @@ function renderCapacity(){
           const bw=Math.max(Math.round(depDiffDays(t.startDate,t.endDate)*DW),4);
           leftHTML+=`<div style="height:40px;display:flex;align-items:center;padding:0 8px 0 20px;gap:6px;border-bottom:1px solid #f4f6fa;overflow:hidden">
             <div style="flex:1;min-width:0">
-              <div style="font-size:11px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'Untitled')}</div>
+              <div style="font-size:11px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
               <div style="display:flex;align-items:center;gap:4px;margin-top:1px;flex-wrap:wrap">
                 ${cl?`<span style="font-size:9px;color:${cl.color};font-weight:700;background:${cl.color}18;padding:1px 5px;border-radius:8px">${escHtml(cl.name)}</span>`:''}
                 <span style="font-size:9px;background:${sm.bg};color:${sm.color};padding:1px 5px;border-radius:8px;font-weight:600">${sm.label}</span>
@@ -4457,7 +4463,7 @@ function renderCapacity(){
           const bw=Math.max(Math.round(depDiffDays(t.startDate,t.endDate)*DW),4);
           leftHTML+=`<div style="height:40px;display:flex;align-items:center;padding:0 8px 0 20px;gap:6px;border-bottom:1px solid #f4f6fa;overflow:hidden">
             <div style="flex:1;min-width:0">
-              <div style="font-size:11px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name||t.title||'Untitled')}</div>
+              <div style="font-size:11px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(taskTitle(t))}</div>
               <div style="display:flex;align-items:center;gap:4px;margin-top:1px">
                 ${owner?avatarHtml(owner,14)+'<span style="font-size:9px;color:#6b8399">'+escHtml(owner.name)+'</span>':''}
                 <span style="font-size:9px;background:${sm.bg};color:${sm.color};padding:1px 5px;border-radius:8px;font-weight:600">${sm.label}</span>
@@ -4705,7 +4711,7 @@ function wrOpenAddModal(requestId){
         <label class="form-label">Assign to</label>
         <select id="wr-modal-owner" class="form-input" style="height:36px">
           <option value="">Unassigned</option>
-          ${(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+          ${getStaff().filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
         </select>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
@@ -6965,7 +6971,7 @@ function notify(recipientId, taskId, type, message){
 }
 
 function _notifyAllStaff(type, message, taskId=null){
-  (DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
+  getStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
 }
 
 function renderNotifications(){
