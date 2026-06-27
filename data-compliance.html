@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Compliance &amp; Security — Etcher Solutions</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px;scroll-behavior:smooth}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f5f6f4;color:#2d3a2e;line-height:1.7}
+  a{color:#2a5c3f;text-decoration:none}
+  a:hover{text-decoration:underline}
+  nav{background:#1c2b1e;padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;min-height:56px}
+  .nav-brand{color:#fff;font-weight:700;font-size:15px;letter-spacing:0.04em;white-space:nowrap}
+  .nav-links{display:flex;flex-wrap:wrap;gap:4px}
+  .nav-links a{color:rgba(255,255,255,0.78);font-size:13px;padding:6px 12px;border-radius:6px;transition:background 0.15s}
+  .nav-links a:hover,.nav-links a.active{background:rgba(255,255,255,0.1);color:#fff;text-decoration:none}
+  .page-wrap{max-width:860px;margin:0 auto;padding:48px 24px 80px}
+  .doc-header{margin-bottom:40px;padding-bottom:24px;border-bottom:2px solid #d8e0d9}
+  .doc-header h1{font-size:28px;font-weight:700;color:#1c2b1e;letter-spacing:-0.02em;margin-bottom:8px}
+  .doc-meta{font-size:13px;color:#6b7c6c;display:flex;flex-wrap:wrap;gap:16px}
+  .disclaimer{background:#fffbe6;border:1px solid #f0c040;border-radius:8px;padding:14px 18px;font-size:13px;color:#5a4a00;margin-bottom:32px;line-height:1.6}
+  .disclaimer strong{color:#3d3200}
+  .section{margin-bottom:36px}
+  h2{font-size:18px;font-weight:700;color:#1c2b1e;margin-bottom:12px;padding-top:4px}
+  h3{font-size:15px;font-weight:600;color:#2d3a2e;margin:18px 0 8px}
+  p{margin-bottom:12px;font-size:14.5px;color:#3a4a3b}
+  ul,ol{padding-left:22px;margin-bottom:12px}
+  li{font-size:14.5px;color:#3a4a3b;margin-bottom:4px}
+  .highlight{background:#e8f0ea;border-left:4px solid #2a5c3f;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0;font-size:14px;color:#1c2b1e}
+  .table-wrap{overflow-x:auto;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{background:#1c2b1e;color:#fff;text-align:left;padding:10px 14px;font-weight:600}
+  td{padding:9px 14px;border-bottom:1px solid #dde5de;vertical-align:top}
+  tr:nth-child(even) td{background:#f0f4f1}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+  .badge-high{background:#fee2e2;color:#991b1b}
+  .badge-med{background:#fef3c7;color:#92400e}
+  .badge-low{background:#e0f2fe;color:#075985}
+  .steps{counter-reset:step}
+  .steps li{counter-increment:step;list-style:none;padding-left:36px;position:relative;margin-bottom:8px}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:2px;width:24px;height:24px;background:#1c2b1e;color:#fff;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+  footer{background:#1c2b1e;color:rgba(255,255,255,0.7);text-align:center;padding:32px 24px;font-size:13px}
+  footer a{color:rgba(255,255,255,0.85)}
+  footer a:hover{color:#fff}
+  .footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 20px;margin-bottom:16px}
+  @media(max-width:600px){
+    .page-wrap{padding:28px 16px 60px}
+    .doc-header h1{font-size:22px}
+    h2{font-size:16px}
+    th,td{padding:8px 10px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">Etcher Solutions</span>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/privacy-policy.html">Privacy Policy</a>
+    <a href="/terms-of-use.html">Terms of Use</a>
+    <a href="/data-compliance.html" class="active">Data Compliance</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <h1>Data Compliance &amp; Security Statement</h1>
+    <div class="doc-meta">
+      <span>Effective date: 27 June 2026</span>
+      <span>Last updated: 27 June 2026</span>
+      <span>Version 1.0</span>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Legal Template Notice:</strong> This document is a governance and compliance-readiness statement. It is not a certification and does not constitute legal advice. This document should be reviewed by a qualified Australian solicitor before publication or reliance. Confirm all provider details before going live.
+  </div>
+
+  <!-- 1. Purpose -->
+  <div class="section">
+    <h2>1. Purpose</h2>
+    <p>This statement explains how Etcher Solutions aims to manage data protection, privacy, security, operational governance and compliance risk across our public website, Etcher Task Hub (our private authorised-user workflow platform) and private client-facing workflows.</p>
+    <p>It is intended as a reference for Etcher Solutions personnel, authorised contractors and approved client representatives.</p>
+  </div>
+
+  <!-- 2. Compliance Framework -->
+  <div class="section">
+    <h2>2. Compliance Framework</h2>
+    <p>Etcher Solutions aims to operate in accordance with:</p>
+    <ul>
+      <li><strong>Privacy Act 1988 (Cth)</strong> and <strong>Australian Privacy Principles (APPs)</strong></li>
+      <li><strong>Notifiable Data Breaches (NDB) scheme</strong></li>
+      <li><strong>Spam Act 2003 (Cth)</strong></li>
+      <li><strong>Australian Consumer Law</strong></li>
+      <li>Contractual confidentiality obligations and client-specific requirements</li>
+      <li>Reasonable cyber security, operational governance and records management practices</li>
+    </ul>
+  </div>
+
+  <!-- 3. Data Inventory -->
+  <div class="section">
+    <h2>3. Data Inventory</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data category</th><th>Examples</th><th>Sensitivity</th></tr></thead>
+        <tbody>
+          <tr><td>Identity data</td><td>Name, role, company</td><td><span class="badge badge-med">Medium</span></td></tr>
+          <tr><td>Contact data</td><td>Email, phone, address</td><td><span class="badge badge-med">Medium</span></td></tr>
+          <tr><td>Account data</td><td>Login credentials, roles, permissions, audit logs</td><td><span class="badge badge-high">High</span></td></tr>
+          <tr><td>Business data</td><td>Tasks, projects, workflows, notes</td><td><span class="badge badge-med">Medium–High</span></td></tr>
+          <tr><td>Client data</td><td>Client names, enquiries, project details</td><td><span class="badge badge-med">Medium–High</span></td></tr>
+          <tr><td>Email content</td><td>Forwarded emails, metadata, attachments</td><td><span class="badge badge-high">High</span></td></tr>
+          <tr><td>Documents</td><td>PDFs, spreadsheets, compliance files</td><td><span class="badge badge-high">High</span></td></tr>
+          <tr><td>Technical data</td><td>IP address, device type, browser, logs</td><td><span class="badge badge-med">Medium</span></td></tr>
+          <tr><td>AI-generated data</td><td>Summaries, classifications, task suggestions</td><td><span class="badge badge-med">Medium</span></td></tr>
+          <tr><td>Payment data</td><td>Billing records, invoices (if introduced)</td><td><span class="badge badge-high">High</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Data Minimisation -->
+  <div class="section">
+    <h2>4. Data Minimisation</h2>
+    <p>Etcher Solutions collects only information that is reasonably necessary. In practice this means:</p>
+    <ul>
+      <li>Avoiding unnecessary form fields</li>
+      <li>Reducing duplicate storage of the same information</li>
+      <li>Archiving or deleting outdated records in line with retention schedules</li>
+      <li>Limiting access to information on a need-to-know basis</li>
+    </ul>
+  </div>
+
+  <!-- 5. Collection Notices -->
+  <div class="section">
+    <h2>5. Collection Notices</h2>
+    <p>Collection notices should appear near all data collection points including:</p>
+    <ul>
+      <li>Contact, quote, newsletter and task creation forms</li>
+      <li>Account invitations and onboarding flows</li>
+      <li>File upload interfaces</li>
+      <li>Email intake instructions and task forms</li>
+    </ul>
+    <div class="highlight">
+      <strong>Suggested collection notice:</strong><br>
+      "By submitting this form, you agree that Etcher Solutions may use the information provided to respond to your enquiry, provide services, manage records and improve operations in accordance with our <a href="/privacy-policy.html">Privacy Policy</a>."
+    </div>
+  </div>
+
+  <!-- 6. Access Controls -->
+  <div class="section">
+    <h2>6. Access Controls</h2>
+    <ul>
+      <li>No public self-registration unless deliberately and explicitly enabled</li>
+      <li>Etcher Task Hub access by approved-user invitation only</li>
+      <li>Individual user accounts — no shared admin logins</li>
+      <li>Role-based access control (restricted / staff / admin)</li>
+      <li>Least-privilege permissions applied by default</li>
+      <li>Admin-only access to settings, staff management and client notes</li>
+      <li>Multi-factor authentication (MFA) where available</li>
+      <li>Quarterly review of active users and admin-level access</li>
+      <li>Immediate removal of access for users who no longer require it</li>
+      <li>Audit logs for task creation, task changes, email intake processing and document access</li>
+    </ul>
+  </div>
+
+  <!-- 7. Public Exposure Controls -->
+  <div class="section">
+    <h2>7. Search Engine and Public Exposure Controls</h2>
+    <ul>
+      <li>Authentication enforced on all private dashboard routes</li>
+      <li>Server-side access checks for all private data responses</li>
+      <li>No confidential files placed in public static directories</li>
+      <li>No private task URLs included in <code>sitemap.xml</code></li>
+      <li><code>robots.txt</code> disallow rules for private routes where appropriate</li>
+      <li>No client documents served from public paths</li>
+      <li>No API responses containing private data without valid authentication</li>
+      <li>No secrets, private configuration or internal URLs in browser-served JavaScript</li>
+    </ul>
+  </div>
+
+  <!-- 8. Environment Variables and Secrets -->
+  <div class="section">
+    <h2>8. Environment Variables and Secrets</h2>
+    <p>Secrets must never be committed to GitHub, public repositories or browser-served files. This includes:</p>
+    <ul>
+      <li>API keys, database URLs and OAuth secrets</li>
+      <li>Microsoft Graph credentials (TENANT_ID, CLIENT_ID, CLIENT_SECRET)</li>
+      <li>AI API keys, webhook secrets, email credentials, payment processor secrets</li>
+    </ul>
+    <p>Use approved secret management approaches:</p>
+    <ul>
+      <li>Vercel Environment Variables (for hosted deployments)</li>
+      <li>Azure Key Vault (for server-side services)</li>
+      <li>GitHub Actions Secrets (for CI/CD pipelines)</li>
+      <li>Local <code>.env</code> file (excluded from Git via <code>.gitignore</code>)</li>
+    </ul>
+  </div>
+
+  <!-- 9. Email Intake Controls -->
+  <div class="section">
+    <h2>9. Email Intake Controls</h2>
+    <ul>
+      <li>Authorised sender lists and domain allowlists enforced at processing stage</li>
+      <li>Spam filtering and malware scanning applied to incoming emails</li>
+      <li>Suspicious emails quarantined rather than automatically processed</li>
+      <li>Attachment size limits and file type restrictions enforced</li>
+      <li>Processing events logged with timestamps</li>
+      <li>Task conversion events traceable to originating email</li>
+      <li>Processed emails archived to a dedicated folder</li>
+      <li>Duplicate detection to prevent repeated task creation</li>
+      <li>Original email traceability preserved for audit purposes</li>
+      <li>Manual review required before AI-generated summaries are sent externally or to clients</li>
+    </ul>
+  </div>
+
+  <!-- 10. AI Processing Controls -->
+  <div class="section">
+    <h2>10. AI Processing Controls</h2>
+    <ul>
+      <li>Human review required before acting on AI-generated outputs</li>
+      <li>AI-generated content labelled with a warning within the platform</li>
+      <li>Logs of AI processing events retained where appropriate</li>
+      <li>Restrictions on submitting sensitive personal or health information to AI providers</li>
+      <li>AI vendor privacy and data handling policies reviewed before enabling</li>
+      <li>Opt-out options provided where feasible</li>
+      <li>AI use cases documented and reviewed annually</li>
+      <li>Client data will not be used to train public AI models unless expressly agreed in writing</li>
+    </ul>
+  </div>
+
+  <!-- 11. Data Storage and Providers -->
+  <div class="section">
+    <h2>11. Data Storage and Providers</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Provider</th><th>Purpose</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Vercel</td><td>Website and app delivery</td><td>Known</td></tr>
+          <tr><td>Microsoft 365</td><td>Email communication and intake</td><td>Known</td></tr>
+          <tr><td>SharePoint / OneDrive</td><td>Document storage (optional)</td><td>Expected</td></tr>
+          <tr><td>GitHub</td><td>Source code and deployment</td><td>Known</td></tr>
+          <tr><td>App database</td><td>Task and user data</td><td><strong>Confirm before launch</strong></td></tr>
+          <tr><td>AI service</td><td>AI-assisted processing</td><td><strong>Confirm before launch</strong></td></tr>
+          <tr><td>Analytics</td><td>Website analytics</td><td><strong>Confirm before launch</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 12. Security Measures -->
+  <div class="section">
+    <h2>12. Security Measures</h2>
+    <ul>
+      <li>HTTPS/TLS encryption for all data in transit</li>
+      <li>Secure authentication with encrypted password hashing</li>
+      <li>Role-based access control (RBAC) with least-privilege defaults</li>
+      <li>Secure file storage with restricted access</li>
+      <li>Regular backups with tested recovery processes</li>
+      <li>Dependency updates and vulnerability monitoring</li>
+      <li>Logging and alerting for security events</li>
+      <li>Malware protection where applicable</li>
+      <li>Incident response procedures (see Section 14)</li>
+      <li>Secure disposal, deletion or de-identification of data no longer required</li>
+    </ul>
+  </div>
+
+  <!-- 13. Data Retention -->
+  <div class="section">
+    <h2>13. Data Retention and Disposal</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data type</th><th>Retention period</th></tr></thead>
+        <tbody>
+          <tr><td>Contact form enquiries</td><td>24 months</td></tr>
+          <tr><td>Client service records</td><td>7 years</td></tr>
+          <tr><td>Tax and invoice records</td><td>7 years</td></tr>
+          <tr><td>Task records</td><td>Active relationship + 24 months unless required longer</td></tr>
+          <tr><td>Email intake records</td><td>24 months unless required longer</td></tr>
+          <tr><td>Uploaded documents</td><td>Project term + agreed retention period</td></tr>
+          <tr><td>Security logs</td><td>6–24 months</td></tr>
+          <tr><td>Marketing consent records</td><td>Until withdrawn + evidence period</td></tr>
+          <tr><td>Deleted account data</td><td>30–90 days backup retention unless legally required longer</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 14. Data Breach Response -->
+  <div class="section">
+    <h2>14. Data Breach Response Plan</h2>
+    <ol class="steps">
+      <li>Identify and contain the incident — isolate affected systems if necessary</li>
+      <li>Preserve evidence for investigation purposes</li>
+      <li>Assess what information was affected and how it was accessed</li>
+      <li>Identify affected individuals and organisations</li>
+      <li>Assess whether serious harm to affected individuals is likely</li>
+      <li>Remediate the vulnerability that led to the breach</li>
+      <li>Notify affected individuals and the OAIC if required under the NDB scheme</li>
+      <li>Document all actions taken and decisions made</li>
+      <li>Review and improve controls to prevent recurrence</li>
+    </ol>
+    <p>Contact: <a href="mailto:info@etchersolutions.com">info@etchersolutions.com</a> to report a suspected incident.</p>
+  </div>
+
+  <!-- 15. Backup and Recovery -->
+  <div class="section">
+    <h2>15. Backup and Recovery</h2>
+    <p>Backups should be:</p>
+    <ul>
+      <li>Access controlled and encrypted where possible</li>
+      <li>Tested periodically to confirm they can be restored</li>
+      <li>Retained only as long as necessary in line with retention schedules</li>
+      <li>Restorable within reasonable timeframes in the event of data loss</li>
+    </ul>
+  </div>
+
+  <!-- 16. Vendor Governance -->
+  <div class="section">
+    <h2>16. Vendor and Processor Governance</h2>
+    <p>Before engaging a new data processor or vendor, Etcher Solutions should review:</p>
+    <ul>
+      <li>Privacy policy and data processing terms</li>
+      <li>Security certifications and assessments</li>
+      <li>Data hosting locations</li>
+      <li>Breach notification commitments</li>
+      <li>Subcontractor and sub-processor arrangements</li>
+      <li>Data deletion and export functionality</li>
+      <li>AI training practices (if applicable)</li>
+      <li>Contractual protections available</li>
+    </ul>
+  </div>
+
+  <!-- 17. Marketing Compliance -->
+  <div class="section">
+    <h2>17. Marketing Compliance</h2>
+    <p>Marketing communications must:</p>
+    <ul>
+      <li>Be sent only where consent or another lawful basis exists under the <em>Spam Act 2003 (Cth)</em></li>
+      <li>Clearly identify Etcher Solutions as the sender</li>
+      <li>Include current contact details</li>
+      <li>Include a functional unsubscribe mechanism</li>
+      <li>Have unsubscribe requests actioned promptly</li>
+    </ul>
+    <p>Do not use purchased or scraped contact lists unless consent has been independently verified. Consent records must be retained.</p>
+  </div>
+
+  <!-- 18. IP and Asset Compliance -->
+  <div class="section">
+    <h2>18. Intellectual Property and Asset Compliance</h2>
+    <p>Etcher Solutions should maintain a register of assets used in the website and platform, including:</p>
+    <ul>
+      <li>Logos, icons, fonts, stock images and video assets</li>
+      <li>Website templates, code libraries and third-party packages</li>
+      <li>AI-generated images and adapted text</li>
+      <li>Brand names and trade marks</li>
+    </ul>
+    <p>Recommended file: <code>ASSET_LICENSES.md</code> in the project root.</p>
+  </div>
+
+  <!-- 19. Open Source -->
+  <div class="section">
+    <h2>19. Open Source and Third-Party Code</h2>
+    <ul>
+      <li>Maintain accurate package lock files</li>
+      <li>Review licences for compatibility before use</li>
+      <li>Satisfy attribution requirements for applicable licences</li>
+      <li>Avoid licences incompatible with commercial use</li>
+      <li>Update packages with known security vulnerabilities promptly</li>
+      <li>Remove unused packages from the project</li>
+    </ul>
+  </div>
+
+  <!-- 20. Public Exposure Checks -->
+  <div class="section">
+    <h2>20. Public Data Exposure Checks</h2>
+    <ul>
+      <li>No private API keys or secrets in frontend JavaScript</li>
+      <li>No <code>.env</code> files publicly accessible</li>
+      <li>No database credentials committed to GitHub</li>
+      <li>No confidential files in public static folders</li>
+      <li>No private task data indexed by search engines</li>
+      <li>No admin routes accessible without login</li>
+      <li>No uploaded files publicly accessible unless intended</li>
+      <li><code>robots.txt</code> and <code>sitemap.xml</code> reviewed to exclude private routes</li>
+    </ul>
+  </div>
+
+  <!-- 21. Review Schedule -->
+  <div class="section">
+    <h2>21. Review Schedule</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Review item</th><th>Frequency</th></tr></thead>
+        <tbody>
+          <tr><td>Privacy Policy and Terms of Use</td><td>Annually</td></tr>
+          <tr><td>Data retention schedules</td><td>Annually</td></tr>
+          <tr><td>Vendor and processor review</td><td>Annually</td></tr>
+          <tr><td>Security access review</td><td>Quarterly</td></tr>
+          <tr><td>Admin user review</td><td>Quarterly</td></tr>
+          <tr><td>Backup and recovery test</td><td>Annually</td></tr>
+          <tr><td>Incident response drill</td><td>Annually</td></tr>
+          <tr><td>Asset licence review</td><td>Annually</td></tr>
+          <tr><td>AI processing review</td><td>Annually or when tools change</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 22. User Responsibilities -->
+  <div class="section">
+    <h2>22. User Responsibilities</h2>
+    <ul>
+      <li>Use strong, unique credentials for your account</li>
+      <li>Keep access credentials confidential</li>
+      <li>Avoid uploading or forwarding information without appropriate authority</li>
+      <li>Avoid forwarding sensitive third-party information without the consent of relevant parties</li>
+      <li>Review AI-generated outputs before acting on them or sharing externally</li>
+      <li>Ensure data entered into the platform is accurate</li>
+      <li>Report security, privacy or data incidents promptly to <a href="mailto:info@etchersolutions.com">info@etchersolutions.com</a></li>
+      <li>Comply with workplace, client and legal obligations when using the platform</li>
+    </ul>
+  </div>
+
+  <!-- 23. Complaints -->
+  <div class="section">
+    <h2>23. Complaints and Escalation</h2>
+    <p>To raise a data protection or compliance concern:</p>
+    <ol>
+      <li>Email <a href="mailto:info@etchersolutions.com">info@etchersolutions.com</a></li>
+      <li>We will acknowledge within 5 business days</li>
+      <li>If unresolved, you may escalate to the <strong>Office of the Australian Information Commissioner (OAIC)</strong> at <a href="https://www.oaic.gov.au" target="_blank" rel="noopener">www.oaic.gov.au</a></li>
+    </ol>
+  </div>
+
+  <!-- 24. Document Control -->
+  <div class="section">
+    <h2>24. Document Control</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Document owner</td><td>Etcher Solutions</td></tr>
+          <tr><td>Review frequency</td><td>Annual</td></tr>
+          <tr><td>Next review date</td><td>27 June 2027</td></tr>
+          <tr><td>Approved by</td><td>[Insert authorised person]</td></tr>
+          <tr><td>Lawyer reviewed</td><td>[Yes / No — Insert date of review]</td></tr>
+          <tr><td>Version</td><td>1.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/privacy-policy.html">Privacy Policy</a>
+    <a href="/terms-of-use.html">Terms of Use</a>
+    <a href="/data-compliance.html">Data Compliance</a>
+  </div>
+  <p>© 2026 Etcher Solutions. All rights reserved. ABN: [Insert if applicable]<br>
+  Perth, Western Australia &nbsp;·&nbsp; <a href="mailto:info@etchersolutions.com">info@etchersolutions.com</a> &nbsp;·&nbsp; <a href="tel:+61499003637">+61 499 003 637</a></p>
+</footer>
+
+</body>
+</html>

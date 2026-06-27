@@ -438,6 +438,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       </form>
+      <p style="margin-top:16px;font-size:11px;color:#8da2b2;text-align:center;line-height:1.6">By accessing Etcher Task Hub, you agree to the <a href="/terms-of-use.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Terms of Use</a> and acknowledge the <a href="/privacy-policy.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Privacy Policy</a>.</p>
 
     </div>
 
@@ -1818,11 +1819,13 @@ function applyRolePermissions(){
     if(el)el.style.display=isAdmin?'':'none';
   });
 
-  // Time tracking & notes: admin + medium staff only
-  ['nav-time-item','nav-notes-item'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.style.display=(isAdmin||isMedium)?'':'none';
-  });
+  // Time tracking: admin + medium staff only
+  const navTimeEl=document.getElementById('nav-time-item');
+  if(navTimeEl)navTimeEl.style.display=(isAdmin||isMedium)?'':'none';
+
+  // Client Notes: admin only — contains sensitive credential and access data
+  const navNotesEl=document.getElementById('nav-notes-item');
+  if(navNotesEl)navNotesEl.style.display=isAdmin?'':'none';
 
   // New task + create actions: hidden for restricted and client
   if(isRestricted||isClient){
@@ -2603,7 +2606,7 @@ function canViewMasterCapacity(user){
 }
 
 // ── Route-level blocked-views per role ───────────────────────
-const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients']);
+const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients','notes']);
 function _acBlockedViews(user){
   if(!user)return new Set(['*']);
   if(user.role==='admin')return new Set();
@@ -7023,12 +7026,16 @@ function renderNotes(){
     </div>
     <!-- Editor -->
     <div class="notes-editor">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff8f0;border:1px solid #f97316;border-radius:7px;margin-bottom:14px;font-size:11px;font-weight:600;color:#92400e">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        SENSITIVE — Confidential client credentials and access information. Do not copy, export or share outside authorised channels.
+      </div>
       ${section?`
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <input id="note-title-input" class="form-input" value="${escHtml(section.title)}" onchange="saveNoteTitle('${section.id}')" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600;border:none;border-bottom:2px solid #e2eaf2;border-radius:0;padding:4px 0"/>
           <span style="font-size:11px;color:#b0bec5">Last saved: ${section.updatedAt?new Date(section.updatedAt).toLocaleString():''}</span>
         </div>
-        <textarea id="note-content-input" class="form-textarea" style="width:100%;min-height:calc(100vh - 220px);border:1.5px solid #e2eaf2;border-radius:8px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;line-height:1.7;color:#1a2940" onblur="saveNoteContent('${section.id}')" oninput="notesDirty()"></textarea>
+        <textarea id="note-content-input" class="form-textarea" style="width:100%;min-height:calc(100vh - 260px);border:1.5px solid #e2eaf2;border-radius:8px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;line-height:1.7;color:#1a2940" onblur="saveNoteContent('${section.id}')" oninput="notesDirty()"></textarea>
         <div style="margin-top:8px;font-size:11px;color:#b0bec5;display:flex;align-items:center;gap:8px">Supports plain text or Markdown. <span id="notes-save-status" style="color:#97bcbd;font-weight:600;opacity:0;transition:opacity 0.4s">✓ Saved</span></div>
       `:`<div style="color:#8da2b2;font-size:14px;padding-top:40px;text-align:center">Select or create a section to begin.</div>`}
     </div>
