@@ -596,7 +596,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 </div>
 
 <!-- CONFIRM MODAL -->
-<div id="confirm-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeConfirm()">
+<div id="confirm-modal" class="modal-overlay hidden" style="z-index:600" onclick="if(event.target===this)closeConfirm()">
   <div class="modal-box" style="max-width:400px">
     <div class="modal-header"><h3 id="confirm-title" style="font-family:'Jost',sans-serif;font-size:15px;font-weight:600">Confirm</h3></div>
     <div style="padding:20px 24px">
@@ -2745,9 +2745,10 @@ function submitCreateWb(){
   const name=(document.getElementById('new-wb-name')?.value||'').trim();
   if(!name)return;
   const visibility=document.getElementById('new-wb-visibility')?.value||'all_internal';
+  const clientId=document.getElementById('new-wb-client')?.value||'';
   const wbId=uid();
   DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,ownerId:currentUser.id,description:'',archived:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
-  DB.groups.push({id:uid(),clientId:DB.clients[0]?.id||'',workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
+  DB.groups.push({id:uid(),clientId,workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
   saveDB(DB);closeCreateWbForm();renderSidebarWorkboards();renderView('dashboard');
 }
 // ── Board Sharing ──
@@ -3560,6 +3561,13 @@ function renderDashboard(){
         </div>
       </div>
       <div>
+        <label class="form-label">Client</label>
+        <select id="new-wb-client" class="form-input" style="height:36px">
+          <option value="">— None —</option>
+          ${DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div>
         <label class="form-label">Access</label>
         <select id="new-wb-visibility" class="form-input" style="height:36px">
           <option value="all_internal">All internal staff</option>
@@ -3604,6 +3612,13 @@ function renderDashboard(){
           <label onclick="event.stopPropagation()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;margin:0">
             <span style="width:11px;height:11px;border-radius:50%;background:${wb.color};border:1.5px solid rgba(0,0,0,0.12);flex-shrink:0;display:inline-block"></span>Colour
             <input type="color" value="${wb.color}" onchange="saveWbColor('${wb.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/>
+          </label>
+          <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568">
+            Client:
+            <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:2px 5px;background:#fff;color:#1a2940;cursor:pointer">
+              <option value="">— None —</option>
+              ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
+            </select>
           </label>
           <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px">⧉ Duplicate</button>
           <button onclick="event.stopPropagation();archiveWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#92400e">◫ Archive</button>
@@ -5719,6 +5734,13 @@ function tsToggleSelected(id,checked){
 function tsToggleAllSelected(checked){
   if(checked)_tsFilterEntries().forEach(e=>tsSelectedIds.add(e.id));
   else tsSelectedIds=new Set();
+  // Update the bulk bar immediately (same as individual toggle does)
+  const bar=document.getElementById('ts-bulk-bar');
+  if(bar){
+    bar.innerHTML=_tsBulkBarHtml();
+    if(tsSelectedIds.size)bar.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  // Re-render to sync all row checkboxes and the select-all header state
   renderView('reports');
 }
 function tsBulkApproveForStaff(staffId,fortnightEnding){
@@ -7273,6 +7295,7 @@ function deleteStaff(id){
   const msg=taskCount
     ?`Remove ${s.name}? They have ${taskCount} open task${taskCount!==1?'s':''} which will become unassigned.`
     :`Remove ${s.name}? This cannot be undone.`;
+  closeGenericModal();
   openConfirm('Remove Staff',msg,'Remove',()=>{
     DB.tasks.forEach(t=>{if(t.ownerId===id)t.ownerId=null;});
     DB.users=DB.users.filter(x=>x.id!==id);
@@ -8683,7 +8706,7 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
         <div style="width:9px;height:9px;border-radius:2px;background:${sec.color};flex-shrink:0"></div>
         <span id="ws-grp-name-${sec.id}" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940">${escHtml(sec.label)}</span>
         ${sec.sub?`<span style="font-size:11px;color:#8da2b2">· ${sec.sub}</span>`:''}
-        ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
+        ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
         <span style="font-size:11px;color:#8da2b2;background:#f0f4f8;border-radius:10px;padding:1px 8px;margin-left:4px">${sec.tasks.length}</span>
         <div style="flex:1;max-width:64px;margin-left:8px">
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>
@@ -9388,6 +9411,18 @@ function saveWbColor(id,color){
   saveDB(DB);
   renderSidebarWorkboards();
   renderView('dashboard');
+}
+function saveWbClient(boardId,clientId){
+  DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId).forEach(g=>{g.clientId=clientId;});
+  saveDB(DB);
+  renderView('dashboard');
+}
+function wsSetGroupColor(groupId,color){
+  const g=DB.groups.find(x=>x.id===groupId);
+  if(!g)return;
+  g.color=color;
+  saveDB(DB);
+  renderView('workspace');
 }
 function archiveWorkboard(id){
   openConfirm('Archive WorkBoard','Archive this WorkBoard? It can be restored later.','Archive',()=>{

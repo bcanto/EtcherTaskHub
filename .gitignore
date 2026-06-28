@@ -31,3 +31,5 @@ intake-queue.json
 # ── Supabase ──────────────────────────────────────────────────────────────────
 supabase/.branches
 supabase/.temp
+
+.vercel
