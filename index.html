@@ -1258,6 +1258,8 @@ function _restoreSession(){
     if(!raw)return false;
     const sess=JSON.parse(raw);
     if(!sess||!sess.id)return false;
+    // Expire sessions older than 8 hours
+    if(sess.savedAt&&Date.now()-sess.savedAt>28800000){_clearSession();return false;}
     if(sess.type==='client'){
       const client=DB.clients.find(c=>c.id===sess.id);
       if(!client){_clearSession();return false;}
@@ -1352,7 +1354,7 @@ function _showSetPasswordForm(session){
     const pw2=document.getElementById('spf-pw2').value;
     const err=document.getElementById('spf-err');
     const btn=document.getElementById('spf-btn');
-    if(pw.length<6){err.textContent='Password must be at least 6 characters.';return;}
+    if(pw.length<8){err.textContent='Password must be at least 8 characters.';return;}
     if(pw!==pw2){err.textContent='Passwords do not match.';return;}
     btn.disabled=true;btn.textContent='Saving…';
     const{error}=await window._supabase.auth.updateUser({password:pw});
@@ -1799,8 +1801,15 @@ function doLogin(){
     return; // async — Supabase callback handles the rest
   }
   // ── localStorage fallback (no Supabase configured) ───────────────────────
+  // Brute-force lockout: 5 failures → 15 min lockout (sessionStorage)
+  const _lk=JSON.parse(sessionStorage.getItem('_lk')||'{}');
+  if(_lk.until&&Date.now()<_lk.until){
+    const mins=Math.ceil((_lk.until-Date.now())/60000);
+    showLoginError(`Too many failed attempts. Try again in ${mins} minute${mins!==1?'s':''}.`);return;
+  }
   const user=allStaff().find(u=>u.email.toLowerCase()===email&&u.password===pass&&u.active!==false);
   if(user){
+    sessionStorage.removeItem('_lk');
     currentUser={...user,type:user.role==='admin'?'admin':user.role==='restricted'?'restricted':'staff',
       color:getUserColor(user),
       initials:user.initials||getInitials(user.name)};
@@ -1808,8 +1817,12 @@ function doLogin(){
   }
   // Legacy client portal login (loginEmail on client object)
   const client=DB.clients.find(c=>c.loginEmail&&c.loginEmail.toLowerCase()===email&&c.loginPassword===pass);
-  if(client){currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};_saveSession();launchClientView();return;}
-  showLoginError('Invalid email or password.');
+  if(client){sessionStorage.removeItem('_lk');currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};_saveSession();launchClientView();return;}
+  // Record failed attempt
+  const attempts=(_lk.count||0)+1;
+  if(attempts>=5){sessionStorage.setItem('_lk',JSON.stringify({count:attempts,until:Date.now()+900000}));}
+  else{sessionStorage.setItem('_lk',JSON.stringify({count:attempts}));}
+  showLoginError(attempts>=5?'Too many failed attempts. Account locked for 15 minutes.':`Invalid email or password. ${5-attempts} attempt${5-attempts!==1?'s':''} remaining.`);
 }
 function showLoginError(msg){
   const el=document.getElementById('login-error');
@@ -3421,13 +3434,25 @@ function renderTriageZone(inline=false){
   </div>`;
 }
 
+function _isKnownSender(from){
+  if(!from)return false;
+  const domain=(from.split('@')[1]||'').toLowerCase();
+  if(!domain)return false;
+  const internal=['etchersolutions.com'];
+  const clientDomains=(DB.clients||[]).map(c=>(c.loginEmail||'').split('@')[1]).filter(Boolean).map(d=>d.toLowerCase());
+  return[...internal,...clientDomains].includes(domain);
+}
 function _renderTriageCard(item,wbs){
   const sugWb=wbs.find(w=>w.id===item.suggestedBoardId);
   const ago=_timeAgo(item.receivedAt);
-  return`<div style="background:#f8fbff;border:1.5px solid #e8eef6;border-radius:10px;padding:12px 14px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#e8eef6'">
+  const unknownSender=!item.isTest&&!_isKnownSender(item.from);
+  return`<div style="background:#f8fbff;border:1.5px solid ${unknownSender?'#fde68a':'#e8eef6'};border-radius:10px;padding:12px 14px;transition:border-color 0.15s" onmouseover="this.style.borderColor='${unknownSender?'#f59e0b':'#97bcbd'}'" onmouseout="this.style.borderColor='${unknownSender?'#fde68a':'#e8eef6'}'">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:${item.snippet?'8px':'0'}">
       <div style="flex:1;min-width:0">
-        <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${escHtml(item.subject||'(no subject)')}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.subject||'(no subject)')}</div>
+          ${unknownSender?`<span style="flex-shrink:0;font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;white-space:nowrap" title="Sender domain not in your client list">⚠ Unknown sender</span>`:''}
+        </div>
         <div style="font-size:11px;color:#97bcbd">${escHtml(item.fromName||item.from||'Unknown')} <span style="color:#c8d4e0">·</span> ${ago}</div>
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0">
@@ -3535,12 +3560,13 @@ function triageConfirmRoute(itemId){
 }
 
 function triageDiscard(itemId){
-  if(!confirm('Discard this email? It will not become a task.'))return;
-  const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
-  if(!item)return;
-  item.status='discarded';item.discardedAt=new Date().toISOString();item.discardedBy=currentUser.id;
-  fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'discarded'})}).catch(()=>{});
-  saveDB(DB);updateInboxBadge();renderView('dashboard');
+  openConfirm('Discard Email','This email will not become a task. This cannot be undone.','Discard',()=>{
+    const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
+    if(!item)return;
+    item.status='discarded';item.discardedAt=new Date().toISOString();item.discardedBy=currentUser.id;
+    fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'discarded'})}).catch(()=>{});
+    saveDB(DB);updateInboxBadge();renderView('dashboard');
+  },true);
 }
 
 const _TEST_EMAILS=[
@@ -5294,7 +5320,7 @@ async function saveClient(id){
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     if(pw){
-      if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+      if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
       if(!c.supabaseUserId){showAlert('No Supabase account linked to this client. Create a new client with a password instead.','Error');return;}
       const btn=document.getElementById('cm-save-btn');
@@ -5315,7 +5341,7 @@ async function saveClient(id){
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     const cid='c'+uid();
     if(email&&pw){
-      if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+      if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
       const btn=document.getElementById('cm-save-btn');
       if(btn){btn.disabled=true;btn.textContent='Creating…';}
@@ -7613,7 +7639,7 @@ async function saveStaff(id){
     // New user — create account directly (no email needed)
     const pw=document.getElementById('sm-pw')?.value||'';
     const pw2=document.getElementById('sm-pw2')?.value||'';
-    if(pw.length<6){showAlert('Password must be at least 6 characters.','Validation');return;}
+    if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
     if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
     const btn=document.getElementById('sm-save-btn');
     if(btn){btn.disabled=true;btn.textContent='Creating…';}
@@ -11282,8 +11308,9 @@ function cpReqFileChanged(input){
   input.value='';
 }
 
-function cpSubmitRequest(clientId){
+function cpSubmitRequest(_unused){
   if(currentUser?.role!=='client')return;
+  const clientId=currentUser.clientId; // always use authenticated user's own clientId
   const title=(document.getElementById('cp-req-title')?.value||'').trim();
   if(!title){
     const inp=document.getElementById('cp-req-title');
