@@ -7772,7 +7772,6 @@ function openTaskModal(id, defaultGroupId){
   const currentlyWithOptions=
     `<option value="" ${!t.currentlyWith||t.currentlyWith==='none'?'selected':''}>— None —</option>`+
     `<option value="client" ${t.currentlyWith==='client'?'selected':''}>Client</option>`+
-    `<option value="approver" ${t.currentlyWith==='approver'||t.currentlyWithType==='approver'?'selected':''}>Approver</option>`+
     (DB.users||DB.staff).map(s=>`<option value="${s.id}" ${t.currentlyWith===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
 
   const canEdit=currentUser.role!=='client';
