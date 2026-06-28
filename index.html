@@ -977,6 +977,7 @@ function _migrateDB(data){
     if(!b.description)          b.description='';
     if(!b.visibility)           b.visibility='all_internal';
     if(!b.ownerId)              b.ownerId='u1';
+    if(b.excludeFromReports===undefined) b.excludeFromReports=false;
     if(!b.createdAt)            b.createdAt=new Date().toISOString();
     if(!b.updatedAt)            b.updatedAt=b.createdAt;
   });
@@ -2778,6 +2779,7 @@ function openCreateWbForm(){
 function closeCreateWbForm(){
   const f=document.getElementById('create-wb-form');if(f)f.classList.add('hidden');
   const n=document.getElementById('new-wb-name');if(n)n.value='';
+  const ex=document.getElementById('new-wb-exclude');if(ex)ex.checked=false;
 }
 function selectWbColor(c){
   selectedWbColor=c;
@@ -2790,8 +2792,9 @@ function submitCreateWb(){
   if(!name)return;
   const visibility=document.getElementById('new-wb-visibility')?.value||'all_internal';
   const clientId=document.getElementById('new-wb-client')?.value||'';
+  const excludeFromReports=document.getElementById('new-wb-exclude')?.checked||false;
   const wbId=uid();
-  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,ownerId:currentUser.id,description:'',archived:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,ownerId:currentUser.id,description:'',archived:false,excludeFromReports,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
   DB.groups.push({id:uid(),clientId,workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
   saveDB(DB);closeCreateWbForm();renderSidebarWorkboards();renderView('dashboard');
 }
@@ -3750,9 +3753,15 @@ function renderDashboard(){
           <option value="private">Private (invite only)</option>
         </select>
       </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="submitCreateWb()" class="btn btn-primary">Create</button>
-        <button onclick="closeCreateWbForm()" class="btn btn-ghost">Cancel</button>
+      <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#4a5568;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="new-wb-exclude" style="accent-color:#0d1c33;width:14px;height:14px"/>
+          Exclude from reports &amp; audits
+        </label>
+        <div style="display:flex;gap:8px">
+          <button onclick="submitCreateWb()" class="btn btn-primary">Create</button>
+          <button onclick="closeCreateWbForm()" class="btn btn-ghost">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3777,6 +3786,7 @@ function renderDashboard(){
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
               <div style="width:9px;height:9px;border-radius:3px;background:${wb.color};flex-shrink:0"></div>
               <h3 style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(wb.name)}</h3>
+              ${wb.excludeFromReports?`<span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0">Internal</span>`:''}
             </div>
             <p style="font-size:11px;color:#8da2b2">${wbTasks.length} item${wbTasks.length!==1?'s':''}${myOpen?' · '+myOpen+' assigned to you':''}</p>
           </div>
@@ -3798,6 +3808,10 @@ function renderDashboard(){
           </label>
           <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px">⧉ Duplicate</button>
           <button onclick="event.stopPropagation();archiveWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#92400e">◫ Archive</button>
+          <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid #e2eaf2;background:#fff">
+            <input type="checkbox" ${wb.excludeFromReports?'checked':''} onchange="event.stopPropagation();saveWbExclude('${wb.id}',this.checked)" style="accent-color:#0d1c33;width:12px;height:12px"/>
+            Exclude from reports
+          </label>
           <button onclick="deleteWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#dc2626;margin-left:auto">✕ Delete</button>
         </div>
         <div style="background:#f0f4f8;border-radius:4px;height:5px;margin-bottom:10px;overflow:hidden">
@@ -4226,7 +4240,8 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
 // ── Main Gantt render ────────────────────────────────────
 function renderGantt(){
   const _wbTabs=renderWbTabs('gantt');
-  const allTasks=getFilteredTasks();
+  const _gExcl=_excludedBoardIds();
+  const allTasks=getFilteredTasks().filter(t=>!_gExcl.has(t.workboardId||t.boardId));
   const tasks=allTasks.filter(t=>t.startDate||t.endDate);
 
   if(!tasks.length)return _wbTabs+renderUniversalToolbar('gantt',{itemCount:0})+`<div class="card" style="margin-top:12px"><p style="color:#8da2b2;text-align:center;padding:40px">No tasks with dates to display. Add start/end dates to tasks to see them here.</p></div>`;
@@ -4741,8 +4756,9 @@ function renderCapacityList(pool){
 function renderCapacity(){
   if(!canViewMasterCapacity(currentUser))return _acDeniedHtml();
 
-  // ── Task pool — all non-archived tasks with start+end dates ──
-  let pool=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate);
+  // ── Task pool — all non-archived tasks with start+end dates (exclude internal boards) ──
+  const _excl=_excludedBoardIds();
+  let pool=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate&&!_excl.has(t.workboardId||t.boardId));
 
   // ── Apply filters (shared activeFilters) ──
   const _cf=activeFilters;
@@ -5702,9 +5718,16 @@ function tsStatusMeta(status){
 // ══════════════════════════════════════════════════════════════════════════
 function _tsFilterEntries(){
   const isAdmin=currentUser?.role==='admin';
+  const _tsExcl=_excludedBoardIds();
   return (DB.timeEntries||[]).filter(e=>{
     if(e.deletedAt) return false;
     if(!isAdmin&&e.staffId!==currentUser?.id) return false;
+    // exclude entries whose task belongs to an internal-only board
+    if(_tsExcl.size){
+      const _tsTask=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const _tsBoardId=e.workboardId||(_tsTask&&(_tsTask.workboardId||_tsTask.boardId));
+      if(_tsBoardId&&_tsExcl.has(_tsBoardId)) return false;
+    }
     if(tsStaffFilter!=='all'&&e.staffId!==tsStaffFilter) return false;
     if(tsClientFilter!=='all'){
       const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
@@ -6265,7 +6288,7 @@ function _rptTimesheetHtml(){
   const selSty=`style="${inSty};cursor:pointer;font-family:'Jost',sans-serif"`;
   const staffOpts='<option value="all">All Staff</option>'+DB.staff.map(s=>`<option value="${s.id}"${tsStaffFilter===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
   const clientOpts='<option value="all">All Clients</option>'+DB.clients.map(c=>`<option value="${c.id}"${tsClientFilter===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
-  const boardOpts='<option value="all">All Boards</option>'+(DB.boards||[]).filter(b=>!b.archived).map(b=>`<option value="${b.id}"${tsBoardFilter===b.id?' selected':''}>${escHtml(b.name)}</option>`).join('');
+  const boardOpts='<option value="all">All Boards</option>'+(DB.boards||[]).filter(b=>!b.archived&&!b.excludeFromReports).map(b=>`<option value="${b.id}"${tsBoardFilter===b.id?' selected':''}>${escHtml(b.name)}</option>`).join('');
   const erOpts='<option value="all">All Rates</option>'+(DB.earningsRates||[]).map(er=>`<option value="${er.id}"${tsEarningsRateFilter===er.id?' selected':''}>${escHtml(er.name)}</option>`).join('');
   const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
 
@@ -9814,6 +9837,16 @@ function saveWbClient(boardId,clientId){
   DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId).forEach(g=>{g.clientId=clientId;});
   saveDB(DB);
   renderView('dashboard');
+}
+function saveWbExclude(boardId,val){
+  const wb=DB.workboards.find(w=>w.id===boardId);
+  if(!wb)return;
+  wb.excludeFromReports=val;
+  saveDB(DB);
+  renderView('dashboard');
+}
+function _excludedBoardIds(){
+  return new Set((DB.workboards||[]).filter(w=>w.excludeFromReports&&!w.archived).map(w=>w.id));
 }
 function wsSetGroupColor(groupId,color){
   const g=DB.groups.find(x=>x.id===groupId);
