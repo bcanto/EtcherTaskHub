@@ -3573,7 +3573,12 @@ function triageAddTest(){
 const APPROVAL_TYPE_LABELS={scope:'Scope Approval',quote:'Quote Approval',proposal:'Proposal Approval',work:'Work Approval',final:'Final Delivery Approval',change:'Change Approval',other:'Other'};
 
 function renderIncomingApprovals(){
-  const items=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canViewBoard(currentUser,DB.workboards?.find(w=>w.id===(t.workboardId||t.boardId))));
+  const items=(DB.tasks||[]).filter(t=>{
+    if(t.status!=='approved-client'||t.archived)return false;
+    if(currentUser.role==='admin'||currentUser.role==='pm')return true;
+    const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
+    return canViewBoard(currentUser,wb);
+  });
   if(!items.length)return'';
   const NEXT_ACTIONS=[
     {value:'todo',label:'Ready to Start',bg:'#dbeafe',color:'#1d4ed8'},
