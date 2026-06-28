@@ -8402,6 +8402,28 @@ function wsSaveInlineTask(){
   DB.tasks.push(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
 }
+function wsHandlePasteMultiline(e){
+  const text=e.clipboardData?.getData('text')||'';
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2)return; // single line — let browser handle normally
+  e.preventDefault();
+  const status=document.getElementById('ws-inline-status')?.value||'todo';
+  const priority=document.getElementById('ws-inline-priority')?.value||'med';
+  const ownerId=document.getElementById('ws-inline-owner')?.value||currentUser.id;
+  const cwith=document.getElementById('ws-inline-cwith')?.value||'internal';
+  const endDate=document.getElementById('ws-inline-duedate')?.value||'';
+  const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
+  const _gid=wsInlineAddGroupId||getWbDefaultGroup();
+  const _grp=DB.groups.find(g=>g.id===_gid);
+  const wbId=currentWorkboard?.id||DB.workboards[0]?.id||'';
+  lines.forEach(name=>{
+    const _now=new Date().toISOString();
+    DB.tasks.push({id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null});
+  });
+  saveDB(DB);
+  showToast(`${lines.length} tasks created`,'success');
+  wsCancelInlineAdd();
+}
 function wsCancelInlineAdd(){wsInlineAddSectionId=null;wsInlineAddGroupId=null;renderView('workspace');}
 
 // ── Inline add group ──
@@ -9067,8 +9089,9 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
       <td style="width:36px;padding:0 0 0 12px"><input type="checkbox" disabled style="opacity:.3"/></td>
       <td colspan="${totalCols-1}" style="padding:8px 12px;border-left:3px solid ${sec.color}">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <input id="ws-inline-name" type="text" class="ws-inline-input" placeholder="Task name — press Enter to save, Esc to cancel"
-            onkeydown="if(event.key==='Enter')wsSaveInlineTask();if(event.key==='Escape')wsCancelInlineAdd()"/>
+          <input id="ws-inline-name" type="text" class="ws-inline-input" placeholder="Task name — press Enter to save, Esc to cancel, or paste a list"
+            onkeydown="if(event.key==='Enter')wsSaveInlineTask();if(event.key==='Escape')wsCancelInlineAdd()"
+            onpaste="wsHandlePasteMultiline(event)"/>
           <select id="ws-inline-status" class="ws-inline-select">
             ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
           </select>
