@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1728,7 +1728,7 @@ function renderUniversalToolbar(view,opts){
 
 function renderAdvancedFilterPanel(view){
   const f=activeFilters;
-  const STATUSES=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','completed-approved','done','cancelled'];
+  const STATUSES=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'];
   const cwithOpts=`<option value="all"${f.cwithId==='all'?' selected':''}>Anyone</option><option value="client"${f.cwithId==='client'?' selected':''}>Client</option>${DB.staff.map(s=>`<option value="${s.id}"${f.cwithId===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('')}`;
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
@@ -2097,6 +2097,7 @@ const STATUS_META = {
   'blocked':        { label: 'Blocked',            color: '#b91c1c', bg: '#fef2f2', dot: '#f87171' },
   'ready-approval':   { label: 'Sent for Approval',    color: '#0d6e4e', bg: '#d1fae5', dot: '#34d399' },
   'approved-client':  { label: 'Client Approved',      color: '#065f46', bg: '#a7f3d0', dot: '#10b981' },
+  'change-requested': { label: 'Change Requested by Client', color: '#92400e', bg: '#fef3c7', dot: '#f59e0b' },
   'completed-approved':{ label: 'Completed & Approved', color: '#065f46', bg: '#6ee7b7', dot: '#10b981' },
   'ready-to-start':   { label: 'Ready to Start',       color: '#1d4ed8', bg: '#dbeafe', dot: '#60a5fa' },
   'needs-changes':    { label: 'Needs Changes',         color: '#b45309', bg: '#fef3c7', dot: '#fbbf24' },
@@ -2106,7 +2107,7 @@ const STATUS_META = {
 };
 function hexToRgba(hex,a){if(!hex||hex.length<7)return`rgba(150,188,189,${a})`;const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;}
 function getStatusMeta(key){const ov=(DB?.labelConfig?.statuses||{})[key]||{};return{...(STATUS_META[key]||{label:key,color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'}),...ov};}
-function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
+function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
 function statusBadge(s){const sm=getStatusMeta(s);return`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`;}
 const PRIO_META={
   low: {icon:'▼',label:'Low',cls:'prio-low',color:'#475569',bg:'#f1f5f9'},
@@ -3572,15 +3573,18 @@ function triageAddTest(){
 
 const APPROVAL_TYPE_LABELS={scope:'Scope Approval',quote:'Quote Approval',proposal:'Proposal Approval',work:'Work Approval',final:'Final Delivery Approval',change:'Change Approval',other:'Other'};
 
-function renderIncomingApprovals(){
-  const items=(DB.tasks||[]).filter(t=>{
-    if(t.status!=='approved-client'||t.archived)return false;
+
+function renderNeedsAttention(){
+  const canView=t=>{
     if(currentUser.role==='admin'||currentUser.role==='pm')return true;
     const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
     return canViewBoard(currentUser,wb);
-  });
+  };
+  const approvals=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canView(t));
+  const changeReqs=(DB.tasks||[]).filter(t=>t.status==='change-requested'&&!t.archived&&canView(t));
+  const items=[...approvals,...changeReqs];
   if(!items.length)return'';
-  const NEXT_ACTIONS=[
+  const NEXT_APPROVAL=[
     {value:'todo',label:'Ready to Start',bg:'#dbeafe',color:'#1d4ed8'},
     {value:'in-progress',label:'In Progress',bg:'#e0f2fe',color:'#0369a1'},
     {value:'completed-approved',label:'Completed & Approved',bg:'#a7f3d0',color:'#065f46'},
@@ -3589,15 +3593,32 @@ function renderIncomingApprovals(){
     {value:'waiting-client',label:'Waiting on Client',bg:'#fee2e2',color:'#b91c1c'},
     {value:'archived',label:'Archive',bg:'#f1f5f9',color:'#64748b'},
   ];
+  const NEXT_CHANGE=[
+    {value:'in-progress',label:'In Progress',bg:'#e0f2fe',color:'#0369a1'},
+    {value:'review',label:'Needs Internal Review',bg:'#f3e8ff',color:'#6d28d9'},
+    {value:'ready-approval',label:'Sent for Approval',bg:'#fef3c7',color:'#b45309'},
+    {value:'waiting-client',label:'Waiting on Client',bg:'#fee2e2',color:'#b91c1c'},
+    {value:'completed-approved',label:'Completed & Approved',bg:'#a7f3d0',color:'#065f46'},
+    {value:'archived',label:'Archive',bg:'#f1f5f9',color:'#64748b'},
+  ];
   const cards=items.map(t=>{
-    const client=DB.clients?.find(c=>c.id===(DB.groups?.find(g=>g.id===t.groupId)?.clientId));
+    const isChange=t.status==='change-requested';
+    const client=DB.clients?.find(c=>c.id===(DB.groups?.find(g=>g.id===t.groupId)?.clientId||t.clientId));
     const board=DB.workboards?.find(w=>w.id===(t.workboardId||t.boardId));
     const ca=t.clientApproval||{};
-    const atLabel=APPROVAL_TYPE_LABELS[t.approvalType]||'—';
-    const approvedAt=ca.at?new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-    const clientNotes=ca.note?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:#92400e;line-height:1.6"><strong>Client note:</strong> "${escHtml(ca.note)}"</div>`:'';
+    const atLabel=isChange?'Change Request':APPROVAL_TYPE_LABELS[t.approvalType]||'--';
+    const actionAt=ca.at?new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'--';
+    const clientNotes=ca.note?`<div style="background:${isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
     const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
-    return`<div style="background:#fff;border:1.5px solid #d1fae5;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(16,185,129,0.08)">
+    const typeBadge=isChange
+      ?`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fef3c7;color:#92400e">Change Requested</span>`
+      :`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d1fae5;color:#065f46">Client Approved</span>`;
+    const borderColor=isChange?'#fde68a':'#d1fae5';
+    const shadowColor=isChange?'rgba(245,158,11,0.08)':'rgba(16,185,129,0.08)';
+    const actions=isChange?NEXT_CHANGE:NEXT_APPROVAL;
+    const byLabel=isChange?'Submitted by':'Approved by';
+    const atLabelKey=isChange?'Date submitted':'Date approved';
+    return`<div style="background:#fff;border:1.5px solid ${borderColor};border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px ${shadowColor}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
         <div style="flex:1;min-width:0">
           <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="Open task">${escHtml(t.name||t.title||'Untitled')}</div>
@@ -3606,28 +3627,33 @@ function renderIncomingApprovals(){
             ${board?`<span style="font-size:11px;color:#8da2b2">${escHtml(board.name)}</span>`:''}
           </div>
         </div>
-        <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d1fae5;color:#065f46">✓ Client Approved</span>
+        ${typeBadge}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:12px;color:#4b5c6e;margin-bottom:10px">
-        <div><span style="color:#97bcbd;font-weight:600">Approval type</span><br/>${escHtml(atLabel)}</div>
-        <div><span style="color:#97bcbd;font-weight:600">Approved by</span><br/>${escHtml(ca.approvedBy||'Client')}</div>
-        <div><span style="color:#97bcbd;font-weight:600">Date approved</span><br/>${approvedAt}</div>
+        <div><span style="color:#97bcbd;font-weight:600">Type</span><br/>${escHtml(atLabel)}</div>
+        <div><span style="color:#97bcbd;font-weight:600">${byLabel}</span><br/>${escHtml(ca.approvedBy||'Client')}</div>
+        <div><span style="color:#97bcbd;font-weight:600">${atLabelKey}</span><br/>${actionAt}</div>
         ${attachCount?`<div><span style="color:#97bcbd;font-weight:600">Attachments</span><br/>${attachCount} file${attachCount!==1?'s':''}</div>`:'<div></div>'}
       </div>
       ${clientNotes}
       <div style="margin-top:12px">
         <div style="font-size:11px;font-weight:600;color:#8da2b2;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Choose next action</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${NEXT_ACTIONS.map(a=>`<button onclick="incomingApprovalAction('${t.id}','${a.value}')" style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1.5px solid ${a.color}30;background:${a.bg};color:${a.color};cursor:pointer;transition:opacity 0.1s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">${escHtml(a.label)}</button>`).join('')}
+          ${actions.map(a=>`<button onclick="incomingApprovalAction('${t.id}','${a.value}')" style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1.5px solid ${a.color}30;background:${a.bg};color:${a.color};cursor:pointer;transition:opacity 0.1s" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">${escHtml(a.label)}</button>`).join('')}
         </div>
       </div>
     </div>`;
   }).join('');
+  const total=items.length;
+  const approvalCount=approvals.length;
+  const changeCount=changeReqs.length;
+  const subtitle=[approvalCount&&`${approvalCount} approval${approvalCount!==1?'s':''}`,changeCount&&`${changeCount} change request${changeCount!==1?'s':''}`].filter(Boolean).join(', ');
   return`<div style="margin-bottom:32px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="2.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <h2 style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Incoming Approvals</h2>
-      <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#d1fae5;color:#065f46">${items.length}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <h2 style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Needs Attention</h2>
+      <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#fef3c7;color:#b45309">${total}</span>
+      ${subtitle?`<span style="font-size:11px;color:#8da2b2">${escHtml(subtitle)}</span>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">${cards}</div>
   </div>`;
@@ -3656,7 +3682,7 @@ function renderDashboard(){
     <div>${renderTriageZone(true)}</div>
   </div>
 
-  ${renderIncomingApprovals()}
+  ${renderNeedsAttention()}
 
   <!-- Header -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap">
@@ -8565,7 +8591,7 @@ function sortIcon(col){
   return`<span style="color:#97bcbd;margin-left:3px;font-size:9px">${wsSort.dir==='asc'?'↑':'↓'}</span>`;
 }
 function wsCycleStatus(id){
-  const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','completed-approved','done','blocked','cancelled'];
+  const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','change-requested','completed-approved','done','blocked','cancelled'];
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   const idx=CYCLE.indexOf(t.status);
   t.status=CYCLE[idx>=0?(idx+1)%CYCLE.length:1];
@@ -8803,7 +8829,7 @@ function renderWorkspace(){
         sections.push({id:c.id,label:c.name,sub:c.shortCode,color:c.color,defGrp:wbGroups.find(g=>g.clientId===c.id)?.id||wbDefGrp,tasks:ct});
     });
   } else if(wsGroupBy==='status'){
-    ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','completed-approved','done','cancelled'].forEach(s=>{
+    ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'].forEach(s=>{
       const sm=STATUS_META[s]||STATUS_META['todo'];
       sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
     });
@@ -10497,7 +10523,8 @@ function cpBroadStatus(key){
     'needs-changes':    {label:'In Progress',           bg:'#dbeafe',color:'#1d4ed8'},
     'ready-approval':   {label:'Awaiting Your Approval',bg:'#fef3c7',color:'#b45309'},
     'approved-client':  {label:'Approved',              bg:'#a7f3d0',color:'#065f46'},
-    'completed-approved':{label:'Approved',             bg:'#a7f3d0',color:'#065f46'},
+    'change-requested': {label:'Change Requested – Awaiting Etcher Response',bg:'#fef3c7',color:'#92400e'},
+    'completed-approved':{label:'Completed & Approved', bg:'#a7f3d0',color:'#065f46'},
     'done':             {label:'Completed',             bg:'#dcfce7',color:'#15803d'},
     'completed':        {label:'Completed',             bg:'#dcfce7',color:'#15803d'},
     'cancelled':        {label:'Cancelled',             bg:'#f3f4f6',color:'#9ca3af'},
@@ -10847,14 +10874,16 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
   _cpTaskSearch='';
   const todayStr=new Date().toISOString().slice(0,10);
   const isDone=s=>['done','completed','approved-client','completed-approved','cancelled'].includes(s);
+  const isAwaitingEtcher=s=>s==='change-requested';
   const isUnderReview=s=>['review','waiting-review','waiting-client'].includes(s);
   const isInScope=s=>['todo','not-started','ready-to-start','blocked'].includes(s);
   const isInProgress=s=>['in-progress','needs-changes'].includes(s);
 
-  const awaiting=tasks.filter(t=>t.awaitingClient&&!isDone(t.status));
-  const underReview=tasks.filter(t=>!t.awaitingClient&&isUnderReview(t.status));
-  const inScope=tasks.filter(t=>!t.awaitingClient&&isInScope(t.status));
-  const inProgress=tasks.filter(t=>!t.awaitingClient&&isInProgress(t.status));
+  const awaiting=tasks.filter(t=>t.awaitingClient&&!isDone(t.status)&&!isAwaitingEtcher(t.status));
+  const awaitingEtcher=tasks.filter(t=>isAwaitingEtcher(t.status));
+  const underReview=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isUnderReview(t.status));
+  const inScope=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInScope(t.status));
+  const inProgress=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInProgress(t.status));
   const completed=tasks.filter(t=>isDone(t.status));
 
   function taskRow(t,showActions=false){
@@ -10885,13 +10914,19 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
 
   const mkSection=(title,arr,opts={})=>{
     if(!arr.length)return'';
-    const {amber,count,actions}=opts;
-    const badge=amber?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px">${arr.length}</span>`:count?`<span style="font-size:12px;color:#b0bec5;font-weight:500;margin-left:4px">(${arr.length})</span>`:'';
+    const {amber,etcher,count,actions}=opts;
+    const badge=(amber||etcher)?`<span style="background:#fef3c7;color:${etcher?'#92400e':'#b45309'};font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px">${arr.length}</span>`:count?`<span style="font-size:12px;color:#b0bec5;font-weight:500;margin-left:4px">(${arr.length})</span>`:'';
     const header=amber
       ?`<div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;margin-bottom:4px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#92400e">${escHtml(title)}</span>${badge}
           <span style="font-size:11px;color:#b45309;margin-left:auto">Tap a row to view details</span>
+        </div>`
+      :etcher
+      ?`<div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fff8e1;border:1.5px solid #fde68a;border-radius:10px;margin-bottom:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#92400e">${escHtml(title)}</span>${badge}
+          <span style="font-size:11px;color:#b45309;margin-left:auto">We're reviewing your request</span>
         </div>`
       :`<div class="cp-section-title" style="font-size:12px;padding-bottom:6px">${escHtml(title)}${badge}</div>`;
     return`<div data-section-wrap style="margin-bottom:24px">${header}${arr.map(t=>taskRow(t,!!actions)).join('')}</div>`;
@@ -10906,6 +10941,7 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
 
   const sections=[
     mkSection('Awaiting Your Approval',awaiting,{amber:true,actions:true}),
+    mkSection('Awaiting Etcher Response',awaitingEtcher,{etcher:true}),
     mkSection('Under Review',underReview,{}),
     mkSection('In Scope',inScope,{}),
     mkSection('In Progress',inProgress,{}),
@@ -11074,16 +11110,19 @@ function cpSubmitChanges(taskId){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
   task.clientApproval={status:'changes-requested',note,at:new Date().toISOString()};
-  // Return task to internal team
-  if(task.currentlyWithType==='client'){
-    task.currentlyWithType='staff';
-    task.currentlyWith=task.ownerId||'';
-    task.currentlyWithUserId=task.ownerId||null;
-  }
+  task.status='change-requested';
+  task.currentlyWithType='staff';
+  task.currentlyWith=task.ownerId||'';
+  task.currentlyWithUserId=task.ownerId||null;
+  task.updatedAt=new Date().toISOString();
   if(task.ownerId)notify(task.ownerId,task.id,'client_changes_requested',`Client requested changes on: ${task.name||task.title}`);
   saveDB(DB);
   cpCloseTaskModal();
-  cpOpenTaskModal(taskId);
+  const msg=document.createElement('div');
+  msg.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a2940;color:#fff;font-size:13px;font-weight:600;padding:12px 24px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.18);z-index:99999;pointer-events:none;font-family:Lato,sans-serif;text-align:center;max-width:400px;line-height:1.5';
+  msg.textContent='Change requested. Your request has been sent to Etcher. We will review and respond shortly.';
+  document.body.appendChild(msg);
+  setTimeout(()=>msg.remove(),5000);
   _cpRefreshCurrentSection();
 }
 
