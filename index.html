@@ -1487,6 +1487,7 @@ function openConfirm(title,msg,okLabel,cb,danger=true){
 let currentWorkboard=null;
 let selectedWbColor='#0d1c33';
 let _wbDragId=null;
+let _wbDragStartedAt=0;
 // Blocks (Workspace) view state
 let wsCollapsed=new Set();
 let wsExpanded=new Set();
@@ -2771,7 +2772,7 @@ function renderSidebarWorkboards(){
     return`<div class="nav-item${isActive?' active':''}" draggable="true"
       ondragstart="_wbDragStart(event,'${wb.id}')"
       ondragend="_wbDragEnd(event)"
-      onclick="openWorkboard('${wb.id}')"
+      onclick="if(Date.now()-_wbDragStartedAt>400)openWorkboard('${wb.id}')"
       style="padding-left:${indent}px;gap:8px;cursor:grab">
       <span style="color:#3a5570;font-size:10px;flex-shrink:0;line-height:1;opacity:0.5">⠿</span>
       <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
@@ -2822,6 +2823,7 @@ function renderSidebarWorkboards(){
 }
 function _wbDragStart(e,wbId){
   _wbDragId=wbId;
+  _wbDragStartedAt=Date.now();
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',wbId);
   setTimeout(()=>e.target.style.opacity='0.45',0);
@@ -2901,7 +2903,9 @@ function toggleWbFolder(id){
 function moveWbToFolder(wbId,folderId){
   const wb=(DB.workboards||[]).find(w=>w.id===wbId);if(!wb)return;
   wb.folderId=folderId||null;
-  saveDB(DB);renderSidebarWorkboards();renderView('dashboard');
+  saveDB(DB);
+  renderSidebarWorkboards();
+  if(currentView==='dashboard')renderView('dashboard');
 }
 
 // ── WorkBoard CRUD ──
