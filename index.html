@@ -8078,8 +8078,11 @@ function wsSaveInlineTask(){
   const status=document.getElementById('ws-inline-status')?.value||'todo';
   const priority=document.getElementById('ws-inline-priority')?.value||'med';
   const ownerId=document.getElementById('ws-inline-owner')?.value||currentUser.id;
+  const cwith=document.getElementById('ws-inline-cwith')?.value||'internal';
+  const endDate=document.getElementById('ws-inline-duedate')?.value||'';
+  const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
   const _now=new Date().toISOString();
-  const _inlineTask={id:'t'+uid(),groupId:wsInlineAddGroupId||getWbDefaultGroup(),workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',name,status,priority,ownerId,currentlyWith:ownerId,percentComplete:0,startDate:new Date().toISOString().slice(0,10),endDate:'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+  const _inlineTask={id:'t'+uid(),groupId:wsInlineAddGroupId||getWbDefaultGroup(),workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',name,status,priority,ownerId,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
   DB.tasks.push(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
 }
@@ -8319,14 +8322,18 @@ function wsSaveInlineSubitem(){
   if(!parentId)return;
   const parent=DB.tasks.find(t=>t.id===parentId);
   if(!parent)return;
+  const status=document.getElementById('ws-inline-subtask-status')?.value||'todo';
+  const priority=document.getElementById('ws-inline-subtask-priority')?.value||'med';
   const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
+  const cwith=document.getElementById('ws-inline-subtask-cwith')?.value||'internal';
   const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
+  const pct=parseInt(document.getElementById('ws-inline-subtask-pct')?.value||'0',10)||0;
   const now=new Date().toISOString();
   DB.tasks.push({
-    id:'si_'+uid(),parentTaskId:parentId,name:text,status:'todo',priority:'med',
-    ownerId:ownerId||null,currentlyWith:null,currentlyWithUserId:null,
+    id:'si_'+uid(),parentTaskId:parentId,name:text,status,priority,
+    ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
     groupId:parent.groupId,startDate:null,endDate:endDate||null,
-    percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
+    percentComplete:pct,tags:[],dependencies:[],archived:false,hourBudget:null,
     order:DB.tasks.filter(t=>t.parentTaskId===parentId).length,
     createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
   });
@@ -8751,6 +8758,12 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
           <select id="ws-inline-owner" class="ws-inline-select">
             ${DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${s.name.split(' ')[0]}</option>`).join('')}
           </select>
+          <select id="ws-inline-cwith" class="ws-inline-select" title="Currently with">
+            <option value="internal">Internal</option>
+            <option value="client">Client</option>
+          </select>
+          <input id="ws-inline-duedate" type="date" class="ws-inline-select" style="height:28px;padding:2px 6px;cursor:pointer" title="Due date"/>
+          <input id="ws-inline-pct" type="number" min="0" max="100" placeholder="0%" class="ws-inline-select" style="width:54px;text-align:right;height:28px" title="% complete"/>
           <button onclick="wsSaveInlineTask()" class="btn btn-teal btn-sm" style="font-size:12px;padding:4px 14px">↵ Save</button>
           <button onclick="wsCancelInlineAdd()" class="btn btn-ghost btn-sm" style="font-size:12px;padding:4px 10px">Cancel</button>
         </div>
@@ -8897,12 +8910,17 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
           onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"/>
       </div>
     </td>
-    ${cols.status?`<td><span style="font-size:11px;color:#c4d0db;padding:0 8px">todo</span></td>`:''}
-    ${cols.priority?`<td><span style="font-size:11px;color:#c4d0db;padding:0 8px">med</span></td>`:''}
-    ${cols.owner?`<td style="padding:0 6px"><select id="ws-inline-subtask-owner" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;cursor:pointer"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
-    ${cols.cwith?`<td></td>`:''}
-    ${cols.duedate?`<td style="padding:0 6px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
-    ${cols.progress?`<td></td>`:''}${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}${cols.deps?`<td></td>`:''}
+    ${cols.status?`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:28px">
+        ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
+      </select></td>`:''}
+    ${cols.priority?`<td style="padding:0 4px"><select id="ws-inline-subtask-priority" class="ws-inline-select" style="height:28px">
+        <option value="low">▼ Low</option><option value="med" selected>● Med</option><option value="high">▲ High</option><option value="crit">🔴 Crit</option>
+      </select></td>`:''}
+    ${cols.owner?`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:28px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
+    ${cols.cwith?`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:28px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`:''}
+    ${cols.duedate?`<td style="padding:0 4px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
+    ${cols.progress?`<td style="padding:0 4px"><input id="ws-inline-subtask-pct" type="number" min="0" max="100" placeholder="0" style="width:48px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;text-align:right" title="% complete"/></td>`:''}
+    ${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}${cols.deps?`<td></td>`:''}
     ${custCols.map(()=>`<td></td>`).join('')}
     <td></td>
     <td style="padding:0 6px;white-space:nowrap">
