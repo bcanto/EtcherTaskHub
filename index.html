@@ -486,10 +486,20 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <!-- WorkBoards -->
       <div style="display:flex;align-items:center;padding:16px 20px 5px;justify-content:space-between">
         <span class="section-header" style="padding:0;margin:0">WorkBoards</span>
-        <button onclick="sidebarNewWb()" title="New WorkBoard"
-          style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
-          onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
-          onmouseout="this.style.background='rgba(255,255,255,0.07)';this.style.color='#5a7a96'">+</button>
+        <div style="position:relative">
+          <button id="wb-add-btn" onclick="toggleWbAddMenu()" title="Add WorkBoard or Folder"
+            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
+            onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
+            onmouseout="this.style.background='rgba(255,255,255,0.07)';this.style.color='#5a7a96'">+</button>
+          <div id="wb-add-menu" class="hidden" style="position:absolute;right:0;top:26px;background:#1a2940;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px;min-width:160px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,0.35)">
+            <button onclick="closeWbAddMenu();sidebarNewWb()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
+              <span style="font-size:14px;line-height:1">+</span> Add WorkBoard
+            </button>
+            <button onclick="closeWbAddMenu();createWbFolder()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
+              <span style="font-size:13px;line-height:1">▦</span> Add Folder
+            </button>
+          </div>
+        </div>
       </div>
       <div id="sidebar-wb-list"></div>
 
@@ -906,6 +916,7 @@ function _migrateDB(data){
   if(!data.errorLog)           data.errorLog            = [];
   if(!data.emailIntake)        data.emailIntake         = [];
   if(!data.clientNotes)        data.clientNotes         = [];
+  if(!data.wbFolders)          data.wbFolders           = [];
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
@@ -978,6 +989,7 @@ function _migrateDB(data){
     if(!b.visibility)           b.visibility='all_internal';
     if(!b.ownerId)              b.ownerId='u1';
     if(b.excludeFromReports===undefined) b.excludeFromReports=false;
+    if(b.folderId===undefined)           b.folderId=null;
     if(!b.createdAt)            b.createdAt=new Date().toISOString();
     if(!b.updatedAt)            b.updatedAt=b.createdAt;
   });
@@ -1474,6 +1486,7 @@ function openConfirm(title,msg,okLabel,cb,danger=true){
 // WorkBoard state
 let currentWorkboard=null;
 let selectedWbColor='#0d1c33';
+let _wbDragId=null;
 // Blocks (Workspace) view state
 let wsCollapsed=new Set();
 let wsExpanded=new Set();
@@ -2748,26 +2761,147 @@ function renderSidebarWorkboards(){
   const container=document.getElementById('sidebar-wb-list');
   if(!container)return;
   const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
-  if(wbs.length===0){
-    container.innerHTML=`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
-    return;
-  }
-  container.innerHTML=wbs.map(wb=>{
+  const folders=(DB.wbFolders||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const inBoardView=new Set(['workspace','board','list','gantt']).has(currentView);
+  const lockSvg=`<svg width="10" height="10" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;opacity:0.4"><rect x="2" y="5" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+
+  const wbRow=(wb,indent)=>{
     const count=DB.tasks.filter(t=>(t.workboardId||t.boardId)===wb.id).length;
-    const inBoardView=new Set(['workspace','board','list','gantt']).has(currentView);
     const isActive=currentWorkboard?.id===wb.id&&inBoardView;
-    const isPrivate=wb.visibility==='private';
-    return`<div class="nav-item${isActive?' active':''}" onclick="openWorkboard('${wb.id}')" style="padding-left:14px;gap:8px">
+    return`<div class="nav-item${isActive?' active':''}" draggable="true"
+      ondragstart="_wbDragStart(event,'${wb.id}')"
+      ondragend="_wbDragEnd(event)"
+      onclick="openWorkboard('${wb.id}')"
+      style="padding-left:${indent}px;gap:8px;cursor:grab">
+      <span style="color:#3a5570;font-size:10px;flex-shrink:0;line-height:1;opacity:0.5">⠿</span>
       <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${escHtml(wb.name)}</span>
-      ${isPrivate?`<svg width="10" height="10" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;opacity:0.4" title="Private"><rect x="2" y="5" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`:''}
+      ${wb.visibility==='private'?lockSvg:''}
       ${count?`<span style="font-size:10px;color:${isActive?'rgba(151,188,189,0.7)':'#243d56'};flex-shrink:0">${count}</span>`:''}
     </div>`;
-  }).join('');
+  };
+
+  const dropZone=(targetFolderId,content)=>`<div
+    data-drop-folder="${targetFolderId||''}"
+    ondragover="_wbDragOver(event,this)"
+    ondragleave="_wbDragLeave(event,this)"
+    ondrop="_wbDrop(event,this,'${targetFolderId||''}')"
+    style="border-radius:6px;transition:background 0.12s,outline 0.12s;min-height:4px">${content}</div>`;
+
+  let html='';
+
+  // Unfiled drop zone
+  const unfiled=wbs.filter(wb=>!wb.folderId);
+  html+=dropZone('', unfiled.map(wb=>wbRow(wb,14)).join(''));
+
+  // Folders
+  folders.forEach(folder=>{
+    const boards=wbs.filter(wb=>wb.folderId===folder.id);
+    const inner=folder.collapsed?'':dropZone(folder.id,
+      boards.length
+        ? boards.map(wb=>wbRow(wb,26)).join('')
+        : `<div style="padding:5px 10px 6px 28px;font-size:11px;color:#3a5570;font-style:italic;margin:2px 6px;border:1px dashed rgba(90,138,140,0.3);border-radius:5px">Drop a board here</div>`
+    );
+    html+=`<div>
+      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;cursor:pointer;gap:5px;user-select:none;border-radius:6px;transition:background 0.1s"
+        onclick="toggleWbFolder('${folder.id}')"
+        onmouseover="this.querySelector('._fops').style.opacity='1'"
+        onmouseout="this.querySelector('._fops').style.opacity='0'">
+        <span style="font-size:9px;color:#5a8a8c;display:inline-block">${folder.collapsed?'▶':'▾'}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">${escHtml(folder.name)}</span>
+        <span class="_fops" onclick="event.stopPropagation()" style="opacity:0;transition:opacity 0.12s;display:flex;gap:1px;flex-shrink:0">
+          <button onclick="renameWbFolder('${folder.id}')" title="Rename" style="background:none;border:none;cursor:pointer;color:#5a8a8c;font-size:12px;padding:1px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#97bcbd'" onmouseout="this.style.color='#5a8a8c'">✎</button>
+          <button onclick="deleteWbFolder('${folder.id}')" title="Delete" style="background:none;border:none;cursor:pointer;color:#5a8a8c;font-size:12px;padding:1px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#e87b7b'" onmouseout="this.style.color='#5a8a8c'">✕</button>
+        </span>
+      </div>
+      ${inner}
+    </div>`;
+  });
+
+  container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
+}
+function _wbDragStart(e,wbId){
+  _wbDragId=wbId;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',wbId);
+  setTimeout(()=>e.target.style.opacity='0.45',0);
+}
+function _wbDragEnd(e){
+  e.target.style.opacity='1';
+  // clear any leftover highlights
+  document.querySelectorAll('[data-drop-folder]').forEach(el=>{el.style.background='';el.style.outline='';});
+}
+function _wbDragOver(e,el){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  el.style.background='rgba(151,188,189,0.09)';
+  el.style.outline='1px dashed rgba(151,188,189,0.35)';
+}
+function _wbDragLeave(e,el){
+  // only clear if leaving the zone itself, not a child
+  if(!el.contains(e.relatedTarget)){
+    el.style.background='';
+    el.style.outline='';
+  }
+}
+function _wbDrop(e,el,folderId){
+  e.preventDefault();
+  el.style.background='';
+  el.style.outline='';
+  if(!_wbDragId)return;
+  moveWbToFolder(_wbDragId, folderId||null);
+  _wbDragId=null;
+}
+function toggleWbAddMenu(){
+  const m=document.getElementById('wb-add-menu');
+  if(!m)return;
+  const isHidden=m.classList.toggle('hidden');
+  if(!isHidden){
+    const close=(e)=>{
+      if(!document.getElementById('wb-add-btn')?.contains(e.target)){
+        m.classList.add('hidden');
+        document.removeEventListener('click',close,true);
+      }
+    };
+    setTimeout(()=>document.addEventListener('click',close,true),10);
+  }
+}
+function closeWbAddMenu(){
+  document.getElementById('wb-add-menu')?.classList.add('hidden');
 }
 function sidebarNewWb(){
   navigate('dashboard');
   setTimeout(openCreateWbForm,40);
+}
+function createWbFolder(){
+  showPrompt('New Folder','',name=>{
+    name=(name||'').trim();
+    if(!name)return;
+    if(!DB.wbFolders)DB.wbFolders=[];
+    DB.wbFolders.push({id:'wbf_'+uid(),name,collapsed:false,order:DB.wbFolders.length});
+    saveDB(DB);renderSidebarWorkboards();
+  });
+}
+function renameWbFolder(id){
+  const f=(DB.wbFolders||[]).find(x=>x.id===id);if(!f)return;
+  showPrompt('Rename Folder',f.name,val=>{if((val||'').trim()){f.name=val.trim();saveDB(DB);renderSidebarWorkboards();}});
+}
+function deleteWbFolder(id){
+  openConfirm('Delete Folder','Boards inside will be moved out of the folder. This cannot be undone.','Delete',()=>{
+    (DB.workboards||[]).forEach(wb=>{if(wb.folderId===id)wb.folderId=null;});
+    DB.wbFolders=(DB.wbFolders||[]).filter(f=>f.id!==id);
+    saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('dashboard');
+  },true);
+}
+function toggleWbFolder(id){
+  const f=(DB.wbFolders||[]).find(x=>x.id===id);if(!f)return;
+  f.collapsed=!f.collapsed;
+  saveDB(DB);renderSidebarWorkboards();
+}
+function moveWbToFolder(wbId,folderId){
+  const wb=(DB.workboards||[]).find(w=>w.id===wbId);if(!wb)return;
+  wb.folderId=folderId||null;
+  saveDB(DB);renderSidebarWorkboards();renderView('dashboard');
 }
 
 // ── WorkBoard CRUD ──
@@ -3806,6 +3940,13 @@ function renderDashboard(){
               ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
             </select>
           </label>
+          ${(DB.wbFolders||[]).length?`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568">
+            📁 Folder:
+            <select onchange="event.stopPropagation();moveWbToFolder('${wb.id}',this.value)" onclick="event.stopPropagation()" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:2px 5px;background:#fff;color:#1a2940;cursor:pointer">
+              <option value="">— None —</option>
+              ${(DB.wbFolders||[]).map(f=>`<option value="${f.id}"${wb.folderId===f.id?' selected':''}>${escHtml(f.name)}</option>`).join('')}
+            </select>
+          </label>`:''}
           <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px">⧉ Duplicate</button>
           <button onclick="event.stopPropagation();archiveWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#92400e">◫ Archive</button>
           <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid #e2eaf2;background:#fff">
