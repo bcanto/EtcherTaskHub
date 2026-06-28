@@ -3231,11 +3231,12 @@ function renderDashStatPanel(){
   if(dashStatOpen==='workboards'){
     items=allWbs;type='board';title='All WorkBoards';
   } else if(dashStatOpen==='total'){
-    items=allTasks.filter(t=>!t.archived);title='All Tasks';
+    items=allTasks.filter(t=>!t.archived&&t.status!=='done');title='Active Tasks';
   } else if(dashStatOpen==='in-progress'){
     items=allTasks.filter(t=>t.status==='in-progress'&&!t.archived);title='In Progress';
   } else if(dashStatOpen==='done'){
-    items=allTasks.filter(t=>t.status==='done'&&!t.archived);title='Completed';
+    const _approvedIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));
+    items=allTasks.filter(t=>t.status==='done'&&!t.archived&&!_approvedIds.has(t.id));title='Done — Awaiting Timesheet';
   } else if(dashStatOpen==='overdue'){
     items=allTasks.filter(t=>t.endDate&&t.status!=='done'&&!t.archived&&new Date(t.endDate)<today);title='Overdue';
   } else if(dashStatOpen==='hours'){
@@ -3666,20 +3667,20 @@ function renderDashboard(){
         <div class="dash-stat-arrow">▾</div>
       </div>
       <div class="stat-card dash-stat-btn" data-stat="total" onclick="toggleDashStat('total')" style="cursor:pointer;border-top-color:#8da2b2">
-        <div class="stat-val">${allTasks.length}</div>
+        <div class="stat-val">${allTasks.filter(t=>!t.archived&&t.status!=='done').length}</div>
         <div class="stat-label">Total Tasks</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
       <div class="stat-card dash-stat-btn" data-stat="in-progress" onclick="toggleDashStat('in-progress')" style="cursor:pointer;border-top-color:#1d4ed8">
-        <div class="stat-val" style="color:#1d4ed8">${allTasks.filter(t=>t.status==='in-progress').length}</div>
+        <div class="stat-val" style="color:#1d4ed8">${allTasks.filter(t=>t.status==='in-progress'&&!t.archived).length}</div>
         <div class="stat-label" style="color:#1d4ed8">In Progress</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
       <div class="stat-card dash-stat-btn" data-stat="done" onclick="toggleDashStat('done')" style="cursor:pointer;border-top-color:#166534">
-        <div class="stat-val" style="color:#166534">${allTasks.filter(t=>t.status==='done').length}</div>
-        <div class="stat-label" style="color:#166534">Done</div>
+        <div class="stat-val" style="color:#166534">${(()=>{const approvedTaskIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));return allTasks.filter(t=>t.status==='done'&&!t.archived&&!approvedTaskIds.has(t.id)).length;})()}</div>
+        <div class="stat-label" style="color:#166534">Done — Needs TS</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
@@ -8512,7 +8513,7 @@ function renderWorkspace(){
   if(wsGroupBy==='group'){
     wbGroups.forEach(g=>{
       const client=DB.clients.find(c=>c.id===g.clientId);
-      sections.push({id:g.id,label:g.name,sub:client?.name||'',color:g.color||client?.color||'#8da2b2',defGrp:g.id,tasks:tasks.filter(t=>t.groupId===g.id)});
+      sections.push({id:g.id,label:g.name,sub:client?.name||'',clientId:g.clientId||'',color:g.color||client?.color||'#8da2b2',defGrp:g.id,tasks:tasks.filter(t=>t.groupId===g.id)});
     });
   } else if(wsGroupBy==='client'){
     DB.clients.forEach(c=>{
@@ -8705,7 +8706,13 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
         <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0">${collapsed?'▶':'▼'}</span>
         <div style="width:9px;height:9px;border-radius:2px;background:${sec.color};flex-shrink:0"></div>
         <span id="ws-grp-name-${sec.id}" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940">${escHtml(sec.label)}</span>
-        ${sec.sub?`<span style="font-size:11px;color:#8da2b2">· ${sec.sub}</span>`:''}
+        ${wsGroupBy==='group'
+          ?`<select onclick="event.stopPropagation()" onchange="event.stopPropagation();wsSetGroupClient('${sec.id}',this.value)" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:1px 4px;background:#fff;color:#6b8399;cursor:pointer;max-width:160px">
+              <option value="">— No client —</option>
+              ${DB.clients.map(c=>`<option value="${c.id}"${sec.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('')}
+            </select>`
+          :(sec.sub?`<span style="font-size:11px;color:#8da2b2">· ${sec.sub}</span>`:'')}
+
         ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
         <span style="font-size:11px;color:#8da2b2;background:#f0f4f8;border-radius:10px;padding:1px 8px;margin-left:4px">${sec.tasks.length}</span>
         <div style="flex:1;max-width:64px;margin-left:8px">
@@ -9421,6 +9428,13 @@ function wsSetGroupColor(groupId,color){
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   g.color=color;
+  saveDB(DB);
+  renderView('workspace');
+}
+function wsSetGroupClient(groupId,clientId){
+  const g=DB.groups.find(x=>x.id===groupId);
+  if(!g)return;
+  g.clientId=clientId||'';
   saveDB(DB);
   renderView('workspace');
 }
