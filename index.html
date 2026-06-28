@@ -8546,6 +8546,7 @@ function wsSelectAll(checked){
   if(checked)getFilteredTasks().forEach(t=>wsSelected.add(t.id));
   else wsSelected.clear();
   renderView('workspace');
+  updateBulkBar();
 }
 function updateBulkBar(){
   const bar=document.getElementById('ws-bulk-bar');
@@ -8555,13 +8556,13 @@ function updateBulkBar(){
   bar.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0d1c33;color:#fff;border-radius:8px;margin-bottom:10px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(13,28,51,0.2)">
     <span style="font-size:13px;font-weight:700;color:#97bcbd">${count} task${count!==1?'s':''} selected</span>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1)"></div>
-    <select onchange="wsBulkSetStatus(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
-      <option value="">Set Status…</option>
-      ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
+    <select onchange="wsBulkSetStatus(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
+      <option value="" style="background:#1a2940;color:#fff">Set Status…</option>
+      ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}" style="background:#1a2940;color:#fff">${v.label}</option>`).join('')}
     </select>
-    <select onchange="wsBulkAssignTo(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
-      <option value="">Assign To…</option>
-      ${DB.staff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+    <select onchange="wsBulkAssignTo(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
+      <option value="" style="background:#1a2940;color:#fff">Assign To…</option>
+      ${DB.staff.map(s=>`<option value="${s.id}" style="background:#1a2940;color:#fff">${escHtml(s.name)}</option>`).join('')}
     </select>
     <button onclick="wsBulkArchiveTasks()" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.8);font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Archive</button>
     <button onclick="wsBulkDeleteTasks()" style="padding:5px 12px;border-radius:6px;border:none;background:#fef2f2;color:#991b1b;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Delete</button>
