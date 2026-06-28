@@ -524,6 +524,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="8.5" x2="9" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="11" x2="7.5" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Audit Trail
       </div>
+      <div class="nav-item" data-view="archive" onclick="navigate('archive')" id="nav-archive-item">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Archive / Bin
+      </div>
       <div class="nav-item" data-view="notifications" onclick="navigate('notifications')">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5A4.5 4.5 0 0 0 3.5 7v3L2 12.5h12L12.5 10V7A4.5 4.5 0 0 0 8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Notifications
@@ -1877,7 +1881,7 @@ function applyRolePermissions(){
 
   // Admin-only nav: staff management, capacity, reports, audit trail, clients
   ['nav-staff-item','nav-admin-section','nav-capacity-item',
-   'nav-reports-item','nav-audit-item','nav-clients-item','nav-clients-section'].forEach(id=>{
+   'nav-reports-item','nav-audit-item','nav-archive-item','nav-clients-item','nav-clients-section'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display=isAdmin?'':'none';
   });
@@ -1945,6 +1949,7 @@ function renderView(v){
       case 'time':      vc.innerHTML=renderTime();break;
       case 'reports':   vc.innerHTML=renderReports();break;
       case 'audit':     vc.innerHTML=renderAudit();break;
+      case 'archive':   vc.innerHTML=renderArchiveBin();break;
       case 'notes':     renderNotes();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
       default: vc.innerHTML=_render404Html(v);break;
@@ -3660,22 +3665,7 @@ function renderDashboard(){
     }).join('')}
   </div>
 
-  ${archivedWbs.length?`
-  <div style="margin-top:24px">
-    <h3 style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#8da2b2;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px">Archived WorkBoards</h3>
-    <div class="wb-card-grid">
-      ${archivedWbs.map(wb=>`<div class="wb-card" style="border-top-color:${wb.color};opacity:0.7">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#6b8399">${escHtml(wb.name)}</h3>
-          <span style="font-size:10px;color:#b0bec5;background:#f0f4f8;padding:2px 8px;border-radius:10px">Archived</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="restoreWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;flex:1;justify-content:center">Restore</button>
-          <button onclick="deleteWorkboard('${wb.id}')" class="btn btn-danger btn-sm" style="font-size:11px">Delete</button>
-        </div>
-      </div>`).join('')}
-    </div>
-  </div>`:''}
+  ${archivedWbs.length?`<div style="margin-top:8px;text-align:right"><a onclick="navigate('archive')" style="font-size:12px;color:#97bcbd;cursor:pointer;text-decoration:underline">${archivedWbs.length} archived workboard${archivedWbs.length!==1?'s':''} — view in Archive/Bin →</a></div>`:''}
 
   <!-- Global stats -->
   <div style="margin-top:28px;border-top:1px solid #e2eaf2;padding-top:22px">
@@ -7136,6 +7126,164 @@ function renderAudit(){
         </table></div>`}
     </div>
   </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ARCHIVE / BIN
+// ═══════════════════════════════════════════════════════════
+function renderArchiveBin(){
+  if(currentUser.role!=='admin')return _acDeniedHtml();
+  const archivedWbs=(DB.workboards||[]).filter(wb=>wb.archived);
+  const archivedTasks=DB.tasks.filter(t=>t.archived&&!t.parentTaskId);
+  const archivedSubitems=DB.tasks.filter(t=>t.archived&&t.parentTaskId);
+
+  const wbRows=archivedWbs.map(wb=>{
+    const taskCount=DB.tasks.filter(t=>(t.workboardId||t.boardId)===wb.id).length;
+    const archivedAt=wb.updatedAt?new Date(wb.updatedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
+    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
+      <td style="padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:9px;height:9px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
+          <span style="font-size:13px;font-weight:600;color:#1a2940">${escHtml(wb.name)}</span>
+        </div>
+      </td>
+      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${taskCount} task${taskCount!==1?'s':''}</td>
+      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${archivedAt}</td>
+      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+        <button onclick="restoreWorkboard('${wb.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px;margin-right:4px">↩ Restore</button>
+        <button onclick="permanentDeleteWorkboard('${wb.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete Forever</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const taskRows=archivedTasks.map(t=>{
+    const wb=DB.workboards.find(w=>w.id===(t.workboardId||t.boardId));
+    const owner=getStaff(t.ownerId);
+    const archivedAt=t.updatedAt?new Date(t.updatedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
+    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
+      <td style="padding:10px 12px">
+        <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">${escHtml(t.name||t.title||'Untitled')}</div>
+        ${wb?`<div style="font-size:11px;color:#97bcbd;margin-top:2px">${escHtml(wb.name)}</div>`:''}
+      </td>
+      <td style="padding:10px 12px">
+        ${owner?`<div style="display:flex;align-items:center;gap:5px">${avatarHtml(owner,18)}<span style="font-size:12px;color:#6b8399">${escHtml(owner.name)}</span></div>`:'<span style="font-size:12px;color:#c4d0db">Unassigned</span>'}
+      </td>
+      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${archivedAt}</td>
+      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+        <button onclick="permanentRestoreTask('${t.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px;margin-right:4px">↩ Restore</button>
+        <button onclick="permanentDeleteTask('${t.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete Forever</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tblStyle=`width:100%;border-collapse:collapse;font-family:'Lato',sans-serif`;
+  const thStyle=`padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1.5px solid #e8edf4`;
+
+  return`
+  <div style="max-width:900px;margin:0 auto">
+    <div style="margin-bottom:28px">
+      <h2 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:700;color:#0d1c33;margin-bottom:4px">Archive &amp; Bin</h2>
+      <p style="font-size:13px;color:#8da2b2">Archived items can be restored. Deleted forever items cannot be recovered.</p>
+    </div>
+
+    <!-- Archived WorkBoards -->
+    <div style="margin-bottom:32px">
+      <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="#0d1c33" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="#0d1c33" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Archived WorkBoards <span style="font-size:12px;font-weight:400;color:#8da2b2">(${archivedWbs.length})</span>
+      </h3>
+      ${archivedWbs.length===0
+        ?`<div style="background:#f8fbff;border-radius:8px;padding:24px;text-align:center;color:#b0bec5;font-size:13px">No archived workboards</div>`
+        :`<div style="border:1.5px solid #e8edf4;border-radius:10px;overflow:hidden;background:#fff">
+          <table style="${tblStyle}">
+            <thead><tr style="background:#f8fbff">
+              <th style="${thStyle}">WorkBoard</th>
+              <th style="${thStyle}">Tasks</th>
+              <th style="${thStyle}">Archived</th>
+              <th style="${thStyle}"></th>
+            </tr></thead>
+            <tbody>${wbRows}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;text-align:right">
+          <button onclick="permanentDeleteAllArchived()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Archived WorkBoards Forever</button>
+        </div>`}
+    </div>
+
+    <!-- Archived Tasks -->
+    <div>
+      <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="#0d1c33" stroke-width="1.4"/><line x1="4" y1="6" x2="12" y2="6" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="9" x2="9" y2="9" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Archived Tasks <span style="font-size:12px;font-weight:400;color:#8da2b2">(${archivedTasks.length}${archivedSubitems.length?` + ${archivedSubitems.length} subitems`:''})</span>
+      </h3>
+      ${archivedTasks.length===0
+        ?`<div style="background:#f8fbff;border-radius:8px;padding:24px;text-align:center;color:#b0bec5;font-size:13px">No archived tasks</div>`
+        :`<div style="border:1.5px solid #e8edf4;border-radius:10px;overflow:hidden;background:#fff">
+          <table style="${tblStyle}">
+            <thead><tr style="background:#f8fbff">
+              <th style="${thStyle}">Task</th>
+              <th style="${thStyle}">Owner</th>
+              <th style="${thStyle}">Archived</th>
+              <th style="${thStyle}"></th>
+            </tr></thead>
+            <tbody>${taskRows}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;text-align:right">
+          <button onclick="permanentDeleteAllArchivedTasks()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Archived Tasks Forever</button>
+        </div>`}
+    </div>
+  </div>`;
+}
+
+function permanentDeleteWorkboard(id){
+  openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks. This CANNOT be undone.','Delete Forever',()=>{
+    DB.boards=DB.boards.filter(w=>w.id!==id);
+    DB.workboards=DB.boards;
+    DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);
+    DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);
+    DB.boardViews=(DB.boardViews||[]).filter(v=>v.boardId!==id);
+    saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('archive');
+  });
+}
+function permanentDeleteAllArchived(){
+  const ids=new Set((DB.workboards||[]).filter(wb=>wb.archived).map(wb=>wb.id));
+  if(!ids.size)return;
+  openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks? This CANNOT be undone.`,'Delete All Forever',()=>{
+    DB.boards=DB.boards.filter(b=>!ids.has(b.id));
+    DB.workboards=DB.boards;
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.boardId||t.workboardId));
+    DB.groups=DB.groups.filter(g=>!ids.has(g.boardId||g.workboardId));
+    DB.boardViews=(DB.boardViews||[]).filter(v=>!ids.has(v.boardId));
+    saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('archive');
+  });
+}
+function permanentRestoreTask(id){
+  const t=DB.tasks.find(x=>x.id===id);
+  if(t){t.archived=false;t.updatedAt=new Date().toISOString();saveDB(DB);}
+}
+function permanentDeleteTask(id){
+  openConfirm('Delete Task Forever','Permanently delete this task? This CANNOT be undone.','Delete Forever',()=>{
+    const ids=new Set();
+    function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
+    collect(id);
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
+    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    saveDB(DB);closeConfirm();renderView('archive');
+  });
+}
+function permanentDeleteAllArchivedTasks(){
+  const ids=new Set(DB.tasks.filter(t=>t.archived).map(t=>t.id));
+  if(!ids.size)return;
+  openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`,'Delete All Forever',()=>{
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));
+    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
+    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    saveDB(DB);closeConfirm();renderView('archive');
+  });
 }
 
 function renderNotes(){
