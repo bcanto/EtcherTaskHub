@@ -1161,9 +1161,26 @@ function taskTitle(t){return t.name||t.title||'Untitled';}
 
 let _saveDebounceTimer=null;
 let _supabaseSyncEnabled=false; // only true after post-login app_state load confirms data
+let _realtimeChannel=null;
 function _syncToSupabase(data){
   if(!window._supabase||!_supabaseSyncEnabled)return;
   window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{if(error)console.warn('[sync]',error.message);});
+}
+function _startRealtimeSync(){
+  if(!window._supabase||_realtimeChannel)return;
+  _realtimeChannel=window._supabase.channel('app_state_changes')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},payload=>{
+      // Another user saved — merge their data into ours without overwriting pending local writes
+      if(_saveDebounceTimer)return; // we have unsaved local changes; they will win on next flush
+      const fresh=payload.new?.data;
+      if(!fresh||(fresh.users?.length===0&&fresh.tasks?.length===0))return;
+      _migrateDB(fresh);_applyCompatAliases(fresh);
+      for(const k in DB)delete DB[k];Object.assign(DB,fresh);
+      localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+      if(currentView)renderView(currentView);
+      renderSidebarWorkboards();
+    })
+    .subscribe();
 }
 function saveDB(data){
   _vcClear(); // invalidate render cache whenever data changes
@@ -1284,6 +1301,7 @@ async function _supabaseRestoreSession(session){
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
+      _startRealtimeSync();
       launchApp();
     }
     return true;
@@ -2044,7 +2062,7 @@ function getEffectiveTaskPct(taskId){
 function canViewBoard(user,board){
   if(!user||!board)return false;
   if(user.role==='client')return false;
-  if(user.role==='admin')return true;
+  if(user.role==='admin'||user.role==='pm')return true;
   if(board.visibility==='all_internal')return true;
   if(board.ownerId===user.id)return true;
   if((DB.boardShares||[]).some(s=>s.boardId===board.id&&s.userId===user.id))return true;
