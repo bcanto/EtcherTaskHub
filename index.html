@@ -930,13 +930,6 @@ function _migrateDB(data){
     data.boardViews =(data.boardViews||[]).filter(v=>v.boardId!=='b4');
   }
 
-  // Enforce demo passwords — covers: missing field, legacy value, any old value on known demo accounts
-  const _legacyPw=new Set(['admin123','staff123','client123','']);
-  const _demoUsers={'admin@etchersolutions.com':1,'ops@etchersolutions.com':1,'pm@etchersolutions.com':1,'admin.officer@etchersolutions.com':1,'hseq@etchersolutions.com':1};
-  (data.users||[]).forEach(u=>{
-    if(u.email&&_demoUsers[u.email.toLowerCase()]&&(!u.password||_legacyPw.has(u.password)))
-      u.password='TaskHub123';
-  });
   // Seed defaults for client portal — only applied when the field is genuinely missing,
   // so that admin-set credentials are never silently overwritten on page load.
   const _clientCreds={'c1':{e:'client@generalcranes.com.au',p:'TaskHub123'},'c2':{e:'client@daltech.com.au',p:'TaskHub123'},'c3':{e:'client@retained.com.au',p:'TaskHub123'}};
@@ -1186,14 +1179,21 @@ function _startRealtimeSync(){
     })
     .subscribe();
 }
+function _stripPasswords(data){
+  // Never persist plaintext passwords to localStorage or Supabase
+  const d=JSON.parse(JSON.stringify(data));
+  (d.users||[]).forEach(u=>{delete u.password;});
+  (d.clients||[]).forEach(c=>{delete c.loginPassword;});
+  return d;
+}
 function saveDB(data){
   _vcClear(); // invalidate render cache whenever data changes
   clearTimeout(_saveDebounceTimer);
-  _saveDebounceTimer=setTimeout(()=>{localStorage.setItem('etcher_taskhub_v4',JSON.stringify(data));_syncToSupabase(data);},300);
+  _saveDebounceTimer=setTimeout(()=>{const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));_syncToSupabase(DB);}
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);const safe=_stripPasswords(DB);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);}
   let hasUnsaved=false;
   document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
     try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
@@ -3863,7 +3863,7 @@ function renderClientDashboard(){
       ${awaiting.length===0?'<p style="color:#8da2b2;font-size:13px">No items awaiting your action.</p>':
       awaiting.map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f4f8">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:#1a2940">${t.name}</div>
+          <div style="font-size:13px;font-weight:600;color:#1a2940">${escHtml(t.name)}</div>
           <div style="font-size:11px;color:#8da2b2">Due ${formatDate(t.endDate)}</div>
         </div>
         <span class="badge badge-todo" style="background:#fee2e2;color:#991b1b">Action Needed</span>
@@ -3874,7 +3874,7 @@ function renderClientDashboard(){
       ${upcoming.length===0?'<p style="color:#8da2b2;font-size:13px">All tasks complete!</p>':
       upcoming.map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f4f8">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:#1a2940">${t.name}</div>
+          <div style="font-size:13px;font-weight:600;color:#1a2940">${escHtml(t.name)}</div>
           <div style="font-size:11px;color:#8da2b2">Due ${formatDate(t.endDate)}</div>
         </div>
         ${statusBadge(t.status)}
@@ -3904,7 +3904,7 @@ function renderClientGantt(){
   let rows=tasks.map(t=>{
     const s=off(t.startDate);const e=off(t.endDate);const w=Math.max((e-s+1)*DW,DW);
     return`<div class="gantt-row">
-      <div class="gantt-label">${t.name}</div>
+      <div class="gantt-label">${escHtml(t.name)}</div>
       <div style="flex:1;position:relative;height:28px;width:${total*DW}px">
         <div style="position:absolute;height:18px;border-radius:4px;top:5px;left:${s*DW}px;width:${w}px;background:${COLORS[t.status]||'#8da2b2'};opacity:0.85;display:flex;align-items:center;padding:0 5px;font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden">
           ${formatDate(t.startDate)} → ${formatDate(t.endDate)}
@@ -3960,8 +3960,8 @@ function renderBoard(){
           style="border-left-color:${client?client.color:'#e2eaf2'}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px">
             <div style="flex:1;min-width:0">
-              ${client?`<div style="font-size:10px;color:${client.color};font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${client.name}</div>`:''}
-              <div style="font-size:13px;font-weight:600;color:#1a2940;line-height:1.3">${t.name}</div>
+              ${client?`<div style="font-size:10px;color:${client.color};font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${escHtml(client.name)}</div>`:''}
+              <div style="font-size:13px;font-weight:600;color:#1a2940;line-height:1.3">${escHtml(t.name)}</div>
             </div>
             ${prioFlag(t.priority)}
           </div>
@@ -4056,8 +4056,8 @@ function renderListView(tasks){
         const isOverdue=t.endDate&&t.status!=='done'&&new Date(t.endDate)<new Date();
         const cw=t.currentlyWith==='client'?'Client':t.currentlyWith?getStaff(t.currentlyWith).name.split(' ')[0]:'—';
         return `<tr onclick="openTaskModal('${t.id}')" style="cursor:pointer">
-          <td><div style="font-weight:600;color:#1a2940;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'}">☑ ${r.done}/${r.total}</div>`:''})()}</td>
-          <td>${client?`<div style="display:flex;align-items:center;gap:6px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:12px">${client.name}</span></div>`:'—'}</td>
+          <td><div style="font-weight:600;color:#1a2940;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.name)}</div>${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'}">☑ ${r.done}/${r.total}</div>`:''})()}</td>
+          <td>${client?`<div style="display:flex;align-items:center;gap:6px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:12px">${escHtml(client.name)}</span></div>`:'—'}</td>
           <td>${statusBadge(t.status)}</td>
           <td>${prioBadge(t.priority)}</td>
           <td><div style="display:flex;align-items:center;gap:5px">${avatarHtml(owner,22)}<span style="font-size:12px">${owner.name.split(' ')[0]}</span></div></td>
@@ -7765,7 +7765,7 @@ function openTaskModal(id, defaultGroupId){
 
   const groupOptions=getWbGroups().map(g=>{
     const c=DB.clients.find(cl=>cl.id===g.clientId);
-    return`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${c?c.name+' — ':''} ${g.name}</option>`;
+    return`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${c?escHtml(c.name)+' — ':''} ${escHtml(g.name)}</option>`;
   }).join('');
 
   const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+DB.staff.map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${s.name}</option>`).join('');
@@ -7781,8 +7781,8 @@ function openTaskModal(id, defaultGroupId){
     <div style="display:grid;gap:16px">
       ${canEdit?`<div>
         <label class="form-label">Task Name</label>
-        <input id="tm-name" class="form-input" value="${t.name}" placeholder="What needs to be done?" style="font-size:15px;font-weight:600"/>
-      </div>`:`<h3 style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">${t.name}</h3>`}
+        <input id="tm-name" class="form-input" value="${escHtml(t.name)}" placeholder="What needs to be done?" style="font-size:15px;font-weight:600"/>
+      </div>`:`<h3 style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">${escHtml(t.name)}</h3>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         ${canEdit?`<div><label class="form-label">Group / Deliverable</label><select id="tm-group" class="form-input">${groupOptions}</select></div>`:''}
         <div><label class="form-label">Status</label><select id="tm-status" class="form-input" ${canEdit?'':' disabled'}>${statusOptions}</select></div>
@@ -7823,7 +7823,7 @@ function openTaskModal(id, defaultGroupId){
       </div>`}
       <!-- AC: description hidden from clients (internal content) -->
       ${!isClientView?(canEdit?`<div><label class="form-label">Description</label><textarea id="tm-desc" class="form-input form-textarea" style="min-height:70px">${t.description||''}</textarea></div>`
-      :t.description?`<div style="background:#f8fbff;border-radius:8px;padding:12px;font-size:13px;color:#4a5568;line-height:1.6">${t.description}</div>`:''):''}
+      :t.description?`<div style="background:#f8fbff;border-radius:8px;padding:12px;font-size:13px;color:#4a5568;line-height:1.6">${escHtml(t.description)}</div>`:''):''}
 
       <!-- AC: subitems hidden from clients entirely -->
       ${!isClientView&&id?`<div>
@@ -8744,8 +8744,8 @@ function wsDeleteGroup(groupId){
   if(!g)return;
   const taskCount=DB.tasks.filter(t=>t.groupId===groupId).length;
   const msg=taskCount
-    ?`Delete group "${g.name}" and its ${taskCount} task${taskCount!==1?'s':''}? This cannot be undone.`
-    :`Delete group "${g.name}"? This cannot be undone.`;
+    ?`Delete group "${escHtml(g.name)}" and its ${taskCount} task${taskCount!==1?'s':''}? This cannot be undone.`
+    :`Delete group "${escHtml(g.name)}"? This cannot be undone.`;
   openConfirm('Delete Group',msg,'Delete',()=>{
     DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);
     DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));
@@ -11129,9 +11129,12 @@ function cpUploadToTask(taskId,input){
   if(currentUser?.role!=='client')return;
   const files=Array.from(input.files||[]);
   if(!files.length)return;
-  const oversized=files.filter(f=>f.size>1048576);
+  const blockedFiles=files.filter(f=>_BLOCKED_MIME.has(f.type)||f.name.match(/\.(svg|html?|xml)$/i));
+  if(blockedFiles.length){showAlert(`${blockedFiles.map(f=>f.name).join(', ')} cannot be uploaded (file type not allowed).`);}
+  const sizeOk=files.filter(f=>!_BLOCKED_MIME.has(f.type)&&!f.name.match(/\.(svg|html?|xml)$/i));
+  const oversized=sizeOk.filter(f=>f.size>1048576);
   if(oversized.length){showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} the 1 MB limit and were not uploaded.`);}
-  const valid=files.filter(f=>f.size<=1048576);
+  const valid=sizeOk.filter(f=>f.size<=1048576);
   if(!valid.length){input.value='';return;}
   let done=0;
   valid.forEach(file=>{
