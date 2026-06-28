@@ -3828,8 +3828,32 @@ function renderNeedsAttention(){
 
 function incomingApprovalAction(taskId,newStatus){
   const t=DB.tasks.find(x=>x.id===taskId);if(!t)return;
-  if(newStatus==='archived'){t.archived=true;}
-  else{t.status=newStatus;}
+  if(newStatus==='archived'){
+    t.archived=true;
+    t.awaitingClient=false;
+    t.currentlyWithType='none';
+    t.currentlyWith='';
+    t.currentlyWithUserId=null;
+  } else {
+    t.status=newStatus;
+    // keep awaitingClient in sync with the new status
+    t.awaitingClient=newStatus==='ready-approval'||newStatus==='waiting-client';
+    if(newStatus==='waiting-client'){
+      t.currentlyWithType='client';
+      t.currentlyWith='client';
+      t.currentlyWithUserId=null;
+    } else if(newStatus==='ready-approval'){
+      t.currentlyWithType='client';
+      t.currentlyWith='client';
+      t.currentlyWithUserId=null;
+    } else {
+      // returning to internal — clear client-side flags
+      t.currentlyWithType='staff';
+      t.currentlyWith=t.ownerId||'';
+      t.currentlyWithUserId=t.ownerId||null;
+      t.awaitingClient=false;
+    }
+  }
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('dashboard');
 }
@@ -10777,7 +10801,7 @@ function sanitizeTaskForClient(task){
     percentComplete: typeof task.percentComplete==='number'?task.percentComplete:0,
     startDate:       task.startDate??null,
     endDate:         task.endDate??null,
-    awaitingClient:  task.currentlyWithType==='client'||task.status==='ready-approval',
+    awaitingClient:  task.currentlyWithType==='client'||task.status==='ready-approval'||task.status==='waiting-client',
     approvalType:    task.approvalType||null,
     // Additional safe fields
     priority:        task.priority||'med',
@@ -11336,6 +11360,7 @@ function cpSubmitChanges(taskId){
   }
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
+  if(!task.awaitingClient&&task.currentlyWithType!=='client'&&task.status!=='ready-approval'&&task.status!=='waiting-client')return;
   task.clientApproval={status:'changes-requested',note,at:new Date().toISOString()};
   task.status='change-requested';
   task.currentlyWithType='staff';
