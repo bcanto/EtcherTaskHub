@@ -1453,7 +1453,9 @@ let selectedWbColor='#0d1c33';
 let wsCollapsed=new Set();
 let wsExpanded=new Set();
 let wsGroupBy='group';
-let wsColumns={status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true,deps:false};
+const _WS_COL_DEFAULTS={status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true,deps:false};
+const _wsBoardColumns={}; // boardId → column visibility map (session-only)
+let wsColumns={..._WS_COL_DEFAULTS};
 let wsInlineAddSectionId=null;
 let wsInlineAddGroupId=null;
 let wsAddGroupInline=false;
@@ -2686,6 +2688,7 @@ function openWorkboard(id){
   wsCommsOpen=false;wsCommsFiles=[];
   wsInlineAddSectionId=null;wsInlineAddGroupId=null;
   wsCollapsed=new Set();wsExpanded=new Set();
+  wsColumns=_wsBoardColumns[id]?{..._wsBoardColumns[id]}:{..._WS_COL_DEFAULTS};
   renderSidebarWorkboards();
   navigate('workspace');
 }
@@ -8473,7 +8476,11 @@ function wsCommitRenameGroup(groupId,name){
   if(g&&g.name!==name){g.name=name;saveDB(DB);}
   renderView('workspace');
 }
-function wsToggleCol(key){wsColumns[key]=!wsColumns[key];renderView('workspace');}
+function wsToggleCol(key){
+  wsColumns[key]=!wsColumns[key];
+  if(currentWorkboard)_wsBoardColumns[currentWorkboard.id]={...wsColumns};
+  renderView('workspace');
+}
 function wsDeleteTask(id){
   confirmCallback=()=>{
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
