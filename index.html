@@ -13114,7 +13114,7 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
 });
 // ─── Share link check — runs before session restore ───────────────────────────
-(function _checkShareRoute(){
+(async function _checkShareRoute(){
   const params=new URLSearchParams(window.location.search);
   const token=params.get('share');
   if(!token)return;
@@ -13123,6 +13123,27 @@ document.addEventListener('keydown',e=>{
   hide('login-screen');hide('app-shell');hide('client-portal');
   document.getElementById('share-page').classList.remove('hidden');
   window._shareRouteActive=true; // stops _startApp and Supabase auth handler from interfering
+  // Show loading state while we fetch from Supabase
+  document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px;color:#8da2b2;font-family:'Lato',sans-serif;font-size:14px">Loading…</div>`;
+  // Wait for supabase-client.js (deferred) to finish initialising — up to 2 s
+  await new Promise(resolve=>{
+    if(window._supabase!==undefined)return resolve();
+    const t=Date.now();
+    const tick=()=>{if(window._supabase!==undefined||Date.now()-t>2000)return resolve();setTimeout(tick,50);};
+    tick();
+  });
+  // Load shared DB from Supabase so the token lookup works in any browser
+  if(window._supabase){
+    try{
+      const{data:stateRow}=await window._supabase.from('app_state').select('data').eq('id',1).single();
+      if(stateRow?.data&&(stateRow.data.shareLinks?.length>0||stateRow.data.tasks?.length>0)){
+        const fresh=stateRow.data;
+        _migrateDB(fresh);
+        for(const k in DB)delete DB[k];
+        Object.assign(DB,fresh);
+      }
+    }catch(e){console.warn('[share] Supabase load failed:',e.message);}
+  }
   const link=(DB.shareLinks||[]).find(l=>l.token===token&&!l.revoked);
   if(!link){
     document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px">
