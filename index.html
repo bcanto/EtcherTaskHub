@@ -288,11 +288,6 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .sched-evt-pill{font-size:11px;padding:2px 5px 2px 7px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.45;transition:opacity 0.12s;display:block}
 .sched-evt-pill:hover{opacity:0.72}
 .sched-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;padding:2px 4px}
-@keyframes voicePulse{0%,100%{box-shadow:0 0 0 0 rgba(13,110,78,0.45)}60%{box-shadow:0 0 0 14px rgba(13,110,78,0)}}
-@keyframes voiceDots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
-.voice-listening{background:#d1fae5 !important;animation:voicePulse 1.4s ease-in-out infinite}
-.voice-listening svg{stroke:#0d6e4e !important}
-#voice-modal-title.is-listening::after{content:'';display:inline-block;width:1.5em;text-align:left;animation:voiceDots 1.2s steps(1) infinite}
 /* ── Presence Icons ── */
 .presence-dot-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
 .presence-dot-wrap .presence-remove,.presence-chip-wrap .presence-remove{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#ef4444;border:1.5px solid #fff;color:#fff;font-size:9px;cursor:pointer;align-items:center;justify-content:center;line-height:1;padding:0;z-index:20;font-family:sans-serif}
@@ -1983,11 +1978,6 @@ function launchApp(){
   updateNotifBadge();
   startIntakePoller();
   _checkRecurringTasks();
-  // Show voice FAB for internal staff if browser supports Speech Recognition
-  if((currentUser?.role==='admin'||currentUser?.role==='staff')&&(window.SpeechRecognition||window.webkitSpeechRecognition)){
-    const fab=document.getElementById('voice-fab');
-    if(fab)fab.style.display='flex';
-  }
 }
 function launchClientView(){
   document.getElementById('login-screen').classList.add('hidden');
@@ -11515,196 +11505,6 @@ function renderTpRecurrence(task){
   </div>`;
 }
 
-// ═══════════════════════════════════════════════════════════
-// VOICE TO TASK
-// ═══════════════════════════════════════════════════════════
-let _voiceRec=null;
-let _voiceTranscript='';
-
-function _voiceSetListening(on){
-  const icon=document.getElementById('voice-status-icon');
-  const title=document.getElementById('voice-modal-title');
-  if(on){
-    icon.classList.add('voice-listening');
-    title.classList.add('is-listening');
-  } else {
-    icon.classList.remove('voice-listening');
-    title.classList.remove('is-listening');
-    icon.style.background='#f0f7f7';
-  }
-}
-
-function startVoiceCapture(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){showAlert('Voice input is not supported in this browser. Try Chrome or Edge.','Voice Not Available');return;}
-  try{_voiceRec?.stop();}catch(_){}
-  _voiceRec=null;
-  _voiceTranscript='';
-  const modal=document.getElementById('voice-modal');
-  modal.style.display='flex';
-  document.getElementById('voice-modal-title').textContent='Listening';
-  document.getElementById('voice-transcript').textContent='Speak now — say something like "Add photos to GCS board for tomorrow"';
-  document.getElementById('voice-transcript').style.fontStyle='italic';
-  document.getElementById('voice-transcript').style.color='#8da2b2';
-  document.getElementById('voice-parsed').style.display='none';
-  document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>`;
-  _voiceSetListening(true);
-
-  _voiceRec=new SR();
-  _voiceRec.lang='en-AU';
-  _voiceRec.interimResults=true;
-  _voiceRec.maxAlternatives=1;
-  _voiceRec.continuous=false;
-
-  _voiceRec.onresult=(e)=>{
-    const interim=Array.from(e.results).map(r=>r[0].transcript).join('');
-    document.getElementById('voice-transcript').textContent=interim;
-    document.getElementById('voice-transcript').style.fontStyle='normal';
-    document.getElementById('voice-transcript').style.color='#1a2940';
-    if(e.results[0].isFinal){_voiceTranscript=interim;_voiceSetListening(false);_voiceProcessResult(interim);}
-  };
-  _voiceRec.onerror=(e)=>{
-    _voiceSetListening(false);
-    const msgs={
-      'not-allowed':'Microphone access was denied. Click the lock icon in your browser address bar and allow the microphone, then try again.',
-      'no-speech':'No speech was detected. Make sure your microphone is working and speak clearly.',
-      'network':'Network error — speech recognition requires an internet connection.',
-      'aborted':'Cancelled.',
-    };
-    document.getElementById('voice-modal-title').textContent='Could not hear you';
-    document.getElementById('voice-transcript').textContent=msgs[e.error]||`Error: ${e.error}. Please try again.`;
-    document.getElementById('voice-transcript').style.fontStyle='normal';
-    document.getElementById('voice-transcript').style.color='#ef4444';
-    document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button>${e.error!=='not-allowed'?`<button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`:''}`;
-  };
-  _voiceRec.onend=()=>{
-    // If we ended without a result and no error was shown, restart automatically once
-    if(!_voiceTranscript&&document.getElementById('voice-modal-title').textContent==='Listening'){
-      _voiceSetListening(false);
-      document.getElementById('voice-modal-title').textContent='Could not hear you';
-      document.getElementById('voice-transcript').textContent='No speech detected. Make sure your microphone is on and speak clearly.';
-      document.getElementById('voice-transcript').style.color='#ef4444';
-      document.getElementById('voice-transcript').style.fontStyle='normal';
-      document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button><button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`;
-    } else {
-      _voiceSetListening(false);
-    }
-  };
-  _voiceRec.start();
-}
-
-function stopVoice(){
-  try{_voiceRec?.stop();}catch(_){}
-  _voiceRec=null;
-  _voiceSetListening(false);
-  document.getElementById('voice-modal').style.display='none';
-}
-
-function _voiceProcessResult(text){
-  _voiceSetListening(false);
-  document.getElementById('voice-status-icon').style.background='#e0f2fe';
-  document.getElementById('voice-modal-title').textContent='Got it — parsing…';
-  const parsed=_parseVoiceInput(text);
-  const pd=document.getElementById('voice-parsed');
-  pd.style.display='block';
-  pd.innerHTML=`<div style="font-weight:700;color:#0d6e4e;margin-bottom:8px">Parsed task:</div>
-    <div style="display:grid;gap:4px">
-      <div><span style="color:#8da2b2">Title:</span> ${escHtml(parsed.name||'—')}</div>
-      <div><span style="color:#8da2b2">Board:</span> ${escHtml(parsed.boardName||'—')}</div>
-      <div><span style="color:#8da2b2">Due:</span> ${escHtml(parsed.dueLabel||'—')}</div>
-      <div><span style="color:#8da2b2">Priority:</span> ${escHtml(parsed.priority||'—')}</div>
-    </div>`;
-  document.getElementById('voice-actions').innerHTML=`
-    <button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>
-    <button onclick="startVoiceCapture()" class="btn btn-ghost">Re-record</button>
-    <button onclick="_voiceCreateTask()" class="btn btn-teal">Create Task</button>`;
-}
-
-function _parseVoiceInput(text){
-  const t=text.toLowerCase();
-  const result={raw:text,name:'',boardId:null,boardName:null,dueDate:null,dueLabel:null,priority:'med'};
-
-  // Extract board: "in [board name]'s board" / "in [board name] board" / "to [board name]"
-  const wbs=(DB.workboards||[]).filter(w=>!w.archived);
-  let bestWb=null,bestScore=0;
-  wbs.forEach(wb=>{
-    const wbName=wb.name.toLowerCase();
-    // Check if any word of the board name appears in the transcript
-    const words=wbName.split(/\s+/);
-    const score=words.filter(w=>w.length>2&&t.includes(w)).length/words.length;
-    if(score>bestScore){bestScore=score;bestWb=wb;}
-  });
-  if(bestWb&&bestScore>0.3){result.boardId=bestWb.id;result.boardName=bestWb.name;}
-
-  // Extract date
-  const today=new Date();
-  if(t.includes('today')){result.dueDate=toDateStr(today);result.dueLabel='Today';}
-  else if(t.includes('tomorrow')){const d=new Date(today);d.setDate(d.getDate()+1);result.dueDate=toDateStr(d);result.dueLabel='Tomorrow';}
-  else if(t.includes('next week')){const d=new Date(today);d.setDate(d.getDate()+7);result.dueDate=toDateStr(d);result.dueLabel='Next week';}
-  else if(t.includes('monday')){result.dueDate=_nextWeekday(today,1);result.dueLabel='Monday';}
-  else if(t.includes('friday')){result.dueDate=_nextWeekday(today,5);result.dueLabel='Friday';}
-
-  // Extract priority
-  if(t.includes('urgent')||t.includes('critical')||t.includes('asap'))result.priority='crit';
-  else if(t.includes('high priority')||t.includes('important'))result.priority='high';
-  else if(t.includes('low priority'))result.priority='low';
-
-  // Extract task name: remove board/date/filler phrases
-  let name=text;
-  name=name.replace(/\badd\b/i,'').replace(/\bcreate\b/i,'').replace(/\btask\b/i,'');
-  name=name.replace(/\bin\s+[\w\s']+'s?\s+board/i,'').replace(/\bfor\s+(today|tomorrow|next week|monday|friday)/i,'');
-  if(result.boardName)name=name.replace(new RegExp(result.boardName,'i'),'');
-  name=name.replace(/\s{2,}/g,' ').trim().replace(/^[,\s]+|[,\s]+$/g,'');
-  if(name)name=name.charAt(0).toUpperCase()+name.slice(1);
-  result.name=name||text;
-
-  return result;
-}
-
-function _nextWeekday(from,day){
-  const d=new Date(from);
-  const diff=(day-d.getDay()+7)%7||7;
-  d.setDate(d.getDate()+diff);
-  return toDateStr(d);
-}
-
-let _voiceParsedData=null;
-function _voiceCreateTask(){
-  const parsed=_parseVoiceInput(_voiceTranscript);
-  _voiceParsedData=parsed;
-  // Find the best group for the board
-  const wb=parsed.boardId?(DB.workboards||[]).find(w=>w.id===parsed.boardId):null;
-  const group=wb?DB.groups.find(g=>(g.workboardId||g.boardId)===wb.id):null;
-  if(!parsed.name){stopVoice();showAlert('Could not extract a task name. Please try again.','Voice Task');return;}
-  const _now=new Date().toISOString();
-  const newTask={
-    id:'t'+uid(),
-    name:parsed.name,
-    groupId:group?.id||getWbDefaultGroup(),
-    workboardId:parsed.boardId||currentWorkboard?.id||DB.workboards[0]?.id||'',
-    boardId:parsed.boardId||currentWorkboard?.id||DB.workboards[0]?.id||'',
-    clientId:group?.clientId||null,
-    status:'todo',
-    priority:parsed.priority||'med',
-    ownerId:currentUser.id,
-    currentlyWith:currentUser.id,
-    currentlyWithType:'staff',
-    currentlyWithUserId:currentUser.id,
-    endDate:parsed.dueDate||'',
-    startDate:toDateStr(new Date()),
-    percentComplete:0,
-    hourBudget:'',description:'',dependencies:[],tags:[],
-    archived:false,recurrence:null,recurSourceId:null,
-    createdAt:_now,updatedAt:_now,completedAt:null
-  };
-  DB.tasks.push(newTask);
-  saveDB(DB);
-  stopVoice();
-  showToast(`Task created: "${parsed.name}"`, 'success', 4000);
-  // Navigate to the board if possible
-  if(parsed.boardId){const wb=(DB.workboards||[]).find(w=>w.id===parsed.boardId);if(wb)openWorkboard(wb.id);}
-  openTaskPanel(newTask.id);
-}
 
 // ═══════════════════════════════════════════════════════════
 // WORKBOARD ARCHIVE / DUPLICATE / RESTORE
@@ -13523,23 +13323,5 @@ document.addEventListener('keydown',e=>{
   </div>
 </div>
 
-<!-- VOICE-TO-TASK -->
-<button id="voice-fab" onclick="startVoiceCapture()" title="Voice to task" style="display:none;position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:#0d1c33;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(13,28,51,0.3);z-index:500;color:#fff;font-size:20px;align-items:center;justify-content:center;transition:transform 0.15s,background 0.15s" onmouseover="this.style.background='#1a3a5c'" onmouseout="this.style.background='#0d1c33'">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
-</button>
-<div id="voice-modal" style="display:none;position:fixed;inset:0;background:rgba(13,28,51,0.5);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
-  <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(13,28,51,0.25);text-align:center">
-    <div id="voice-status-icon" style="width:72px;height:72px;border-radius:50%;background:#f0f7f7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;transition:background 0.2s">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0d1c33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
-    </div>
-    <div style="font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;margin-bottom:6px" id="voice-modal-title">Listening…</div>
-    <div style="font-size:12px;color:#8da2b2;margin-bottom:18px" id="voice-modal-hint">Say something like "Add check photos to General's board for tomorrow"</div>
-    <div id="voice-transcript" style="min-height:48px;background:#f8fbff;border-radius:10px;padding:12px 16px;font-size:13px;color:#1a2940;line-height:1.6;margin-bottom:18px;text-align:left;border:1.5px solid #e2eaf2;font-style:italic;color:#8da2b2">Waiting for speech…</div>
-    <div id="voice-parsed" style="display:none;background:#f0fdf4;border-radius:10px;padding:12px 16px;font-size:12px;color:#1a2940;margin-bottom:18px;text-align:left;border:1.5px solid #bbf7d0"></div>
-    <div style="display:flex;gap:10px;justify-content:center" id="voice-actions">
-      <button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
