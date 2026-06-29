@@ -478,6 +478,14 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         Dashboard
         <span id="intake-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;line-height:1"></span>
       </div>
+      <div class="nav-item" data-view="digest" onclick="navigate('digest')" id="nav-digest-item">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Digest
+      </div>
+      <div class="nav-item" data-view="my-week" onclick="navigate('my-week')" id="nav-my-week-item">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        My Week
+      </div>
       <div class="nav-item" data-view="schedule" onclick="navigate('schedule')">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/><rect x="9" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/></svg></span>
         Schedule
@@ -536,7 +544,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       </div>
       <div class="nav-item" data-view="archive" onclick="navigate('archive')" id="nav-archive-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-        Archive / Bin
+        Archive &amp; Bin
       </div>
       <div class="nav-item" data-view="notifications" onclick="navigate('notifications')">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5A4.5 4.5 0 0 0 3.5 7v3L2 12.5h12L12.5 10V7A4.5 4.5 0 0 0 8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
@@ -602,6 +610,11 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <div id="cp-body" style="flex:1;padding:28px 32px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 </div>
 
+<!-- SHARE PAGE (token-gated public progress view) -->
+<div id="share-page" class="hidden" style="min-height:100vh;background:#f4f7fb;font-family:'Lato',sans-serif">
+  <div id="share-page-body" style="max-width:900px;margin:0 auto;padding:32px 24px"></div>
+</div>
+
 <!-- CP Task Detail Modal -->
 <div id="cp-task-modal" class="modal-overlay hidden" onclick="if(event.target===this)cpCloseTaskModal()">
   <div class="modal-box" style="max-width:620px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;padding:0">
@@ -630,7 +643,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <h3 id="generic-modal-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">Edit</h3>
       <button onclick="closeGenericModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8da2b2;line-height:1">×</button>
     </div>
-    <div style="padding:20px 24px" id="generic-modal-body"></div>
+    <div style="padding:20px 24px;overflow-y:auto;max-height:calc(90vh - 60px)" id="generic-modal-body"></div>
   </div>
 </div>
 
@@ -872,6 +885,49 @@ const SEED = {
 
   boardShares:[],
   personalChecklist:[],
+
+  // ── Digests (sample data for testing) ──────────────────
+  digests:[
+    {id:'dg1',clientId:'c1',title:'Weekly Update — 22 June 2026',intro:'Here is a summary of this week\'s activity across our active projects.',closing:'Please reach out if you have any questions.',items:[
+      {id:'di1',text:'Hydraulic Leak — Crane #3 (Maintenance): repair in progress, parts sourced, ETA Wednesday'},
+      {id:'di2',text:'Service Hydraulic Systems — Crane #2 (Maintenance): 55% complete'},
+      {id:'di3',text:'Permissions Matrix Document (SharePoint): 70% complete, awaiting IT sign-off from GCR'},
+      {id:'di4',text:'Configure HR Module (Humanz Stage 1.5): 60% complete, payroll connector pending API key from Daltech'},
+      {id:'di5',text:'Update Safe Work Method Statements (Maintenance): 60% complete, on track'},
+    ],status:'sent',createdBy:'u1',createdAt:'2026-06-22T09:00:00.000Z',sentAt:'2026-06-23T10:00:00.000Z',updatedAt:'2026-06-23T10:00:00.000Z'},
+
+    {id:'dg2',clientId:'c2',title:'Weekly Update — 29 June 2026',intro:'Progress update for the week ending 29 June 2026.',closing:'Next update will be sent on 6 July. Let us know if anything needs attention before then.',items:[
+      {id:'di6',text:'Hydraulic Leak — Crane #3 (Maintenance): RESOLVED — crane returned to service 26 June'},
+      {id:'di7',text:'Permissions Matrix Document (SharePoint): Sign-off received from GCR IT. Site structure build begins this week'},
+      {id:'di8',text:'Configure HR Module (Humanz Stage 1.5): API key received from Daltech, payroll integration underway'},
+      {id:'di9',text:'Data Migration — Employee Records (Humanz Stage 1.5): commencing 27 June, 142 records'},
+      {id:'di10',text:'HRWL Licence Renewals: applications lodged for 3 operators'},
+    ],status:'holding',createdBy:'u1',createdAt:'2026-06-29T08:30:00.000Z',sentAt:null,updatedAt:'2026-06-29T08:30:00.000Z'},
+
+    {id:'dg3',clientId:'c1',title:'Weekly Update — 6 July 2026 (Draft)',intro:'',closing:'',items:[
+      {id:'di11',text:'SharePoint Site Structure (General Cranes): build in progress'},
+      {id:'di12',text:'Data Migration — Employee Records (Daltech): validation underway'},
+    ],status:'draft',createdBy:'u3',createdAt:'2026-06-29T11:00:00.000Z',sentAt:null,updatedAt:'2026-06-29T11:00:00.000Z'},
+
+    {id:'dg4',clientId:'c2',title:'Daltech — June Wrap-up',intro:'A quick summary of deliverables completed and items moving into July.',closing:'Happy to jump on a call this week to review priorities for the next sprint.',items:[
+      {id:'di13',text:'HR Module (Stage 1.5): payroll connector live in test environment — UAT begins Monday'},
+      {id:'di14',text:'Data Migration — Employee Records: 142 of 142 records validated, no exceptions'},
+      {id:'di15',text:'Leave Management Configuration: annual leave and sick leave rules confirmed with HR'},
+      {id:'di16',text:'Training session scheduled: 9 July, 9am — 5 staff attending'},
+    ],status:'approved',createdBy:'u1',createdAt:'2026-06-27T14:00:00.000Z',sentAt:null,updatedAt:'2026-06-28T09:00:00.000Z'},
+
+    {id:'dg5',clientId:'c3',title:'Retained Services — Weekly Digest',intro:'Update for the week across your active workstreams.',closing:'',items:[
+      {id:'di17',text:'Compliance Audit Prep: documentation 80% complete, final review next week'},
+      {id:'di18',text:'Vendor Contract Review: 4 of 6 contracts reviewed, 2 flagged for legal sign-off'},
+      {id:'di19',text:'Staff Onboarding — 2 new starters: access provisioned, induction completed'},
+    ],status:'draft',createdBy:'u3',createdAt:'2026-06-29T10:00:00.000Z',sentAt:null,updatedAt:'2026-06-29T10:00:00.000Z'},
+
+    {id:'dg6',clientId:null,title:'Internal — End of Month Summary',intro:'Internal notes on overall project health before the board update.',closing:'',items:[
+      {id:'di20',text:'3 projects on track, 1 at risk (GCR SharePoint — timeline tightening)'},
+      {id:'di21',text:'Invoices raised: 4 this month, 1 outstanding (Daltech — pending sign-off)'},
+      {id:'di22',text:'Staff capacity: 92% utilised — monitor July closely'},
+    ],status:'draft',createdBy:'u1',createdAt:'2026-06-29T07:00:00.000Z',sentAt:null,updatedAt:'2026-06-29T07:00:00.000Z'},
+  ],
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -917,6 +973,20 @@ function _migrateDB(data){
   if(!data.emailIntake)        data.emailIntake         = [];
   if(!data.clientNotes)        data.clientNotes         = [];
   if(!data.wbFolders)          data.wbFolders           = [];
+  if(!data.shareLinks)         data.shareLinks          = [];
+  if(!data.digests)            data.digests             = [];
+  // Seed sample digests once so the Digest view is populated on first load
+  if(!data.migrationFlags.digestSeedV1&&data.digests.length===0){
+    data.digests=JSON.parse(JSON.stringify(SEED.digests||[]));
+    data.migrationFlags.digestSeedV1=true;
+  }
+  // Add clientId to existing digests; backfill new seed entries (dg4-dg6)
+  (data.digests||[]).forEach(d=>{if(d.clientId===undefined)d.clientId=null;});
+  if(!data.migrationFlags.digestSeedV2){
+    const existingIds=new Set((data.digests||[]).map(d=>d.id));
+    (SEED.digests||[]).filter(d=>!existingIds.has(d.id)).forEach(d=>data.digests.push(JSON.parse(JSON.stringify(d))));
+    data.migrationFlags.digestSeedV2=true;
+  }
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
@@ -1056,6 +1126,24 @@ function _migrateDB(data){
     if(!t.updatedAt)                t.updatedAt=t.createdAt;
     if(t.completedAt===undefined)   t.completedAt=null;
     if(!t.dependencies)             t.dependencies=[];
+    if(t.recurrence===undefined)    t.recurrence=null;
+    if(t.recurSourceId===undefined) t.recurSourceId=null;
+    // Migrate existing recurrence objects to extended schema
+    if(t.recurrence){
+      const r=t.recurrence;
+      if(r.onDay===undefined)               r.onDay=1;
+      if(r.onWeekdayOrdinal===undefined)    r.onWeekdayOrdinal=null;
+      if(r.onWeekday===undefined)           r.onWeekday=null;
+      if(r.leadDays===undefined)            r.leadDays=0;
+      if(r.weekendAction===undefined)       r.weekendAction='keep';
+      if(r.endType===undefined)             r.endType=r.endDate?'date':'never';
+      if(r.occurrences===undefined)         r.occurrences=null;
+      if(r.occurrenceCount===undefined)     r.occurrenceCount=0;
+      if(r.copySameAssignee===undefined)    r.copySameAssignee=true;
+      if(r.copySameBoard===undefined)       r.copySameBoard=true;
+      if(r.copySamePriority===undefined)    r.copySamePriority=true;
+      if(r.copySameDescription===undefined) r.copySameDescription=true;
+    }
   });
 
   // Migrate checklistItems → child tasks with parentTaskId (one-time migration)
@@ -1880,6 +1968,12 @@ function launchApp(){
   navigate('dashboard');
   updateNotifBadge();
   startIntakePoller();
+  _checkRecurringTasks();
+  // Show voice FAB for internal staff if browser supports Speech Recognition
+  if((currentUser?.role==='admin'||currentUser?.role==='staff')&&(window.SpeechRecognition||window.webkitSpeechRecognition)){
+    const fab=document.getElementById('voice-fab');
+    if(fab)fab.style.display='flex';
+  }
 }
 function launchClientView(){
   document.getElementById('login-screen').classList.add('hidden');
@@ -1940,6 +2034,14 @@ function applyRolePermissions(){
   const navNotesEl=document.getElementById('nav-notes-item');
   if(navNotesEl)navNotesEl.style.display=isAdmin?'':'none';
 
+  // My Week: internal staff only
+  const navMyWeekEl=document.getElementById('nav-my-week-item');
+  if(navMyWeekEl)navMyWeekEl.style.display=(isAdmin||isMedium||isRestricted)?'':'none';
+
+  // Digest: admin + staff only
+  const navDigestEl=document.getElementById('nav-digest-item');
+  if(navDigestEl)navDigestEl.style.display=(isAdmin||isMedium)?'':'none';
+
   // New task + create actions: hidden for restricted and client
   if(isRestricted||isClient){
     document.getElementById('new-task-btn')?.classList.add('hidden');
@@ -1983,6 +2085,8 @@ function renderView(v){
     switch(v){
       // Cacheable views: read-heavy, rarely edited inline — 8 s TTL, invalidated on saveDB
       case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
+      case 'my-week':   vc.innerHTML=renderMyWeek();break;
+      case 'digest':    vc.innerHTML=renderDigests();break;
       case 'gantt':     _renderCached(vc,'gantt',renderGantt);break;
       case 'capacity':  _renderCached(vc,'capacity',renderCapacity);break;
       case 'schedule':  _renderCached(vc,'schedule',renderSchedule);break;
@@ -3897,10 +4001,10 @@ function renderDashboard(){
   const COLORS=['#0d1c33','#97bcbd','#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#f97316'];
 
   return`
-  <!-- Personal Checklist + Email Triage Zone — 1/3 + 2/3 -->
-  <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:32px;align-items:start">
-    <div id="pcl-widget"></div>
+  <!-- Email Triage + Personal Checklist — 2/3 + 1/3 -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:32px;align-items:start">
     <div>${renderTriageZone(true)}</div>
+    <div id="pcl-widget"></div>
   </div>
 
   ${renderNeedsAttention()}
@@ -7502,108 +7606,747 @@ function renderAudit(){
 // ═══════════════════════════════════════════════════════════
 // ARCHIVE / BIN
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// SHAREABLE PROGRESS LINKS
+// ═══════════════════════════════════════════════════════════
+function _genToken(){return Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b=>b.toString(36).padStart(2,'0')).join('');}
+
+function createShareLink(type,targetId,label){
+  if(!DB.shareLinks)DB.shareLinks=[];
+  const existing=DB.shareLinks.find(l=>l.type===type&&l.targetId===targetId&&!l.revoked);
+  if(existing){_copyShareUrl(existing.token);return;}
+  const link={id:'sl'+uid(),token:_genToken(),type,targetId,label:label||'',createdBy:currentUser.id,createdAt:new Date().toISOString(),revoked:false};
+  DB.shareLinks.push(link);
+  saveDB(DB);
+  _copyShareUrl(link.token);
+}
+
+function _copyShareUrl(token){
+  const url=window.location.origin+window.location.pathname+'?share='+token;
+  navigator.clipboard.writeText(url).then(()=>showToast('Share link copied to clipboard','success',3500)).catch(()=>{
+    showAlert('Share link:\n'+url,'Copy this link');
+  });
+}
+
+function revokeShareLink(token){
+  const l=(DB.shareLinks||[]).find(x=>x.token===token);
+  if(l){l.revoked=true;saveDB(DB);showToast('Link revoked','info');}
+}
+
+function renderSharePage(link){
+  const today=new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+  let html='';
+
+  if(link.type==='workboard'){
+    const wb=(DB.workboards||[]).find(w=>w.id===link.targetId);
+    if(!wb)return`<div style="text-align:center;padding:80px 20px;color:#8da2b2">Board not found.</div>`;
+    const tasks=(DB.tasks||[]).filter(t=>(t.workboardId||t.boardId)===wb.id&&!t.archived);
+    const done=tasks.filter(t=>t.status==='done'||t.status==='completed').length;
+    const pct=tasks.length?Math.round(done/tasks.length*100):0;
+    const groups=[...new Set(tasks.map(t=>t.groupId))].map(gid=>({
+      group:DB.groups.find(g=>g.id===gid),
+      tasks:tasks.filter(t=>t.groupId===gid)
+    })).filter(x=>x.group);
+
+    html=`
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+        <img src="Etcher White Logo.png" onerror="this.style.display='none'" style="height:32px;filter:invert(1) brightness(0.2)">
+      </div>
+      <div style="margin-bottom:28px">
+        <div style="font-family:'Jost',sans-serif;font-size:26px;font-weight:800;color:#0d1c33;margin-bottom:4px">${escHtml(wb.name)}</div>
+        <div style="font-size:12px;color:#8da2b2">Progress snapshot · ${today}</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:20px;border:1.5px solid #e8eef6">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">Overall Progress</span>
+          <span style="font-family:'Jost',sans-serif;font-size:22px;font-weight:800;color:#0d6e4e">${pct}%</span>
+        </div>
+        <div style="height:10px;background:#e8eef6;border-radius:10px;overflow:hidden;margin-bottom:8px">
+          <div style="height:100%;background:linear-gradient(90deg,#97bcbd,#0d6e4e);width:${pct}%;transition:width 0.6s;border-radius:10px"></div>
+        </div>
+        <div style="font-size:12px;color:#8da2b2">${done} of ${tasks.length} tasks completed</div>
+      </div>
+      ${groups.map(({group,tasks:gt})=>{
+        const gdone=gt.filter(t=>t.status==='done'||t.status==='completed').length;
+        const gpct=gt.length?Math.round(gdone/gt.length*100):0;
+        return`<div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:14px;border:1.5px solid #e8eef6">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:${group.color||'#97bcbd'};flex-shrink:0"></div>
+              <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${escHtml(group.name)}</span>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:#0d6e4e">${gpct}%</span>
+          </div>
+          <div style="height:6px;background:#f0f4f8;border-radius:6px;overflow:hidden;margin-bottom:10px">
+            <div style="height:100%;background:${group.color||'#97bcbd'};width:${gpct}%;border-radius:6px"></div>
+          </div>
+          ${gt.map(t=>{const sm=STATUS_META[t.status]||STATUS_META['todo'];const due=t.endDate?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f4f7fb">
+            <span style="font-size:11px;background:${sm.bg};color:${sm.color};padding:2px 8px;border-radius:8px;font-weight:600;flex-shrink:0">${sm.label}</span>
+            <span style="font-size:12px;color:#1a2940;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name||t.title||'')}</span>
+            ${due?`<span style="font-size:11px;color:#8da2b2;flex-shrink:0">${due}</span>`:''}
+          </div>`;}).join('')}
+        </div>`;
+      }).join('')}
+      <div style="margin-top:24px;text-align:center;font-size:11px;color:#b0bec5">Powered by Etcher Task Hub</div>`;
+  } else if(link.type==='task'){
+    const task=(DB.tasks||[]).find(t=>t.id===link.targetId);
+    if(!task)return`<div style="text-align:center;padding:80px 20px;color:#8da2b2">Task not found.</div>`;
+    const sm=STATUS_META[task.status]||STATUS_META['todo'];
+    const owner=allStaff().find(u=>u.id===task.ownerId);
+    html=`
+      <div style="margin-bottom:28px">
+        <div style="font-family:'Jost',sans-serif;font-size:26px;font-weight:800;color:#0d1c33;margin-bottom:4px">${escHtml(task.name||task.title||'Task')} </div>
+        <div style="font-size:12px;color:#8da2b2">Progress snapshot · ${today}</div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:24px;border:1.5px solid #e8eef6;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <span style="font-size:13px;background:${sm.bg};color:${sm.color};padding:4px 14px;border-radius:20px;font-weight:700">${sm.label}</span>
+          ${task.endDate?`<span style="font-size:12px;color:#8da2b2">Due ${new Date(task.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</span>`:''}
+        </div>
+        ${task.description?`<div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px;white-space:pre-wrap">${escHtml(task.description)}</div>`:''}
+        ${task.percentComplete?`<div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:#8da2b2">Progress</span><span style="font-size:12px;font-weight:700;color:#0d1c33">${task.percentComplete}%</span></div>
+          <div style="height:8px;background:#e8eef6;border-radius:8px;overflow:hidden"><div style="height:100%;background:#97bcbd;width:${task.percentComplete}%;border-radius:8px"></div></div>
+        </div>`:''}
+      </div>
+      ${owner?`<div style="font-size:12px;color:#8da2b2;text-align:center">Assigned to <strong style="color:#0d1c33">${escHtml(owner.name)}</strong></div>`:''}
+      <div style="margin-top:24px;text-align:center;font-size:11px;color:#b0bec5">Powered by Etcher Task Hub</div>`;
+  }
+  return html;
+}
+
+function openShareLinkManager(type,targetId,label){
+  if(currentUser?.role!=='admin')return;
+  const links=(DB.shareLinks||[]).filter(l=>l.type===type&&l.targetId===targetId&&!l.revoked);
+  const url=links.length?window.location.origin+window.location.pathname+'?share='+links[0].token:'';
+  const body=`<div style="padding:4px 0">
+    ${links.length?`<div style="background:#f0f7f7;border:1.5px solid #97bcbd40;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      <input value="${escHtml(url)}" readonly style="flex:1;font-size:12px;border:none;background:transparent;color:#1a2940;outline:none">
+      <button onclick="navigator.clipboard.writeText('${escHtml(url)}');showToast('Copied','success',2000)" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Copy</button>
+    </div>
+    <button onclick="revokeShareLink('${links[0].token}');closeGenericModal();showToast('Link revoked','info')" class="btn btn-ghost btn-sm" style="font-size:12px;color:#991b1b;border-color:#fecaca">Revoke link</button>`
+    :`<p style="font-size:13px;color:#6b8399;margin-bottom:16px">Share a read-only progress view of this ${type} with anyone — no login required.</p>
+    <button onclick="createShareLink('${type}','${targetId}','${escHtml(label||'')}');closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
+  </div>`;
+  openGenericModal(`Share Progress — ${escHtml(label||type)}`,body);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DIGEST
+// ═══════════════════════════════════════════════════════════
+const DIGEST_STATUS={
+  draft:    {label:'Draft',           color:'#64748b',bg:'#f1f5f9'},
+  holding:  {label:'Holding for Approval',color:'#b45309',bg:'#fffbeb'},
+  approved: {label:'Approved to Send',color:'#0d6e4e',bg:'#f0fdf4'},
+  sent:     {label:'Sent',            color:'#6366f1',bg:'#eff6ff'},
+};
+
+function renderDigests(){
+  if(currentUser?.role==='client'||currentUser?.role==='restricted')return _acDeniedHtml();
+  const digests=[...(DB.digests||[])].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+  const rows=digests.length===0
+    ?`<div style="text-align:center;padding:48px 20px;color:#94a3b8">
+        <div style="font-size:28px;margin-bottom:10px">📋</div>
+        <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">No digests yet</div>
+        <div style="font-size:12px;margin-bottom:16px">Create a digest to summarise recent updates for clients.</div>
+        <button onclick="openCreateDigest()" class="btn btn-teal btn-sm">Create first digest</button>
+      </div>`
+    :digests.map(d=>{
+      const sm=DIGEST_STATUS[d.status]||DIGEST_STATUS.draft;
+      const author=allStaff().find(u=>u.id===d.createdBy);
+      const client=d.clientId?DB.clients.find(c=>c.id===d.clientId):null;
+      const canEdit=d.status!=='sent';
+      return`<div onclick="openDigestDetail('${d.id}')" style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.08s" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(d.title||'Untitled Digest')}</span>
+            <span style="flex-shrink:0;font-size:10px;font-weight:700;background:${sm.bg};color:${sm.color};padding:2px 8px;border-radius:6px">${sm.label}</span>
+            ${client?`<span style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:${client.color||'#64748b'};background:${client.color||'#64748b'}18;padding:2px 7px;border-radius:6px"><span style="width:5px;height:5px;border-radius:50%;background:${client.color||'#64748b'};display:inline-block"></span>${escHtml(client.shortCode||client.name)}</span>`:''}
+          </div>
+          <div style="font-size:11px;color:#94a3b8">${(d.items||[]).length} items · ${escHtml(author?.name||'Unknown')} · ${_relativeTime(d.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0" onclick="event.stopPropagation()">
+          ${canEdit?`<button onclick="openDigestDetail('${d.id}')" class="btn btn-ghost btn-sm">Edit</button>`:''}
+          ${d.status==='draft'?`<button onclick="digestAdvanceStatus('${d.id}','holding')" class="btn btn-sm" style="background:#fffbeb;color:#b45309;border-color:#fde68a">Submit</button>`:''}
+          ${d.status==='holding'&&currentUser?.role==='admin'?`<button onclick="digestAdvanceStatus('${d.id}','approved')" class="btn btn-teal btn-sm">Approve</button>`:''}
+          ${d.status==='approved'&&currentUser?.role==='admin'?`<button onclick="digestAdvanceStatus('${d.id}','sent')" class="btn btn-sm" style="background:#eff6ff;color:#4338ca;border-color:#c7d2fe">Mark Sent</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+  return`<div style="display:grid;gap:18px">
+    <div class="card" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Digest</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:1px">Summarise activity, hold for approval, then send to clients</div>
+        </div>
+        <button onclick="openCreateDigest()" class="btn btn-teal btn-sm">+ New Digest</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      ${rows}
+    </div>
+  </div>`;
+}
+
+function _dgGetAutoItems(clientId){
+  const since=new Date();since.setDate(since.getDate()-7);
+  const sinceStr=since.toISOString();
+  return(DB.tasks||[])
+    .filter(t=>!t.archived&&(t.updatedAt>sinceStr||t.completedAt>sinceStr)&&(!clientId||t.clientId===clientId))
+    .slice(0,12)
+    .map(t=>{
+      const sm=STATUS_META[t.status]||STATUS_META['todo'];
+      const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
+      return`${t.name||t.title||''}${wb?' ('+wb.name+')':''} — ${sm.label}`;
+    });
+}
+function _dgOnClientChange(val){
+  const ta=document.getElementById('dg-items');
+  if(ta)ta.value=_dgGetAutoItems(val).join('\n');
+}
+function openCreateDigest(){
+  const clientOpts=DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  const defaultItems=_dgGetAutoItems('');
+  const body=`<div style="display:grid;gap:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label class="form-label">Client</label>
+        <select id="dg-client" class="form-input" onchange="_dgOnClientChange(this.value)" style="height:36px">
+          <option value="">All clients</option>
+          ${clientOpts}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Title</label>
+        <input id="dg-title" class="form-input" value="Weekly Update — ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Introduction (optional)</label>
+      <textarea id="dg-intro" class="form-input" rows="2" placeholder="Brief intro for this update…" style="resize:vertical"></textarea>
+    </div>
+    <div>
+      <label class="form-label">Items (one per line)</label>
+      <textarea id="dg-items" class="form-input" rows="7" placeholder="Each line becomes a digest item…" style="resize:vertical;font-size:12px">${defaultItems.join('\n')}</textarea>
+    </div>
+    <div>
+      <label class="form-label">Closing note (optional)</label>
+      <textarea id="dg-close" class="form-input" rows="2" placeholder="e.g. Please reach out if you have any questions." style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="saveNewDigest()" class="btn btn-teal">Save as Draft</button>
+    </div>
+  </div>`;
+  openGenericModal('New Digest',body,'620px');
+}
+
+function saveNewDigest(){
+  const title=(document.getElementById('dg-title')?.value||'').trim()||'Untitled Digest';
+  const clientId=document.getElementById('dg-client')?.value||null;
+  const intro=(document.getElementById('dg-intro')?.value||'').trim();
+  const itemsRaw=(document.getElementById('dg-items')?.value||'');
+  const closing=(document.getElementById('dg-close')?.value||'').trim();
+  const items=itemsRaw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>({id:'di'+uid(),text:l}));
+  const digest={id:'dg'+uid(),title,clientId:clientId||null,intro,closing,items,status:'draft',createdBy:currentUser.id,createdAt:new Date().toISOString(),sentAt:null};
+  if(!DB.digests)DB.digests=[];
+  DB.digests.push(digest);
+  saveDB(DB);closeGenericModal();
+  navigate('digest');
+  showToast('Digest saved as draft','success');
+}
+
+function openDigestDetail(digestId){
+  const d=(DB.digests||[]).find(x=>x.id===digestId);
+  if(!d)return;
+  const sm=DIGEST_STATUS[d.status]||DIGEST_STATUS.draft;
+  const client=d.clientId?DB.clients.find(c=>c.id===d.clientId):null;
+  const canEdit=d.status!=='sent';
+  const clientOpts=DB.clients.map(c=>`<option value="${c.id}" ${d.clientId===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('');
+  const body=`<div style="display:grid;gap:13px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;font-weight:700;background:${sm.bg};color:${sm.color};padding:3px 10px;border-radius:10px">${sm.label}</span>
+      ${client?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${client.color||'#64748b'};background:${client.color||'#64748b'}18;padding:3px 9px;border-radius:10px"><span style="width:6px;height:6px;border-radius:50%;background:${client.color||'#64748b'};display:inline-block"></span>${escHtml(client.name)}</span>`:'<span style="font-size:11px;color:#94a3b8">No client</span>'}
+    </div>
+    ${canEdit?`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <label class="form-label">Client</label>
+        <select id="dg-edit-client" class="form-input" style="height:36px">
+          <option value="">No client</option>
+          ${clientOpts}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Title</label>
+        <input id="dg-edit-title" class="form-input" value="${escHtml(d.title||'')}">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Introduction</label>
+      <textarea id="dg-edit-intro" class="form-input" rows="2" style="resize:vertical">${escHtml(d.intro||'')}</textarea>
+    </div>
+    <div>
+      <label class="form-label">Items (one per line)</label>
+      <textarea id="dg-edit-items" class="form-input" rows="7" style="resize:vertical;font-size:12px">${(d.items||[]).map(i=>i.text).join('\n')}</textarea>
+    </div>
+    <div>
+      <label class="form-label">Closing note</label>
+      <textarea id="dg-edit-close" class="form-input" rows="2" style="resize:vertical">${escHtml(d.closing||'')}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap">
+      <button onclick="deleteDigest('${d.id}')" class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none;font-size:12px">Delete</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="updateDigest('${d.id}')" class="btn btn-teal">Save changes</button>
+      </div>
+    </div>`:`<div style="background:#f8fbff;border-radius:10px;padding:16px 18px">
+      ${d.intro?`<p style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:14px">${escHtml(d.intro)}</p>`:''}
+      <ul style="margin:0;padding-left:20px;display:grid;gap:6px">${(d.items||[]).map(i=>`<li style="font-size:13px;color:#1a2940">${escHtml(i.text)}</li>`).join('')}</ul>
+      ${d.closing?`<p style="font-size:13px;color:#6b8399;margin-top:14px;font-style:italic">${escHtml(d.closing)}</p>`:''}
+    </div>`}
+  </div>`;
+  openGenericModal(d.title||'Digest',body,'620px');
+}
+
+function updateDigest(digestId){
+  const d=(DB.digests||[]).find(x=>x.id===digestId);if(!d)return;
+  d.title=(document.getElementById('dg-edit-title')?.value||'').trim()||d.title;
+  d.clientId=document.getElementById('dg-edit-client')?.value||null;
+  d.intro=(document.getElementById('dg-edit-intro')?.value||'').trim();
+  d.closing=(document.getElementById('dg-edit-close')?.value||'').trim();
+  const rawItems=(document.getElementById('dg-edit-items')?.value||'');
+  d.items=rawItems.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>({id:'di'+uid(),text:l}));
+  d.updatedAt=new Date().toISOString();
+  saveDB(DB);closeGenericModal();navigate('digest');
+  showToast('Digest updated','success');
+}
+
+// ── Digest email builder ───────────────────────────────────────────────────────
+let _dgSendHtml='';
+let _dgSendId='';
+
+function _buildDigestEmailHtml(d){
+  const e=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const now=new Date();
+  const dateShort=now.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  const dateLong=now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const client=d.clientId?DB.clients.find(c=>c.id===d.clientId):null;
+  const clientLine=client
+    ?`<p style="margin:8px 0 0;font-family:'Jost',Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#97bcbd">Prepared for: ${e(client.name)}</p>`
+    :'';
+  const itemsHtml=(d.items||[]).map((item,i)=>`
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #f1f5f9">
+      <tr>
+        <td width="42" valign="top" style="padding:14px 10px 14px 0">
+          <div style="width:26px;height:26px;border-radius:50%;background:#f0f4f8;text-align:center;line-height:26px;font-size:11px;font-weight:700;color:#97bcbd;font-family:'Jost',Arial,sans-serif">${i+1}</div>
+        </td>
+        <td valign="top" style="padding:14px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a2940;line-height:1.75">${e(item.text)}</td>
+      </tr>
+    </table>`).join('');
+  const introHtml=d.intro?`<p style="margin:0 0 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#334155;line-height:1.75">${e(d.intro)}</p>`:'';
+  const closingHtml=d.closing?`<p style="margin:24px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;line-height:1.75;padding-top:20px;border-top:1px solid #f1f5f9">${e(d.closing)}</p>`:'';
+  return`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600;700&display=swap" rel="stylesheet">
+<title>${e(d.title||'Weekly Update')}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8">
+<div style="padding:36px 16px;background:#f0f4f8;min-height:100vh">
+<div style="max-width:600px;margin:0 auto">
+
+  <!-- Header -->
+  <div style="background:#0d1c33;border-radius:12px 12px 0 0;padding:36px 44px 32px">
+    <p style="margin:0 0 20px;font-family:'Jost',Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#97bcbd">Etcher Solutions</p>
+    <h1 style="margin:0 0 12px;font-family:'Jost',Arial,sans-serif;font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;line-height:1.2">${e(d.title||'Weekly Update')}</h1>
+    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:rgba(151,188,189,0.65);letter-spacing:0.05em;text-transform:uppercase">${dateShort}</p>
+    ${clientLine}
+  </div>
+
+  <!-- Accent bar -->
+  <div style="height:3px;background:linear-gradient(90deg,#97bcbd 0%,#5fa8a9 60%,#0d6e4e 100%)"></div>
+
+  <!-- Body -->
+  <div style="background:#ffffff;padding:40px 44px 36px">
+    ${introHtml}
+    <div style="margin-bottom:4px">${itemsHtml}</div>
+    ${closingHtml}
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#f8fafc;border-radius:0 0 12px 12px;border:1px solid #e8eef6;border-top:none;padding:18px 44px;text-align:center">
+    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#94a3b8;line-height:1.6">
+      Sent via <strong style="color:#64748b;font-family:'Jost',Arial,sans-serif">Etcher Task Hub</strong> &nbsp;&middot;&nbsp; Etcher Solutions &nbsp;&middot;&nbsp; ${dateLong}
+    </p>
+  </div>
+
+</div>
+</div>
+</body>
+</html>`;
+}
+
+function _openDigestMailto(){
+  const d=(DB.digests||[]).find(x=>x.id===_dgSendId);if(!d)return;
+  const client=d.clientId?DB.clients.find(c=>c.id===d.clientId):null;
+  const toEmail=client?.contactEmail||'';
+  const lines=[];
+  if(d.intro)lines.push(d.intro,'');
+  (d.items||[]).forEach((item,i)=>lines.push(`${i+1}. ${item.text}`));
+  if(d.closing)lines.push('',d.closing);
+  window.open(`mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(d.title||'Weekly Update')}&body=${encodeURIComponent(lines.join('\n'))}`,'_self');
+}
+
+function _copyDigestEmailHtml(){
+  if(!_dgSendHtml)return;
+  navigator.clipboard.writeText(_dgSendHtml)
+    .then(()=>showToast('HTML copied — paste into Gmail or Outlook body','success',4000))
+    .catch(()=>showToast('Copy failed — try selecting all text in the preview window','warning',5000));
+}
+
+function _showDigestSendModal(d){
+  _dgSendId=d.id;
+  _dgSendHtml=_buildDigestEmailHtml(d);
+  const modalBody=`
+    <p style="font-size:12px;color:#8da2b2;margin:0 0 12px;line-height:1.6"><strong style="color:#64748b">Copy HTML</strong> and paste into Gmail or Outlook for full branding — or use <strong style="color:#64748b">Email Client</strong> to open in your default mail app (plain text).</p>
+    <iframe id="dg-email-frame" frameborder="0" scrolling="auto" style="width:100%;height:450px;border:1px solid #e8edf4;border-radius:8px;display:block;background:#f0f4f8"></iframe>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
+      <button onclick="_copyDigestEmailHtml()" class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy HTML
+      </button>
+      <div style="display:flex;gap:8px">
+        <button onclick="_openDigestMailto()" class="btn btn-ghost btn-sm">Email Client (plain text)</button>
+        <button onclick="closeGenericModal()" class="btn btn-teal btn-sm">Done</button>
+      </div>
+    </div>`;
+  openGenericModal('Email Preview — '+escHtml(d.title||'Digest'),modalBody,'680px');
+  setTimeout(()=>{const f=document.getElementById('dg-email-frame');if(f)f.srcdoc=_dgSendHtml;},0);
+}
+
+function digestAdvanceStatus(digestId,newStatus){
+  const d=(DB.digests||[]).find(x=>x.id===digestId);if(!d)return;
+  d.status=newStatus;
+  d.updatedAt=new Date().toISOString();
+  if(newStatus==='sent'){
+    d.sentAt=new Date().toISOString();
+    saveDB(DB);renderView('digest');
+    _showDigestSendModal(d);
+    return;
+  }
+  saveDB(DB);renderView('digest');
+  const labels={holding:'Submitted for approval',approved:'Approved ✓'};
+  showToast(labels[newStatus]||'Status updated','success');
+}
+
+function deleteDigest(digestId){
+  DB.digests=(DB.digests||[]).filter(x=>x.id!==digestId);
+  saveDB(DB);closeGenericModal();navigate('digest');
+  showToast('Digest deleted','info');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MY WEEK VIEW
+// ═══════════════════════════════════════════════════════════
+// ── My Week state (persists across re-renders, reset on navigate away) ──
+let _mwCollapsed={overdue:false,today:false,week:false,approval:false,done:true};
+let _mwOverdueExpanded=false;
+let _mwDensity=(()=>{try{return localStorage.getItem('mw_density')||'compact';}catch(_){return'compact';}})();
+
+function _mwToggleGroup(key){_mwCollapsed[key]=!_mwCollapsed[key];renderView('my-week');}
+function _mwToggleOverdue(){_mwOverdueExpanded=!_mwOverdueExpanded;renderView('my-week');}
+function _mwSetDensity(d){_mwDensity=d;try{localStorage.setItem('mw_density',d);}catch(_){}renderView('my-week');}
+function _mwScrollTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+
+function renderMyWeek(){
+  if(!currentUser||currentUser.role==='client')return _acDeniedHtml();
+
+  // ── Date ranges ──────────────────────────────────────────────────────
+  const today=toDateStr(new Date());
+  const sevenDaysAgo=new Date();sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
+  const sevenDaysAgoStr=toDateStr(sevenDaysAgo);
+  const weekStart=new Date();weekStart.setDate(weekStart.getDate()-weekStart.getDay()+1);
+  const weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+6);
+  const weekStartStr=toDateStr(weekStart),weekEndStr=toDateStr(weekEnd);
+  const weekLabel=`${weekStart.toLocaleDateString('en-AU',{day:'numeric',month:'short'})} – ${weekEnd.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`;
+
+  // ── Task query (unchanged logic) ─────────────────────────────────────
+  const myTasks=(DB.tasks||[]).filter(t=>
+    !t.archived&&
+    (t.ownerId===currentUser.id||t.currentlyWithUserId===currentUser.id||
+     (t.currentlyWithType==='staff'&&t.currentlyWith===currentUser.id))
+  );
+
+  // ── Group tasks (unchanged classification) ────────────────────────────
+  const G={
+    overdue:  {label:'Overdue',            color:'#dc2626',accent:'#dc2626',empty:'Nothing overdue',tasks:[]},
+    today:    {label:'Today',              color:'#0d6e4e',accent:'#10b981',empty:'Nothing due today',tasks:[]},
+    approval: {label:'Awaiting Approval',  color:'#b45309',accent:'#f59e0b',empty:'Nothing waiting for approval',tasks:[]},
+    week:     {label:'This Week',          color:'#334155',accent:'#97bcbd',empty:'Nothing else this week',tasks:[]},
+    done:     {label:'Completed',          color:'#64748b',accent:'#94a3b8',empty:'No completions this week',tasks:[]},
+  };
+
+  myTasks.forEach(t=>{
+    const done=t.status==='done'||t.status==='completed'||t.percentComplete===100;
+    const waiting=t.awaitingClient||t.status==='ready-approval'||t.status==='waiting-client';
+    if(done){
+      // Only last 7 days in Completed
+      if(t.completedAt&&t.completedAt>=sevenDaysAgoStr+'T00:00:00.000Z'||
+         t.updatedAt&&t.updatedAt>=sevenDaysAgoStr+'T00:00:00.000Z'){
+        G.done.tasks.push(t);
+      }
+      return;
+    }
+    if(waiting){G.approval.tasks.push(t);return;}
+    if(t.endDate&&t.endDate<today){G.overdue.tasks.push(t);return;}
+    if(t.endDate===today){G.today.tasks.push(t);return;}
+    G.week.tasks.push(t);
+  });
+
+  // Sort overdue oldest-first so most urgent floats up
+  G.overdue.tasks.sort((a,b)=>(a.endDate||'').localeCompare(b.endDate||''));
+
+  // ── Density config ───────────────────────────────────────────────────
+  const dense=_mwDensity==='compact';
+  const rowPy=dense?'6px':'10px';
+  const rowFs=dense?'12.5px':'13px';
+  const tagFs=dense?'10px':'11px';
+  const rowGap=dense?'1px':'3px';
+
+  // ── Compact task row ─────────────────────────────────────────────────
+  const _row=(t,accentColor)=>{
+    const sm=STATUS_META[t.status]||STATUS_META['todo'];
+    const grp=DB.groups.find(g=>g.id===t.groupId);
+    const client=DB.clients.find(c=>c.id===grp?.clientId);
+    const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
+    const isOverdue=t.endDate&&t.endDate<today;
+    const due=t.endDate
+      ?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'})
+      :'';
+    const passive=t.status==='waiting-client'||t.status==='ready-approval';
+    const pm=getPrioMeta(t.priority);
+    return`<div
+      role="row" tabindex="0"
+      onclick="openTaskPanel('${t.id}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTaskPanel('${t.id}');}"
+      title="${escHtml(t.name||t.title||'')}"
+      style="display:flex;align-items:center;gap:0;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background 0.08s;opacity:${passive?'0.75':'1'}"
+      onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+      <div style="width:3px;align-self:stretch;background:${accentColor};flex-shrink:0;border-radius:0"></div>
+      <div style="flex:1;min-width:0;padding:${rowPy} 12px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:${rowFs};font-weight:600;color:${passive?'#64748b':'#0d1c33'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:${passive?'none':'none'}">${escHtml(t.name||t.title||'Untitled')}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:${rowGap};flex-wrap:wrap">
+            ${client?`<span style="font-size:${tagFs};font-weight:700;color:${client.color};opacity:0.85">${escHtml(client.name)}</span><span style="color:#d1d9e0;font-size:${tagFs}">·</span>`:''}
+            ${wb?`<span style="font-size:${tagFs};color:#94a3b8">${escHtml(wb.name)}</span><span style="color:#d1d9e0;font-size:${tagFs}">·</span>`:''}
+            <span style="font-size:${tagFs};background:${sm.bg};color:${sm.color};padding:1px 6px;border-radius:6px;font-weight:600">${sm.label}</span>
+            ${pm&&t.priority!=='med'?`<span style="font-size:${tagFs};color:${pm.color};font-weight:700">${pm.icon}</span>`:''}
+          </div>
+        </div>
+        <div style="flex-shrink:0;text-align:right;min-width:54px">
+          ${due?`<div style="font-size:${tagFs};font-weight:${isOverdue?700:500};color:${isOverdue?'#dc2626':'#94a3b8'}">${isOverdue?'⚠ ':''}${due}</div>`:''}
+          ${t.percentComplete>=10?`<div style="font-size:10px;color:#97bcbd;margin-top:2px">${t.percentComplete}%</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  // ── Group panel ──────────────────────────────────────────────────────
+  const _panel=(key)=>{
+    const g=G[key];
+    const collapsed=_mwCollapsed[key];
+    const count=g.tasks.length;
+    const isEmpty=count===0;
+    const OVERDUE_CAP=5;
+    const showingTasks=key==='overdue'&&!_mwOverdueExpanded?g.tasks.slice(0,OVERDUE_CAP):g.tasks;
+    const hiddenCount=key==='overdue'?Math.max(0,count-OVERDUE_CAP):0;
+
+    return`<div id="mw-group-${key}" class="card" style="padding:0;overflow:hidden">
+      <button
+        aria-label="${g.label} — ${count} task${count!==1?'s':''}, click to ${collapsed?'expand':'collapse'}"
+        onclick="_mwToggleGroup('${key}')"
+        style="width:100%;display:flex;align-items:center;gap:9px;padding:10px 16px;background:#f4f7fa;border:none;border-bottom:${collapsed?'none':'1px solid var(--border)'};cursor:pointer;text-align:left;transition:background 0.1s"
+        onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='#f4f7fa'">
+        <div style="width:8px;height:8px;border-radius:50%;background:${g.accent};flex-shrink:0"></div>
+        <span style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:${isEmpty?'#94a3b8':g.color};flex:1">${g.label}</span>
+        ${count>0?`<span style="font-size:10px;font-weight:700;background:${key==='overdue'?'#fef2f2':key==='today'?'#dcfce7':key==='approval'?'#fef3c7':'#f1f5f9'};color:${g.color};padding:1px 8px;border-radius:6px">${count}</span>`:''}
+        <span style="font-size:11px;color:#94a3b8;flex-shrink:0;transform:rotate(${collapsed?'-90deg':'0deg'});transition:transform 0.15s;display:inline-block">▾</span>
+      </button>
+      ${collapsed?'':`<div>
+        ${isEmpty
+          ?`<div style="padding:14px 16px;font-size:12px;color:#94a3b8;font-style:italic">${g.empty}</div>`
+          :`<div>${showingTasks.map(t=>_row(t,g.accent)).join('')}</div>
+           ${hiddenCount>0?`<button onclick="event.stopPropagation();_mwToggleOverdue()" style="width:100%;padding:8px 16px;background:#fef9f9;border:none;border-top:1px solid #fee2e2;cursor:pointer;font-size:11px;font-weight:700;color:#dc2626;text-align:center" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fef9f9'">Show all ${count} overdue tasks ↓</button>`:''}
+           ${_mwOverdueExpanded&&hiddenCount>0?`<button onclick="event.stopPropagation();_mwToggleOverdue()" style="width:100%;padding:8px 16px;background:transparent;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:11px;color:#94a3b8;text-align:center">Show fewer ↑</button>`:''}`
+        }
+      </div>`}
+    </div>`;
+  };
+
+  // ── Stats strip ──────────────────────────────────────────────────────
+  const _stat=(key,label,count,color)=>
+    `<button onclick="_mwScrollTo('mw-group-${key}')" aria-label="${label}: ${count}" style="display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:4px 10px;border-radius:6px;transition:background 0.1s;white-space:nowrap" onmouseover="this.style.background='rgba(13,28,51,0.05)'" onmouseout="this.style.background='none'">
+      <span style="font-size:12px;font-weight:800;color:${count>0?color:'#94a3b8'}">${count}</span>
+      <span style="font-size:11px;color:${count>0?'#334155':'#94a3b8'}">${label}</span>
+    </button>`;
+
+  const totalActive=G.overdue.tasks.length+G.today.tasks.length+G.week.tasks.length+G.approval.tasks.length;
+
+  // ── Full render ──────────────────────────────────────────────────────
+  return`
+  <style>
+    @media(max-width:700px){#mw-grid{display:block!important;}#mw-grid>div{margin-bottom:14px;}}
+    #mw-grid *:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:4px;}
+  </style>
+  <div style="display:grid;gap:18px">
+
+    <!-- Header card -->
+    <div class="card" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">My Week</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:1px">${weekLabel} · ${totalActive} active task${totalActive!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="Density">
+            <button onclick="_mwSetDensity('compact')" aria-pressed="${_mwDensity==='compact'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='compact'?'#0d1c33':'transparent'};color:${_mwDensity==='compact'?'#fff':'#8da2b2'}">Compact</button>
+            <button onclick="_mwSetDensity('comfortable')" aria-pressed="${_mwDensity==='comfortable'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='comfortable'?'#0d1c33':'transparent'};color:${_mwDensity==='comfortable'?'#fff':'#8da2b2'}">Comfortable</button>
+          </div>
+        </div>
+      </div>
+      <!-- Stats strip -->
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)" role="navigation" aria-label="Jump to section">
+        ${_stat('overdue','Overdue',G.overdue.tasks.length,'#dc2626')}
+        <span style="color:#d1d9e0;font-size:11px;padding:0 2px">·</span>
+        ${_stat('today','Today',G.today.tasks.length,'#0d6e4e')}
+        <span style="color:#d1d9e0;font-size:11px;padding:0 2px">·</span>
+        ${_stat('week','This Week',G.week.tasks.length,'#334155')}
+        <span style="color:#d1d9e0;font-size:11px;padding:0 2px">·</span>
+        ${_stat('approval','Awaiting Approval',G.approval.tasks.length,'#b45309')}
+        <span style="color:#d1d9e0;font-size:11px;padding:0 2px">·</span>
+        ${_stat('done','Completed',G.done.tasks.length,'#64748b')}
+      </div>
+    </div>
+
+    <!-- Two-column grid -->
+    <div id="mw-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+      <div id="mw-col-left" style="display:grid;gap:18px">
+        ${_panel('today')}
+        ${_panel('overdue')}
+      </div>
+      <div id="mw-col-right" style="display:grid;gap:18px">
+        ${_panel('approval')}
+        ${_panel('week')}
+        ${_panel('done')}
+      </div>
+    </div>
+
+    ${totalActive===0&&G.done.tasks.length===0?`<div class="card" style="text-align:center;padding:48px 20px">
+      <div style="font-size:28px;margin-bottom:10px">🎉</div>
+      <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">All clear!</div>
+      <div style="font-size:12px;color:#94a3b8">No tasks assigned to you right now.</div>
+    </div>`:''}
+
+  </div>`;
+}
+
 function renderArchiveBin(){
   if(currentUser.role!=='admin')return _acDeniedHtml();
   const archivedWbs=(DB.workboards||[]).filter(wb=>wb.archived);
   const archivedTasks=DB.tasks.filter(t=>t.archived&&!t.parentTaskId);
   const archivedSubitems=DB.tasks.filter(t=>t.archived&&t.parentTaskId);
 
+  const ROW='display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)';
+  const EMPTY='padding:28px 20px;text-align:center;font-size:13px;color:#b0bec5;font-style:italic';
+  const SEC_HDR='display:flex;align-items:center;justify-content:space-between;padding:11px 20px;background:#f4f7fa;border-bottom:1px solid var(--border)';
+  const SEC_TITLE='display:flex;align-items:center;gap:8px;font-family:\'Jost\',sans-serif;font-size:13px;font-weight:700;color:#0d1c33';
+
   const wbRows=archivedWbs.map(wb=>{
     const taskCount=DB.tasks.filter(t=>(t.workboardId||t.boardId)===wb.id).length;
     const archivedAt=wb.updatedAt?new Date(wb.updatedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
-    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
-      <td style="padding:10px 12px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="width:9px;height:9px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
-          <span style="font-size:13px;font-weight:600;color:#1a2940">${escHtml(wb.name)}</span>
-        </div>
-      </td>
-      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${taskCount} task${taskCount!==1?'s':''}</td>
-      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${archivedAt}</td>
-      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
-        <button onclick="restoreWorkboard('${wb.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px;margin-right:4px">↩ Restore</button>
-        <button onclick="permanentDeleteWorkboard('${wb.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete Forever</button>
-      </td>
-    </tr>`;
+    return`<div style="${ROW}" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
+        <span style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(wb.name)}</span>
+      </div>
+      <span style="font-size:12px;color:#8da2b2;width:72px;flex-shrink:0">${taskCount} task${taskCount!==1?'s':''}</span>
+      <span style="font-size:12px;color:#8da2b2;width:90px;flex-shrink:0">${archivedAt}</span>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="restoreWorkboard('${wb.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px">↩ Restore</button>
+        <button onclick="permanentDeleteWorkboard('${wb.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete</button>
+      </div>
+    </div>`;
   }).join('');
 
   const taskRows=archivedTasks.map(t=>{
     const wb=DB.workboards.find(w=>w.id===(t.workboardId||t.boardId));
     const owner=getStaff(t.ownerId);
     const archivedAt=t.updatedAt?new Date(t.updatedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
-    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
-      <td style="padding:10px 12px">
-        <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">${escHtml(t.name||t.title||'Untitled')}</div>
-        ${wb?`<div style="font-size:11px;color:#97bcbd;margin-top:2px">${escHtml(wb.name)}</div>`:''}
-      </td>
-      <td style="padding:10px 12px">
+    return`<div style="${ROW}" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name||t.title||'Untitled')}</div>
+        ${wb?`<div style="font-size:11px;color:#97bcbd;margin-top:1px">${escHtml(wb.name)}</div>`:''}
+      </div>
+      <div style="width:130px;flex-shrink:0">
         ${owner?`<div style="display:flex;align-items:center;gap:5px">${avatarHtml(owner,18)}<span style="font-size:12px;color:#6b8399">${escHtml(owner.name)}</span></div>`:'<span style="font-size:12px;color:#c4d0db">Unassigned</span>'}
-      </td>
-      <td style="padding:10px 12px;font-size:12px;color:#8da2b2">${archivedAt}</td>
-      <td style="padding:10px 12px;text-align:right;white-space:nowrap">
-        <button onclick="permanentRestoreTask('${t.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px;margin-right:4px">↩ Restore</button>
-        <button onclick="permanentDeleteTask('${t.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete Forever</button>
-      </td>
-    </tr>`;
+      </div>
+      <span style="font-size:12px;color:#8da2b2;width:90px;flex-shrink:0">${archivedAt}</span>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="permanentRestoreTask('${t.id}');renderView('archive')" class="btn btn-ghost btn-sm" style="font-size:11px">↩ Restore</button>
+        <button onclick="permanentDeleteTask('${t.id}')" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete</button>
+      </div>
+    </div>`;
   }).join('');
 
-  const tblStyle=`width:100%;border-collapse:collapse;font-family:'Lato',sans-serif`;
-  const thStyle=`padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1.5px solid #e8edf4`;
+  return`<div style="display:grid;gap:18px">
 
-  return`
-  <div style="max-width:900px;margin:0 auto">
-    <div style="margin-bottom:28px">
-      <h2 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:700;color:#0d1c33;margin-bottom:4px">Archive &amp; Bin</h2>
-      <p style="font-size:13px;color:#8da2b2">Archived items can be restored. Deleted forever items cannot be recovered.</p>
+    <!-- Header card -->
+    <div class="card" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33;letter-spacing:-0.02em">Archive &amp; Bin</div>
+        <div style="font-size:12px;color:#8da2b2;margin-top:3px">Archived items can be restored. Permanently deleted items cannot be recovered.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:12px;color:#8da2b2">${archivedWbs.length} board${archivedWbs.length!==1?'s':''} · ${archivedTasks.length} task${archivedTasks.length!==1?'s':''}</span>
+      </div>
     </div>
 
-    <!-- Archived WorkBoards -->
-    <div style="margin-bottom:32px">
-      <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="#0d1c33" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="#0d1c33" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Archived WorkBoards <span style="font-size:12px;font-weight:400;color:#8da2b2">(${archivedWbs.length})</span>
-      </h3>
+    <!-- Archived WorkBoards card -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="${SEC_HDR}">
+        <div style="${SEC_TITLE}">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="#0d1c33" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="#0d1c33" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
+          WorkBoards
+          <span style="font-size:11px;font-weight:400;color:#8da2b2;background:#fff;border:1px solid #e8edf4;border-radius:10px;padding:1px 7px">${archivedWbs.length}</span>
+        </div>
+        ${archivedWbs.length>0?`<button onclick="permanentDeleteAllArchived()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Forever</button>`:''}
+      </div>
       ${archivedWbs.length===0
-        ?`<div style="background:#f8fbff;border-radius:8px;padding:24px;text-align:center;color:#b0bec5;font-size:13px">No archived workboards</div>`
-        :`<div style="border:1.5px solid #e8edf4;border-radius:10px;overflow:hidden;background:#fff">
-          <table style="${tblStyle}">
-            <thead><tr style="background:#f8fbff">
-              <th style="${thStyle}">WorkBoard</th>
-              <th style="${thStyle}">Tasks</th>
-              <th style="${thStyle}">Archived</th>
-              <th style="${thStyle}"></th>
-            </tr></thead>
-            <tbody>${wbRows}</tbody>
-          </table>
-        </div>
-        <div style="margin-top:8px;text-align:right">
-          <button onclick="permanentDeleteAllArchived()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Archived WorkBoards Forever</button>
-        </div>`}
+        ?`<div style="${EMPTY}">No archived workboards</div>`
+        :wbRows}
     </div>
 
-    <!-- Archived Tasks -->
-    <div>
-      <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="#0d1c33" stroke-width="1.4"/><line x1="4" y1="6" x2="12" y2="6" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="9" x2="9" y2="9" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
-        Archived Tasks <span style="font-size:12px;font-weight:400;color:#8da2b2">(${archivedTasks.length}${archivedSubitems.length?` + ${archivedSubitems.length} subitems`:''})</span>
-      </h3>
-      ${archivedTasks.length===0
-        ?`<div style="background:#f8fbff;border-radius:8px;padding:24px;text-align:center;color:#b0bec5;font-size:13px">No archived tasks</div>`
-        :`<div style="border:1.5px solid #e8edf4;border-radius:10px;overflow:hidden;background:#fff">
-          <table style="${tblStyle}">
-            <thead><tr style="background:#f8fbff">
-              <th style="${thStyle}">Task</th>
-              <th style="${thStyle}">Owner</th>
-              <th style="${thStyle}">Archived</th>
-              <th style="${thStyle}"></th>
-            </tr></thead>
-            <tbody>${taskRows}</tbody>
-          </table>
+    <!-- Archived Tasks card -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="${SEC_HDR}">
+        <div style="${SEC_TITLE}">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="2" stroke="#0d1c33" stroke-width="1.4"/><line x1="4" y1="6" x2="12" y2="6" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="9" x2="9" y2="9" stroke="#0d1c33" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Tasks
+          <span style="font-size:11px;font-weight:400;color:#8da2b2;background:#fff;border:1px solid #e8edf4;border-radius:10px;padding:1px 7px">${archivedTasks.length}${archivedSubitems.length?` +${archivedSubitems.length} sub`:''}</span>
         </div>
-        <div style="margin-top:8px;text-align:right">
-          <button onclick="permanentDeleteAllArchivedTasks()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Archived Tasks Forever</button>
-        </div>`}
+        ${archivedTasks.length>0?`<button onclick="permanentDeleteAllArchivedTasks()" class="btn btn-danger btn-sm" style="font-size:11px">✕ Delete All Forever</button>`:''}
+      </div>
+      ${archivedTasks.length===0
+        ?`<div style="${EMPTY}">No archived tasks</div>`
+        :taskRows}
     </div>
+
   </div>`;
 }
 
@@ -7921,20 +8664,24 @@ function renderNotifications(){
     const meta=NOTIF_TYPES[n.type]||{label:n.type,color:'#8da2b2',icon:'●'};
     const bg=n.read?'':'#f8fbff';
     const dot=n.read?'':`<div style="width:7px;height:7px;border-radius:50%;background:${meta.color};flex-shrink:0;margin-top:4px"></div>`;
-    return`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s" ${n.read?'':''}>
+    const goToTask=(n.type==='mention'||n.type==='comment')
+      ?`notifMarkRead('${n.id}');openTaskPanel('${task?.id}','comments')`
+      :`notifMarkRead('${n.id}');openTaskPanel('${task?.id}')`;
+    return`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task?'pointer':'default'}" onclick="${task?goToTask:''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${meta.color}">${meta.icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
           <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${meta.color}">${meta.label}</span>
           ${dot}
+          <span style="font-size:10px;color:#b0bec5;margin-left:auto">${_relativeTime(n.createdAt||n.timestamp)}</span>
         </div>
-        <div style="font-size:13px;font-weight:${n.read?500:700};color:#1a2940;line-height:1.4">${escHtml(n.message)}</div>
-        ${task?`<div style="font-size:11px;color:#97bcbd;margin-top:3px;cursor:pointer;display:inline-flex;align-items:center;gap:3px" onclick="notifMarkRead('${n.id}');openTaskModal('${task.id}')">
-          Open task <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="font-size:13px;font-weight:${n.read?500:600};color:#1a2940;line-height:1.4;margin-bottom:${n.preview?'6px':'0'}">${escHtml(n.message)}</div>
+        ${n.preview?`<div style="font-size:12px;color:#4b6280;background:${meta.color}0d;border-left:2px solid ${meta.color}40;padding:5px 10px;border-radius:0 6px 6px 0;line-height:1.5;white-space:pre-wrap;word-break:break-word">${escHtml(n.preview)}</div>`:''}
+        ${task?`<div style="font-size:11px;color:#97bcbd;margin-top:6px;display:inline-flex;align-items:center;gap:3px">
+          View comment <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>`:''}
-        <div style="font-size:10px;color:#b0bec5;margin-top:4px">${_relativeTime(n.createdAt||n.timestamp)}</div>
       </div>
-      <button onclick="notifDismiss('${n.id}')" style="background:none;border:none;color:#c4d0db;cursor:pointer;font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px;transition:color 0.1s" title="Dismiss" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
+      <button onclick="event.stopPropagation();notifDismiss('${n.id}')" style="background:none;border:none;color:#c4d0db;cursor:pointer;font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px;transition:color 0.1s" title="Dismiss" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
     </div>`;
   }).join('');
 
@@ -8565,6 +9312,13 @@ function confirmDelete(type, id){
 }
 function closeConfirm(){document.getElementById('confirm-modal').classList.add('hidden');confirmCallback=null;}
 function closeGenericModal(){document.getElementById('generic-modal').classList.add('hidden');}
+function openGenericModal(title,bodyHtml,width){
+  const box=document.querySelector('#generic-modal .modal-box');
+  if(box)box.style.maxWidth=width||'500px';
+  document.getElementById('generic-modal-title').textContent=title;
+  document.getElementById('generic-modal-body').innerHTML=bodyHtml;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
 
 // ═══════════════════════════════════════════════════════════
 // WORKBOARD TAB STRIP (shared across all workboard views)
@@ -8597,6 +9351,10 @@ function renderWbTabs(activeView){
       ${(currentUser.role==='admin'||wb.ownerId===currentUser.id)?`<button onclick="openBoardShareModal('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Manage board access">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 8l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Shared with
+      </button>`:''}
+      ${currentUser.role==='admin'?`<button onclick="openShareLinkManager('workboard','${wb.id}','${escHtml(wb.name).replace(/'/g,"\\'")}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Share progress link">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="4" cy="8" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M10.3 4.2L5.7 6.8M5.7 9.2l4.6 2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Share
       </button>`:''}
       <button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M14 9a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
@@ -9638,13 +10396,13 @@ function renderTpDetails(task){
         <option value="other" ${task.approvalType==='other'?'selected':''}>Other</option>
       </select>
     </div>`:''}
-    <div class="tp-field-row">
-      <span class="tp-field-label">Start Date</span>
-      <input type="date" class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" value="${task.startDate||''}" onchange="tpSaveField('startDate',this.value)"/>
-    </div>
-    <div class="tp-field-row">
-      <span class="tp-field-label">Due Date</span>
-      <input type="date" class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" value="${task.endDate||''}" onchange="tpSaveField('endDate',this.value)"/>
+    <div class="tp-field-row" style="align-items:center">
+      <span class="tp-field-label">Dates</span>
+      <div class="tp-field-val" style="display:flex;align-items:center;gap:6px">
+        <input type="date" style="border:none;background:transparent;font-size:13px;color:${task.startDate?'#1a2940':'#94a3b8'};cursor:pointer;padding:0;min-width:0;flex:1" value="${task.startDate||''}" placeholder="Start" onchange="tpSaveField('startDate',this.value)" title="Start date"/>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        <input type="date" style="border:none;background:transparent;font-size:13px;color:${task.endDate?'#1a2940':'#94a3b8'};cursor:pointer;padding:0;min-width:0;flex:1" value="${task.endDate||''}" placeholder="Due" onchange="tpSaveField('endDate',this.value)" title="Due date"/>
+      </div>
     </div>
     <div class="tp-field-row" style="align-items:flex-start">
       <span class="tp-field-label" style="padding-top:4px">Tags</span>
@@ -9666,6 +10424,7 @@ function renderTpDetails(task){
       <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Description</div>
       <textarea id="tp-desc" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.6;box-sizing:border-box;transition:border-color 0.15s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
     </div>
+    ${currentUser?.role!=='client'?_recurSummaryRow(task):''}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
       <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Comments</div>
       ${renderTpComments(task.id)}
@@ -9998,15 +10757,16 @@ function tpAddComment(){
   const _now=new Date().toISOString();
   const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
+  const preview=body.length>120?body.slice(0,120)+'…':body;
   // Notify task owner (if not self)
   if(_tpCurrentTask.ownerId&&_tpCurrentTask.ownerId!==currentUser.id){
-    DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:'New comment on: '+_tpCurrentTask.name,createdAt:_now});
+    DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:currentUser.name+' commented on: '+_tpCurrentTask.name,preview,createdAt:_now});
   }
   // Notify @mentioned staff (distinct from owner, not self)
   const bodyLower=body.toLowerCase();
   (DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser.id&&u.id!==_tpCurrentTask.ownerId).forEach(u=>{
     if(bodyLower.includes('@'+u.name.toLowerCase())){
-      DB.notifications.push({id:'n'+uid(),recipientId:u.id,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in a comment on: '+_tpCurrentTask.name,createdAt:_now});
+      DB.notifications.push({id:'n'+uid(),recipientId:u.id,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in: '+_tpCurrentTask.name,preview,createdAt:_now});
     }
   });
   clearTextareaDraft('tp-comment-input');
@@ -10098,6 +10858,564 @@ function tpDeleteTask(){
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
     saveDB(DB);closeConfirm();closeTaskPanel();renderView(currentView);
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RECURRING TASKS
+// ═══════════════════════════════════════════════════════════
+// ── Recurrence date helpers ───────────────────────────────────────────────────
+function _nthWeekdayOfMonth(year,month,ordinal,weekday){
+  if(ordinal==='last'){
+    const last=new Date(year,month+1,0);
+    const back=(last.getDay()-weekday+7)%7;
+    last.setDate(last.getDate()-back);
+    return last;
+  }
+  const nth={first:1,second:2,third:3,fourth:4}[ordinal]||1;
+  const d=new Date(year,month,1);
+  const add=(weekday-d.getDay()+7)%7;
+  d.setDate(1+add+(nth-1)*7);
+  if(d.getMonth()!==month)d.setDate(d.getDate()-7); // overflow → last occurrence
+  return d;
+}
+function _applyWeekendAction(d,action){
+  const dow=d.getDay();
+  if(dow===0||dow===6){
+    if(action==='prev')d.setDate(d.getDate()-(dow===0?2:1));
+    else if(action==='next')d.setDate(d.getDate()+(dow===6?2:1));
+  }
+  return d;
+}
+function _recurNextDate(fromDateStr,r){
+  const d=new Date((fromDateStr||toDateStr(new Date()))+'T12:00:00');
+  const freq=r.freq||'monthly';
+  const n=Math.max(1,parseInt(r.interval)||1);
+  if(freq==='daily'||freq==='custom'){
+    d.setDate(d.getDate()+n);
+  } else if(freq==='weekly'){
+    d.setDate(d.getDate()+7*n);
+  } else if(freq==='monthly'){
+    if(r.onWeekdayOrdinal&&r.onWeekday!=null){
+      d.setMonth(d.getMonth()+n,1);
+      const nwd=_nthWeekdayOfMonth(d.getFullYear(),d.getMonth(),r.onWeekdayOrdinal,parseInt(r.onWeekday));
+      return toDateStr(_applyWeekendAction(nwd,r.weekendAction||'keep'));
+    } else {
+      const day=Math.max(1,parseInt(r.onDay)||1);
+      d.setMonth(d.getMonth()+n,1);
+      const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+      d.setDate(Math.min(day,dim));
+    }
+  } else if(freq==='yearly'){
+    d.setFullYear(d.getFullYear()+n);
+  }
+  return toDateStr(_applyWeekendAction(d,r.weekendAction||'keep'));
+}
+// Keep old name as alias for any leftover calls
+function _nextRecurDate(fromDate,freq,interval){return _recurNextDate(fromDate,{freq,interval,weekendAction:'keep'});}
+
+function _recurPreviewDates(r,baseDate,count){
+  if(!r||!r.freq)return[];
+  const out=[];
+  let cur=baseDate||toDateStr(new Date());
+  const endDate=r.endDate||null;
+  const maxOcc=r.occurrences?parseInt(r.occurrences):null;
+  let occ=parseInt(r.occurrenceCount)||0;
+  let safety=0;
+  while(out.length<count&&safety++<50){
+    cur=_recurNextDate(cur,r);
+    if(endDate&&cur>endDate)break;
+    if(maxOcc&&occ>=maxOcc)break;
+    out.push(cur);
+    occ++;
+  }
+  return out;
+}
+
+function _checkRecurringTasks(){
+  const today=toDateStr(new Date());
+  let created=0;
+  (DB.tasks||[]).filter(t=>t.recurrence&&!t.archived).forEach(source=>{
+    const r=source.recurrence;
+    if(!r||!r.freq)return;
+    const nextDue=r.nextDue||source.endDate;
+    if(!nextDue)return;
+    // Check if it's time to create (accounting for lead days)
+    const leadDays=parseInt(r.leadDays)||0;
+    const createBy=leadDays>0?(()=>{const d=new Date(nextDue+'T12:00:00');d.setDate(d.getDate()-leadDays);return toDateStr(d);})():nextDue;
+    if(createBy>today)return;
+    if(r.endType==='date'&&r.endDate&&nextDue>r.endDate)return;
+    const occCount=parseInt(r.occurrenceCount)||0;
+    if(r.endType==='count'&&r.occurrences&&occCount>=parseInt(r.occurrences))return;
+    // Build new task instance
+    const _now=new Date().toISOString();
+    const base=JSON.parse(JSON.stringify(source));
+    const newTask={
+      ...base,
+      id:'t'+uid(),
+      startDate:nextDue,
+      endDate:nextDue,
+      status:'todo',
+      percentComplete:0,
+      completedAt:null,
+      recurrence:null,
+      recurSourceId:source.id,
+      createdAt:_now,
+      updatedAt:_now,
+    };
+    if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
+    if(!r.copySameBoard){newTask.boardId=null;newTask.workboardId=null;newTask.groupId=null;}
+    if(!r.copySamePriority)newTask.priority='med';
+    if(!r.copySameDescription)newTask.description='';
+    DB.tasks.push(newTask);
+    source.recurrence={...r,nextDue:_recurNextDate(nextDue,r),occurrenceCount:occCount+1};
+    created++;
+  });
+  if(created>0){saveDB(DB);showToast(`${created} recurring task${created!==1?'s':''} created`,'info',3500);}
+}
+
+function _recurPillSet(name,val){
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r=>{r.checked=(r.value===val);});
+  document.querySelectorAll(`[data-pill-group="${name}"]`).forEach(l=>{
+    const active=l.getAttribute('data-pill-val')===val;
+    l.style.background=active?'#0d1c33':'#f4f7fa';
+    l.style.color=active?'#fff':'#4a5568';
+    l.style.borderColor=active?'#0d1c33':'transparent';
+  });
+  _tpRecurToggleUI();
+}
+function _recurSegSet(name,val){
+  // sync hidden radio so _tpRecurToggleUI / tpSaveRecurrence keep working
+  const r=document.querySelector(`input[name="${name}"][value="${val}"]`);if(r)r.checked=true;
+  document.querySelectorAll(`[data-seg-group="${name}"]`).forEach(b=>{
+    const active=b.getAttribute('data-seg-val')===val;
+    b.style.background=active?'#0d1c33':'#fff';
+    b.style.color=active?'#fff':'#64748b';
+  });
+  _tpRecurToggleUI();
+}
+function _tpRecurToggleUI(){
+  const freq=(document.querySelector('[name="tp-recur-freq"]:checked')||{}).value||'';
+  const onType=(document.querySelector('[name="tp-recur-on"]:checked')||{}).value||'day';
+  const endType=(document.querySelector('[name="tp-recur-end-type"]:checked')||{}).value||'never';
+  const units={daily:'day(s)',weekly:'week(s)',monthly:'month(s)',yearly:'year(s)',custom:'day(s)'};
+  const el=id=>document.getElementById(id);
+  const show=(id,v)=>{const e=el(id);if(e)e.style.display=v?'':'none';};
+  if(el('tp-recur-unit'))el('tp-recur-unit').textContent=units[freq]||'unit(s)';
+  show('tp-recur-interval-row',!!freq);
+  show('tp-recur-month-sec',freq==='monthly');
+  show('tp-recur-day-num-wrap',onType==='day');
+  show('tp-recur-weekday-wrap',onType==='weekday');
+  show('tp-recur-end-date-wrap',endType==='date');
+  show('tp-recur-end-count-wrap',endType==='count');
+  show('tp-recur-options-sec',!!freq);
+  _tpRecurUpdatePreview();
+}
+
+function _tpRecurUpdatePreview(){
+  const el=id=>document.getElementById(id);
+  const prev=el('tp-recur-preview');if(!prev)return;
+  const freq=(document.querySelector('[name="tp-recur-freq"]:checked')||{}).value||'';
+  if(!freq){prev.innerHTML='<span style="color:#94a3b8;font-style:italic">Select a frequency to preview dates.</span>';return;}
+  const onType=(document.querySelector('[name="tp-recur-on"]:checked')||{}).value||'day';
+  const endType=(document.querySelector('[name="tp-recur-end-type"]:checked')||{}).value||'never';
+  const r={
+    freq,
+    interval:parseInt(el('tp-recur-interval')?.value)||1,
+    onDay:parseInt(el('tp-recur-day-num')?.value)||1,
+    onWeekdayOrdinal:onType==='weekday'?(el('tp-recur-ordinal')?.value||'first'):null,
+    onWeekday:onType==='weekday'?parseInt(el('tp-recur-weekday')?.value||1):null,
+    weekendAction:(document.querySelector('[name="tp-recur-weekend"]:checked')||{}).value||'keep',
+    endType,
+    endDate:endType==='date'?(el('tp-recur-end-date')?.value||null):null,
+    occurrences:endType==='count'?parseInt(el('tp-recur-end-count')?.value||10):null,
+    occurrenceCount:0,
+  };
+  const startBase=el('tp-recur-start')?.value||toDateStr(new Date());
+  const dates=_recurPreviewDates(r,startBase,3);
+  if(!dates.length){prev.innerHTML='<span style="font-size:12px;color:#94a3b8;font-style:italic">No upcoming occurrences.</span>';return;}
+  prev.innerHTML=dates.map(d=>{
+    const dt=new Date(d+'T12:00:00');
+    const fmt=dt.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+    return`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f4f8;border-radius:20px;font-size:11px;font-weight:500;color:#334155"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#97bcbd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${fmt}</div>`;
+  }).join('');
+}
+
+function tpSaveRecurrence(taskId){
+  const t=DB.tasks.find(x=>x.id===taskId);if(!t)return;
+  const freq=(document.querySelector('[name="tp-recur-freq"]:checked')||{}).value||'';
+  if(!freq){t.recurrence=null;}
+  else{
+    const el=id=>document.getElementById(id);
+    const onType=(document.querySelector('[name="tp-recur-on"]:checked')||{}).value||'day';
+    const endType=(document.querySelector('[name="tp-recur-end-type"]:checked')||{}).value||'never';
+    const baseDate=el('tp-recur-start')?.value||t.endDate||toDateStr(new Date());
+    const r={
+      freq,
+      interval:Math.max(1,parseInt(el('tp-recur-interval')?.value)||1),
+      onDay:parseInt(el('tp-recur-day-num')?.value)||1,
+      onWeekdayOrdinal:onType==='weekday'?(el('tp-recur-ordinal')?.value||'first'):null,
+      onWeekday:onType==='weekday'?parseInt(el('tp-recur-weekday')?.value||1):null,
+      leadDays:Math.max(0,parseInt(el('tp-recur-lead')?.value)||0),
+      weekendAction:(document.querySelector('[name="tp-recur-weekend"]:checked')||{}).value||'keep',
+      endType,
+      endDate:endType==='date'?(el('tp-recur-end-date')?.value||null):null,
+      occurrences:endType==='count'?Math.max(1,parseInt(el('tp-recur-end-count')?.value)||10):null,
+      occurrenceCount:t.recurrence?.occurrenceCount||0,
+      copySameAssignee:el('tp-recur-copy-assignee')?.checked!==false,
+      copySameBoard:el('tp-recur-copy-board')?.checked!==false,
+      copySamePriority:el('tp-recur-copy-priority')?.checked!==false,
+      copySameDescription:el('tp-recur-copy-desc')?.checked!==false,
+      nextDue:_recurNextDate(baseDate,{freq,interval:Math.max(1,parseInt(el('tp-recur-interval')?.value)||1),onDay:parseInt(el('tp-recur-day-num')?.value)||1,onWeekdayOrdinal:onType==='weekday'?(el('tp-recur-ordinal')?.value||'first'):null,onWeekday:onType==='weekday'?parseInt(el('tp-recur-weekday')?.value||1):null,weekendAction:(document.querySelector('[name="tp-recur-weekend"]:checked')||{}).value||'keep'}),
+    };
+    t.recurrence=r;
+  }
+  t.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  showToast(freq?'Recurring schedule saved':'Recurring schedule removed','success');
+  closeGenericModal();
+  if(_tpCurrentTask)openTaskPanel(_tpCurrentTask.id);
+}
+
+function _recurSummaryRow(task){
+  const r=task.recurrence;
+  if(task.recurSourceId){
+    return`<div style="margin-top:14px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8eef6;font-size:12px;color:#8da2b2;font-style:italic">Recurring instance — edit the original task to change the schedule.</div>`;
+  }
+  const FREQ_LABELS={daily:'Daily',weekly:'Weekly',monthly:'Monthly',yearly:'Yearly',custom:'Custom'};
+  const summary=r
+    ?`${FREQ_LABELS[r.freq]||r.freq}${r.interval>1?' · every '+r.interval:''}${r.nextDue?' · next '+new Date(r.nextDue+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):''}`
+    :'Does not repeat';
+  return`<div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8eef6;cursor:pointer" onclick="openRecurModal('${task.id}')" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#f8fafc'">
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8da2b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Recurring Schedule</div>
+        <div style="font-size:12px;color:${r?'#0d1c33':'#94a3b8'};margin-top:1px">${summary}</div>
+      </div>
+    </div>
+    <span style="font-size:11px;color:#97bcbd">Edit ›</span>
+  </div>`;
+}
+
+function openRecurModal(taskId){
+  const task=DB.tasks.find(x=>x.id===taskId);if(!task)return;
+  openGenericModal('Recurring Schedule',renderTpRecurrence(task),'640px');
+}
+
+function renderTpRecurrence(task){
+  if(task.recurSourceId){
+    return`<div style="padding:16px;background:#f8fafc;border-radius:10px;border:1px solid #e8eef6;font-size:13px;color:#8da2b2;font-style:italic;text-align:center">
+      This is a recurring instance — edit the original task to change the schedule.
+    </div>`;
+  }
+
+  const r=task.recurrence;
+  const freq=r?.freq||'';
+  const onType=r?.onWeekdayOrdinal?'weekday':'day';
+  const endType=r?.endType||'never';
+  const weekendAction=r?.weekendAction||'keep';
+
+  const LBL='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;display:block';
+  const INP='width:60px;font-size:13px;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;color:#1a2940;background:#fff;text-align:center';
+  const SEL='font-size:13px;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;color:#1a2940;background:#fff';
+  const DATE='font-size:13px;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;color:#1a2940;background:#fff;width:100%;box-sizing:border-box';
+
+  // Pill buttons for frequency (hidden radio + styled label)
+  const freqOpts=[['daily','Daily'],['weekly','Weekly'],['monthly','Monthly'],['yearly','Yearly'],['custom','Custom'],['','No repeat']];
+  const freqPills=freqOpts.map(([val,label])=>{
+    const active=val===''?!freq:freq===val;
+    return`<label data-pill-group="tp-recur-freq" data-pill-val="${val}" onclick="_recurPillSet('tp-recur-freq','${val}')" style="display:inline-block;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;user-select:none;border:1.5px solid ${active?'#0d1c33':'transparent'};background:${active?'#0d1c33':'#f4f7fa'};color:${active?'#fff':'#4a5568'};transition:background 0.15s,color 0.15s">
+      <input type="radio" name="tp-recur-freq" value="${val}" ${active?'checked':''} style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">${label}
+    </label>`;
+  }).join('');
+
+  // Segmented control — hidden radios as siblings, NOT inside buttons (invalid HTML)
+  const seg=(name,opts,cur)=>`<div>
+    <div style="display:none">${opts.map(([val])=>`<input type="radio" name="${name}" value="${val}" ${cur===val?'checked':''}>`).join('')}</div>
+    <div style="display:flex;border:1.5px solid #e2eaf2;border-radius:8px;overflow:hidden">
+      ${opts.map(([val,label],i)=>{
+        const active=cur===val;
+        return`<button type="button" data-seg-group="${name}" data-seg-val="${val}" onclick="_recurSegSet('${name}','${val}')"
+          style="flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;background:${active?'#0d1c33':'#fff'};color:${active?'#fff':'#64748b'};transition:background 0.15s,color 0.15s${i>0?';border-left:1.5px solid #e2eaf2':''}">${label}</button>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  const ORDINALS=['first','second','third','fourth','last'];
+  const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  // Preview dates
+  const previewHtml=(()=>{
+    if(!r)return`<span style="font-size:12px;color:#94a3b8;font-style:italic">Select a frequency above to see upcoming dates.</span>`;
+    const dates=_recurPreviewDates(r,task.endDate||toDateStr(new Date()),3);
+    if(!dates.length)return`<span style="font-size:12px;color:#94a3b8;font-style:italic">No upcoming occurrences.</span>`;
+    return dates.map(d=>{
+      const dt=new Date(d+'T12:00:00');
+      return`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f4f8;border-radius:20px;font-size:11px;font-weight:500;color:#334155">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#97bcbd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        ${dt.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}
+      </div>`;
+    }).join('');
+  })();
+
+  return`<div style="display:grid;gap:18px">
+
+    <!-- Frequency pills -->
+    <div>
+      <span style="${LBL}">Frequency</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${freqPills}</div>
+    </div>
+
+    <!-- Interval (hidden when no freq) -->
+    <div id="tp-recur-interval-row" style="display:${freq?'flex':'none'};align-items:center;gap:10px">
+      <span style="font-size:13px;color:#64748b;white-space:nowrap">Every</span>
+      <input id="tp-recur-interval" type="number" min="1" max="99" value="${r?.interval||1}" style="${INP}" oninput="_tpRecurUpdatePreview()">
+      <span id="tp-recur-unit" style="font-size:13px;color:#64748b">${{daily:'day(s)',weekly:'week(s)',monthly:'month(s)',yearly:'year(s)',custom:'day(s)'}[freq]||'unit(s)'}</span>
+    </div>
+
+    <!-- Monthly "On" (hidden unless monthly) -->
+    <div id="tp-recur-month-sec" style="${freq==='monthly'?'':'display:none'}">
+      <span style="${LBL}">On</span>
+      <div style="display:grid;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1a2940;cursor:pointer">
+          <input type="radio" name="tp-recur-on" value="day" ${onType==='day'?'checked':''} onchange="_tpRecurToggleUI()" style="accent-color:#0d1c33">
+          Day
+          <div id="tp-recur-day-num-wrap" style="display:${onType==='day'?'flex':'none'};align-items:center;gap:6px">
+            <input id="tp-recur-day-num" type="number" min="1" max="31" value="${r?.onDay||1}" style="${INP};width:50px" oninput="_tpRecurUpdatePreview()">
+            <span style="color:#64748b">of the month</span>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1a2940;cursor:pointer;flex-wrap:wrap">
+          <input type="radio" name="tp-recur-on" value="weekday" ${onType==='weekday'?'checked':''} onchange="_tpRecurToggleUI()" style="accent-color:#0d1c33">
+          The
+          <div id="tp-recur-weekday-wrap" style="display:${onType==='weekday'?'flex':'none'};align-items:center;gap:6px;flex-wrap:wrap">
+            <select id="tp-recur-ordinal" style="${SEL}" onchange="_tpRecurUpdatePreview()">
+              ${ORDINALS.map(o=>`<option value="${o}" ${r?.onWeekdayOrdinal===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('')}
+            </select>
+            <select id="tp-recur-weekday" style="${SEL}" onchange="_tpRecurUpdatePreview()">
+              ${WEEKDAYS.map((w,i)=>`<option value="${i}" ${r?.onWeekday===i?'selected':''}>${w}</option>`).join('')}
+            </select>
+            <span style="color:#64748b">of the month</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Start date + lead days -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <span style="${LBL}">Starting from</span>
+        <input id="tp-recur-start" type="date" value="${task.endDate||toDateStr(new Date())}" style="${DATE}" onchange="_tpRecurUpdatePreview()">
+      </div>
+      <div>
+        <span style="${LBL}">Create task ahead</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input id="tp-recur-lead" type="number" min="0" max="365" value="${r?.leadDays||0}" style="${INP}" oninput="_tpRecurUpdatePreview()">
+          <span style="font-size:12px;color:#94a3b8">days before due</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekend action (segmented) -->
+    <div>
+      <span style="${LBL}">If falls on a weekend</span>
+      ${seg('tp-recur-weekend',[['keep','Keep date'],['prev','Prev weekday'],['next','Next weekday']],weekendAction)}
+    </div>
+
+    <!-- Ends (segmented) -->
+    <div>
+      <span style="${LBL}">Ends</span>
+      ${seg('tp-recur-end-type',[['never','Never'],['date','On date'],['count','After N']],endType)}
+      <div id="tp-recur-end-date-wrap" style="display:${endType==='date'?'block':'none'};margin-top:8px">
+        <input id="tp-recur-end-date" type="date" value="${r?.endDate||''}" style="${DATE};width:auto" onchange="_tpRecurUpdatePreview()">
+      </div>
+      <div id="tp-recur-end-count-wrap" style="display:${endType==='count'?'flex':'none'};align-items:center;gap:8px;margin-top:8px">
+        <input id="tp-recur-end-count" type="number" min="1" max="999" value="${r?.occurrences||10}" style="${INP}" oninput="_tpRecurUpdatePreview()">
+        <span style="font-size:13px;color:#64748b">occurrences</span>
+      </div>
+    </div>
+
+    <!-- Copy options + preview (hidden when no freq) -->
+    <div id="tp-recur-options-sec" style="${freq?'':'display:none'}">
+      <span style="${LBL}">Copy to new tasks</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+        ${[['tp-recur-copy-assignee','Same assignee',r?.copySameAssignee!==false],
+           ['tp-recur-copy-board','Same board',r?.copySameBoard!==false],
+           ['tp-recur-copy-priority','Same priority',r?.copySamePriority!==false],
+           ['tp-recur-copy-desc','Same description',r?.copySameDescription!==false]
+        ].map(([id,label,chk])=>`<label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#334155;cursor:pointer;padding:3px 0">
+          <input type="checkbox" id="${id}" ${chk?'checked':''} style="accent-color:#0d1c33;width:14px;height:14px"> ${label}
+        </label>`).join('')}
+      </div>
+    </div>
+
+    <!-- Preview strip -->
+    <div style="background:#f8fafc;border-radius:10px;padding:12px 14px">
+      <span style="${LBL}">Next occurrences</span>
+      <div id="tp-recur-preview" style="display:flex;flex-wrap:wrap;gap:6px">${previewHtml}</div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px;border-top:1px solid #f0f4f8">
+      ${r?`<button onclick="if(confirm('Remove recurring schedule?')){const t=DB.tasks.find(x=>x.id==='${task.id}');if(t){t.recurrence=null;t.updatedAt=new Date().toISOString();saveDB(DB);showToast('Schedule removed','info');closeGenericModal();if(_tpCurrentTask)openTaskPanel(_tpCurrentTask.id);}}" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-right:auto">Remove schedule</button>`:''}
+      <button onclick="closeGenericModal()" class="btn btn-ghost btn-sm">Cancel</button>
+      <button onclick="tpSaveRecurrence('${task.id}')" class="btn btn-teal btn-sm">Save</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VOICE TO TASK
+// ═══════════════════════════════════════════════════════════
+let _voiceRec=null;
+let _voiceTranscript='';
+
+function startVoiceCapture(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showAlert('Voice input is not supported in this browser. Try Chrome or Edge.','Voice Not Available');return;}
+  _voiceTranscript='';
+  const modal=document.getElementById('voice-modal');
+  modal.style.display='flex';
+  document.getElementById('voice-modal-title').textContent='Listening…';
+  document.getElementById('voice-transcript').textContent='Waiting for speech…';
+  document.getElementById('voice-transcript').style.fontStyle='italic';
+  document.getElementById('voice-transcript').style.color='#8da2b2';
+  document.getElementById('voice-parsed').style.display='none';
+  document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>`;
+  document.getElementById('voice-status-icon').style.background='#fef2f2';
+
+  _voiceRec=new SR();
+  _voiceRec.lang='en-AU';
+  _voiceRec.interimResults=true;
+  _voiceRec.maxAlternatives=1;
+  _voiceRec.continuous=false;
+
+  _voiceRec.onresult=(e)=>{
+    const interim=Array.from(e.results).map(r=>r[0].transcript).join('');
+    document.getElementById('voice-transcript').textContent=interim;
+    document.getElementById('voice-transcript').style.fontStyle='normal';
+    document.getElementById('voice-transcript').style.color='#1a2940';
+    if(e.results[0].isFinal){_voiceTranscript=interim;_voiceProcessResult(interim);}
+  };
+  _voiceRec.onerror=(e)=>{
+    document.getElementById('voice-modal-title').textContent='Could not hear you';
+    document.getElementById('voice-transcript').textContent=e.error==='not-allowed'?'Microphone permission denied.':'Please try again.';
+    document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button><button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`;
+  };
+  _voiceRec.onend=()=>{
+    document.getElementById('voice-status-icon').style.background='#f0f7f7';
+  };
+  _voiceRec.start();
+}
+
+function stopVoice(){
+  try{_voiceRec?.stop();}catch(_){}
+  _voiceRec=null;
+  document.getElementById('voice-modal').style.display='none';
+}
+
+function _voiceProcessResult(text){
+  document.getElementById('voice-modal-title').textContent='Got it — parsing…';
+  const parsed=_parseVoiceInput(text);
+  const pd=document.getElementById('voice-parsed');
+  pd.style.display='block';
+  pd.innerHTML=`<div style="font-weight:700;color:#0d6e4e;margin-bottom:8px">Parsed task:</div>
+    <div style="display:grid;gap:4px">
+      <div><span style="color:#8da2b2">Title:</span> ${escHtml(parsed.name||'—')}</div>
+      <div><span style="color:#8da2b2">Board:</span> ${escHtml(parsed.boardName||'—')}</div>
+      <div><span style="color:#8da2b2">Due:</span> ${escHtml(parsed.dueLabel||'—')}</div>
+      <div><span style="color:#8da2b2">Priority:</span> ${escHtml(parsed.priority||'—')}</div>
+    </div>`;
+  document.getElementById('voice-actions').innerHTML=`
+    <button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>
+    <button onclick="startVoiceCapture()" class="btn btn-ghost">Re-record</button>
+    <button onclick="_voiceCreateTask()" class="btn btn-teal">Create Task</button>`;
+}
+
+function _parseVoiceInput(text){
+  const t=text.toLowerCase();
+  const result={raw:text,name:'',boardId:null,boardName:null,dueDate:null,dueLabel:null,priority:'med'};
+
+  // Extract board: "in [board name]'s board" / "in [board name] board" / "to [board name]"
+  const wbs=(DB.workboards||[]).filter(w=>!w.archived);
+  let bestWb=null,bestScore=0;
+  wbs.forEach(wb=>{
+    const wbName=wb.name.toLowerCase();
+    // Check if any word of the board name appears in the transcript
+    const words=wbName.split(/\s+/);
+    const score=words.filter(w=>w.length>2&&t.includes(w)).length/words.length;
+    if(score>bestScore){bestScore=score;bestWb=wb;}
+  });
+  if(bestWb&&bestScore>0.3){result.boardId=bestWb.id;result.boardName=bestWb.name;}
+
+  // Extract date
+  const today=new Date();
+  if(t.includes('today')){result.dueDate=toDateStr(today);result.dueLabel='Today';}
+  else if(t.includes('tomorrow')){const d=new Date(today);d.setDate(d.getDate()+1);result.dueDate=toDateStr(d);result.dueLabel='Tomorrow';}
+  else if(t.includes('next week')){const d=new Date(today);d.setDate(d.getDate()+7);result.dueDate=toDateStr(d);result.dueLabel='Next week';}
+  else if(t.includes('monday')){result.dueDate=_nextWeekday(today,1);result.dueLabel='Monday';}
+  else if(t.includes('friday')){result.dueDate=_nextWeekday(today,5);result.dueLabel='Friday';}
+
+  // Extract priority
+  if(t.includes('urgent')||t.includes('critical')||t.includes('asap'))result.priority='crit';
+  else if(t.includes('high priority')||t.includes('important'))result.priority='high';
+  else if(t.includes('low priority'))result.priority='low';
+
+  // Extract task name: remove board/date/filler phrases
+  let name=text;
+  name=name.replace(/\badd\b/i,'').replace(/\bcreate\b/i,'').replace(/\btask\b/i,'');
+  name=name.replace(/\bin\s+[\w\s']+'s?\s+board/i,'').replace(/\bfor\s+(today|tomorrow|next week|monday|friday)/i,'');
+  if(result.boardName)name=name.replace(new RegExp(result.boardName,'i'),'');
+  name=name.replace(/\s{2,}/g,' ').trim().replace(/^[,\s]+|[,\s]+$/g,'');
+  if(name)name=name.charAt(0).toUpperCase()+name.slice(1);
+  result.name=name||text;
+
+  return result;
+}
+
+function _nextWeekday(from,day){
+  const d=new Date(from);
+  const diff=(day-d.getDay()+7)%7||7;
+  d.setDate(d.getDate()+diff);
+  return toDateStr(d);
+}
+
+let _voiceParsedData=null;
+function _voiceCreateTask(){
+  const parsed=_parseVoiceInput(_voiceTranscript);
+  _voiceParsedData=parsed;
+  // Find the best group for the board
+  const wb=parsed.boardId?(DB.workboards||[]).find(w=>w.id===parsed.boardId):null;
+  const group=wb?DB.groups.find(g=>(g.workboardId||g.boardId)===wb.id):null;
+  if(!parsed.name){stopVoice();showAlert('Could not extract a task name. Please try again.','Voice Task');return;}
+  const _now=new Date().toISOString();
+  const newTask={
+    id:'t'+uid(),
+    name:parsed.name,
+    groupId:group?.id||getWbDefaultGroup(),
+    workboardId:parsed.boardId||currentWorkboard?.id||DB.workboards[0]?.id||'',
+    boardId:parsed.boardId||currentWorkboard?.id||DB.workboards[0]?.id||'',
+    clientId:group?.clientId||null,
+    status:'todo',
+    priority:parsed.priority||'med',
+    ownerId:currentUser.id,
+    currentlyWith:currentUser.id,
+    currentlyWithType:'staff',
+    currentlyWithUserId:currentUser.id,
+    endDate:parsed.dueDate||'',
+    startDate:toDateStr(new Date()),
+    percentComplete:0,
+    hourBudget:'',description:'',dependencies:[],tags:[],
+    archived:false,recurrence:null,recurSourceId:null,
+    createdAt:_now,updatedAt:_now,completedAt:null
+  };
+  DB.tasks.push(newTask);
+  saveDB(DB);
+  stopVoice();
+  showToast(`Task created: "${parsed.name}"`, 'success', 4000);
+  // Navigate to the board if possible
+  if(parsed.boardId){const wb=(DB.workboards||[]).find(w=>w.id===parsed.boardId);if(wb)openWorkboard(wb.id);}
+  openTaskPanel(newTask.id);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -11707,9 +13025,32 @@ document.addEventListener('keydown',e=>{
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
 });
+// ─── Share link check — runs before session restore ───────────────────────────
+(function _checkShareRoute(){
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('share');
+  if(!token)return;
+  // Hide all auth UI immediately — share page needs no login
+  const hide=id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden');};
+  hide('login-screen');hide('app-shell');hide('client-portal');
+  document.getElementById('share-page').classList.remove('hidden');
+  window._shareRouteActive=true; // stops _startApp and Supabase auth handler from interfering
+  const link=(DB.shareLinks||[]).find(l=>l.token===token&&!l.revoked);
+  if(!link){
+    document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px">
+      <div style="font-size:32px;margin-bottom:16px">🔒</div>
+      <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#0d1c33;margin-bottom:8px">Link not found</div>
+      <div style="font-size:14px;color:#8da2b2">This progress link may have expired or been revoked.</div>
+    </div>`;
+    return;
+  }
+  document.getElementById('share-page-body').innerHTML=renderSharePage(link);
+})();
+
 // Auto-restore session so users stay logged in across page reloads.
 // Tries Supabase first (if configured), falls back to localStorage.
 (async function _startApp(){
+  if(window._shareRouteActive)return; // share page is showing — no auth needed
   try{
     // supabase-client.js is deferred — wait up to 2 s for it to finish init
     const _waitForSupabase=()=>new Promise(resolve=>{
@@ -11891,6 +13232,25 @@ document.addEventListener('keydown',e=>{
       <button onclick="document.getElementById('report-issue-modal').classList.add('hidden')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8da2b2;line-height:1">×</button>
     </div>
     <div id="report-issue-body" style="padding:20px 24px"></div>
+  </div>
+</div>
+
+<!-- VOICE-TO-TASK -->
+<button id="voice-fab" onclick="startVoiceCapture()" title="Voice to task" style="display:none;position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:#0d1c33;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(13,28,51,0.3);z-index:500;color:#fff;font-size:20px;align-items:center;justify-content:center;transition:transform 0.15s,background 0.15s" onmouseover="this.style.background='#1a3a5c'" onmouseout="this.style.background='#0d1c33'">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+</button>
+<div id="voice-modal" style="display:none;position:fixed;inset:0;background:rgba(13,28,51,0.5);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(13,28,51,0.25);text-align:center">
+    <div id="voice-status-icon" style="width:72px;height:72px;border-radius:50%;background:#f0f7f7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;transition:background 0.2s">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0d1c33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+    </div>
+    <div style="font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;margin-bottom:6px" id="voice-modal-title">Listening…</div>
+    <div style="font-size:12px;color:#8da2b2;margin-bottom:18px" id="voice-modal-hint">Say something like "Add check photos to General's board for tomorrow"</div>
+    <div id="voice-transcript" style="min-height:48px;background:#f8fbff;border-radius:10px;padding:12px 16px;font-size:13px;color:#1a2940;line-height:1.6;margin-bottom:18px;text-align:left;border:1.5px solid #e2eaf2;font-style:italic;color:#8da2b2">Waiting for speech…</div>
+    <div id="voice-parsed" style="display:none;background:#f0fdf4;border-radius:10px;padding:12px 16px;font-size:12px;color:#1a2940;margin-bottom:18px;text-align:left;border:1.5px solid #bbf7d0"></div>
+    <div style="display:flex;gap:10px;justify-content:center" id="voice-actions">
+      <button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>
+    </div>
   </div>
 </div>
 </body>

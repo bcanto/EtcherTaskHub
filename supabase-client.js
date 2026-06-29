@@ -40,7 +40,7 @@
     window._supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'TOKEN_REFRESHED') return; // silent, no UI change needed
       if (event === 'SIGNED_OUT') {
-        // If the page is already on the login screen, nothing to do
+        if (window._shareRouteActive) return; // share page — no auth UI to touch
         const loginVisible = !document.getElementById('login-screen')?.classList.contains('hidden');
         if (!loginVisible && typeof doLogout === 'function') doLogout();
         return;
