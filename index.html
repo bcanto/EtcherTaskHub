@@ -283,11 +283,19 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .sched-today{background:#f0f7ff!important}
 .sched-other{background:#fafafa;cursor:default!important}
 .sched-other:hover{background:#fafafa!important}
-.sched-day-num{font-size:12px;font-weight:500;color:#a0b4c7;margin-bottom:4px;line-height:1;height:22px;display:flex;align-items:center}
+.sched-day-num{font-size:12px;font-weight:500;color:#a0b4c7;margin-bottom:4px;line-height:1;height:22px;display:flex;align-items:center;justify-content:space-between}
 .sched-today-num{background:var(--navy);color:#fff!important;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
 .sched-evt-pill{font-size:11px;padding:2px 5px 2px 7px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.45;transition:opacity 0.12s;display:block}
 .sched-evt-pill:hover{opacity:0.72}
 .sched-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;padding:2px 4px}
+/* ── Presence Icons ── */
+.presence-dot-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
+.presence-dot-wrap .presence-remove,.presence-chip-wrap .presence-remove{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#ef4444;border:1.5px solid #fff;color:#fff;font-size:9px;cursor:pointer;align-items:center;justify-content:center;line-height:1;padding:0;z-index:20;font-family:sans-serif}
+.presence-dot-wrap:hover .presence-remove,.presence-chip-wrap:hover .presence-remove{display:flex}
+.presence-chip-wrap{position:relative;display:inline-flex;align-items:center}
+.presence-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px 2px 5px;border-radius:20px;font-family:'Lato',sans-serif;font-size:11px;cursor:default;white-space:nowrap}
+.sched-cell.presence-dragover{outline:2px dashed #97bcbd !important;outline-offset:-2px;background:#f0f7f0 !important}
+.presence-drop-zone.presence-dragover{outline:2px dashed #97bcbd;outline-offset:-2px;background:#f0f7f5 !important}
 .sched-evt-card{background:#fff;border-radius:var(--r-sm);padding:12px 16px;margin-bottom:8px;cursor:pointer;box-shadow:var(--sh-xs);transition:box-shadow 0.2s var(--ease),transform 0.2s var(--ease)}
 .sched-evt-card:hover{box-shadow:0 6px 20px rgba(13,28,51,0.1);transform:translateY(-1px)}
 /* ── WS actions / misc ── */
@@ -478,10 +486,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         Dashboard
         <span id="intake-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;line-height:1"></span>
       </div>
-      <div class="nav-item" data-view="digest" onclick="navigate('digest')" id="nav-digest-item">
-        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-        Digest
-      </div>
       <div class="nav-item" data-view="my-week" onclick="navigate('my-week')" id="nav-my-week-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         My Week
@@ -523,6 +527,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div class="nav-item" data-view="reports" onclick="navigate('reports')" id="nav-reports-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12.5L5.5 8 8.5 10.5 13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="13" cy="4" r="1.5" fill="currentColor"/></svg></span>
         Reports
+      </div>
+      <div class="nav-item" data-view="digest" onclick="navigate('digest')" id="nav-digest-item">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Digest
       </div>
       <div class="nav-item" data-view="notes" onclick="navigate('notes')" id="nav-notes-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><line x1="5.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="8" x2="10.5" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="10.5" x2="8.5" y2="10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
@@ -975,6 +983,7 @@ function _migrateDB(data){
   if(!data.wbFolders)          data.wbFolders           = [];
   if(!data.shareLinks)         data.shareLinks          = [];
   if(!data.digests)            data.digests             = [];
+  if(!data.presenceEntries)    data.presenceEntries     = [];
   // Seed sample digests once so the Digest view is populated on first load
   if(!data.migrationFlags.digestSeedV1&&data.digests.length===0){
     data.digests=JSON.parse(JSON.stringify(SEED.digests||[]));
@@ -2089,7 +2098,7 @@ function renderView(v){
       case 'digest':    vc.innerHTML=renderDigests();break;
       case 'gantt':     _renderCached(vc,'gantt',renderGantt);break;
       case 'capacity':  _renderCached(vc,'capacity',renderCapacity);break;
-      case 'schedule':  _renderCached(vc,'schedule',renderSchedule);break;
+      case 'schedule':  _renderCached(vc,'schedule-'+schedCalView,renderSchedule);break;
       case 'staff':     _renderCached(vc,'staff',renderStaff);break;
       // Live views: always fresh (mutations happen inline)
       case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;break;
@@ -3162,6 +3171,222 @@ function deleteWorkboard(id){
 // ═══════════════════════════════════════════════════════════
 const SCHED_TYPE_COLORS={personal:'#e8a84c',meeting:'#4f7ea0',teams:'#7b5ea7'};
 
+// ── Presence Icons ─────────────────────────────────────────
+const PRESENCE_TYPES=[
+  {id:'wfh',        label:'Work from Home',          short:'WFH',
+   svg:`<path d="M3 12L12 4l9 8"/><path d="M5 10.5V20a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9.5"/>`},
+  {id:'office',     label:'Etcher Office',            short:'Office',
+   svg:`<path d="M4 22V6a2 2 0 012-2h12a2 2 0 012 2v16"/><path d="M2 22h20"/><path d="M10 22v-5h4v5"/><rect x="8" y="9" width="2" height="2" rx="0.5"/><rect x="14" y="9" width="2" height="2" rx="0.5"/><rect x="8" y="14" width="2" height="2" rx="0.5"/><rect x="14" y="14" width="2" height="2" rx="0.5"/>`},
+  {id:'client',     label:'Client Office',            short:'Client',
+   svg:`<rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v4M10 14h4"/>`},
+  {id:'travelling', label:'Travelling',               short:'Travel',
+   svg:`<path d="M5 17H3v-5l2-6h14l2 6v5h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>`},
+  {id:'interstate', label:'Interstate / Out of State', short:'Away',
+   svg:`<path d="M5 19H3M19 19h2M7 19h10"/><path d="M12 2l4 9h-3.5v5.5l-1 .5-.5-.5V11H8L12 2z"/>`},
+  {id:'leave',      label:'Leave',                    short:'Leave',
+   svg:`<circle cx="12" cy="7" r="4"/><path d="M8 7c0 0-4 1.5-5 7s3.5 8 9 8 10-2.5 9-8-5-7-5-7"/>`},
+  {id:'sick',       label:'Sick',                     short:'Sick',
+   svg:`<path d="M12 2a3 3 0 00-3 3v6a3 3 0 006 0V5a3 3 0 00-3-3z"/><circle cx="12" cy="19" r="3"/><path d="M9 22h6"/>`},
+  {id:'training',   label:'Training',                 short:'Training',
+   svg:`<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 8h6M9 12h4"/>`},
+  {id:'focus',      label:'Focus Day',                short:'Focus',
+   svg:`<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>`},
+  {id:'tbc',        label:'TBC',                      short:'TBC',
+   svg:`<circle cx="12" cy="12" r="10"/><path d="M9 9a3 3 0 015.12 2.12C14.12 12.49 12 12 12 14"/><circle cx="12" cy="17.5" r=".75" fill="currentColor"/>`},
+];
+let _presenceDragType=null;
+let _presenceAnchorDate=null;
+let _presencePendingUserId=null;
+let _presencePendingDateStr=null;
+let _presencePendingType=null;
+let _presencePendingIsShift=false;
+let _presencePendingSetBy=null;
+
+function _presenceUpsert(userId,dateStr,type,clientId,setBy){
+  DB.presenceEntries=DB.presenceEntries||[];
+  const idx=DB.presenceEntries.findIndex(p=>p.userId===userId&&p.date===dateStr);
+  const entry={id:'pe_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),userId,date:dateStr,type,clientId:clientId||null,setBy:setBy||null,createdAt:new Date().toISOString()};
+  if(idx>=0)DB.presenceEntries[idx]=entry;
+  else DB.presenceEntries.push(entry);
+}
+function presenceSet(userId,dateStr,type,clientId,setBy){
+  _presenceUpsert(userId,dateStr,type,clientId,setBy);
+  saveDB(DB);renderView('schedule');
+}
+function presenceRemove(userId,dateStr){
+  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  if(userId!==currentUser.id&&!isAdmin)return;
+  DB.presenceEntries=(DB.presenceEntries||[]).filter(p=>!(p.userId===userId&&p.date===dateStr));
+  saveDB(DB);renderView('schedule');
+}
+function _presenceFillRange(userId,from,to,type,clientId,setBy){
+  const a=new Date(from+'T00:00:00'),b=new Date(to+'T00:00:00');
+  const start=a<b?new Date(a):new Date(b),end=a<b?new Date(b):new Date(a);
+  for(const d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    _presenceUpsert(userId,toDateStr(new Date(d)),type,clientId,setBy);
+  }
+  saveDB(DB);renderView('schedule');
+}
+function _presenceDragStart(e,type){
+  _presenceDragType=type;
+  e.dataTransfer.effectAllowed='copy';
+  e.dataTransfer.setData('text/plain',type);
+}
+function _presenceDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='copy';
+  e.currentTarget.classList.add('presence-dragover');
+}
+function _presenceDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){
+    e.currentTarget.classList.remove('presence-dragover');
+  }
+}
+function _presenceDrop(e,dateStr){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.classList.remove('presence-dragover');
+  const type=_presenceDragType||e.dataTransfer.getData('text/plain');
+  _presenceDragType=null;
+  if(!type)return;
+  _presencePendingDateStr=dateStr;_presencePendingType=type;_presencePendingIsShift=e.shiftKey;
+  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  if(isAdmin){_presencePickUser();}
+  else{_presencePendingUserId=currentUser.id;_presencePendingSetBy=null;_presenceApplyPending();}
+}
+function _presenceApplyPending(){
+  const userId=_presencePendingUserId,dateStr=_presencePendingDateStr,type=_presencePendingType,isShift=_presencePendingIsShift,setBy=_presencePendingSetBy;
+  _presencePendingUserId=_presencePendingDateStr=_presencePendingType=_presencePendingSetBy=null;_presencePendingIsShift=false;
+  if(type==='client'){_presencePickClient();return;}
+  if(isShift&&_presenceAnchorDate){_presenceFillRange(userId,_presenceAnchorDate,dateStr,type,null,setBy);}
+  else{_presenceAnchorDate=dateStr;presenceSet(userId,dateStr,type,null,setBy);}
+}
+function _presencePickUser(){
+  const staff=allStaff().filter(u=>!u.clientId&&u.active!==false);
+  document.getElementById('generic-modal-title').textContent='Set Presence For…';
+  document.getElementById('generic-modal-body').innerHTML=`<div style="display:grid;gap:6px;padding:4px 0">
+    <div style="font-size:12px;color:#6b8399;margin-bottom:4px">Who are you setting this presence entry for?</div>
+    ${staff.map(s=>{const isMe=s.id===currentUser.id;return`<button onclick="_presenceUserSelected('${s.id}')" style="display:flex;align-items:center;gap:10px;text-align:left;padding:9px 12px;border:1.5px solid ${isMe?'#97bcbd':'#e2eaf2'};border-radius:8px;background:${isMe?'#f0f7f7':'#fff'};cursor:pointer;font-size:13px;font-family:'Lato',sans-serif;color:#0d1c33;transition:border-color 0.12s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='${isMe?'#97bcbd':'#e2eaf2'}'">
+      ${avatarHtml(s,26)}<span>${escHtml(s.name)}</span>${isMe?'<span style="margin-left:auto;font-size:10px;color:#97bcbd;font-weight:700;letter-spacing:0.05em">ME</span>':''}
+    </button>`;}).join('')}
+    <div style="display:flex;justify-content:flex-end;margin-top:6px"><button onclick="closeGenericModal()" class="btn btn-ghost btn-sm">Cancel</button></div>
+  </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function _presenceUserSelected(userId){
+  closeGenericModal();
+  _presencePendingUserId=userId;
+  _presencePendingSetBy=userId===currentUser.id?null:currentUser.id;
+  _presenceApplyPending();
+}
+function _presencePickClient(){
+  const clients=(DB.clients||[]).filter(c=>!c.archived);
+  document.getElementById('generic-modal-title').textContent='Select Client Office';
+  document.getElementById('generic-modal-body').innerHTML=`<div style="display:grid;gap:8px;padding:4px 0">
+    <div style="font-size:13px;color:#6b8399;margin-bottom:2px">Which client office will you be working at?</div>
+    ${clients.map(c=>`<button onclick="_presenceClientSelected('${c.id}')" style="display:flex;align-items:center;gap:10px;text-align:left;padding:10px 14px;border:1.5px solid #e2eaf2;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-family:'Lato',sans-serif;color:#0d1c33;transition:border-color 0.12s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#e2eaf2'">
+      <span style="width:10px;height:10px;border-radius:50%;background:${c.color||'#97bcbd'};flex-shrink:0;display:inline-block"></span>${escHtml(c.name)}
+    </button>`).join('')}
+    <div style="display:flex;justify-content:flex-end;margin-top:6px"><button onclick="closeGenericModal()" class="btn btn-ghost btn-sm">Cancel</button></div>
+  </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function _presenceClientSelected(clientId){
+  closeGenericModal();
+  const userId=_presencePendingUserId,dateStr=_presencePendingDateStr,isShift=_presencePendingIsShift,setBy=_presencePendingSetBy;
+  _presencePendingUserId=_presencePendingDateStr=_presencePendingSetBy=null;_presencePendingIsShift=false;
+  if(isShift&&_presenceAnchorDate){_presenceFillRange(userId,_presenceAnchorDate,dateStr,'client',clientId,setBy);}
+  else{_presenceAnchorDate=dateStr;presenceSet(userId,dateStr,'client',clientId,setBy);}
+}
+function _presenceGetUser(id){return allStaff().find(u=>u.id===id);}
+function _presenceTooltip(p){
+  const user=_presenceGetUser(p.userId);
+  const pt=PRESENCE_TYPES.find(t=>t.id===p.type);
+  const clientName=p.clientId?((DB.clients||[]).find(c=>c.id===p.clientId)||{}).name:'';
+  const setByUser=p.setBy?_presenceGetUser(p.setBy):null;
+  let tip=`${user?user.name:'Unknown'}: ${pt?pt.label:p.type}`;
+  if(clientName)tip+=` (${clientName})`;
+  if(setByUser)tip+=` — set by ${setByUser.name}`;
+  return tip;
+}
+function _presenceSvgIcon(type,size,color){
+  const pt=PRESENCE_TYPES.find(t=>t.id===type);
+  return`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pt?pt.svg:''}</svg>`;
+}
+function _renderPresenceDots(dateStr){
+  const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
+  if(!entries.length)return'';
+  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  return entries.map(p=>{
+    const user=_presenceGetUser(p.userId);
+    const col=user?getUserColor(user):'#97bcbd';
+    const isOwn=p.userId===currentUser.id;
+    const canRemove=isOwn||isAdmin;
+    const tip=escHtml(_presenceTooltip(p));
+    const sz=24;
+    return`<div class="presence-dot-wrap" title="${tip}">
+      <div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;border:${isOwn?'2px solid white':'1.5px solid #fff'};opacity:${isOwn?1:0.78};cursor:default;flex-shrink:0">
+        ${_presenceSvgIcon(p.type,12,'#fff')}
+      </div>
+      ${canRemove?`<button class="presence-remove" onclick="event.stopPropagation();presenceRemove('${p.userId}','${dateStr}')">&#xD7;</button>`:''}
+    </div>`;
+  }).join('');
+}
+function _renderPresenceChips(dateStr){
+  const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
+  if(!entries.length)return'';
+  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  return entries.map(p=>{
+    const user=_presenceGetUser(p.userId);
+    const col=user?getUserColor(user):'#97bcbd';
+    const isOwn=p.userId===currentUser.id;
+    const canRemove=isOwn||isAdmin;
+    const pt=PRESENCE_TYPES.find(t=>t.id===p.type);
+    const clientName=p.clientId?((DB.clients||[]).find(c=>c.id===p.clientId)||{}).name:'';
+    const short=clientName?clientName.split(' ')[0]:(pt?pt.short:'?');
+    const tip=escHtml(_presenceTooltip(p));
+    return`<div class="presence-chip-wrap">
+      <div class="presence-chip" title="${tip}" style="background:${col}1a;border-left:2.5px solid ${col};color:#1a2940;font-weight:${isOwn?700:500}">
+        ${_presenceSvgIcon(p.type,16,col)}
+        <span style="max-width:54px;overflow:hidden;text-overflow:ellipsis">${escHtml(short)}</span>
+      </div>
+      ${canRemove?`<button class="presence-remove" onclick="event.stopPropagation();presenceRemove('${p.userId}','${dateStr}')">&#xD7;</button>`:''}
+    </div>`;
+  }).join('');
+}
+function _renderPresenceListRows(dateStr){
+  const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
+  if(!entries.length)return'';
+  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  return`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+    ${entries.map(p=>{
+      const user=_presenceGetUser(p.userId);
+      const col=user?getUserColor(user):'#97bcbd';
+      const isOwn=p.userId===currentUser.id;
+      const canRemove=isOwn||isAdmin;
+      const pt=PRESENCE_TYPES.find(t=>t.id===p.type);
+      const clientName=p.clientId?((DB.clients||[]).find(c=>c.id===p.clientId)||{}).name:'';
+      const tip=escHtml(_presenceTooltip(p));
+      return`<div class="presence-chip-wrap">
+        <div class="presence-chip" title="${tip}" style="background:${col}14;border:1.5px solid ${col}44;color:#1a2940;font-weight:${isOwn?700:500}">
+          ${_presenceSvgIcon(p.type,17,col)}
+          <span style="color:#4d6275">${user?escHtml(user.name.split(' ')[0]):'?'}</span>
+          <span style="color:${col};font-weight:700">&middot; ${escHtml(pt?pt.short:'?')}</span>
+          ${clientName?`<span style="color:#8da2b2">(${escHtml(clientName)})</span>`:''}
+        </div>
+        ${canRemove?`<button class="presence-remove" onclick="presenceRemove('${p.userId}','${dateStr}')">&#xD7;</button>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function _presencePalette(){
+  return`<div style="display:flex;align-items:center;gap:5px;margin-bottom:16px;background:#f8fbff;border:1.5px solid #e2eaf2;border-radius:10px;padding:7px 12px;flex-wrap:wrap">
+    <span style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;margin-right:4px">Where will you be?</span>
+    ${PRESENCE_TYPES.map(pt=>`<div draggable="true" ondragstart="_presenceDragStart(event,'${pt.id}')" title="${pt.label}" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;border:1.5px solid #e2eaf2;background:#fff;cursor:grab;color:#4d6275;transition:all 0.12s;flex-shrink:0" onmouseover="this.style.borderColor='#97bcbd';this.style.background='#edf7f5';this.style.color='#0d6e4e'" onmouseout="this.style.borderColor='#e2eaf2';this.style.background='#fff';this.style.color='#4d6275'">${_presenceSvgIcon(pt.id,15,'currentColor')}</div>`).join('')}
+    <div style="width:1px;height:20px;background:#e2eaf2;margin:0 4px;flex-shrink:0"></div>
+    <span style="font-size:11px;color:#b0c4cc;white-space:nowrap">Drag to any day &nbsp;·&nbsp; Shift+drop to fill a range</span>
+  </div>`;
+}
+
 function toDateStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function fmtTime(t){if(!t)return'';const[h,m]=t.split(':');const hr=parseInt(h);return`${hr>12?hr-12:hr||12}${m==='00'?'':':'+m}${hr>=12?'pm':'am'}`;}
 function evtColor(e){return e.color||(SCHED_TYPE_COLORS[e.type]||'#97bcbd');}
@@ -3193,7 +3418,7 @@ function schedDayClick(dateStr){openEventModal(null,dateStr);}
 
 function schedControls(titleStr){
   const VIEWS=[['month','Month'],['week','Week'],['list','List']];
-  return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+  return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:8px">
       <button onclick="schedNav(-1)" style="border:1.5px solid #e2eaf2;background:#fff;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:14px;color:#6b8399;display:flex;align-items:center;justify-content:center;transition:all 0.12s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#6b8399'">←</button>
       <span style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33;min-width:200px;text-align:center">${titleStr}</span>
@@ -3210,7 +3435,8 @@ function schedControls(titleStr){
       </button>
       <button onclick="openEventModal(null,null)" class="btn btn-teal btn-sm" style="font-size:12px">+ New Event</button>
     </div>
-  </div>`;
+  </div>
+  ${_presencePalette()}`;
 }
 
 function renderSchedule(){
@@ -3239,8 +3465,12 @@ function renderSchedMonth(){
     const dayEvts=isCurrentMonth?myEvents.filter(e=>e.date===dateStr).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||'')):[];
     const shown=dayEvts.slice(0,3);
     const extra=dayEvts.length-3;
-    cells+=`<div class="sched-cell${isToday?' sched-today':''}${!isCurrentMonth?' sched-other':''}" ${isCurrentMonth?`onclick="schedDayClick('${dateStr}')"`:'style="pointer-events:none"'}>
-      <div class="sched-day-num">${isCurrentMonth?`<span${isToday?' class="sched-today-num"':''}>${dayNum}</span>`:''}</div>
+    const presenceDots=isCurrentMonth?_renderPresenceDots(dateStr):'';
+    cells+=`<div class="sched-cell${isToday?' sched-today':''}${!isCurrentMonth?' sched-other':''}" ${isCurrentMonth?`onclick="schedDayClick('${dateStr}')" ondragover="_presenceDragOver(event)" ondragleave="_presenceDragLeave(event)" ondrop="_presenceDrop(event,'${dateStr}')"`:'style="pointer-events:none"'}>
+      <div class="sched-day-num">
+        ${isCurrentMonth?`<span${isToday?' class="sched-today-num"':''}>${dayNum}</span>`:''}
+        <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;align-items:center">${presenceDots}</div>
+      </div>
       ${shown.map(e=>`<div class="sched-evt-pill" style="background:${evtColor(e)}20;border-left:3px solid ${evtColor(e)};color:#1a2940" onclick="event.stopPropagation();openEventModal('${e.id}',null)">
         ${e.startTime?`<span style="color:${evtColor(e)};font-weight:700;margin-right:3px">${fmtTime(e.startTime)}</span>`:''}${escHtml(e.title)}
       </div>`).join('')}
@@ -3271,12 +3501,16 @@ function renderSchedWeek(){
       const dateStr=toDateStr(d);
       const isToday=toDateStr(today)===dateStr;
       const dayEvts=myEvents.filter(e=>e.date===dateStr).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+      const weekPresenceChips=_renderPresenceChips(dateStr);
       return`<div style="border:1.5px solid ${isToday?'#97bcbd':'#e2eaf2'};border-radius:10px;overflow:hidden;background:${isToday?'#f0f7ff':'#fff'}">
         <div style="padding:8px 10px;border-bottom:1px solid #e2eaf2;background:${isToday?'#0d1c33':'#f8fbff'};cursor:pointer" onclick="schedDayClick('${dateStr}')">
           <div style="font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:${isToday?'rgba(255,255,255,0.55)':'#8da2b2'};text-transform:uppercase;letter-spacing:0.06em">${d.toLocaleDateString('default',{weekday:'short'})}</div>
           <div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:700;color:${isToday?'#fff':'#0d1c33'};line-height:1.1">${d.getDate()}</div>
         </div>
-        <div style="padding:7px;min-height:140px">
+        <div class="presence-drop-zone" onclick="event.stopPropagation()" ondragover="_presenceDragOver(event)" ondragleave="_presenceDragLeave(event)" ondrop="_presenceDrop(event,'${dateStr}')" style="padding:4px 6px;min-height:30px;border-bottom:1px solid #f0f4f8;display:flex;flex-wrap:wrap;gap:3px;align-items:center;background:#fff;cursor:default">
+          ${weekPresenceChips||`<span style="font-size:10px;color:#d0dce8;padding:2px">Drop icon here</span>`}
+        </div>
+        <div style="padding:7px;min-height:110px">
           ${dayEvts.map(e=>`<div class="sched-evt-pill" style="background:${evtColor(e)}18;border-left:3px solid ${evtColor(e)};color:#1a2940;margin-bottom:6px;padding:5px 7px;border-radius:5px;white-space:normal" onclick="openEventModal('${e.id}',null)">
             ${e.startTime?`<div style="font-size:10px;color:${evtColor(e)};font-weight:700;margin-bottom:1px">${fmtTime(e.startTime)}${e.endTime?' – '+fmtTime(e.endTime):''}</div>`:''}
             <div style="font-size:12px;font-weight:600;line-height:1.3">${escHtml(e.title)}</div>
@@ -3294,14 +3528,23 @@ function renderSchedList(){
   const myEvents=getMyEvents().sort((a,b)=>a.date.localeCompare(b.date)||(a.startTime||'').localeCompare(b.startTime||''));
   const upcoming=myEvents.filter(e=>e.date>=today);
   const past=myEvents.filter(e=>e.date<today).reverse();
+  // Collect presence dates within a 90-day window either side of today
+  const _d90f=new Date();_d90f.setDate(_d90f.getDate()+90);
+  const _d90p=new Date();_d90p.setDate(_d90p.getDate()-90);
+  const _lim90f=toDateStr(_d90f),_lim90p=toDateStr(_d90p);
+  const pDatesUp=new Set((DB.presenceEntries||[]).filter(p=>p.date>=today&&p.date<=_lim90f).map(p=>p.date));
+  const pDatesPast=new Set((DB.presenceEntries||[]).filter(p=>p.date<today&&p.date>=_lim90p).map(p=>p.date));
 
-  function groupEvts(evts,label,dimPast){
-    if(!evts.length)return'';
+  function groupEvts(evts,pDates,label,dimPast){
     const grouped={};
     evts.forEach(e=>{if(!grouped[e.date])grouped[e.date]=[];grouped[e.date].push(e);});
+    pDates.forEach(d=>{if(!grouped[d])grouped[d]=[];});
+    const sortedDates=Object.keys(grouped).sort(dimPast?(a,b)=>b.localeCompare(a):(a,b)=>a.localeCompare(b));
+    if(!sortedDates.length)return'';
     return`<div style="margin-bottom:28px">
       <div style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px">${label}</div>
-      ${Object.entries(grouped).map(([date,evts])=>{
+      ${sortedDates.map(date=>{
+        const dayEvts=grouped[date];
         const d=new Date(date+'T00:00:00');
         const isToday=date===today;
         return`<div style="display:flex;gap:16px;margin-bottom:10px;align-items:flex-start">
@@ -3311,7 +3554,8 @@ function renderSchedList(){
             <div style="font-size:10px;color:#a0b4c7">${d.toLocaleDateString('default',{month:'short'})}</div>
           </div>
           <div style="flex:1;padding-left:14px;border-left:2px solid ${isToday?'#97bcbd':'#e2eaf2'}">
-            ${evts.map(e=>`<div class="sched-evt-card${dimPast?' opacity-60':''}" style="border-left:4px solid ${evtColor(e)};opacity:${dimPast?0.65:1}" onclick="openEventModal('${e.id}',null)">
+            ${_renderPresenceListRows(date)}
+            ${dayEvts.map(e=>`<div class="sched-evt-card${dimPast?' opacity-60':''}" style="border-left:4px solid ${evtColor(e)};opacity:${dimPast?0.65:1}" onclick="openEventModal('${e.id}',null)">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <span style="font-size:13px;font-weight:600;color:#0d1c33">${escHtml(e.title)}</span>
                 <span style="font-size:11px;color:${evtColor(e)};font-weight:600;background:${evtColor(e)}18;padding:1px 8px;border-radius:20px">${e.type==='teams'?'🎥 Teams Meeting':e.type==='meeting'?'👥 Meeting':'📅 Personal'}</span>
@@ -3327,15 +3571,17 @@ function renderSchedList(){
     </div>`;
   }
 
+  const hasUpcoming=upcoming.length||pDatesUp.size;
+  const hasPast=past.length||pDatesPast.size;
   return schedControls('All Events')+`
   <div style="max-width:820px">
-    ${upcoming.length?groupEvts(upcoming,'Upcoming'):`<div class="card" style="text-align:center;padding:48px 32px">
+    ${hasUpcoming?groupEvts(upcoming,pDatesUp,'Upcoming',false):`<div class="card" style="text-align:center;padding:48px 32px">
       <div style="font-size:32px;margin-bottom:8px">📅</div>
       <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600;color:#0d1c33;margin-bottom:6px">No upcoming events</div>
       <div style="font-size:13px;color:#8da2b2;margin-bottom:16px">Schedule your first meeting or personal event.</div>
       <button onclick="openEventModal(null,null)" class="btn btn-teal">+ New Event</button>
     </div>`}
-    ${past.length?groupEvts(past,'Past',true):''}
+    ${hasPast?groupEvts(past,pDatesPast,'Past',true):''}
   </div>`;
 }
 
