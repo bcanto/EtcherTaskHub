@@ -2798,11 +2798,13 @@ function renderSidebarWorkboards(){
   // Folders
   folders.forEach(folder=>{
     const boards=wbs.filter(wb=>wb.folderId===folder.id);
-    const inner=folder.collapsed?'':dropZone(folder.id,
-      boards.length
-        ? boards.map(wb=>wbRow(wb,26)).join('')
-        : `<div style="padding:5px 10px 6px 28px;font-size:11px;color:#3a5570;font-style:italic;margin:2px 6px;border:1px dashed rgba(90,138,140,0.3);border-radius:5px">Drop a board here</div>`
-    );
+    // Always render the drop zone so collapsed folders accept drops;
+    // hide the content visually when collapsed but keep the zone active.
+    const innerContent=boards.length
+      ? boards.map(wb=>wbRow(wb,26)).join('')
+      : `<div style="padding:5px 10px 6px 28px;font-size:11px;color:#3a5570;font-style:italic;margin:2px 6px;border:1px dashed rgba(90,138,140,0.3);border-radius:5px">Drop a board here</div>`;
+    const inner=`<div style="${folder.collapsed?'display:none':''}">${dropZone(folder.id,innerContent)}</div>`
+      +(folder.collapsed?`<div data-drop-folder="${folder.id}" ondragover="_wbDragOver(event,this)" ondragleave="_wbDragLeave(event,this)" ondrop="_wbDrop(event,this,'${folder.id}')" style="height:4px;border-radius:3px;transition:background 0.12s,height 0.12s"></div>`:'');
     html+=`<div>
       <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;cursor:pointer;gap:5px;user-select:none;border-radius:6px;transition:background 0.1s"
         onclick="toggleWbFolder('${folder.id}')"
@@ -2854,28 +2856,35 @@ function _wbDrop(e,el,folderId){
   moveWbToFolder(_wbDragId, folderId||null);
   _wbDragId=null;
 }
+let _wbAddMenuClose=null;
 function toggleWbAddMenu(){
   const m=document.getElementById('wb-add-menu');
   if(!m)return;
   const isHidden=m.classList.toggle('hidden');
   if(!isHidden){
-    const close=(e)=>{
+    _wbAddMenuClose=(e)=>{
       if(!document.getElementById('wb-add-btn')?.contains(e.target)){
-        m.classList.add('hidden');
-        document.removeEventListener('click',close,true);
+        closeWbAddMenu();
       }
     };
-    setTimeout(()=>document.addEventListener('click',close,true),10);
+    setTimeout(()=>document.addEventListener('click',_wbAddMenuClose,true),10);
+  } else {
+    closeWbAddMenu();
   }
 }
 function closeWbAddMenu(){
   document.getElementById('wb-add-menu')?.classList.add('hidden');
+  if(_wbAddMenuClose){
+    document.removeEventListener('click',_wbAddMenuClose,true);
+    _wbAddMenuClose=null;
+  }
 }
 function sidebarNewWb(){
   navigate('dashboard');
   setTimeout(openCreateWbForm,40);
 }
 function createWbFolder(){
+  if(currentUser?.role==='client')return;
   showPrompt('New Folder','',name=>{
     name=(name||'').trim();
     if(!name)return;
@@ -2885,10 +2894,12 @@ function createWbFolder(){
   });
 }
 function renameWbFolder(id){
+  if(currentUser?.role==='client')return;
   const f=(DB.wbFolders||[]).find(x=>x.id===id);if(!f)return;
   showPrompt('Rename Folder',f.name,val=>{if((val||'').trim()){f.name=val.trim();saveDB(DB);renderSidebarWorkboards();}});
 }
 function deleteWbFolder(id){
+  if(currentUser?.role==='client')return;
   openConfirm('Delete Folder','Boards inside will be moved out of the folder. This cannot be undone.','Delete',()=>{
     (DB.workboards||[]).forEach(wb=>{if(wb.folderId===id)wb.folderId=null;});
     DB.wbFolders=(DB.wbFolders||[]).filter(f=>f.id!==id);
@@ -2901,6 +2912,7 @@ function toggleWbFolder(id){
   saveDB(DB);renderSidebarWorkboards();
 }
 function moveWbToFolder(wbId,folderId){
+  if(currentUser?.role==='client')return;
   const wb=(DB.workboards||[]).find(w=>w.id===wbId);if(!wb)return;
   wb.folderId=folderId||null;
   saveDB(DB);
@@ -5904,7 +5916,7 @@ function _tsFilterEntries(){
     }
     if(tsBoardFilter!=='all'){
       const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
-      if(!task||task.boardId!==tsBoardFilter) return false;
+      if(!task||(task.workboardId||task.boardId)!==tsBoardFilter) return false;
     }
     if(tsEarningsRateFilter!=='all'&&(e.earningsRateId||'er1')!==tsEarningsRateFilter) return false;
     if(tsBillableFilter==='billable'&&e.billable===false) return false;
@@ -8590,7 +8602,7 @@ function wsSaveInlineTask(){
   const _now=new Date().toISOString();
   const _gid=wsInlineAddGroupId||getWbDefaultGroup();
   const _grp=DB.groups.find(g=>g.id===_gid);
-  const _inlineTask={id:'t'+uid(),groupId:_gid,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+  const _inlineTask={id:'t'+uid(),groupId:_gid,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
   DB.tasks.push(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
 }
@@ -8610,7 +8622,7 @@ function wsHandlePasteMultiline(e){
   const wbId=currentWorkboard?.id||DB.workboards[0]?.id||'';
   lines.forEach(name=>{
     const _now=new Date().toISOString();
-    DB.tasks.push({id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null});
+    DB.tasks.push({id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null});
   });
   saveDB(DB);
   showToast(`${lines.length} tasks created`,'success');
@@ -10008,6 +10020,7 @@ function saveWbClient(boardId,clientId){
   renderView('dashboard');
 }
 function saveWbExclude(boardId,val){
+  if(currentUser?.role==='client')return;
   const wb=DB.workboards.find(w=>w.id===boardId);
   if(!wb)return;
   wb.excludeFromReports=val;
