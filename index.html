@@ -288,6 +288,11 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .sched-evt-pill{font-size:11px;padding:2px 5px 2px 7px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.45;transition:opacity 0.12s;display:block}
 .sched-evt-pill:hover{opacity:0.72}
 .sched-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;padding:2px 4px}
+@keyframes voicePulse{0%,100%{box-shadow:0 0 0 0 rgba(13,110,78,0.45)}60%{box-shadow:0 0 0 14px rgba(13,110,78,0)}}
+@keyframes voiceDots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+.voice-listening{background:#d1fae5 !important;animation:voicePulse 1.4s ease-in-out infinite}
+.voice-listening svg{stroke:#0d6e4e !important}
+#voice-modal-title.is-listening::after{content:'';display:inline-block;width:1.5em;text-align:left;animation:voiceDots 1.2s steps(1) infinite}
 /* ── Presence Icons ── */
 .presence-dot-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
 .presence-dot-wrap .presence-remove,.presence-chip-wrap .presence-remove{display:none;position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#ef4444;border:1.5px solid #fff;color:#fff;font-size:9px;cursor:pointer;align-items:center;justify-content:center;line-height:1;padding:0;z-index:20;font-family:sans-serif}
@@ -11516,19 +11521,34 @@ function renderTpRecurrence(task){
 let _voiceRec=null;
 let _voiceTranscript='';
 
+function _voiceSetListening(on){
+  const icon=document.getElementById('voice-status-icon');
+  const title=document.getElementById('voice-modal-title');
+  if(on){
+    icon.classList.add('voice-listening');
+    title.classList.add('is-listening');
+  } else {
+    icon.classList.remove('voice-listening');
+    title.classList.remove('is-listening');
+    icon.style.background='#f0f7f7';
+  }
+}
+
 function startVoiceCapture(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showAlert('Voice input is not supported in this browser. Try Chrome or Edge.','Voice Not Available');return;}
+  try{_voiceRec?.stop();}catch(_){}
+  _voiceRec=null;
   _voiceTranscript='';
   const modal=document.getElementById('voice-modal');
   modal.style.display='flex';
-  document.getElementById('voice-modal-title').textContent='Listening…';
-  document.getElementById('voice-transcript').textContent='Waiting for speech…';
+  document.getElementById('voice-modal-title').textContent='Listening';
+  document.getElementById('voice-transcript').textContent='Speak now — say something like "Add photos to GCS board for tomorrow"';
   document.getElementById('voice-transcript').style.fontStyle='italic';
   document.getElementById('voice-transcript').style.color='#8da2b2';
   document.getElementById('voice-parsed').style.display='none';
   document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Cancel</button>`;
-  document.getElementById('voice-status-icon').style.background='#fef2f2';
+  _voiceSetListening(true);
 
   _voiceRec=new SR();
   _voiceRec.lang='en-AU';
@@ -11541,15 +11561,34 @@ function startVoiceCapture(){
     document.getElementById('voice-transcript').textContent=interim;
     document.getElementById('voice-transcript').style.fontStyle='normal';
     document.getElementById('voice-transcript').style.color='#1a2940';
-    if(e.results[0].isFinal){_voiceTranscript=interim;_voiceProcessResult(interim);}
+    if(e.results[0].isFinal){_voiceTranscript=interim;_voiceSetListening(false);_voiceProcessResult(interim);}
   };
   _voiceRec.onerror=(e)=>{
+    _voiceSetListening(false);
+    const msgs={
+      'not-allowed':'Microphone access was denied. Click the lock icon in your browser address bar and allow the microphone, then try again.',
+      'no-speech':'No speech was detected. Make sure your microphone is working and speak clearly.',
+      'network':'Network error — speech recognition requires an internet connection.',
+      'aborted':'Cancelled.',
+    };
     document.getElementById('voice-modal-title').textContent='Could not hear you';
-    document.getElementById('voice-transcript').textContent=e.error==='not-allowed'?'Microphone permission denied.':'Please try again.';
-    document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button><button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`;
+    document.getElementById('voice-transcript').textContent=msgs[e.error]||`Error: ${e.error}. Please try again.`;
+    document.getElementById('voice-transcript').style.fontStyle='normal';
+    document.getElementById('voice-transcript').style.color='#ef4444';
+    document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button>${e.error!=='not-allowed'?`<button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`:''}`;
   };
   _voiceRec.onend=()=>{
-    document.getElementById('voice-status-icon').style.background='#f0f7f7';
+    // If we ended without a result and no error was shown, restart automatically once
+    if(!_voiceTranscript&&document.getElementById('voice-modal-title').textContent==='Listening'){
+      _voiceSetListening(false);
+      document.getElementById('voice-modal-title').textContent='Could not hear you';
+      document.getElementById('voice-transcript').textContent='No speech detected. Make sure your microphone is on and speak clearly.';
+      document.getElementById('voice-transcript').style.color='#ef4444';
+      document.getElementById('voice-transcript').style.fontStyle='normal';
+      document.getElementById('voice-actions').innerHTML=`<button onclick="stopVoice()" class="btn btn-ghost">Close</button><button onclick="startVoiceCapture()" class="btn btn-teal">Try again</button>`;
+    } else {
+      _voiceSetListening(false);
+    }
   };
   _voiceRec.start();
 }
@@ -11557,10 +11596,13 @@ function startVoiceCapture(){
 function stopVoice(){
   try{_voiceRec?.stop();}catch(_){}
   _voiceRec=null;
+  _voiceSetListening(false);
   document.getElementById('voice-modal').style.display='none';
 }
 
 function _voiceProcessResult(text){
+  _voiceSetListening(false);
+  document.getElementById('voice-status-icon').style.background='#e0f2fe';
   document.getElementById('voice-modal-title').textContent='Got it — parsing…';
   const parsed=_parseVoiceInput(text);
   const pd=document.getElementById('voice-parsed');
