@@ -941,6 +941,18 @@ function _migrateDB(data){
     data.boardViews =(data.boardViews||[]).filter(v=>v.boardId!=='b4');
   }
 
+  // Restore in-memory passwords stripped by _stripPasswords.
+  // Priority: _pwStore (UI-set passwords survive reloads) → SEED default → nothing.
+  // Safe because saveDB always strips before writing to localStorage/Supabase.
+  const _pwStore=_loadPwStore();
+  (data.users||[]).forEach(u=>{
+    if(!u.password){
+      u.password=_pwStore[u.id]
+        ||((SEED.users||[]).find(s=>s.id===u.id)||{}).password
+        ||'';
+    }
+  });
+
   // Seed defaults for client portal — only applied when the field is genuinely missing,
   // so that admin-set credentials are never silently overwritten on page load.
   const _clientCreds={'c1':{e:'client@generalcranes.com.au',p:'TaskHub123'},'c2':{e:'client@daltech.com.au',p:'TaskHub123'},'c3':{e:'client@retained.com.au',p:'TaskHub123'}};
@@ -1192,6 +1204,12 @@ function _startRealtimeSync(){
     })
     .subscribe();
 }
+// Separate, tiny store for staff passwords — never sent to Supabase or inside the main DB blob.
+// Lets passwords survive the _stripPasswords cycle in localStorage-only mode.
+const _PW_KEY='etcher_pw_v1';
+function _loadPwStore(){try{return JSON.parse(localStorage.getItem(_PW_KEY)||'{}');}catch(_){return {};}}
+function _savePw(userId,pw){if(!userId||!pw)return;const s=_loadPwStore();s[userId]=pw;localStorage.setItem(_PW_KEY,JSON.stringify(s));}
+
 function _stripPasswords(data){
   // Never persist plaintext passwords to localStorage or Supabase
   const d=JSON.parse(JSON.stringify(data));
@@ -7837,7 +7855,7 @@ async function saveStaff(id){
     // Edit existing — update DB only
     const s=DB.staff.find(x=>x.id===id);
     s.name=name;s.role=role;s.color=color;s.initials=initials;
-    const pw=document.getElementById('sm-pw')?.value;if(pw)s.password=pw;
+    const pw=document.getElementById('sm-pw')?.value;if(pw){s.password=pw;_savePw(s.id,pw);}
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
     // New user — create account directly (no email needed)
@@ -7853,6 +7871,7 @@ async function saveStaff(id){
       if(!resp.ok)throw new Error(result.error||'Failed to create account');
       DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       DB.staff=DB.users;
+      _savePw(result.id,pw); // persist in _pwStore so login survives page reload in localStorage mode
       saveDB(DB);closeGenericModal();renderView('staff');
       showToast(`Account created for ${name}`,'success',4000);
     }catch(e){
