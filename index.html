@@ -8433,8 +8433,18 @@ function toggleChecklist(){}
 function deleteChecklist(id){tmDeleteSubitem(id);}
 // Render comment body with @mention highlighting (XSS-safe)
 function _renderCommentBody(body){
-  return escHtml(body).replace(/@(\w[\w\d_-]*)/g,
-    '<span style="background:#e0f2fe;color:#0369a1;border-radius:3px;padding:0 3px;font-weight:700">@$1</span>');
+  let safe=escHtml(body);
+  // Highlight @mentions by matching real staff names (longest first to avoid partial overlaps)
+  const names=(DB.users||DB.staff||[])
+    .filter(u=>u.role!=='client'&&u.active!==false)
+    .map(u=>u.name)
+    .sort((a,b)=>b.length-a.length);
+  names.forEach(n=>{
+    const esc=n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    safe=safe.replace(new RegExp('@'+esc,'gi'),
+      `<span style="background:#e0f2fe;color:#0369a1;border-radius:3px;padding:1px 4px;font-weight:700">@${escHtml(n)}</span>`);
+  });
+  return safe;
 }
 
 function addComment(taskId){
@@ -9556,7 +9566,6 @@ function renderTaskPanel(task){
     <div style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 20px;overflow-x:auto">
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
       <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
-      <div class="tp-tab" id="tp-tab-comments" onclick="tpShowTab('comments')">Comments <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${commentCount}</span></div>
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
     </div>
@@ -9638,6 +9647,10 @@ function renderTpDetails(task){
       <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Description</div>
       <textarea id="tp-desc" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.6;box-sizing:border-box;transition:border-color 0.15s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
     </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
+      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Comments</div>
+      ${renderTpComments(task.id)}
+    </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
       <div style="font-size:10px;color:#a0b4c7">
         Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
@@ -9715,13 +9728,16 @@ function renderTpComments(taskId){
             <span style="font-size:11px;color:#a0b4c7">${_cTs?new Date(_cTs).toLocaleDateString():''}</span>
             ${canDel?`<button onclick="tpDeleteComment('${c.id}')" style="margin-left:auto;border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
           </div>
-          <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:#f8fbff;border-radius:8px;padding:8px 12px">${escHtml(c.body)}</div>
+          <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:#f8fbff;border-radius:8px;padding:8px 12px">${_renderCommentBody(c.body)}</div>
         </div>
       </div>`;
     }).join(''):'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No comments yet</div>'}
     ${isInternal?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f4f8">
       ${currentUser?`<div style="display:flex;gap:8px;margin-bottom:6px">${avatarHtml(currentUser,24)}<span style="font-size:12px;font-weight:600;color:#6b8399;align-self:center">${escHtml(currentUser.name)}</span></div>`:''}
-      <textarea id="tp-comment-input" class="form-input" rows="2" placeholder="Write a comment..." style="font-size:13px;resize:vertical;margin-bottom:8px"></textarea>
+      <div style="position:relative">
+        <textarea id="tp-comment-input" class="form-input" rows="2" placeholder="Write a comment… use @Name to notify someone" style="font-size:13px;resize:vertical;margin-bottom:8px;width:100%;box-sizing:border-box" oninput="tpMentionCheck(this)" onkeydown="tpMentionKeydown(event)"></textarea>
+        <div id="tp-mention-dropdown" style="display:none;position:absolute;bottom:calc(100% - 4px);left:0;right:0;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;box-shadow:0 4px 16px rgba(13,28,51,0.12);z-index:200;overflow:hidden"></div>
+      </div>
       <button onclick="tpAddComment()" class="btn btn-teal btn-sm" style="font-size:12px">Post Comment</button>
     </div>`:''}
   </div>`;
@@ -9854,14 +9870,15 @@ function tpRemoveDep(depId){
 function tpShowTab(tabName){
   const task=_tpCurrentTask;
   if(!task)return;
+  // Comments are now embedded in Details; redirect before looking up tab element
+  if(tabName==='comments')tabName='details';
   document.querySelectorAll('.tp-tab').forEach(t=>t.classList.remove('active'));
   const el=document.getElementById('tp-tab-'+tabName);
   if(el)el.classList.add('active');
   const body=document.getElementById('tp-body');
   if(!body)return;
-  if(tabName==='details')body.innerHTML=renderTpDetails(task);
+  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');const cs=body.querySelector('#tp-comment-input');if(cs)cs.scrollIntoView({block:'nearest',behavior:'smooth'});},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
-  else if(tabName==='comments'){body.innerHTML=renderTpComments(task.id);setTimeout(()=>restoreTextareaDraft('tp-comment-input'),0);}
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
 }
@@ -9962,19 +9979,80 @@ function tpAddComment(){
   const _now=new Date().toISOString();
   const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
+  // Notify task owner (if not self)
   if(_tpCurrentTask.ownerId&&_tpCurrentTask.ownerId!==currentUser.id){
-    DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:'New comment on: '+_tpCurrentTask.name,createdAt:new Date().toISOString()});
+    DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:'New comment on: '+_tpCurrentTask.name,createdAt:_now});
   }
+  // Notify @mentioned staff (distinct from owner, not self)
+  const bodyLower=body.toLowerCase();
+  (DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser.id&&u.id!==_tpCurrentTask.ownerId).forEach(u=>{
+    if(bodyLower.includes('@'+u.name.toLowerCase())){
+      DB.notifications.push({id:'n'+uid(),recipientId:u.id,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in a comment on: '+_tpCurrentTask.name,createdAt:_now});
+    }
+  });
   clearTextareaDraft('tp-comment-input');
+  document.getElementById('tp-mention-dropdown')?.style&&(document.getElementById('tp-mention-dropdown').style.display='none');
   saveDB(DB);updateNotifBadge();
-  tpShowTab('comments');
+  tpShowTab('details');
 }
 
 function tpDeleteComment(commentId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   DB.comments=DB.comments.filter(c=>c.id!==commentId);
   saveDB(DB);
-  tpShowTab('comments');
+  tpShowTab('details');
+}
+
+let _tpMentionStart=-1;
+function tpMentionCheck(el){
+  const val=el.value,pos=el.selectionStart;
+  const before=val.slice(0,pos);
+  const atIdx=before.lastIndexOf('@');
+  const dd=document.getElementById('tp-mention-dropdown');
+  if(!dd)return;
+  if(atIdx>=0&&!before.slice(atIdx+1).includes(' ')&&before.slice(atIdx+1).length>0){
+    const query=before.slice(atIdx+1).toLowerCase();
+    const matches=(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.name.toLowerCase().includes(query)).slice(0,6);
+    if(matches.length){
+      _tpMentionStart=atIdx;
+      dd.innerHTML=matches.map((u,i)=>`<div data-mention-idx="${i}" onclick="tpMentionInsert('${u.name.replace(/'/g,"\\'")}')" style="padding:7px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.1s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background=''">${avatarHtml(u,22)}<span>${escHtml(u.name)}</span></div>`).join('');
+      dd.style.display='block';
+      return;
+    }
+  }
+  dd.style.display='none';
+}
+function tpMentionKeydown(e){
+  const dd=document.getElementById('tp-mention-dropdown');
+  if(!dd||dd.style.display==='none')return;
+  const items=dd.querySelectorAll('[data-mention-idx]');
+  if(!items.length)return;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    const cur=dd.querySelector('[data-mention-idx].active');
+    let idx=cur?parseInt(cur.dataset.mentionIdx):- 1;
+    cur?.classList.remove('active');
+    idx=e.key==='ArrowDown'?(idx+1)%items.length:(idx-1+items.length)%items.length;
+    items[idx].classList.add('active');
+    items[idx].style.background='#f0f4f8';
+  } else if(e.key==='Enter'||e.key==='Tab'){
+    const active=dd.querySelector('.active');
+    if(active){e.preventDefault();active.click();}
+  } else if(e.key==='Escape'){
+    dd.style.display='none';
+  }
+}
+function tpMentionInsert(name){
+  const inp=document.getElementById('tp-comment-input');
+  const dd=document.getElementById('tp-mention-dropdown');
+  if(!inp)return;
+  const pos=inp.selectionStart,val=inp.value;
+  const before=val.slice(0,pos),after=val.slice(pos);
+  const atIdx=before.lastIndexOf('@');
+  inp.value=val.slice(0,atIdx)+'@'+name+' '+after;
+  const np=atIdx+name.length+2;
+  inp.focus();inp.setSelectionRange(np,np);
+  if(dd)dd.style.display='none';
 }
 
 function tpArchiveTask(){
