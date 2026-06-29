@@ -3176,8 +3176,6 @@ const PRESENCE_TYPES=[
    svg:`<rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v4M10 14h4"/>`},
   {id:'travelling', label:'Travelling',               short:'Travel',
    svg:`<path d="M5 17H3v-5l2-6h14l2 6v5h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>`},
-  {id:'interstate', label:'Interstate / Out of State', short:'Away',
-   svg:`<path d="M5 19H3M19 19h2M7 19h10"/><path d="M12 2l4 9h-3.5v5.5l-1 .5-.5-.5V11H8L12 2z"/>`},
   {id:'leave',      label:'Leave',                    short:'Leave',
    svg:`<circle cx="12" cy="7" r="4"/><path d="M8 7c0 0-4 1.5-5 7s3.5 8 9 8 10-2.5 9-8-5-7-5-7"/>`},
   {id:'sick',       label:'Sick',                     short:'Sick',
@@ -3250,8 +3248,13 @@ function _presenceDrop(e,dateStr){
 }
 function _presenceApplyPending(){
   const userId=_presencePendingUserId,dateStr=_presencePendingDateStr,type=_presencePendingType,isShift=_presencePendingIsShift,setBy=_presencePendingSetBy;
+  if(type==='client'){
+    // Don't clear pending state yet — _presenceClientSelected still needs userId/dateStr/isShift/setBy
+    _presencePendingType=null;
+    _presencePickClient();
+    return;
+  }
   _presencePendingUserId=_presencePendingDateStr=_presencePendingType=_presencePendingSetBy=null;_presencePendingIsShift=false;
-  if(type==='client'){_presencePickClient();return;}
   if(isShift&&_presenceAnchorDate){_presenceFillRange(userId,_presenceAnchorDate,dateStr,type,null,setBy);}
   else{_presenceAnchorDate=dateStr;presenceSet(userId,dateStr,type,null,setBy);}
 }
@@ -7891,7 +7894,7 @@ function renderSharePage(link){
 
     html=`
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
-        <img src="Etcher White Logo.png" onerror="this.style.display='none'" style="height:32px;filter:invert(1) brightness(0.2)">
+        <img src="Etcher_Logo_2026.png" onerror="this.style.display='none'" style="height:32px">
       </div>
       <div style="margin-bottom:28px">
         <div style="font-family:'Jost',sans-serif;font-size:26px;font-weight:800;color:#0d1c33;margin-bottom:4px">${escHtml(wb.name)}</div>
