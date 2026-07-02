@@ -59,24 +59,24 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 #sidebar{width:220px;height:100vh;background:linear-gradient(180deg,#0c1b31 0%,#071422 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.04);overflow:hidden}
 #app-shell{display:flex;min-height:100vh}
 #main-content{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border-radius:8px;transition:background 0.2s var(--ease),color 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
-.nav-item:hover{background:rgba(255,255,255,0.07);color:#a8c8d8}
-.nav-item.active{background:rgba(151,188,189,0.15);color:#e8f0f6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border-radius:8px;transition:background 0.2s var(--ease),color 0.2s var(--ease),transform 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,0.07);color:#a8c8d8;transform:translateX(2px)}
+.nav-item.active{background:rgba(151,188,189,0.15);color:#e8f0f6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd;transform:none}
 .nav-item.active .nav-icon{opacity:1}
 .nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.8}
 /* ── Topbar ── */
 #topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(13,28,51,0.03)}
 /* ── Cards ── */
-.card{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:20px;border:1px solid rgba(13,28,51,0.04)}
+.card{background:var(--surface);border-radius:var(--r-md);box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);padding:20px;border:1px solid rgba(13,28,51,0.04)}
 /* ── Status badges ── */
-.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.04em}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em}
 .badge-todo{background:#f0f4f8;color:#6b8399}
 .badge-inprog{background:#dbeafe;color:#1d4ed8}
 .badge-review{background:#fef9c3;color:#92400e}
 .badge-done{background:#dcfce7;color:#166534}
 .badge-blocked{background:#fee2e2;color:#991b1b}
 /* ── Priority badges ── */
-.prio-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:0.03em;white-space:nowrap}
+.prio-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap}
 .prio-low{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
 .prio-med{background:#fffbeb;color:#b45309;border:1px solid #fcd34d}
 .prio-high{background:#fff7ed;color:#c2410c;border:1px solid #fb923c}
@@ -92,14 +92,16 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .skeleton-card{padding:20px;display:flex;flex-direction:column;gap:10px}
 /* ── Toast notifications ── */
 #app-toast-root{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;min-width:0}
-.app-toast{min-width:280px;max-width:380px;padding:11px 14px;border-radius:10px;font-family:'Lato',sans-serif;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:10px;pointer-events:all;box-shadow:0 4px 24px rgba(13,28,51,0.13);animation:_toastIn 0.22s ease-out;border-left:3px solid transparent}
+.app-toast{position:relative;overflow:hidden;min-width:280px;max-width:380px;padding:11px 14px 13px;border-radius:10px;font-family:'Lato',sans-serif;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:10px;pointer-events:all;box-shadow:0 4px 24px rgba(13,28,51,0.13);animation:_toastIn 0.26s var(--ease);border-left:3px solid transparent}
+.app-toast-progress{position:absolute;left:0;bottom:0;height:2.5px;width:100%;background:currentColor;opacity:0.28;transform-origin:left;animation:_toastProg linear forwards}
+@keyframes _toastProg{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 .app-toast-info{background:#fff;border-left-color:#178082;color:#1a2940}
 .app-toast-success{background:#f0fdf4;border-left-color:#22c55e;color:#166534}
 .app-toast-warning{background:#fffbeb;border-left-color:#f59e0b;color:#92400e}
 .app-toast-error{background:#fef2f2;border-left-color:#ef4444;color:#b91c1c}
 .app-toast button.app-toast-x{margin-left:auto;flex-shrink:0;cursor:pointer;opacity:0.45;font-size:17px;line-height:1;background:none;border:none;color:inherit;padding:0}
 .app-toast button.app-toast-x:hover{opacity:1}
-@keyframes _toastIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes _toastIn{from{opacity:0;transform:translateX(24px) translateY(6px)}to{opacity:1;transform:translateX(0) translateY(0)}}
 @keyframes _toastOut{from{opacity:1}to{opacity:0;transform:translateX(18px)}}
 /* ── Error & 404 pages ── */
 .err-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:58vh;text-align:center;padding:48px 24px}
@@ -120,8 +122,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .data-table tr:hover td{background:#f6f9ff}
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(8,18,34,0.55);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
-.modal-box{background:#fff;border-radius:var(--r-lg);max-width:680px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl)}
-.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-box{background:#fff;border-radius:16px;max-width:680px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl)}
+.modal-header{padding:24px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
 /* ── Forms ── */
 .form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;display:block}
 .form-input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease)}
@@ -130,6 +132,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:transform 0.2s var(--ease),box-shadow 0.2s var(--ease),background 0.2s,border-color 0.2s,color 0.2s;letter-spacing:0.02em}
 .btn:active{transform:scale(0.97)!important;transition-duration:0.08s!important}
+.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.cp-action-btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .btn-primary{background:var(--navy);color:#fff;box-shadow:0 1px 3px rgba(13,28,51,0.18)}
 .btn-primary:hover{background:#152845;box-shadow:0 4px 14px rgba(13,28,51,0.28);transform:translateY(-1px)}
 .btn-teal{background:var(--teal);color:var(--navy);font-weight:700;box-shadow:0 1px 3px rgba(151,188,189,0.2)}
@@ -168,8 +172,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-stat-num{font-family:'Jost',sans-serif;font-size:36px;font-weight:800;color:var(--navy);line-height:1;letter-spacing:-0.02em}
 .cp-stat-label{font-size:11px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;font-family:'Jost',sans-serif}
 .cp-section-title{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px}
-.cp-task-row{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:8px;transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease)}
-.cp-task-row:hover{border-color:#97bcbd;box-shadow:0 2px 10px rgba(151,188,189,0.14)}
+.cp-task-row{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease),transform 0.2s var(--ease)}
+.cp-task-row:hover{border-color:#97bcbd;box-shadow:0 2px 6px rgba(13,28,51,0.08),0 8px 20px rgba(13,28,51,0.07);transform:translateY(-1px)}
 .cp-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;font-family:'Jost',sans-serif}
 /* ── Client Portal: new components ── */
 .cp-task-list-row{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.18s var(--ease),box-shadow 0.18s var(--ease);outline:none}
@@ -182,8 +186,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-action-btn.approve:hover{background:#0a5a3e}
 .cp-action-btn.changes{background:#fef3c7;color:#b45309;border:1.5px solid #fde68a}
 .cp-action-btn.changes:hover{background:#fde68a}
-.cp-req-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:18px 22px;margin-bottom:10px;transition:box-shadow 0.15s var(--ease)}
-.cp-req-card:hover{box-shadow:var(--sh-sm)}
+.cp-req-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:18px 22px;margin-bottom:10px;box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);transition:box-shadow 0.15s var(--ease),transform 0.15s var(--ease)}
+.cp-req-card:hover{box-shadow:0 2px 6px rgba(13,28,51,0.08),0 8px 20px rgba(13,28,51,0.07);transform:translateY(-1px)}
 .cp-form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;display:block}
 .cp-form-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s;box-sizing:border-box}
 .cp-form-input:focus{border-color:#0d6e4e;box-shadow:0 0 0 3px rgba(13,110,78,0.1)}
@@ -205,14 +209,15 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .notes-list-item.active{background:var(--navy);color:#fff}
 /* ── Avatar ── */
 .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Jost',sans-serif;color:#fff;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.12)}
+#sidebar-avatar{border:2px solid currentColor;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.45),0 1px 4px rgba(0,0,0,0.2)}
 /* ── Progress bar ── */
 .progress-bar{background:#e4eaf3;border-radius:4px;height:6px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:width 0.45s var(--ease)}
 /* ── Scrollbar ── */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#ccd6e4;border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:#b8c8d8}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#e2eaf2;border-radius:4px}
+::-webkit-scrollbar-thumb{background:#97bcbd;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#7aa3a4}
 /* ── Login ── */
 #login-screen{min-height:100vh;background:linear-gradient(145deg,#060f1b 0%,#0c1a2e 45%,#0b2038 100%);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
 #login-screen::before{content:'';position:absolute;top:-30%;left:-20%;width:60%;height:80%;border-radius:50%;background:radial-gradient(ellipse,rgba(151,188,189,0.07) 0%,transparent 70%);pointer-events:none}
@@ -237,7 +242,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
   .login-right{padding:28px 24px}
 }
 /* ── Misc ── */
-.notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block}
+.notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;animation:_notifPulse 2s ease-in-out infinite}
+@keyframes _notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 4px rgba(239,68,68,0)}}
 .section-header{font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1e3a54;padding:16px 20px 5px}
 .stat-card{background:#fff;border-radius:var(--r-md);padding:18px 18px 28px;box-shadow:var(--sh-xs);border:1px solid rgba(13,28,51,0.06);border-top-width:3px}
 .stat-val{font-family:'Jost',sans-serif;font-size:30px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-0.02em}
@@ -314,8 +320,14 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .ws-dropdown-item.active{font-weight:700;color:var(--navy)}
 /* ── Task panel ── */
 #task-panel{display:flex;flex-direction:column}
+#tp-backtop{position:absolute;bottom:18px;right:18px;width:34px;height:34px;border-radius:50%;border:none;background:var(--navy);color:#fff;font-size:15px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(13,28,51,0.3);opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity 0.2s var(--ease),transform 0.2s var(--ease),background 0.2s;z-index:5}
+#tp-backtop.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+#tp-backtop:hover{background:#152845}
+#tp-backtop:active{transform:scale(0.94)}
+#tp-backtop:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;padding:0 1px}
 .tp-field-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--surface-3);gap:10px}
-.tp-field-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;width:100px;flex-shrink:0}
+.tp-field-label{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;width:100px;flex-shrink:0}
 .tp-field-val{font-size:13px;color:var(--text-1);flex:1}
 .tp-tab{display:inline-flex;align-items:center;height:36px;padding:0 14px;font-size:12px;font-weight:600;font-family:'Lato',sans-serif;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s var(--ease),border-color 0.2s var(--ease);white-space:nowrap}
 .tp-tab.active{color:var(--navy);border-bottom-color:#97bcbd}
@@ -594,7 +606,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <h3 id="task-modal-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">New Task</h3>
       <button onclick="closeTaskModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8da2b2;line-height:1">×</button>
     </div>
-    <div style="padding:20px 24px" id="task-modal-body"></div>
+    <div style="padding:24px 28px 28px" id="task-modal-body"></div>
   </div>
 </div>
 
@@ -634,7 +646,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 <div id="confirm-modal" class="modal-overlay hidden" style="z-index:600" onclick="if(event.target===this)closeConfirm()">
   <div class="modal-box" style="max-width:400px">
     <div class="modal-header"><h3 id="confirm-title" style="font-family:'Jost',sans-serif;font-size:15px;font-weight:600">Confirm</h3></div>
-    <div style="padding:20px 24px">
+    <div style="padding:24px 28px 28px">
       <p id="confirm-msg" style="font-size:14px;color:#4a5568;margin-bottom:20px"></p>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button onclick="closeConfirm()" class="btn btn-ghost">Cancel</button>
@@ -651,7 +663,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <h3 id="generic-modal-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">Edit</h3>
       <button onclick="closeGenericModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8da2b2;line-height:1">×</button>
     </div>
-    <div style="padding:20px 24px;overflow-y:auto;max-height:calc(90vh - 60px)" id="generic-modal-body"></div>
+    <div style="padding:24px 28px 28px;overflow-y:auto;max-height:calc(90vh - 60px)" id="generic-modal-body"></div>
   </div>
 </div>
 
@@ -1359,7 +1371,7 @@ function showToast(msg,type,duration){
   const icons={info:'ℹ',success:'✓',warning:'⚠',error:'✕'};
   const t=document.createElement('div');
   t.className='app-toast app-toast-'+type;
-  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+escHtml(msg)+'</span><button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button>';
+  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+escHtml(msg)+'</span><button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button><div class="app-toast-progress" style="animation-duration:'+duration+'ms"></div>';
   root.appendChild(t);
   setTimeout(()=>{try{t.style.animation='_toastOut 0.22s ease-in forwards';setTimeout(()=>{try{t.remove();}catch(_){}},240);}catch(_){}},duration);
 }
@@ -1632,6 +1644,14 @@ let wsSelected=new Set();
 let wsSort={col:null,dir:'asc'};
 let wsShowArchived=false;
 let wsMtSearch='';
+// Wrap search matches in the task name with <mark> (input + output are HTML-escaped)
+function wsHighlightName(name){
+  const esc=escHtml(name||'');
+  const q=(wsMtSearch||'').trim();
+  if(!q)return esc;
+  const safe=escHtml(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  try{return esc.replace(new RegExp('('+safe+')','gi'),'<mark class="ws-hl">$1</mark>');}catch(_){return esc;}
+}
 let wsMtPersonFilter='';
 let mtSelectedColType='text';
 let ganttScale='weeks';
@@ -4371,7 +4391,7 @@ function renderDashboard(){
           ${done?`<span style="font-size:11px;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:10px;font-weight:600">${done} done</span>`:''}
           ${inProg?`<span style="font-size:11px;color:#1d4ed8;background:#dbeafe;padding:2px 8px;border-radius:10px;font-weight:600">${inProg} in progress</span>`:''}
           ${blocked?`<span style="font-size:11px;color:#991b1b;background:#fee2e2;padding:2px 8px;border-radius:10px;font-weight:600">${blocked} blocked</span>`:''}
-          ${!wbTasks.length?`<span style="font-size:11px;color:#b0bec5">No tasks yet</span>`:''}
+          ${!wbTasks.length?`<span style="font-size:12px;color:#c8d4e0">◌ No tasks yet</span>`:''}
         </div>
         <button onclick="event.stopPropagation();openWorkboard('${wb.id}')" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;font-size:12px">Open →</button>
       </div>`;
@@ -9177,7 +9197,7 @@ function openTaskModal(id, defaultGroupId){
         <label class="form-label">Comments (Internal)</label>
         <div id="tm-comments" style="max-height:220px;overflow-y:auto;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;margin-bottom:8px">
           ${comments.length===0
-            ?'<p data-empty style="font-size:12px;color:#8da2b2;margin:4px 0">No comments yet.</p>'
+            ?'<p data-empty style="font-size:14px;color:#c8d4e0;margin:10px 0;text-align:center">💬 No comments yet.</p>'
             :[...comments].sort((a,b)=>new Date(a.createdAt||a.timestamp)-new Date(b.createdAt||b.timestamp)).map((c,i,arr)=>{
               const author=getStaff(c.authorId);
               const ts=c.createdAt||c.timestamp;
@@ -10261,8 +10281,8 @@ function renderWorkspace(){
               return html+sep+renderWsSection(sec,cols,visCols,custCols,totalCols);
             },'')
           : sections.map(sec=>renderWsSection(sec,cols,visCols,custCols,totalCols)).join('')}
-        ${sections.length===0?`<tr><td colspan="${totalCols}" style="padding:48px;text-align:center;color:#8da2b2;font-size:13px">
-          <div style="font-size:24px;margin-bottom:8px">○</div>
+        ${sections.length===0?`<tr><td colspan="${totalCols}" style="padding:48px;text-align:center;color:#c8d4e0;font-size:14px">
+          <div style="margin-bottom:10px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c8d4e0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg></div>
           No tasks match the current filters.
           ${wsMtSearch?`<div style="margin-top:6px"><button onclick="wsMtSearch='';renderView('workspace')" class="btn btn-ghost btn-sm">Clear search</button></div>`:''}
         </td></tr>`:''}
@@ -10409,7 +10429,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
             :'<span style="width:14px;flex-shrink:0"></span>')}
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
-          title="Double-click to rename — ${escHtml(t.name)}">${escHtml(t.name)}</span>
+          title="Double-click to rename — ${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
         ${hasChildren&&!isSubitem?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" title="${childTasks.length} subitem${childTasks.length!==1?'s':''} — click to expand" style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span style="font-size:10px;font-weight:700">${childTasks.length}</span></button>`:''}
         ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}','comments')" title="${commentCount} comment${commentCount!==1?'s':''} — click to open"
           style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0"
@@ -10573,7 +10593,7 @@ function renderTaskPanel(task){
   const commentCount=(DB.comments||[]).filter(c=>c.taskId===task.id).length;
   const prioBg={'low':'#f1f5f9','med':'#fffbeb','high':'#fff7ed','crit':'#fef2f2'}[task.priority]||'#f1f5f9';
   const prioColor={'low':'#475569','med':'#b45309','high':'#c2410c','crit':'#b91c1c'}[task.priority]||'#475569';
-  return `<div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+  return `<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative">
     <div style="padding:16px 20px 12px;border-bottom:1px solid #e2eaf2;flex-shrink:0;background:#fff">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
         <textarea id="tp-title" rows="1" style="flex:1;font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;border:none;background:transparent;resize:none;outline:none;line-height:1.3;padding:0;overflow:hidden" onblur="tpSaveField('name',this.value.trim())" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escHtml(task.name)}</textarea>
@@ -10597,9 +10617,10 @@ function renderTaskPanel(task){
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
     </div>
-    <div id="tp-body" style="flex:1;overflow-y:auto;padding:16px 20px">
+    <div id="tp-body" style="flex:1;overflow-y:auto;padding:16px 20px" onscroll="var b=document.getElementById('tp-backtop');if(b)b.classList.toggle('show',this.scrollTop>200)">
       ${renderTpDetails(task)}
     </div>
+    <button id="tp-backtop" title="Back to top" onclick="document.getElementById('tp-body')?.scrollTo({top:0,behavior:'smooth'})">↑</button>
   </div>`;
 }
 
@@ -10672,16 +10693,16 @@ function renderTpDetails(task){
       </div>
     </div>
     <div style="margin-top:14px">
-      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Description</div>
-      <textarea id="tp-desc" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.6;box-sizing:border-box;transition:border-color 0.15s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
+      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Description</div>
+      <textarea id="tp-desc" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.75;box-sizing:border-box;transition:border-color 0.15s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
     </div>
     ${currentUser?.role!=='client'?_recurSummaryRow(task):''}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
-      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Comments</div>
+      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Comments</div>
       ${renderTpComments(task.id)}
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
-      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">💬 Client Comms Thread</div>
+      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">💬 Client Comms Thread</div>
       ${renderClientCommsThread(task.id,false)}
     </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
@@ -10734,7 +10755,7 @@ function renderTpSubtasks(taskId){
           </div>
         </div>`;
       }).join('')}
-    </div>`:'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No subitems yet. Add one below or via the main table.</div>'}
+    </div>`:'<div style="text-align:center;padding:28px 0;color:#c8d4e0;font-size:14px"><div style="font-size:26px;margin-bottom:8px;opacity:0.8">☰</div>No subitems yet.<div style="font-size:12px;margin-top:4px">Add one below or via the main table.</div></div>'}
     <div style="display:flex;gap:8px;margin-top:6px">
       <input id="tp-new-si" class="form-input" placeholder="Add a subitem…" style="font-size:13px" onkeydown="if(event.key==='Enter')tpAddSubitem('${taskId}')"/>
       <button onclick="tpAddSubitem('${taskId}')" class="btn btn-teal btn-sm">Add</button>
@@ -10767,7 +10788,7 @@ function renderTpComments(taskId){
           <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:#f8fbff;border-radius:8px;padding:8px 12px">${_renderCommentBody(c.body)}</div>
         </div>
       </div>`;
-    }).join(''):'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No comments yet</div>'}
+    }).join(''):'<div style="text-align:center;padding:28px 0;color:#c8d4e0;font-size:14px"><div style="font-size:26px;margin-bottom:8px;opacity:0.8">💬</div>No comments yet<div style="font-size:12px;margin-top:4px">Start the conversation below.</div></div>'}
     ${isInternal?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f4f8">
       ${currentUser?`<div style="display:flex;gap:8px;margin-bottom:6px">${avatarHtml(currentUser,24)}<span style="font-size:12px;font-weight:600;color:#6b8399;align-self:center">${escHtml(currentUser.name)}</span></div>`:''}
       <div style="position:relative">
@@ -13269,6 +13290,18 @@ document.addEventListener('keydown',e=>{
     else if(panelVisible)closeTaskPanel();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){document.getElementById('global-search')?.focus();e.preventDefault();}
+  // N — open the New Task modal (only when nothing is focused and no overlay is open)
+  if((e.key==='n'||e.key==='N')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+    const tag=(e.target&&e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select'||(e.target&&e.target.isContentEditable))return;
+    const appVisible=!document.getElementById('app-shell')?.classList.contains('hidden');
+    const modalOpen=['task-modal','generic-modal','confirm-modal'].some(id=>{const el=document.getElementById(id);return el&&!el.classList.contains('hidden');});
+    const panelOpen=document.getElementById('task-panel')?.style.display!=='none';
+    if(appVisible&&!modalOpen&&!panelOpen&&currentUser&&currentUser.role!=='client'){
+      e.preventDefault();
+      try{openTaskModal();}catch(err){console.warn('[shortcut N] could not open task modal:',err);}
+    }
+  }
 });
 // ─── Share link check — runs before session restore ───────────────────────────
 (async function _checkShareRoute(){
