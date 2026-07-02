@@ -10680,6 +10680,10 @@ function renderTpDetails(task){
       <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Comments</div>
       ${renderTpComments(task.id)}
     </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
+      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">💬 Client Comms Thread</div>
+      ${renderClientCommsThread(task.id,false)}
+    </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
       <div style="font-size:10px;color:#a0b4c7">
         Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
@@ -10755,7 +10759,10 @@ function renderTpComments(taskId){
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
             <span style="font-size:13px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>
             <span style="font-size:11px;color:#a0b4c7">${_cTs?new Date(_cTs).toLocaleDateString():''}</span>
-            ${canDel?`<button onclick="tpDeleteComment('${c.id}')" style="margin-left:auto;border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              ${isInternal?`<button onclick="tpReplyToComment(${JSON.stringify(author.name)})" style="border:none;background:none;cursor:pointer;font-size:11px;color:#97bcbd" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Reply</button>`:''}
+              ${canDel?`<button onclick="tpDeleteComment('${c.id}')" style="border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
+            </div>
           </div>
           <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:#f8fbff;border-radius:8px;padding:8px 12px">${_renderCommentBody(c.body)}</div>
         </div>
@@ -11038,6 +11045,109 @@ function tpDeleteComment(commentId){
   DB.comments=DB.comments.filter(c=>c.id!==commentId);
   saveDB(DB);
   tpShowTab('details');
+}
+function tpReplyToComment(authorName){
+  const inp=document.getElementById('tp-comment-input');
+  if(!inp)return;
+  const prefix='@'+authorName+' ';
+  if(!inp.value.startsWith(prefix))inp.value=prefix+inp.value;
+  inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
+  inp.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function renderClientCommsThread(taskId,isClientView){
+  if(!DB.clientComments)DB.clientComments=[];
+  const comments=DB.clientComments.filter(c=>c.taskId===taskId).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  const getIni=n=>(n||'?')[0].toUpperCase();
+  const thread=comments.length?comments.map(c=>{
+    const fromClient=c.authorRole==='client';
+    const canDel=!isClientView&&(currentUser?.role==='admin'||currentUser?.id===c.authorId);
+    const bg=fromClient?'#eff6ff':'#f0fdf4';
+    const border=fromClient?'#bfdbfe':'#bbf7d0';
+    const dotColor=fromClient?'#3b82f6':'#16a34a';
+    const labelColor=fromClient?'#1d4ed8':'#15803d';
+    const label=fromClient?(c.authorName||'Client'):(c.authorName||'Etcher Team');
+    const ts=c.createdAt?new Date(c.createdAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+    const replyFn=isClientView?`cpQuoteClientReply('${taskId}',${JSON.stringify(c.body)})`:`tpQuoteClientReply(${JSON.stringify(c.body)})`;
+    return`<div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="width:26px;height:26px;border-radius:50%;background:${bg};border:1.5px solid ${dotColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${dotColor};flex-shrink:0">${getIni(label)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:${labelColor}">${escHtml(label)}</span>
+          <span style="font-size:10px;color:#a0b4c7">${ts}</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <button onclick="${replyFn}" style="border:none;background:none;cursor:pointer;font-size:11px;color:#97bcbd" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Reply</button>
+            ${canDel?`<button onclick="deleteClientComment('${c.id}','${taskId}')" style="border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
+          </div>
+        </div>
+        <div style="font-size:13px;color:#1a2940;line-height:1.55;white-space:pre-wrap;background:${bg};border-radius:8px;padding:8px 12px;border:1px solid ${border}">${escHtml(c.body)}</div>
+      </div>
+    </div>`;
+  }).join(''):`<div style="text-align:center;padding:18px 0;color:#b0bec5;font-size:13px">${isClientView?'No messages yet — send a message below':'No client messages yet'}</div>`;
+  if(isClientView){
+    return`<div>${thread}<div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end">
+      <textarea id="cp-ccomm-input-${taskId}" style="flex:1;font-family:'Lato',sans-serif;font-size:13px;border:1.5px solid #e2eaf2;border-radius:8px;padding:8px 12px;resize:vertical;outline:none;line-height:1.5;color:#0d1c33;min-height:60px;box-sizing:border-box" placeholder="Write a message to the Etcher team…" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"></textarea>
+      <button onclick="cpPostClientComment('${taskId}')" style="background:#0d6e4e;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Jost',sans-serif;flex-shrink:0" onmouseover="this.style.background='#0a5a3f'" onmouseout="this.style.background='#0d6e4e'">Send</button>
+    </div></div>`;
+  }else{
+    return`<div>${thread}<div style="margin-top:10px;padding-top:10px;border-top:1px solid #f0f4f8;display:flex;gap:8px;align-items:flex-end">
+      <textarea id="tp-ccomm-input" class="form-input" rows="2" placeholder="Reply to client…" style="flex:1;font-size:13px;resize:vertical"></textarea>
+      <button onclick="tpAddClientComment()" class="btn btn-teal btn-sm" style="font-size:12px;white-space:nowrap;flex-shrink:0">Send Reply</button>
+    </div></div>`;
+  }
+}
+function tpQuoteClientReply(body){
+  const inp=document.getElementById('tp-ccomm-input');
+  if(!inp)return;
+  const q='> '+body.replace(/\n/g,'\n> ')+'\n\n';
+  inp.value=q+(inp.value||'');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
+  inp.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function cpQuoteClientReply(taskId,body){
+  const inp=document.getElementById('cp-ccomm-input-'+taskId);
+  if(!inp)return;
+  const q='> '+body.replace(/\n/g,'\n> ')+'\n\n';
+  inp.value=q+(inp.value||'');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
+}
+function tpAddClientComment(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  if(!_tpCurrentTask)return;
+  const inp=document.getElementById('tp-ccomm-input');
+  const body=(inp?inp.value:'').trim();
+  if(!body)return;
+  if(!DB.clientComments)DB.clientComments=[];
+  const now=new Date().toISOString();
+  DB.clientComments.push({id:'cc'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,authorName:currentUser.name,authorRole:currentUser.role==='admin'?'admin':'staff',body,createdAt:now,timestamp:now});
+  const clientId=_tpCurrentTask.clientId||(DB.groups||[]).find(g=>g.id===_tpCurrentTask.groupId)?.clientId;
+  if(clientId){const clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===clientId&&u.active!==false);if(clientUser){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:clientUser.id,taskId:_tpCurrentTask.id,type:'client_comment_reply',read:false,message:currentUser.name+' replied on: '+(_tpCurrentTask.name||_tpCurrentTask.title),createdAt:now});updateNotifBadge();}}
+  if(inp)inp.value='';
+  saveDB(DB);
+  const panel=document.getElementById('tp-body');
+  if(panel&&_tpCurrentTask)panel.innerHTML=renderTpDetails(_tpCurrentTask);
+}
+function cpPostClientComment(taskId){
+  if(currentUser?.role!=='client')return;
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!rawTask||!canViewTask(currentUser,rawTask))return;
+  const inp=document.getElementById('cp-ccomm-input-'+taskId);
+  const body=(inp?inp.value:'').trim();
+  if(!body)return;
+  if(!DB.clientComments)DB.clientComments=[];
+  const now=new Date().toISOString();
+  DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body,createdAt:now,timestamp:now});
+  if(rawTask.ownerId&&rawTask.ownerId!==currentUser.id){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:rawTask.ownerId,taskId,type:'client_comment',read:false,message:(currentUser.name||'Client')+' sent a message on: '+(rawTask.name||rawTask.title),createdAt:now});updateNotifBadge();}
+  if(inp)inp.value='';
+  saveDB(DB);
+  const commDiv=document.getElementById('cp-ccomm-'+taskId);
+  if(commDiv)commDiv.innerHTML=renderClientCommsThread(taskId,true);
+}
+function deleteClientComment(commentId,taskId){
+  const c=(DB.clientComments||[]).find(x=>x.id===commentId);
+  if(!c)return;
+  if(currentUser?.role!=='admin'&&c.authorId!==currentUser?.id)return;
+  DB.clientComments=(DB.clientComments||[]).filter(x=>x.id!==commentId);
+  saveDB(DB);
+  const panel=document.getElementById('tp-body');
+  if(panel&&_tpCurrentTask)panel.innerHTML=renderTpDetails(_tpCurrentTask);
 }
 
 let _tpMentionStart=-1;
@@ -12849,6 +12959,10 @@ function cpOpenTaskModal(taskId){
     </div>
     ${attachSection}
     ${approvalSection?approvalSection+'<div style="height:24px"></div>':''}
+    <div style="padding:20px 28px;border-top:1px solid #e8eef4">
+      <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">💬 Client Comms</div>
+      <div id="cp-ccomm-${taskId}">${renderClientCommsThread(taskId,true)}</div>
+    </div>
   </div>`;
 
   const modal=document.getElementById('cp-task-modal');
