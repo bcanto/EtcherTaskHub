@@ -1434,6 +1434,9 @@ async function _supabaseRestoreSession(session){
           localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
+      // Sync currentUser color/initials from DB.users — profiles table may be stale
+      const _dbU=DB.users?.find(u=>u.id===currentUser.id);
+      if(_dbU){const _c=_dbU.displayColor||_dbU.color;if(_c){currentUser.color=_c;currentUser.displayColor=_c;}if(_dbU.initials)currentUser.initials=_dbU.initials;}
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
       _startRealtimeSync();
       launchApp();
@@ -9309,6 +9312,10 @@ function saveTask(){
     }else{
       t.percentComplete=parseInt(document.getElementById('tm-pct')?.value||'0')||0;
     }
+    {const pct=t.percentComplete;const st=t.status;
+    if(pct===100){t.status='done';if(!t.completedAt)t.completedAt=new Date().toISOString();}
+    else if(pct>0&&['todo','not-started','done','completed'].includes(st)){t.status='in-progress';t.completedAt=null;}
+    else if(pct===0&&(st==='done'||st==='completed')){t.status='todo';t.completedAt=null;}}
     t.description=document.getElementById('tm-desc')?.value||'';
     // Dependency update — block circular dependencies, sync DB.dependencies entity list
     const depEl=document.getElementById('tm-deps');
@@ -10914,13 +10921,20 @@ function tpSaveField(field,value){
     if(value==='done'||value==='completed'){if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();}
     else _tpCurrentTask.completedAt=null;
   }
+  let _pctStatusChanged=false;
+  if(field==='percentComplete'){
+    const pct=value;const st=_tpCurrentTask.status;
+    if(pct===100){_tpCurrentTask.status='done';if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();_pctStatusChanged=true;}
+    else if(pct>0&&['todo','not-started','done','completed'].includes(st)){_tpCurrentTask.status='in-progress';_tpCurrentTask.completedAt=null;_pctStatusChanged=true;}
+    else if(pct===0&&(st==='done'||st==='completed')){_tpCurrentTask.status='todo';_tpCurrentTask.completedAt=null;_pctStatusChanged=true;}
+  }
   const idx=DB.tasks.findIndex(t=>t.id===_tpCurrentTask.id);
   if(idx>=0) DB.tasks[idx]=_tpCurrentTask;
   saveDB(DB);
   tpShowSaved();
   // Re-render panel when switching to/from approval-related statuses so the Approval Type field appears
   const approvalStatuses=['ready-approval','approved-client','completed-approved'];
-  if(field==='status'&&(approvalStatuses.includes(value)||approvalStatuses.includes(prevStatus))){
+  if((field==='status'&&(approvalStatuses.includes(value)||approvalStatuses.includes(prevStatus)))||_pctStatusChanged){
     const panel=document.getElementById('tp-body');
     if(panel)panel.innerHTML=renderTpDetails(_tpCurrentTask);
   }
@@ -11854,6 +11868,12 @@ function wsCellSave(taskId,field,value){
     const oldVal=task[field];
     task[field]=value;
     task.updatedAt=new Date().toISOString();
+    if(field==='percentComplete'){
+      const pct=value;const st=task.status;
+      if(pct===100){task.status='done';if(!task.completedAt)task.completedAt=new Date().toISOString();}
+      else if(pct>0&&['todo','not-started','done','completed'].includes(st)){task.status='in-progress';task.completedAt=null;}
+      else if(pct===0&&(st==='done'||st==='completed')){task.status='todo';task.completedAt=null;}
+    }
     // Keep new currentlyWith fields in sync + allocation notification
     if(field==='currentlyWith'){
       if(value==='client')   {task.currentlyWithType='client';   task.currentlyWithUserId=null;}
