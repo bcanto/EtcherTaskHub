@@ -11134,7 +11134,7 @@ function cpPostClientComment(taskId){
   if(!DB.clientComments)DB.clientComments=[];
   const now=new Date().toISOString();
   DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body,createdAt:now,timestamp:now});
-  if(rawTask.ownerId&&rawTask.ownerId!==currentUser.id){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:rawTask.ownerId,taskId,type:'client_comment',read:false,message:(currentUser.name||'Client')+' sent a message on: '+(rawTask.name||rawTask.title),createdAt:now});updateNotifBadge();}
+  {if(!DB.notifications)DB.notifications=[];const _msg=(currentUser.name||'Client')+' sent a message on: '+(rawTask.name||rawTask.title);const _notified=new Set();const _pushN=uid=>{ if(uid&&uid!==currentUser.id&&!_notified.has(uid)){_notified.add(uid);DB.notifications.push({id:'n'+uid(),recipientId:uid,taskId,type:'client_comment',read:false,message:_msg,createdAt:now});}};_pushN(rawTask.ownerId);_pushN(rawTask.currentlyWithUserId);updateNotifBadge();}
   if(inp)inp.value='';
   saveDB(DB);
   const commDiv=document.getElementById('cp-ccomm-'+taskId);
@@ -12457,6 +12457,7 @@ function sanitizeTaskForClient(task){
     description:     task.clientDescription||task.description||null,
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
     attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
+    parentId:        task.parentTaskId||null,
   };
 }
 
@@ -12779,14 +12780,20 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
   const isInScope=s=>['todo','not-started','ready-to-start','blocked'].includes(s);
   const isInProgress=s=>['in-progress','needs-changes'].includes(s);
 
-  const awaiting=tasks.filter(t=>t.awaitingClient&&!isDone(t.status)&&!isAwaitingEtcher(t.status));
-  const awaitingEtcher=tasks.filter(t=>isAwaitingEtcher(t.status));
-  const underReview=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isUnderReview(t.status));
-  const inScope=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInScope(t.status));
-  const inProgress=tasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInProgress(t.status));
-  const completed=tasks.filter(t=>isDone(t.status));
+  // Build subtask map and restrict sections to top-level tasks only
+  const subMap=new Map();
+  tasks.filter(t=>t.parentId).forEach(t=>{if(!subMap.has(t.parentId))subMap.set(t.parentId,[]);subMap.get(t.parentId).push(t);});
+  const topTasks=tasks.filter(t=>!t.parentId);
+
+  const awaiting=topTasks.filter(t=>t.awaitingClient&&!isDone(t.status)&&!isAwaitingEtcher(t.status));
+  const awaitingEtcher=topTasks.filter(t=>isAwaitingEtcher(t.status));
+  const underReview=topTasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isUnderReview(t.status));
+  const inScope=topTasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInScope(t.status));
+  const inProgress=topTasks.filter(t=>!t.awaitingClient&&!isAwaitingEtcher(t.status)&&isInProgress(t.status));
+  const completed=topTasks.filter(t=>isDone(t.status));
 
   function taskRow(t,showActions=false){
+    const subs=subMap.get(t.id)||[];
     const bs=cpBroadStatus(t.status);
     const overdue=t.endDate&&t.endDate<todayStr&&!isDone(t.status);
     const dateStr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:'';
@@ -12797,6 +12804,7 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
       <div style="width:4px;min-height:36px;border-radius:2px;flex-shrink:0;align-self:stretch;background:${accentColor}"></div>
       <div style="flex:1;min-width:0;padding-left:12px;display:flex;align-items:center;gap:10px;overflow:hidden">
         <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1">${escHtml(t.title)}</span>
+        ${subs.length?`<span style="font-size:10px;color:#97bcbd;white-space:nowrap;flex-shrink:0;background:#f0f4f8;border-radius:10px;padding:2px 7px">▸ ${subs.length} subtask${subs.length>1?'s':''}</span>`:''}
         ${dateStr?`<span style="font-size:11px;color:${overdue?'#dc2626':'#b0bec5'};white-space:nowrap;flex-shrink:0">${overdue?'⚠ ':''}${dateStr}</span>`:''}
         ${hasApproved?`<span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">✓ Approved</span>`:''}
         ${hasChanges&&!showActions?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">↩ Changes Sent</span>`:''}
@@ -12875,6 +12883,8 @@ function cpOpenTaskModal(taskId){
   else if(t.startDate)drParts.push(`From ${formatDate(t.startDate)}`);
   const prioMeta=cpPriorityMeta(t.priority||'med');
   const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&!f.internalOnly);
+  const rawSubs=DB.tasks.filter(s=>s.parentTaskId===taskId&&!s.archived&&canViewTask(currentUser,s));
+  const subs=rawSubs.map(sanitizeTaskForClient);
 
   // Approval / changes section
   let approvalSection='';
@@ -12957,6 +12967,16 @@ function cpOpenTaskModal(taskId){
       </div>`:''}
       ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;white-space:pre-wrap;word-break:break-word">${escHtml(t.description)}</div>`:''}
     </div>
+    ${subs.length?`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
+      <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Subtasks (${subs.length})</div>
+      ${subs.map(s=>{const sbs=cpBroadStatus(s.status);const pct=s.percentComplete;return`<div onclick="cpOpenTaskModal('${s.id}')" role="button" tabindex="0" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${s.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;background:#f8fafb;border:1px solid #e8eef4;transition:background 0.12s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#f8fafb'">
+        <span style="color:#c8d4e0;font-size:12px;flex-shrink:0">↳</span>
+        <span style="flex:1;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.title)}</span>
+        ${pct>0?`<span style="font-size:11px;color:#8da2b2;flex-shrink:0">${pct}%</span>`:''}
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${sbs.bg};color:${sbs.color};flex-shrink:0;white-space:nowrap">${sbs.label}</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d0dae6" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`}).join('')}
+    </div>`:''}
     ${attachSection}
     ${approvalSection?approvalSection+'<div style="height:24px"></div>':''}
     <div style="padding:20px 28px;border-top:1px solid #e8eef4">
