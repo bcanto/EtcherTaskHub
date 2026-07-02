@@ -12308,7 +12308,7 @@ function cpBroadStatus(key){
     'blocked':          {label:'In Scope',              bg:'#e0f2fe',color:'#0369a1'},
     'review':           {label:'Under Review',          bg:'#f3e8ff',color:'#6d28d9'},
     'waiting-review':   {label:'Under Review',          bg:'#f3e8ff',color:'#6d28d9'},
-    'waiting-client':   {label:'Under Review',          bg:'#f3e8ff',color:'#6d28d9'},
+    'waiting-client':   {label:'Awaiting Your Approval',bg:'#fef3c7',color:'#b45309'},
     'in-progress':      {label:'In Progress',           bg:'#dbeafe',color:'#1d4ed8'},
     'needs-changes':    {label:'In Progress',           bg:'#dbeafe',color:'#1d4ed8'},
     'ready-approval':   {label:'Awaiting Your Approval',bg:'#fef3c7',color:'#b45309'},
@@ -13070,7 +13070,7 @@ function cpReqFileChanged(input){
   if(oversized.length)showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} 1 MB and were not added.`);
   _cpReqFiles=[..._cpReqFiles,...incoming.filter(f=>f.size<=1048576)];
   const list=document.getElementById('cp-req-file-list');
-  if(list)list.innerHTML=_cpReqFiles.map((f,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4a5568;border:1px solid #e2eaf2">${escHtml(f.name)}<button onclick="event.preventDefault();_cpReqFiles.splice(${i},1);const l=document.getElementById('cp-req-file-list');if(l){l.innerHTML=_cpReqFiles.map((ff,ii)=>l.innerHTML).join('');cpReqFileChanged({files:[]});}" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:0 2px 0 4px;font-size:13px;line-height:1">×</button></span>`).join('');
+  if(list)list.innerHTML=_cpReqFiles.map((f,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4a5568;border:1px solid #e2eaf2">${escHtml(f.name)}<button onclick="event.preventDefault();_cpReqFiles.splice(${i},1);cpReqFileChanged({files:[]});" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:0 2px 0 4px;font-size:13px;line-height:1">×</button></span>`).join('');
   input.value='';
 }
 
