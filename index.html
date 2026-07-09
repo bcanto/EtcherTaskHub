@@ -59,10 +59,23 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 #sidebar{width:220px;height:100vh;background:linear-gradient(180deg,#0c1b31 0%,#071422 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.04);overflow:hidden}
 #app-shell{display:flex;min-height:100vh}
 #main-content{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border-radius:8px;transition:background 0.2s var(--ease),color 0.2s var(--ease),transform 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
+.nav-item{position:relative;display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;border-radius:8px;transition:background 0.2s var(--ease),color 0.2s var(--ease),transform 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
 .nav-item:hover{background:rgba(255,255,255,0.07);color:#a8c8d8;transform:translateX(2px)}
 .nav-item.active{background:rgba(151,188,189,0.15);color:#e8f0f6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd;transform:none}
 .nav-item.active .nav-icon{opacity:1}
+/* Sidebar: collapsible sections + pinned items */
+.nav-sec-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:color 0.15s var(--ease)}
+.nav-sec-toggle:hover{color:#3d5f80}
+.nav-sec-toggle:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px;border-radius:4px}
+.nav-sec-chevron{font-size:9px;color:#2d4a66;line-height:1;display:inline-block;transition:transform 0.2s var(--ease);margin-left:6px}
+.nav-sec-body{overflow:hidden;max-height:1200px;opacity:1;transition:max-height 0.25s var(--ease),opacity 0.2s var(--ease)}
+.nav-sec-body.collapsed{max-height:0;opacity:0}
+.nav-pin-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:5px;background:rgba(13,28,51,0.92);color:#5a7a96;cursor:pointer;opacity:0;transition:opacity 0.15s var(--ease),color 0.15s var(--ease)}
+.nav-item:hover .nav-pin-btn,.nav-pin-btn:focus-visible{opacity:1}
+.nav-pin-btn:hover{color:#c8dae8}
+.nav-pin-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.nav-pin-btn:active{transform:translateY(-50%) scale(0.9)}
+.nav-pin-btn.pinned{color:#97bcbd}
 .nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.8}
 /* ── Topbar ── */
 #topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(13,28,51,0.03)}
@@ -492,7 +505,9 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
     <!-- Nav -->
     <nav id="main-nav" style="flex:1;padding:8px 0;overflow-y:auto">
-      <div class="section-header">Overview</div>
+      <div id="nav-pinned-container"></div>
+      <div class="section-header nav-sec-toggle" id="nav-overview-section" onclick="toggleNavSection('overview')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('overview')}">Overview<span class="nav-sec-chevron" id="nav-chev-overview">&#9662;</span></div>
+      <div class="nav-sec-body" id="nav-section-overview">
       <div class="nav-item" data-view="dashboard" onclick="navigate('dashboard')" style="position:relative">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".85"/></svg></span>
         Dashboard
@@ -506,11 +521,12 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/><rect x="9" y="9.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/></svg></span>
         Schedule
       </div>
+      </div>
 
       <!-- WorkBoards -->
-      <div style="display:flex;align-items:center;padding:16px 20px 5px;justify-content:space-between">
-        <span class="section-header" style="padding:0;margin:0">WorkBoards</span>
-        <div style="position:relative">
+      <div id="nav-workboards-header" style="display:flex;align-items:center;padding:16px 20px 5px;justify-content:space-between">
+        <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('workboards')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('workboards')}">WorkBoards<span class="nav-sec-chevron" id="nav-chev-workboards">&#9662;</span></span>
+        <div style="position:relative" onclick="event.stopPropagation()">
           <button id="wb-add-btn" onclick="toggleWbAddMenu()" title="Add WorkBoard or Folder"
             style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
             onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
@@ -525,12 +541,16 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
           </div>
         </div>
       </div>
-      <div id="sidebar-wb-list"></div>
+      <div class="nav-sec-body" id="nav-section-workboards">
+        <div id="sidebar-wb-list"></div>
+      </div>
 
-      <div class="section-header" id="nav-clients-section">Clients</div>
+      <div class="section-header nav-sec-toggle" id="nav-clients-section" onclick="toggleNavSection('clients')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('clients')}">Clients<span class="nav-sec-chevron" id="nav-chev-clients">&#9662;</span></div>
+      <div class="nav-sec-body" id="nav-section-clients">
       <div class="nav-item" data-view="clients" onclick="navigate('clients')" id="nav-clients-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5 5V4a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="5" y="8.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/><rect x="9" y="8.5" width="2" height="2" rx=".5" fill="currentColor" opacity=".8"/></svg></span>
         Client Manager
+        <span id="client-req-badge" class="hidden" style="background:#f59e0b;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:auto"></span>
       </div>
       <div class="nav-item" data-view="time" onclick="navigate('time')" id="nav-time-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3.2l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -548,8 +568,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><line x1="5.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="8" x2="10.5" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="10.5" x2="8.5" y2="10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Client Notes
       </div>
+      </div>
 
-      <div class="section-header" id="nav-admin-section">Admin</div>
+      <div class="section-header nav-sec-toggle" id="nav-admin-section" onclick="toggleNavSection('admin')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('admin')}">Admin<span class="nav-sec-chevron" id="nav-chev-admin">&#9662;</span></div>
+      <div class="nav-sec-body" id="nav-section-admin">
       <div class="nav-item" data-view="staff" onclick="navigate('staff')" id="nav-staff-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 14c0-2.761 2.462-5 5.5-5s5.5 2.239 5.5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
         Staff
@@ -570,6 +592,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5A4.5 4.5 0 0 0 3.5 7v3L2 12.5h12L12.5 10V7A4.5 4.5 0 0 0 8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Notifications
         <span id="notif-count-badge" class="hidden" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:auto"></span>
+      </div>
       </div>
     </nav>
 
@@ -1309,7 +1332,7 @@ function _startRealtimeSync(){
       for(const k in DB)delete DB[k];Object.assign(DB,fresh);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
       if(currentView)renderView(currentView);
-      renderSidebarWorkboards();
+      renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
     })
     .subscribe();
 }
@@ -1995,10 +2018,11 @@ function launchApp(){
   document.getElementById('app-shell').classList.remove('hidden');
   updateSidebarUser();
   applyRolePermissions();
+  renderNav();
   loadFilters();
   renderSidebarWorkboards();
   navigate('dashboard');
-  updateNotifBadge();
+  updateNotifBadge();updateClientReqBadge();
   startIntakePoller();
   _checkRecurringTasks();
 }
@@ -2073,6 +2097,102 @@ function applyRolePermissions(){
   if(isRestricted||isClient){
     document.getElementById('new-task-btn')?.classList.add('hidden');
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR NAV: COLLAPSIBLE SECTIONS + PINNED ITEMS
+// ═══════════════════════════════════════════════════════════
+const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',clients:'nav-clients-section',admin:'nav-admin-section'};
+const _NAV_PIN_SVG='<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/></svg>';
+function _navCollapseState(){
+  try{const s=JSON.parse(localStorage.getItem('navCollapse'));return(s&&typeof s==='object')?s:{};}catch(e){return{};}
+}
+function _navPins(){
+  try{const p=JSON.parse(localStorage.getItem('navPins'));return Array.isArray(p)?p:[];}catch(e){return[];}
+}
+function toggleNavSection(section){
+  const st=_navCollapseState();
+  st[section]=!st[section];
+  localStorage.setItem('navCollapse',JSON.stringify(st));
+  renderNav();
+}
+function toggleNavPin(view){
+  let pins=_navPins();
+  if(pins.includes(view))pins=pins.filter(v=>v!==view);
+  else pins.push(view);
+  localStorage.setItem('navPins',JSON.stringify(pins));
+  renderNav();
+}
+// Inject pin buttons into the static nav items (once)
+function _initNavPinButtons(){
+  document.querySelectorAll('#main-nav .nav-sec-body .nav-item[data-view]').forEach(item=>{
+    if(item.querySelector('.nav-pin-btn'))return;
+    const btn=document.createElement('button');
+    btn.className='nav-pin-btn';
+    btn.type='button';
+    btn.title='Pin to top';
+    btn.innerHTML=_NAV_PIN_SVG;
+    btn.onclick=e=>{e.stopPropagation();toggleNavPin(item.dataset.view);};
+    item.appendChild(btn);
+  });
+}
+function renderNav(){
+  const cont=document.getElementById('nav-pinned-container');
+  if(!cont)return;
+  _initNavPinButtons();
+  const st=_navCollapseState();
+  const pins=_navPins();
+  // 1. Collapse/expand section bodies + chevrons
+  Object.keys(NAV_SECTION_HEADERS).forEach(sec=>{
+    const body=document.getElementById('nav-section-'+sec);
+    const chev=document.getElementById('nav-chev-'+sec);
+    if(!body)return;
+    let collapsed=!!st[sec];
+    // If the section header is role-hidden, force expanded so visible items inside stay reachable
+    const header=document.getElementById(NAV_SECTION_HEADERS[sec]);
+    if(header&&header.style.display==='none')collapsed=false;
+    body.classList.toggle('collapsed',collapsed);
+    if(chev)chev.style.transform=collapsed?'rotate(-90deg)':'';
+  });
+  // 2. Rebuild pinned section (labels + icons only — no badge spans, avoids duplicate IDs)
+  cont.innerHTML='';
+  const findOrig=v=>document.querySelector('#main-nav .nav-sec-body .nav-item[data-view="'+CSS.escape(v)+'"]');
+  const visiblePins=pins.filter(v=>{const o=findOrig(v);return o&&o.style.display!=='none';});
+  if(visiblePins.length){
+    const hdr=document.createElement('div');
+    hdr.className='section-header';
+    hdr.textContent='Pinned';
+    cont.appendChild(hdr);
+    visiblePins.forEach(v=>{
+      const orig=findOrig(v);
+      const item=document.createElement('div');
+      item.className='nav-item';
+      item.dataset.view=v;
+      item.onclick=()=>navigate(v);
+      const icon=orig.querySelector('.nav-icon');
+      if(icon)item.appendChild(icon.cloneNode(true));
+      let label='';
+      orig.childNodes.forEach(n=>{if(n.nodeType===3)label+=n.textContent;});
+      item.appendChild(document.createTextNode(label.trim()));
+      const btn=document.createElement('button');
+      btn.className='nav-pin-btn pinned';
+      btn.type='button';
+      btn.title='Unpin';
+      btn.innerHTML=_NAV_PIN_SVG;
+      btn.onclick=e=>{e.stopPropagation();toggleNavPin(v);};
+      item.appendChild(btn);
+      cont.appendChild(item);
+    });
+    if(typeof currentView!=='undefined'&&currentView){
+      cont.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===currentView));
+    }
+  }
+  // 3. Reflect pinned state on the original items' pin buttons
+  document.querySelectorAll('#main-nav .nav-sec-body .nav-item[data-view] .nav-pin-btn').forEach(b=>{
+    const v=b.parentElement.dataset.view;
+    b.classList.toggle('pinned',pins.includes(v));
+    b.title=pins.includes(v)?'Unpin':'Pin to top';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2881,6 +3001,14 @@ function updateNotifBadge(){
   const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length;
   const badge=document.getElementById('notif-count-badge');
   if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}
+}
+
+function updateClientReqBadge(){
+  if(!currentUser||currentUser.role==='client')return;
+  const pending=(DB.clientWorkRequests||[]).filter(r=>r.status==='pending').length;
+  const badge=document.getElementById('client-req-badge');
+  if(!badge)return;
+  if(pending>0){badge.textContent=pending;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -5701,7 +5829,7 @@ function wrUpdateStatus(requestId, status, note){
   if(!r)return;
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
-  saveDB(DB);
+  saveDB(DB);updateClientReqBadge();
   renderView('clients');
 }
 
@@ -13253,7 +13381,7 @@ function cpSubmitRequest(_unused){
     _cpReqFiles=[];
     const client=DB.clients.find(c=>c.id===clientId);
     _notifyAllStaff('work_request',`New work request from ${client?.name||'a client'}: "${title}"`);
-    saveDB(DB);
+    saveDB(DB);updateClientReqBadge();
     // Reset form
     const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
     if(t)t.value='';if(d)d.value='';if(fl)fl.innerHTML='';
