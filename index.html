@@ -15,26 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-<!-- Tailwind CDN play-mode: dynamic JIT, crossorigin for CORS compliance. SRI not possible with this loader (use production build + SRI when moving off CDN). -->
-<script src="https://cdn.tailwindcss.com"></script>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        navy: { DEFAULT:'#0d1c33', light:'#0a2d52', dark:'#081526' },
-        teal: { DEFAULT:'#97bcbd', light:'#b8d0d1', dark:'#7aa3a4' },
-        slate: { DEFAULT:'#8da2b2', light:'#d9e3ed', dark:'#6b8399' },
-      },
-      fontFamily: { jost:['Jost','sans-serif'], lato:['Lato','sans-serif'] }
-    }
-  }
-}
-</script>
 <style>
 /* ── Design tokens ── */
 :root{
@@ -1328,6 +1312,10 @@ function _startRealtimeSync(){
       if(_saveDebounceTimer)return; // we have unsaved local changes; they will win on next flush
       const fresh=payload.new?.data;
       if(!fresh||(fresh.users?.length===0&&fresh.tasks?.length===0))return;
+      // Conflict detection: warn if incoming data is older than our last save
+      if(DB._savedAt&&fresh._savedAt&&fresh._savedAt<DB._savedAt){
+        showToast('⚠️ Conflict: another user\'s changes arrived out of order. Your last save is kept.','warning',5000);
+      }
       _migrateDB(fresh);_applyCompatAliases(fresh);
       for(const k in DB)delete DB[k];Object.assign(DB,fresh);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
@@ -1353,6 +1341,7 @@ function _stripPasswords(data){
 }
 function saveDB(data){
   _vcClear(); // invalidate render cache whenever data changes
+  data._savedAt=new Date().toISOString(); // timestamp for conflict detection
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=setTimeout(()=>{_saveDebounceTimer=null;const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
 }
@@ -5831,8 +5820,19 @@ function wrToggleStatusDrop(requestId,e){
 function wrUpdateStatus(requestId, status, note){
   const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
   if(!r)return;
+  const prevStatus=r.status;
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
+  // Notify the client when status meaningfully changes
+  if(status&&status!==prevStatus){
+    const _statusMsg={approved:'Your work request has been approved',rejected:'Your work request has been declined',
+      'in-progress':'Work has started on your request: "'+r.title+'"',completed:'Your work request has been completed: "'+r.title+'"'};
+    const _msg=_statusMsg[status];
+    if(_msg){
+      const _clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===r.clientId&&u.active!==false);
+      if(_clientUser){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:_msg,createdAt:new Date().toISOString()});}
+    }
+  }
   saveDB(DB);updateClientReqBadge();
   renderView('clients');
 }
@@ -11091,6 +11091,10 @@ function tpSaveField(field,value){
     if(pct===100){_tpCurrentTask.status='done';if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();_pctStatusChanged=true;}
     else if(pct>0&&['todo','not-started','done','completed'].includes(st)){_tpCurrentTask.status='in-progress';_tpCurrentTask.completedAt=null;_pctStatusChanged=true;}
     else if(pct===0&&(st==='done'||st==='completed')){_tpCurrentTask.status='todo';_tpCurrentTask.completedAt=null;_pctStatusChanged=true;}
+  }
+  // Cascade groupId to subtasks so they don't orphan in the client portal
+  if(field==='groupId'){
+    DB.tasks.filter(t=>t.parentTaskId===_tpCurrentTask.id).forEach(sub=>{sub.groupId=value;sub.updatedAt=_tpCurrentTask.updatedAt;});
   }
   const idx=DB.tasks.findIndex(t=>t.id===_tpCurrentTask.id);
   if(idx>=0) DB.tasks[idx]=_tpCurrentTask;
