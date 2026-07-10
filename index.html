@@ -1352,7 +1352,7 @@ function _stripPasswords(data){
 function saveDB(data){
   _vcClear(); // invalidate render cache whenever data changes
   clearTimeout(_saveDebounceTimer);
-  _saveDebounceTimer=setTimeout(()=>{const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
+  _saveDebounceTimer=setTimeout(()=>{_saveDebounceTimer=null;const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
@@ -2213,14 +2213,15 @@ function navigate(view){
   renderView(view);
 }
 function onGlobalSearch(){
-  const q=document.getElementById('global-search').value.trim().toLowerCase();
-  if(!q&&currentView==='list')return renderView('list');
-  if(!q)return;
+  const q=(document.getElementById('global-search')?.value||'').trim().toLowerCase();
+  if(!q){if(currentView==='list')renderView('list');return;}
   let pool=DB.tasks.filter(t=>canViewTask(currentUser,t));
   if(currentWorkboard)pool=pool.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
   const tasks=pool.filter(t=>(t.name||t.title||'').toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
+  if(currentView!=='list')navigate('list');
   renderListView(tasks);
-  navigate('list');
+  // restore input value+focus — input lives inside the re-rendered view
+  setTimeout(()=>{const el=document.getElementById('global-search');if(el){el.value=q;el.focus();el.setSelectionRange(q.length,q.length);}},0);
 }
 function renderView(v){
   const vc=document.getElementById('view-container');
@@ -4757,6 +4758,7 @@ function onDrop(e,newStatus){
     document.querySelectorAll('.kanban-col').forEach(c=>c.classList.remove('drag-over'));
     return;
   }
+  if(!canEditTask(currentUser,task))return;
   const wasStatus=task.status;
   task.status=newStatus;
   task.updatedAt=new Date().toISOString();
@@ -11070,6 +11072,7 @@ function tpShowTab(tabName){
 
 function tpSaveField(field,value){
   if(!_tpCurrentTask)return;
+  if(!canEditTask(currentUser,_tpCurrentTask))return;
   _tpCurrentTask[field]=value;
   _tpCurrentTask.updatedAt=new Date().toISOString();
   const prevStatus=field==='status'?(_tpCurrentTask.status):null;
@@ -11216,7 +11219,7 @@ function renderClientCommsThread(taskId,isClientView){
     const labelColor=fromClient?'#1d4ed8':'#15803d';
     const label=fromClient?(c.authorName||'Client'):(c.authorName||'Etcher Team');
     const ts=c.createdAt?new Date(c.createdAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-    const replyFn=isClientView?`cpQuoteClientReply('${taskId}',${JSON.stringify(c.body)})`:`tpQuoteClientReply(${JSON.stringify(c.body)})`;
+    const replyFn=isClientView?`cpQuoteClientReply('${taskId}','${c.id}')`:`tpQuoteClientReply('${c.id}')`;
     return`<div style="display:flex;gap:8px;margin-bottom:12px">
       <div style="width:26px;height:26px;border-radius:50%;background:${bg};border:1.5px solid ${dotColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${dotColor};flex-shrink:0">${getIni(label)}</div>
       <div style="flex:1;min-width:0">
@@ -11244,17 +11247,21 @@ function renderClientCommsThread(taskId,isClientView){
     </div></div>`;
   }
 }
-function tpQuoteClientReply(body){
+function tpQuoteClientReply(commentId){
+  const c=(DB.clientComments||[]).find(x=>x.id===commentId);
+  if(!c)return;
   const inp=document.getElementById('tp-ccomm-input');
   if(!inp)return;
-  const q='> '+body.replace(/\n/g,'\n> ')+'\n\n';
+  const q='> '+c.body.replace(/\n/g,'\n> ')+'\n\n';
   inp.value=q+(inp.value||'');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
   inp.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
-function cpQuoteClientReply(taskId,body){
+function cpQuoteClientReply(taskId,commentId){
+  const c=(DB.clientComments||[]).find(x=>x.id===commentId);
+  if(!c)return;
   const inp=document.getElementById('cp-ccomm-input-'+taskId);
   if(!inp)return;
-  const q='> '+body.replace(/\n/g,'\n> ')+'\n\n';
+  const q='> '+c.body.replace(/\n/g,'\n> ')+'\n\n';
   inp.value=q+(inp.value||'');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
 }
 function tpAddClientComment(){
@@ -11283,7 +11290,7 @@ function cpPostClientComment(taskId){
   if(!DB.clientComments)DB.clientComments=[];
   const now=new Date().toISOString();
   DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body,createdAt:now,timestamp:now});
-  {if(!DB.notifications)DB.notifications=[];const _msg=(currentUser.name||'Client')+' sent a message on: '+(rawTask.name||rawTask.title);const _notified=new Set();const _pushN=uid=>{ if(uid&&uid!==currentUser.id&&!_notified.has(uid)){_notified.add(uid);DB.notifications.push({id:'n'+uid(),recipientId:uid,taskId,type:'client_comment',read:false,message:_msg,createdAt:now});}};_pushN(rawTask.ownerId);_pushN(rawTask.currentlyWithUserId);updateNotifBadge();}
+  {if(!DB.notifications)DB.notifications=[];const _msg=(currentUser.name||'Client')+' sent a message on: '+(rawTask.name||rawTask.title);const _notified=new Set();const _pushN=rid=>{if(rid&&rid!==currentUser.id&&!_notified.has(rid)){_notified.add(rid);DB.notifications.push({id:'n'+uid(),recipientId:rid,taskId,type:'client_comment',read:false,message:_msg,createdAt:now});}};_pushN(rawTask.ownerId);_pushN(rawTask.currentlyWithUserId);updateNotifBadge();}
   if(inp)inp.value='';
   saveDB(DB);
   const commDiv=document.getElementById('cp-ccomm-'+taskId);
