@@ -1304,25 +1304,50 @@ function _syncToSupabase(data){
   if(!window._supabase||!_supabaseSyncEnabled)return;
   window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{if(error)console.warn('[sync]',error.message);});
 }
+// Smart merge: combine local DB with incoming blob without clobbering concurrent edits.
+// - Tasks/work requests: merge by ID, newer updatedAt wins (two users editing different tasks both survive)
+// - Comments/notifications: union by ID (never lose an entry)
+// - Everything else (users, clients, boards, settings): incoming wins (admin-only, rarely concurrent)
+function _mergeDB(current, incoming){
+  function mergeById(curr,inc,tsField){
+    const map=new Map((curr||[]).map(x=>[x.id,x]));
+    for(const item of (inc||[])){
+      const ex=map.get(item.id);
+      const incNewer=tsField&&item[tsField]&&ex?.[tsField]?item[tsField]>ex[tsField]:!ex;
+      if(!ex||incNewer)map.set(item.id,item);
+    }
+    return[...map.values()];
+  }
+  function unionById(curr,inc){
+    const map=new Map((curr||[]).map(x=>[x.id,x]));
+    (inc||[]).forEach(x=>map.set(x.id,x));
+    return[...map.values()];
+  }
+  const merged={...incoming};
+  merged.tasks=mergeById(current.tasks,incoming.tasks,'updatedAt');
+  merged.clientComments=unionById(current.clientComments,incoming.clientComments);
+  merged.notifications=unionById(current.notifications,incoming.notifications);
+  merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
+  if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
+  return merged;
+}
+
 function _startRealtimeSync(){
   if(!window._supabase||_realtimeChannel)return;
   _realtimeChannel=window._supabase.channel('app_state_changes')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},payload=>{
-      // Another user saved — merge their data into ours without overwriting pending local writes
-      if(_saveDebounceTimer)return; // we have unsaved local changes; they will win on next flush
+      // Another user saved — smart-merge so concurrent edits on different tasks both survive
+      if(_saveDebounceTimer)return; // we have unsaved local changes; flush will win
       const fresh=payload.new?.data;
       if(!fresh||(fresh.users?.length===0&&fresh.tasks?.length===0))return;
-      // Conflict detection: warn if incoming data is older than our last save
-      if(DB._savedAt&&fresh._savedAt&&fresh._savedAt<DB._savedAt){
-        showToast('⚠️ Conflict: another user\'s changes arrived out of order. Your last save is kept.','warning',5000);
-      }
       _migrateDB(fresh);_applyCompatAliases(fresh);
-      for(const k in DB)delete DB[k];Object.assign(DB,fresh);
+      const merged=_mergeDB(DB,fresh);
+      for(const k in DB)delete DB[k];Object.assign(DB,merged);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
       if(currentView)renderView(currentView);
       renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
-      // Re-sync open task panel so it doesn't overwrite the incoming changes
-      if(_tpCurrentTask){const fresh=DB.tasks.find(t=>t.id===_tpCurrentTask.id);if(fresh){_tpCurrentTask=fresh;const b=document.getElementById('tp-body');if(b)b.innerHTML=renderTpDetails(fresh);}else{closeTaskPanel();}}
+      // Re-sync open task panel with merged version
+      if(_tpCurrentTask){const t=DB.tasks.find(t=>t.id===_tpCurrentTask.id);if(t){_tpCurrentTask=t;const b=document.getElementById('tp-body');if(b)b.innerHTML=renderTpDetails(t);}else{closeTaskPanel();}}
     })
     .subscribe();
 }
