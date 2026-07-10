@@ -1333,6 +1333,8 @@ function _startRealtimeSync(){
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
       if(currentView)renderView(currentView);
       renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
+      // Re-sync open task panel so it doesn't overwrite the incoming changes
+      if(_tpCurrentTask){const fresh=DB.tasks.find(t=>t.id===_tpCurrentTask.id);if(fresh){_tpCurrentTask=fresh;const b=document.getElementById('tp-body');if(b)b.innerHTML=renderTpDetails(fresh);}else{closeTaskPanel();}}
     })
     .subscribe();
 }
@@ -2204,7 +2206,7 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Time Tracking',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail'};
+  const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Time Tracking',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   document.getElementById('view-title').textContent=(workboardViews.has(view)&&currentWorkboard)?currentWorkboard.name:(viewTitles[view]||view);
   const vc=document.getElementById('view-container');
@@ -8994,7 +8996,7 @@ async function saveStaff(id){
   if(id){
     // Edit existing — update DB only
     const s=DB.staff.find(x=>x.id===id);
-    s.name=name;s.role=role;s.color=color;s.initials=initials;
+    s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
     const pw=document.getElementById('sm-pw')?.value;if(pw){s.password=pw;_savePw(s.id,pw);}
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
@@ -9037,6 +9039,9 @@ const NOTIF_TYPES={
   work_request:         {label:'Work Request',         color:'#f59e0b',icon:'⊞'},
   client_approved:      {label:'Client Approved',      color:'#10b981',icon:'✓'},
   client_changes_requested:{label:'Changes Requested', color:'#f59e0b',icon:'↩'},
+  client_comment:       {label:'Client Message',        color:'#3b82f6',icon:'💬'},
+  client_comment_reply: {label:'Etcher Reply',          color:'#0d6e4e',icon:'↩'},
+  assigned:             {label:'Assigned',              color:'#8b5cf6',icon:'⇒'},
 };
 
 // Central notification creator — never self-notifies.
@@ -12610,7 +12615,7 @@ function sanitizeTaskForClient(task){
     approvalType:    task.approvalType||null,
     // Additional safe fields
     priority:        task.priority||'med',
-    description:     task.clientDescription||task.description||null,
+    description:     task.clientDescription||null,
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
     attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
     parentId:        task.parentTaskId||null,
