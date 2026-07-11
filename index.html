@@ -633,6 +633,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <div class="cp-nav-tab" data-section="schedule" onclick="cpNavigate('schedule')">Schedule</div>
     <div class="cp-nav-tab" data-section="requests" onclick="cpNavigate('requests')">Request Work</div>
+    <div class="cp-nav-tab" data-section="notifications" onclick="cpNavigate('notifications')" style="display:flex;align-items:center;gap:6px">Notifications<span id="cp-notif-badge" style="display:none;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;line-height:1.4"></span></div>
   </nav>
   <div id="cp-body" style="flex:1;padding:28px 32px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box"></div>
 </div>
@@ -2060,6 +2061,7 @@ function launchClientView(){
   const boards=DB.boards.filter(b=>b.clientId===currentUser.clientId&&!b.archived);
   const body=document.getElementById('cp-body');
   if(body)body.innerHTML=renderCpOverview(currentUser.clientId,tasks,boards,client);
+  updateCpNotifBadge();
 }
 function doLogout(){
   _clearSession();
@@ -5846,17 +5848,21 @@ function wrUpdateStatus(requestId, status, note){
   const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
   if(!r)return;
   const prevStatus=r.status;
+  const prevNote=r.adminNote||'';
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
-  // Notify the client when status meaningfully changes
+  const _clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===r.clientId&&u.active!==false);
+  if(_clientUser){if(!DB.notifications)DB.notifications=[];}
+  // Notify client when status meaningfully changes
   if(status&&status!==prevStatus){
     const _statusMsg={approved:'Your work request has been approved',rejected:'Your work request has been declined',
       'in-progress':'Work has started on your request: "'+r.title+'"',completed:'Your work request has been completed: "'+r.title+'"'};
     const _msg=_statusMsg[status];
-    if(_msg){
-      const _clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===r.clientId&&u.active!==false);
-      if(_clientUser){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:_msg,createdAt:new Date().toISOString()});}
-    }
+    if(_msg&&_clientUser)DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:_msg,createdAt:new Date().toISOString()});
+  }
+  // Notify client when a note is added or updated
+  if(note!==null&&r.adminNote&&r.adminNote!==prevNote&&_clientUser){
+    DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:`Etcher left a note on your request "${r.title}"`,createdAt:new Date().toISOString()});
   }
   saveDB(DB);updateClientReqBadge();
   renderView('clients');
@@ -11121,6 +11127,10 @@ function tpSaveField(field,value){
   if(field==='groupId'){
     DB.tasks.filter(t=>t.parentTaskId===_tpCurrentTask.id).forEach(sub=>{sub.groupId=value;sub.updatedAt=_tpCurrentTask.updatedAt;});
   }
+  // Notify new owner when ownerId changes
+  if(field==='ownerId'&&value&&value!==currentUser?.id){
+    notify(value,_tpCurrentTask.id,'owner_changed',`You are now the owner of: ${taskTitle(_tpCurrentTask)}`);
+  }
   const idx=DB.tasks.findIndex(t=>t.id===_tpCurrentTask.id);
   if(idx>=0) DB.tasks[idx]=_tpCurrentTask;
   saveDB(DB);
@@ -12195,6 +12205,10 @@ function wsCellSave(taskId,field,value){
     if(field==='currentlyWithType'||field==='currentlyWithUserId'){
       task.currentlyWith=task.currentlyWithType==='client'?'client':(task.currentlyWithUserId||'');
     }
+    // Notify new owner when ownerId changes
+    if(field==='ownerId'&&value&&value!==oldVal&&value!==currentUser?.id){
+      notify(value,taskId,'owner_changed',`You are now the owner of: ${task.name||task.title}`);
+    }
     // Keep name/title in sync
     if(field==='name') task.title=value;
     if(field==='title') task.name=value;
@@ -12663,6 +12677,40 @@ function getClientTasks(clientId){
     .map(sanitizeTaskForClient);
 }
 
+// ── Client portal notification badge ─────────────────────
+function updateCpNotifBadge(){
+  if(!currentUser||currentUser.role!=='client')return;
+  const unread=(DB.notifications||[]).filter(n=>n.recipientId===currentUser.id&&!n.read).length;
+  const badge=document.getElementById('cp-notif-badge');
+  if(!badge)return;
+  if(unread>0){badge.textContent=unread;badge.style.display='inline-block';}else{badge.style.display='none';}
+}
+
+function renderCpNotifications(){
+  const notifs=[...(DB.notifications||[]).filter(n=>n.recipientId===currentUser.id)]
+    .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  // Mark all as read when viewing
+  notifs.forEach(n=>n.read=true);
+  saveDB(DB);updateCpNotifBadge();
+  if(!notifs.length)return`<div style="text-align:center;padding:60px 0;color:#8da2b2;font-size:14px">No notifications yet</div>`;
+  const typeIcon={work_request:'⊞',client_comment_reply:'↩',client_comment:'💬',client_approved:'✓',client_changes_requested:'↩'};
+  const typeColor={work_request:'#f59e0b',client_comment_reply:'#0d6e4e',client_comment:'#3b82f6',client_approved:'#10b981',client_changes_requested:'#f59e0b'};
+  return`<div style="display:grid;gap:10px;max-width:700px">
+    ${notifs.map(n=>{
+      const icon=typeIcon[n.type]||'●';
+      const color=typeColor[n.type]||'#8da2b2';
+      const ts=n.createdAt?new Date(n.createdAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      return`<div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8eef4;display:flex;align-items:flex-start;gap:12px;box-shadow:0 1px 3px rgba(13,28,51,0.04)">
+        <div style="width:30px;height:30px;border-radius:50%;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${color}">${icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:#0d1c33;line-height:1.5">${escHtml(n.message||'')}</div>
+          <div style="font-size:11px;color:#a0b4c7;margin-top:4px">${ts}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 // ── Client portal navigation ──────────────────────────────
 // Builds Map<boardId, Set<taskId>> from internal DB — called before sanitization
 // so the rendered client portal never needs boardId on the sanitized task.
@@ -12690,10 +12738,11 @@ function cpNavigate(section){
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
   if(!body)return;
-  if(section==='schedule')      body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
-  else if(section==='tasks')    body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
-  else if(section==='requests') body.innerHTML=renderCpRequests(clientId);
-  else                          body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
+  if(section==='schedule')          body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
+  else if(section==='tasks')        body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
+  else if(section==='notifications')body.innerHTML=renderCpNotifications();
+  else                              body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
 }
 
 // ── SVG progress ring ─────────────────────────────────────
