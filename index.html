@@ -2052,7 +2052,13 @@ function launchClientView(){
   // Set client name in header
   const client=DB.clients.find(c=>c.id===currentUser.clientId);
   const cpName=document.getElementById('cp-client-name');
-  if(cpName&&client){cpName.textContent=client.name;cpName.style.color='#fff';}
+  if(cpName&&client){
+    if(client.logo){
+      cpName.innerHTML=`<img src="${client.logo}" alt="${escHtml(client.name)}" style="height:32px;width:auto;max-width:160px;object-fit:contain;display:block"/>`;
+    }else{
+      cpName.textContent=client.name;cpName.style.color='#fff';
+    }
+  }
   // Reset nav state
   cpSection='overview';
   portal.querySelectorAll('.cp-nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.section==='overview'));
@@ -5742,6 +5748,7 @@ function renderClients(){
       return`<div class="card" style="border-top:3px solid ${c.color}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div>
+            ${c.logo?`<div style="margin-bottom:8px"><img src="${c.logo}" alt="${escHtml(c.name)} logo" style="height:28px;width:auto;max-width:120px;object-fit:contain;border-radius:4px"/></div>`:''}
             <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;display:flex;align-items:center;gap:8px">${escHtml(c.name)}${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}</div>
             <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}</div>
           </div>
@@ -6012,6 +6019,20 @@ function _wrCreateGroup(r,client,boardId,name,now){
   DB.groups.push({id:groupId,workboardId:boardId,boardId,clientId:r.clientId,name,color:client?.color||'#97bcbd',order:existing.length,createdAt:now});
   r.linkedItemId=groupId;r.linkedItemType='group';r.linkedBoardId=boardId;
 }
+function cmLogoFileChange(el){
+  const f=el.files[0];if(!f)return;
+  if(f.size>200000){showAlert('Image must be under 200 KB.','Validation');el.value='';return;}
+  const r=new FileReader();
+  r.onload=ev=>{
+    document.getElementById('cm-logo-preview').innerHTML='<img src="'+ev.target.result+'" style="max-width:100%;max-height:100%;object-fit:contain"/>';
+    document.getElementById('cm-logo-b64').value=ev.target.result;
+  };
+  r.readAsDataURL(f);
+}
+function cmLogoRemove(){
+  document.getElementById('cm-logo-b64').value='';
+  document.getElementById('cm-logo-preview').innerHTML='<span style="font-size:10px;color:#b0bec5">No logo</span>';
+}
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
@@ -6021,6 +6042,21 @@ function openClientModal(id){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
         <div><label class="form-label">Color</label><input id="cm-color" type="color" class="form-input" value="${c.color||'#3b82f6'}" style="height:36px;padding:2px 4px"/></div>
+      </div>
+      <div>
+        <label class="form-label">Client Logo (optional)</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="cm-logo-preview" style="width:64px;height:40px;border:1.5px dashed #c8d6e0;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafcff;flex-shrink:0">
+            ${c.logo?`<img src="${c.logo}" style="max-width:100%;max-height:100%;object-fit:contain"/>`:'<span style="font-size:10px;color:#b0bec5">No logo</span>'}
+          </div>
+          <div>
+            <label for="cm-logo-input" style="display:inline-block;padding:6px 14px;background:#f4f7fa;border:1px solid #d1d9e6;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:#334155;font-family:'Jost',sans-serif" onmouseover="this.style.background='#e8eef4'" onmouseout="this.style.background='#f4f7fa'">Upload logo</label>
+            <input type="file" id="cm-logo-input" accept="image/*" style="display:none" onchange="cmLogoFileChange(this)"/>
+            <input type="hidden" id="cm-logo-b64" value="${c.logo||''}"/>
+            ${c.logo?`<button type="button" onclick="cmLogoRemove()" style="margin-left:8px;font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:0">Remove</button>`:''}
+            <div style="font-size:10.5px;color:#94a3b8;margin-top:4px">PNG/JPG/SVG · max 200 KB · shows in client portal header</div>
+          </div>
+        </div>
       </div>
       <div style="border-top:1px solid #e8eef4;padding-top:14px">
         <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
@@ -6065,6 +6101,8 @@ async function saveClient(id){
     }else{c.color=color;}
     const enabledEl=document.getElementById('cm-portal-enabled');
     if(enabledEl)c.portal_enabled=enabledEl.checked;
+    const logoEl=document.getElementById('cm-logo-b64');
+    if(logoEl)c.logo=logoEl.value||null;
     // Handle optional password update for existing client
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
@@ -6089,6 +6127,7 @@ async function saveClient(id){
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     const cid='c'+uid();
+    const logo=document.getElementById('cm-logo-b64')?.value||null;
     if(email&&pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
@@ -6098,7 +6137,7 @@ async function saveClient(id){
         const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid,password:pw})});
         const result=await resp.json();
         if(!resp.ok)throw new Error(result.error||'Failed to create account');
-        DB.clients.push({id:cid,name,shortCode,color,loginEmail:email,active:true,portal_enabled:true,supabaseUserId:result.id});
+        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portal_enabled:true,supabaseUserId:result.id});
         saveDB(DB);closeGenericModal();renderView('clients');
         showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
@@ -6106,7 +6145,7 @@ async function saveClient(id){
         if(btn){btn.disabled=false;btn.textContent='Save';}
       }
     }else{
-      DB.clients.push({id:cid,name,shortCode,color,active:true,portal_enabled:false});
+      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portal_enabled:false});
       saveDB(DB);closeGenericModal();renderView('clients');
     }
   }
@@ -12877,6 +12916,22 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
   const clientColor=client?.color||'#0d6e4e';
 
+  // ── Welcome banner ──
+  const hour=new Date().getHours();
+  const greeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  const welcomeBanner=`<div style="background:linear-gradient(135deg,#0d1c33 0%,#0d6e4e 100%);border-radius:12px;padding:20px 28px;margin-bottom:24px;display:flex;align-items:center;gap:20px;overflow:hidden;position:relative">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 50%,rgba(13,110,78,0.4) 0%,transparent 60%);pointer-events:none"></div>
+    ${client?.logo?`<img src="${client.logo}" alt="${escHtml(client?.name||'')}" style="height:44px;width:auto;max-width:140px;object-fit:contain;flex-shrink:0;position:relative;z-index:1"/>`:`<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1"><span style="font-size:22px;font-weight:800;color:#fff;font-family:'Jost',sans-serif">${(client?.name||'?')[0].toUpperCase()}</span></div>`}
+    <div style="position:relative;z-index:1">
+      <div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.01em">${greeting}, ${escHtml(client?.name||'there')}!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:3px">${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>
+    ${awaitingTasks.length?`<div style="margin-left:auto;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:10px 16px;text-align:center;flex-shrink:0;position:relative;z-index:1">
+      <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:800;color:#fbbf24">${awaitingTasks.length}</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.05em">Need your attention</div>
+    </div>`:''}
+  </div>`;
+
   // ── Stat cards ──
   const stats=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
     <div class="cp-stat-card" style="display:flex;align-items:center;gap:20px">
@@ -12932,6 +12987,40 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     </div>`;
   }
 
+  // ── Due this week ──
+  const sevenDaysLater=new Date();sevenDaysLater.setDate(sevenDaysLater.getDate()+7);
+  const sevenDaysLaterStr=sevenDaysLater.toISOString().slice(0,10);
+  const dueSoonTasks=activeTasks.filter(t=>
+    t.endDate&&t.endDate>=todayStr&&t.endDate<=sevenDaysLaterStr
+    &&t.status!=='done'&&t.status!=='completed'&&t.percentComplete!==100
+    &&!t.awaitingClient
+  ).sort((a,b)=>a.endDate.localeCompare(b.endDate));
+  let dueSoonSection='';
+  if(dueSoonTasks.length){
+    const dueSoonRows=dueSoonTasks.slice(0,5).map(t=>{
+      const dObj=new Date(t.endDate);
+      const daysLeft=Math.round((dObj-new Date(todayStr))/(1000*60*60*24));
+      const label=daysLeft===0?'Due today':daysLeft===1?'Due tomorrow':`Due in ${daysLeft} days`;
+      const urgent=daysLeft<=2;
+      return`<div class="cp-task-row" style="padding:8px 14px 8px 0;min-height:unset;align-items:center;cursor:pointer" onclick="cpOpenTaskModal('${t.id}')">
+        <div style="width:4px;min-height:32px;border-radius:2px;background:${urgent?'#dc2626':'#3b82f6'};flex-shrink:0;align-self:stretch"></div>
+        <div style="flex:1;min-width:0;padding-left:12px;overflow:hidden">
+          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escHtml(t.title)}</span>
+        </div>
+        <div style="flex-shrink:0;margin-left:8px;font-size:11px;font-weight:700;color:${urgent?'#dc2626':'#3b82f6'};white-space:nowrap">${label}</div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d0dae6" stroke-width="2" stroke-linecap="round" style="margin-left:6px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+    }).join('');
+    dueSoonSection=`<div style="margin-bottom:32px">
+      <div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;margin-bottom:4px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span>
+        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#1d4ed8">Due This Week</span>
+        <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:4px">${dueSoonTasks.length}</span>
+      </div>
+      ${dueSoonRows}
+    </div>`;
+  }
+
   // ── Per-engagement cards ──
   const engCards=boards.map(b=>{
     const btIds=boardIdx.get(b.id)||new Set();
@@ -12968,7 +13057,7 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     ${engCards}
   </div>`:'';
 
-  return stats+awaitingSection+engSection;
+  return welcomeBanner+stats+awaitingSection+dueSoonSection+engSection;
 }
 
 // ── Client-facing read-only Gantt ─────────────────────────
@@ -13205,12 +13294,48 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
 }
 
 function cpOpenChangesModal(taskId){
-  cpOpenTaskModal(taskId);
-  setTimeout(()=>{
-    const form=document.getElementById('cp-changes-form');
-    const btns=document.getElementById('cp-approval-btns');
-    if(form&&btns){form.classList.remove('hidden');btns.classList.add('hidden');document.getElementById('cp-changes-note')?.focus();}
-  },120);
+  if(currentUser?.role!=='client')return;
+  const t=DB.tasks.find(x=>x.id===taskId);
+  if(!t||!canViewTask(currentUser,t))return;
+  document.getElementById('generic-modal-title').textContent='Request Changes';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#92400e">
+        <strong style="font-family:'Jost',sans-serif">${escHtml(t.name||t.title||'Task')}</strong>
+      </div>
+      <div>
+        <label class="form-label">What changes are needed? <span style="color:#ef4444">*</span></label>
+        <textarea id="cp-changes-notes" class="form-input" rows="4" placeholder="Please describe what you'd like changed or improved…" style="resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="cpSubmitChangesRequest('${taskId}')" class="btn" style="background:#b45309;color:#fff;border:none">Send Request</button>
+      </div>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('cp-changes-notes')?.focus(),50);
+}
+function cpSubmitChangesRequest(taskId){
+  if(currentUser?.role!=='client')return;
+  const notes=(document.getElementById('cp-changes-notes')?.value||'').trim();
+  if(!notes){showAlert('Please describe the changes needed.','Required');return;}
+  const task=DB.tasks.find(x=>x.id===taskId);
+  if(!task||!canViewTask(currentUser,task))return;
+  const now=new Date().toISOString();
+  task.clientApproval={status:'changes-requested',note:notes,at:now};
+  task.status='change-requested';
+  task.currentlyWithType='staff';
+  task.currentlyWith=task.ownerId||'';
+  task.currentlyWithUserId=task.ownerId||null;
+  task.awaitingClient=false;
+  task.updatedAt=now;
+  // Post as a client comment so the team sees it
+  if(!DB.clientComments)DB.clientComments=[];
+  DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body:'**Changes requested:**\n'+notes,createdAt:now,timestamp:now});
+  _notifyAllStaff('client_changes_requested',`Changes requested on "${task.name||task.title||'task'}" by ${(DB.clients.find(c=>c.id===currentUser.clientId)||{}).name||'Client'}: ${notes.slice(0,80)}`,task.id);
+  saveDB(DB);
+  closeGenericModal();
+  cpNavigate(cpSection);
 }
 
 // ── Task detail modal ─────────────────────────────────────
@@ -13345,6 +13470,7 @@ function cpApproveTask(taskId){
   if(currentUser?.role!=='client')return;
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
+  if(!confirm(`Approve "${task.name||task.title||'this task'}"? This confirms the work is complete to your satisfaction.`))return;
   task.clientApproval={status:'approved',note:null,at:new Date().toISOString(),approvedBy:currentUser.name||'Client'};
   // Final delivery approvals go straight to completed-approved; all others go to approved-client (Incoming Approvals)
   const isFinalDelivery=task.approvalType==='final';
@@ -13353,7 +13479,7 @@ function cpApproveTask(taskId){
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
   task.updatedAt=new Date().toISOString();
-  if(task.ownerId)notify(task.ownerId,task.id,'client_approved',`Client approved: ${task.name||task.title}`);
+  _notifyAllStaff('client_approved',`Client approved: "${task.name||task.title||'task'}" — ${(DB.clients.find(c=>c.id===currentUser.clientId)||{}).name||'Client'}`,task.id);
   saveDB(DB);
   cpCloseTaskModal();
   // Show confirmation message
