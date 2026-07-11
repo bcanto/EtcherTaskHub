@@ -5745,24 +5745,39 @@ function renderClients(){
       const open=clientTasks.filter(t=>t.status!=='done').length;
       const done=clientTasks.filter(t=>t.status==='done').length;
       const pendingReqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===c.id&&r.status==='pending').length;
-      return`<div class="card" style="border-top:3px solid ${c.color}">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-          <div>
-            ${c.logo?`<div style="margin-bottom:8px"><img src="${c.logo}" alt="${escHtml(c.name)} logo" style="height:28px;width:auto;max-width:120px;object-fit:contain;border-radius:4px"/></div>`:''}
-            <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;display:flex;align-items:center;gap:8px">${escHtml(c.name)}${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}</div>
-            <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}</div>
+      return`<div style="background:#fff;border-radius:12px;border:1px solid #e2eaf2;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(13,28,51,0.05)">
+        <div style="height:3px;background:${c.color}"></div>
+        <div style="padding:16px;display:flex;align-items:center;gap:12px">
+          ${c.logo
+            ?`<div style="width:48px;height:48px;border-radius:8px;background:#f8fafb;border:1px solid #e8eef4;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0"><img src="${c.logo}" style="max-width:42px;max-height:42px;object-fit:contain"/></div>`
+            :`<div style="width:48px;height:48px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-family:'Jost',sans-serif;font-size:20px;font-weight:800;color:${c.color}">${(c.name||'?')[0].toUpperCase()}</span></div>`
+          }
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.name)}</div>
+            <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}${c.loginEmail?` · ${escHtml(c.loginEmail)}`:''}</div>
           </div>
-          <div style="display:flex;gap:6px">
-            <button onclick="openClientModal('${c.id}')" class="btn btn-ghost btn-sm">Edit</button>
-            <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm">✕</button>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            ${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}
+            <div style="display:flex;gap:4px">
+              <button onclick="openClientModal('${c.id}')" class="btn btn-ghost btn-sm">Edit</button>
+              <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm">✕</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex;gap:16px;margin-bottom:10px">
-          <div style="text-align:center"><div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:600;color:#0d1c33">${open}</div><div style="font-size:10px;color:#8da2b2">Open</div></div>
-          <div style="text-align:center"><div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:600;color:#166534">${done}</div><div style="font-size:10px;color:#8da2b2">Done</div></div>
-          <div style="text-align:center"><div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:600;color:#6b8399">${clientTasks.length}</div><div style="font-size:10px;color:#8da2b2">Total</div></div>
+        <div style="border-top:1px solid #f1f5f9;display:flex">
+          <div style="flex:1;padding:10px 0;text-align:center;border-right:1px solid #f1f5f9">
+            <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#0d1c33;line-height:1">${open}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em">Open</div>
+          </div>
+          <div style="flex:1;padding:10px 0;text-align:center;border-right:1px solid #f1f5f9">
+            <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#166534;line-height:1">${done}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em">Done</div>
+          </div>
+          <div style="flex:1;padding:10px 0;text-align:center">
+            <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#6b8399;line-height:1">${clientTasks.length}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em">Total</div>
+          </div>
         </div>
-        <div style="font-size:11px;color:#8da2b2">Login: ${escHtml(c.loginEmail||'—')}</div>
       </div>`;
     }).join('')}
     </div>
@@ -6019,19 +6034,77 @@ function _wrCreateGroup(r,client,boardId,name,now){
   DB.groups.push({id:groupId,workboardId:boardId,boardId,clientId:r.clientId,name,color:client?.color||'#97bcbd',order:existing.length,createdAt:now});
   r.linkedItemId=groupId;r.linkedItemType='group';r.linkedBoardId=boardId;
 }
+// ── Logo color extraction helpers ────────────────────────────────────────────
+let _cmLogoColors=[],_cmLogoColorIdx=0;
+function _rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min){h=s=0;}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h/=6;}return[h*360,s,l];}
+function _cdist(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2);}
+function _hex2rgb(hex){return[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
+function _rgb2hex([r,g,b]){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+function _extractLogoColors(src,cb){
+  const img=new Image();
+  img.onload=()=>{
+    const W=80,H=80,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+    const cx=cv.getContext('2d');cx.drawImage(img,0,0,W,H);
+    const d=cx.getImageData(0,0,W,H).data;
+    const freq=new Map();
+    for(let i=0;i<d.length;i+=4){
+      const a=d[i+3];if(a<128)continue;
+      const r=d[i],g=d[i+1],b=d[i+2];
+      const[,s,l]=_rgbToHsl(r,g,b);
+      if(l>0.90||l<0.12||s<0.18)continue;
+      const qr=Math.round(r/24)*24,qg=Math.round(g/24)*24,qb=Math.round(b/24)*24;
+      const k=`${Math.min(qr,240)},${Math.min(qg,240)},${Math.min(qb,240)}`;
+      freq.set(k,(freq.get(k)||0)+1);
+    }
+    const sorted=[...freq.entries()].sort((a,b)=>b[1]-a[1]);
+    const chosen=[];
+    for(const[k]of sorted){
+      if(chosen.length>=7)break;
+      const rgb=k.split(',').map(Number);
+      if(!chosen.some(c=>_cdist(c,rgb)<55))chosen.push(rgb);
+    }
+    cb(chosen.map(_rgb2hex));
+  };
+  img.onerror=()=>cb([]);
+  img.src=src;
+}
+function _cmApplyLogoColors(colors,editingId){
+  _cmLogoColors=colors;
+  if(!colors.length)return;
+  const existingRgb=(DB.clients||[]).filter(c=>c.id!==editingId).map(c=>c.color).filter(Boolean).map(_hex2rgb);
+  const scored=colors.map(hex=>{const rgb=_hex2rgb(hex);const d=existingRgb.length?Math.min(...existingRgb.map(e=>_cdist(rgb,e))):999;return{hex,d};}).sort((a,b)=>b.d-a.d);
+  _cmLogoColors=scored.map(s=>s.hex);
+  _cmLogoColorIdx=0;
+  _cmSetLogoColor(_cmLogoColors[0]);
+}
+function _cmCycleLogoColor(){if(!_cmLogoColors.length)return;_cmLogoColorIdx=(_cmLogoColorIdx+1)%_cmLogoColors.length;_cmSetLogoColor(_cmLogoColors[_cmLogoColorIdx]);}
+function _cmSetLogoColor(hex){
+  const el=document.getElementById('cm-color');if(el)el.value=hex;
+  const sw=document.getElementById('cm-color-swatches');
+  if(sw)sw.innerHTML=_cmLogoColors.map((c,i)=>`<div onclick="_cmLogoColorIdx=${i};_cmSetLogoColor('${c}')" title="${c}" style="width:16px;height:16px;border-radius:3px;background:${c};cursor:pointer;flex-shrink:0;outline:${i===_cmLogoColorIdx?'2px solid #0d1c33':'1px solid rgba(0,0,0,0.15)'};outline-offset:${i===_cmLogoColorIdx?'2px':'0'}"></div>`).join('');
+  const btn=document.getElementById('cm-cycle-btn');
+  if(btn)btn.style.display=_cmLogoColors.length>1?'flex':'none';
+}
+
 function cmLogoFileChange(el){
   const f=el.files[0];if(!f)return;
   if(f.size>200000){showAlert('Image must be under 200 KB.','Validation');el.value='';return;}
   const r=new FileReader();
   r.onload=ev=>{
-    document.getElementById('cm-logo-preview').innerHTML='<img src="'+ev.target.result+'" style="max-width:100%;max-height:100%;object-fit:contain"/>';
-    document.getElementById('cm-logo-b64').value=ev.target.result;
+    const src=ev.target.result;
+    document.getElementById('cm-logo-preview').innerHTML='<img src="'+src+'" style="max-width:100%;max-height:100%;object-fit:contain"/>';
+    document.getElementById('cm-logo-b64').value=src;
+    const editingId=document.getElementById('cm-save-btn')?.dataset?.clientId||'';
+    _extractLogoColors(src,colors=>_cmApplyLogoColors(colors,editingId));
   };
   r.readAsDataURL(f);
 }
 function cmLogoRemove(){
   document.getElementById('cm-logo-b64').value='';
   document.getElementById('cm-logo-preview').innerHTML='<span style="font-size:10px;color:#b0bec5">No logo</span>';
+  _cmLogoColors=[];_cmLogoColorIdx=0;
+  const sw=document.getElementById('cm-color-swatches');if(sw)sw.innerHTML='';
+  const btn=document.getElementById('cm-cycle-btn');if(btn)btn.style.display='none';
 }
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
@@ -6039,23 +6112,33 @@ function openClientModal(id){
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
       <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"/></div>
+      <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
+      <!-- Logo + Color in one unified row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
-        <div><label class="form-label">Color</label><input id="cm-color" type="color" class="form-input" value="${c.color||'#3b82f6'}" style="height:36px;padding:2px 4px"/></div>
-      </div>
-      <div>
-        <label class="form-label">Client Logo (optional)</label>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div id="cm-logo-preview" style="width:64px;height:40px;border:1.5px dashed #c8d6e0;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafcff;flex-shrink:0">
-            ${c.logo?`<img src="${c.logo}" style="max-width:100%;max-height:100%;object-fit:contain"/>`:'<span style="font-size:10px;color:#b0bec5">No logo</span>'}
+        <div>
+          <label class="form-label">Logo <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div id="cm-logo-preview" style="width:52px;height:36px;border:1.5px dashed #c8d6e0;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafcff;flex-shrink:0">
+              ${c.logo?`<img src="${c.logo}" style="max-width:46px;max-height:30px;object-fit:contain"/>`:'<span style="font-size:9px;color:#b0bec5">None</span>'}
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <label for="cm-logo-input" style="display:inline-block;padding:4px 10px;background:#f4f7fa;border:1px solid #d1d9e6;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;color:#334155;font-family:'Jost',sans-serif">Upload</label>
+                ${c.logo?`<button type="button" onclick="cmLogoRemove()" style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:0">Remove</button>`:''}
+              </div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:3px">PNG · JPG · SVG · max 200 KB</div>
+              <input type="file" id="cm-logo-input" accept="image/*" style="display:none" onchange="cmLogoFileChange(this)"/>
+              <input type="hidden" id="cm-logo-b64" value="${c.logo||''}"/>
+            </div>
           </div>
-          <div>
-            <label for="cm-logo-input" style="display:inline-block;padding:6px 14px;background:#f4f7fa;border:1px solid #d1d9e6;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:#334155;font-family:'Jost',sans-serif" onmouseover="this.style.background='#e8eef4'" onmouseout="this.style.background='#f4f7fa'">Upload logo</label>
-            <input type="file" id="cm-logo-input" accept="image/*" style="display:none" onchange="cmLogoFileChange(this)"/>
-            <input type="hidden" id="cm-logo-b64" value="${c.logo||''}"/>
-            ${c.logo?`<button type="button" onclick="cmLogoRemove()" style="margin-left:8px;font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:0">Remove</button>`:''}
-            <div style="font-size:10.5px;color:#94a3b8;margin-top:4px">PNG/JPG/SVG · max 200 KB · shows in client portal header</div>
+        </div>
+        <div>
+          <label class="form-label">Colour <span style="font-weight:400;color:#94a3b8;font-size:10px">auto-picked from logo</span></label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input id="cm-color" type="color" class="form-input" value="${c.color||'#3b82f6'}" style="height:34px;padding:2px 4px;flex:1;cursor:pointer"/>
+            <button type="button" id="cm-cycle-btn" onclick="_cmCycleLogoColor()" title="Cycle to next logo colour" style="display:none;width:32px;height:32px;align-items:center;justify-content:center;background:#f4f7fa;border:1px solid #d1d9e6;border-radius:6px;cursor:pointer;font-size:15px;flex-shrink:0" onmouseover="this.style.background='#e8eef4'" onmouseout="this.style.background='#f4f7fa'">↻</button>
           </div>
+          <div id="cm-color-swatches" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;min-height:16px"></div>
         </div>
       </div>
       <div style="border-top:1px solid #e8eef4;padding-top:14px">
@@ -6081,10 +6164,13 @@ function openClientModal(id){
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
-        <button id="cm-save-btn" onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
+        <button id="cm-save-btn" data-client-id="${id||''}" onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
       </div>
     </div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
+  // Pre-extract palette when editing a client that already has a logo
+  _cmLogoColors=[];_cmLogoColorIdx=0;
+  if(c.logo)_extractLogoColors(c.logo,colors=>_cmApplyLogoColors(colors,id||''));
 }
 async function saveClient(id){
   const name=document.getElementById('cm-name').value.trim();
@@ -12916,21 +13002,6 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
   const clientColor=client?.color||'#0d6e4e';
 
-  // ── Welcome banner ──
-  const hour=new Date().getHours();
-  const greeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
-  const welcomeBanner=`<div style="background:linear-gradient(135deg,#0d1c33 0%,#0d6e4e 100%);border-radius:12px;padding:20px 28px;margin-bottom:24px;display:flex;align-items:center;gap:20px;overflow:hidden;position:relative">
-    <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 50%,rgba(13,110,78,0.4) 0%,transparent 60%);pointer-events:none"></div>
-    ${client?.logo?`<img src="${client.logo}" alt="${escHtml(client?.name||'')}" style="height:44px;width:auto;max-width:140px;object-fit:contain;flex-shrink:0;position:relative;z-index:1"/>`:`<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1"><span style="font-size:22px;font-weight:800;color:#fff;font-family:'Jost',sans-serif">${(client?.name||'?')[0].toUpperCase()}</span></div>`}
-    <div style="position:relative;z-index:1">
-      <div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.01em">${greeting}, ${escHtml(client?.name||'there')}!</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:3px">${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-    </div>
-    ${awaitingTasks.length?`<div style="margin-left:auto;background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:10px 16px;text-align:center;flex-shrink:0;position:relative;z-index:1">
-      <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:800;color:#fbbf24">${awaitingTasks.length}</div>
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.05em">Need your attention</div>
-    </div>`:''}
-  </div>`;
 
   // ── Stat cards ──
   const stats=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
@@ -13057,7 +13128,7 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     ${engCards}
   </div>`:'';
 
-  return welcomeBanner+stats+awaitingSection+dueSoonSection+engSection;
+  return stats+awaitingSection+dueSoonSection+engSection;
 }
 
 // ── Client-facing read-only Gantt ─────────────────────────
