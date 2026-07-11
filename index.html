@@ -8488,11 +8488,14 @@ function deleteDigest(digestId){
 let _mwCollapsed={overdue:false,today:false,week:false,approval:false,done:true};
 let _mwOverdueExpanded=false;
 let _mwDensity=(()=>{try{return localStorage.getItem('mw_density')||'compact';}catch(_){return'compact';}})();
+let _mwViewMode=(()=>{try{return localStorage.getItem('mw_view_mode')||'this';}catch(_){return'this';}})(); // 'this' | 'next7'
 
 function _mwToggleGroup(key){_mwCollapsed[key]=!_mwCollapsed[key];renderView('my-week');}
 function _mwToggleOverdue(){_mwOverdueExpanded=!_mwOverdueExpanded;renderView('my-week');}
 function _mwSetDensity(d){_mwDensity=d;try{localStorage.setItem('mw_density',d);}catch(_){}renderView('my-week');}
 function _mwScrollTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+function _mwSetView(v){_mwViewMode=v;try{localStorage.setItem('mw_view_mode',v);}catch(_){}renderView('my-week');}
+function mwQuickComplete(taskId,e){e.stopPropagation();const task=DB.tasks.find(t=>t.id===taskId);if(!task)return;const done=task.status==='done'||task.percentComplete===100;if(done){task.status='todo';task.percentComplete=0;task.completedAt=null;}else{task.status='done';task.percentComplete=100;task.completedAt=new Date().toISOString();}task.updatedAt=new Date().toISOString();saveDB(DB);renderView('my-week');}
 
 function renderMyWeek(){
   if(!currentUser||currentUser.role==='client')return _acDeniedHtml();
@@ -8542,6 +8545,89 @@ function renderMyWeek(){
   // Sort overdue oldest-first so most urgent floats up
   G.overdue.tasks.sort((a,b)=>(a.endDate||'').localeCompare(b.endDate||''));
 
+  // ── Next 7 Days mode: early-return with a different layout ──
+  if(_mwViewMode==='next7'){
+    const n7Days=[];
+    for(let i=1;i<=7;i++){const d=new Date();d.setDate(d.getDate()+i);n7Days.push(toDateStr(d));}
+    const n7Map={};n7Days.forEach(d=>n7Map[d]=[]);
+    const noDate=[];
+    myTasks.filter(t=>t.status!=='done'&&t.percentComplete!==100).forEach(t=>{
+      if(t.endDate&&n7Map[t.endDate]!==undefined)n7Map[t.endDate].push(t);
+      else if(!t.endDate)noDate.push(t);
+    });
+    const dense2=_mwDensity==='compact';
+    const rowPy2=dense2?'6px':'10px';const rowFs2=dense2?'12.5px':'13px';const tagFs2=dense2?'10px':'11px';const rowGap2=dense2?'1px':'3px';
+    // reuse _row inline with local vars since closures aren't accessible yet — re-declare inline
+    const _rowN7=(t,accent)=>{
+      const sm=STATUS_META[t.status]||STATUS_META['todo'];
+      const grp=DB.groups.find(g=>g.id===t.groupId);
+      const cl=DB.clients.find(c=>c.id===grp?.clientId);
+      const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
+      const pm=getPrioMeta(t.priority);
+      const pct=t.percentComplete||0;
+      return`<div role="row" tabindex="0" onclick="openTaskPanel('${t.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTaskPanel('${t.id}');}" title="${escHtml(t.name||t.title||'')}" style="display:flex;align-items:center;gap:0;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background 0.08s" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+        <button onclick="mwQuickComplete('${t.id}',event)" title="Mark complete" style="flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:0;margin-left:8px"><span style="width:14px;height:14px;border-radius:50%;border:2px solid #c8d6e0;background:transparent;display:flex;align-items:center;justify-content:center;transition:all 0.12s;flex-shrink:0"></span></button>
+        <div style="width:3px;align-self:stretch;background:${accent};flex-shrink:0;border-radius:0;margin-left:4px"></div>
+        <div style="flex:1;min-width:0;padding:${rowPy2} 12px">
+          <div style="font-size:${rowFs2};font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name||t.title||'Untitled')}</div>
+          ${pct>0?`<div style="height:2px;background:#e2eaf2;border-radius:2px;margin-top:3px;margin-bottom:2px"><div style="height:100%;width:${pct}%;background:${accent};border-radius:2px"></div></div>`:''}
+          <div style="display:flex;align-items:center;gap:5px;margin-top:${rowGap2};flex-wrap:wrap">
+            ${cl?`<span style="font-size:${tagFs2};font-weight:700;color:${cl.color};opacity:0.85">${escHtml(cl.name)}</span><span style="color:#d1d9e0;font-size:${tagFs2}">·</span>`:''}
+            ${wb?`<span style="font-size:${tagFs2};color:#94a3b8">${escHtml(wb.name)}</span><span style="color:#d1d9e0;font-size:${tagFs2}">·</span>`:''}
+            <span style="font-size:${tagFs2};background:${sm.bg};color:${sm.color};padding:1px 6px;border-radius:6px;font-weight:600">${sm.label}</span>
+            ${pm&&t.priority!=='med'?`<span style="font-size:${tagFs2};color:${pm.color};font-weight:700">${pm.icon}</span>`:''}
+            ${t.recurrence?.freq?`<span title="Recurring" style="font-size:${tagFs2};color:#0d6e4e;font-weight:700">↻</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    };
+    const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const dayPanels=n7Days.map(d=>{
+      const tasks=n7Map[d];
+      const dObj=new Date(d+'T12:00:00');
+      const label=`${dayNames[dObj.getDay()===0?6:dObj.getDay()-1]} ${dObj.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`;
+      const accent=tasks.length?'#0d6e4e':'#e2eaf2';
+      return`<div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:8px 14px;background:#f4f7fa;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <div style="width:7px;height:7px;border-radius:50%;background:${accent};flex-shrink:0"></div>
+          <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:${tasks.length?'#0d1c33':'#94a3b8'};flex:1">${label}</span>
+          ${tasks.length?`<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#0d6e4e;padding:1px 7px;border-radius:6px">${tasks.length}</span>`:''}
+        </div>
+        ${tasks.length?`<div>${tasks.map(t=>_rowN7(t,'#0d6e4e')).join('')}</div>`:`<div style="padding:12px 16px;font-size:12px;color:#94a3b8;font-style:italic">Nothing due</div>`}
+      </div>`;
+    });
+    return`
+    <style>
+      @media(max-width:700px){#mw-grid{display:block!important;}#mw-grid>div{margin-bottom:14px;}}
+      #mw-grid *:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:4px;}
+    </style>
+    <div style="display:grid;gap:18px">
+      <div class="card" style="padding:14px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">My Week</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:1px">Next 7 days</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="View">
+              <button onclick="_mwSetView('this')" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;background:transparent;color:#8da2b2">This Week</button>
+              <button onclick="_mwSetView('next7')" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;background:#0d1c33;color:#fff">Next 7 Days</button>
+            </div>
+            <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="Density">
+              <button onclick="_mwSetDensity('compact')" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='compact'?'#0d1c33':'transparent'};color:${_mwDensity==='compact'?'#fff':'#8da2b2'}">Compact</button>
+              <button onclick="_mwSetDensity('comfortable')" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='comfortable'?'#0d1c33':'transparent'};color:${_mwDensity==='comfortable'?'#fff':'#8da2b2'}">Comfortable</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="mw-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+        <div style="display:grid;gap:18px">${dayPanels.slice(0,4).join('')}</div>
+        <div style="display:grid;gap:18px">${dayPanels.slice(4).join('')}${noDate.length?`<div class="card" style="padding:0;overflow:hidden"><div style="padding:8px 14px;background:#f4f7fa;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><div style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0"></div><span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#334155;flex:1">No due date</span><span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:1px 7px;border-radius:6px">${noDate.length}</span></div><div>${noDate.map(t=>_rowN7(t,'#94a3b8')).join('')}</div></div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }
+
   // ── Density config ───────────────────────────────────────────────────
   const dense=_mwDensity==='compact';
   const rowPy=dense?'6px':'10px';
@@ -8561,6 +8647,8 @@ function renderMyWeek(){
       :'';
     const passive=t.status==='waiting-client'||t.status==='ready-approval';
     const pm=getPrioMeta(t.priority);
+    const isDone=t.status==='done'||t.percentComplete===100;
+    const pct=t.percentComplete||0;
     return`<div
       role="row" tabindex="0"
       onclick="openTaskPanel('${t.id}')"
@@ -8568,20 +8656,25 @@ function renderMyWeek(){
       title="${escHtml(t.name||t.title||'')}"
       style="display:flex;align-items:center;gap:0;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background 0.08s;opacity:${passive?'0.75':'1'}"
       onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
-      <div style="width:3px;align-self:stretch;background:${accentColor};flex-shrink:0;border-radius:0"></div>
+      <button onclick="mwQuickComplete('${t.id}',event)" title="${isDone?'Mark incomplete':'Mark complete'}" style="flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:0;margin-left:8px" onmouseover="this.querySelector('span').style.borderColor='#0d6e4e'" onmouseout="this.querySelector('span').style.borderColor='${isDone?'transparent':'#c8d6e0'}'">
+        <span style="width:14px;height:14px;border-radius:50%;border:2px solid ${isDone?'transparent':'#c8d6e0'};background:${isDone?accentColor:'transparent'};display:flex;align-items:center;justify-content:center;transition:all 0.12s;flex-shrink:0">${isDone?'<svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</span>
+      </button>
+      <div style="width:3px;align-self:stretch;background:${accentColor};flex-shrink:0;border-radius:0;margin-left:4px"></div>
       <div style="flex:1;min-width:0;padding:${rowPy} 12px;display:flex;align-items:center;gap:10px">
         <div style="flex:1;min-width:0">
-          <div style="font-size:${rowFs};font-weight:600;color:${passive?'#64748b':'#0d1c33'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:${passive?'none':'none'}">${escHtml(t.name||t.title||'Untitled')}</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:${rowGap};flex-wrap:wrap">
+          <div style="font-size:${rowFs};font-weight:600;color:${isDone?'#94a3b8':passive?'#64748b':'#0d1c33'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:${isDone?'line-through':'none'}">${escHtml(t.name||t.title||'Untitled')}</div>
+          ${pct>0?`<div style="height:2px;background:#e2eaf2;border-radius:2px;margin-top:3px;margin-bottom:2px"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width 0.3s"></div></div>`:''}
+          <div style="display:flex;align-items:center;gap:5px;margin-top:${pct>0?'0':rowGap};flex-wrap:wrap">
             ${client?`<span style="font-size:${tagFs};font-weight:700;color:${client.color};opacity:0.85">${escHtml(client.name)}</span><span style="color:#d1d9e0;font-size:${tagFs}">·</span>`:''}
             ${wb?`<span style="font-size:${tagFs};color:#94a3b8">${escHtml(wb.name)}</span><span style="color:#d1d9e0;font-size:${tagFs}">·</span>`:''}
             <span style="font-size:${tagFs};background:${sm.bg};color:${sm.color};padding:1px 6px;border-radius:6px;font-weight:600">${sm.label}</span>
             ${pm&&t.priority!=='med'?`<span style="font-size:${tagFs};color:${pm.color};font-weight:700">${pm.icon}</span>`:''}
+            ${t.recurrence?.freq?`<span title="Recurring task" style="font-size:${tagFs};color:#0d6e4e;font-weight:700">↻</span>`:''}
           </div>
         </div>
         <div style="flex-shrink:0;text-align:right;min-width:54px">
           ${due?`<div style="font-size:${tagFs};font-weight:${isOverdue?700:500};color:${isOverdue?'#dc2626':'#94a3b8'}">${isOverdue?'⚠ ':''}${due}</div>`:''}
-          ${t.percentComplete>=10?`<div style="font-size:10px;color:#97bcbd;margin-top:2px">${t.percentComplete}%</div>`:''}
+          ${pct>=10&&pct<100?`<div style="font-size:10px;color:#97bcbd;margin-top:2px">${pct}%</div>`:''}
         </div>
       </div>
     </div>`;
@@ -8644,6 +8737,10 @@ function renderMyWeek(){
           <div style="font-size:11px;color:#94a3b8;margin-top:1px">${weekLabel} · ${totalActive} active task${totalActive!==1?'s':''}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="View">
+            <button onclick="_mwSetView('this')" aria-pressed="${_mwViewMode==='this'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwViewMode==='this'?'#0d1c33':'transparent'};color:${_mwViewMode==='this'?'#fff':'#8da2b2'}">This Week</button>
+            <button onclick="_mwSetView('next7')" aria-pressed="${_mwViewMode==='next7'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwViewMode==='next7'?'#0d1c33':'transparent'};color:${_mwViewMode==='next7'?'#fff':'#8da2b2'}">Next 7 Days</button>
+          </div>
           <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="Density">
             <button onclick="_mwSetDensity('compact')" aria-pressed="${_mwDensity==='compact'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='compact'?'#0d1c33':'transparent'};color:${_mwDensity==='compact'?'#fff':'#8da2b2'}">Compact</button>
             <button onclick="_mwSetDensity('comfortable')" aria-pressed="${_mwDensity==='comfortable'}" style="padding:4px 12px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;border-radius:5px;transition:all 0.12s;background:${_mwDensity==='comfortable'?'#0d1c33':'transparent'};color:${_mwDensity==='comfortable'?'#fff':'#8da2b2'}">Comfortable</button>
@@ -10782,6 +10879,7 @@ function renderTaskPanel(task){
       <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
+      <div class="tp-tab" id="tp-tab-recurrence" onclick="tpShowTab('recurrence')" style="display:flex;align-items:center;gap:4px">↻ Recurrence${task.recurrence?.freq?'<span style="width:6px;height:6px;border-radius:50%;background:#0d6e4e;display:inline-block"></span>':''}</div>
     </div>
     <div id="tp-body" style="flex:1;overflow-y:auto;padding:16px 20px" onscroll="var b=document.getElementById('tp-backtop');if(b)b.classList.toggle('show',this.scrollTop>200)">
       ${renderTpDetails(task)}
@@ -11104,6 +11202,7 @@ function tpShowTab(tabName){
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
+  else if(tabName==='recurrence')body.innerHTML=renderTpRecurrence(task);
 }
 
 function tpSaveField(field,value){
@@ -11540,6 +11639,13 @@ function _checkRecurringTasks(){
   });
   if(created>0){saveDB(DB);showToast(`${created} recurring task${created!==1?'s':''} created`,'info',3500);}
 }
+
+// Schedule recurring-task check at midnight so new instances appear without refresh
+(function _scheduleMidnightCheck(){
+  const now=new Date();
+  const msUntilMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).getTime()-now.getTime();
+  setTimeout(()=>{_checkRecurringTasks();_scheduleMidnightCheck();},msUntilMidnight);
+})();
 
 function _recurPillSet(name,val){
   document.querySelectorAll(`input[name="${name}"]`).forEach(r=>{r.checked=(r.value===val);});
