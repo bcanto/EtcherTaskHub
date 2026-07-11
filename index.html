@@ -11082,8 +11082,14 @@ function renderTpDetails(task){
       </div>
     </div>
     <div style="margin-top:14px">
-      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Description</div>
-      <textarea id="tp-desc" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.75;box-sizing:border-box;transition:border-color 0.15s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em">Description</div>
+        <button id="tp-desc-expand-btn" onclick="tpToggleDescExpand()" title="Expand / collapse description" style="display:flex;align-items:center;gap:3px;background:none;border:1px solid #e2eaf2;border-radius:5px;cursor:pointer;font-size:10.5px;font-weight:600;color:#8da2b2;padding:2px 7px;line-height:1;transition:color 0.1s,border-color 0.1s" onmouseover="this.style.color='#334155';this.style.borderColor='#97bcbd'" onmouseout="this.style.color='#8da2b2';this.style.borderColor='#e2eaf2'">
+          <svg id="tp-desc-expand-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          <span id="tp-desc-expand-label">Expand</span>
+        </button>
+      </div>
+      <textarea id="tp-desc" data-expanded="0" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.75;box-sizing:border-box;transition:border-color 0.15s,min-height 0.18s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
     </div>
     ${currentUser?.role!=='client'?_recurSummaryRow(task):''}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
@@ -11106,6 +11112,23 @@ function renderTpDetails(task){
       <button onclick="tpDeleteTask()" class="btn btn-sm" style="font-size:12px;background:#fee2e2;color:#991b1b;border:none">Delete Task</button>
     </div>
   </div>`;
+}
+
+function tpToggleDescExpand(){
+  const ta=document.getElementById('tp-desc');
+  const lbl=document.getElementById('tp-desc-expand-label');
+  const icon=document.getElementById('tp-desc-expand-icon');
+  if(!ta)return;
+  const expanded=ta.dataset.expanded==='1';
+  if(expanded){
+    ta.style.minHeight='80px';ta.style.height='auto';ta.dataset.expanded='0';
+    if(lbl)lbl.textContent='Expand';
+    if(icon)icon.innerHTML='<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
+  }else{
+    ta.style.minHeight=Math.max(ta.scrollHeight,260)+'px';ta.dataset.expanded='1';
+    if(lbl)lbl.textContent='Collapse';
+    if(icon)icon.innerHTML='<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>';
+  }
 }
 
 function renderTpSubtasks(taskId){
@@ -11323,7 +11346,7 @@ function tpShowTab(tabName){
   if(el)el.classList.add('active');
   const body=document.getElementById('tp-body');
   if(!body)return;
-  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');const cs=body.querySelector('#tp-comment-input');if(cs)cs.scrollIntoView({block:'nearest',behavior:'smooth'});},0);}
+  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');const cs=body.querySelector('#tp-comment-input');if(cs)cs.scrollIntoView({block:'nearest',behavior:'smooth'});const td=document.getElementById('tp-desc');if(td&&td.scrollHeight>80)td.style.minHeight=Math.min(td.scrollHeight,200)+'px';},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
