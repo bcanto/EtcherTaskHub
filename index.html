@@ -1301,9 +1301,25 @@ function taskTitle(t){return t.name||t.title||'Untitled';}
 let _saveDebounceTimer=null;
 let _supabaseSyncEnabled=false; // only true after post-login app_state load confirms data
 let _realtimeChannel=null;
+let _syncFailCount=0;
+function _showSyncError(msg){
+  const id='sync-err-toast';
+  let el=document.getElementById(id);
+  if(!el){el=document.createElement('div');el.id=id;el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px';document.body.appendChild(el);}
+  el.innerHTML='⚠ Sync failed: '+msg+' — <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">reload to reconnect</a>';
+  clearTimeout(el._t);el._t=setTimeout(()=>el.remove(),12000);
+}
 function _syncToSupabase(data){
   if(!window._supabase||!_supabaseSyncEnabled)return;
-  window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{if(error)console.warn('[sync]',error.message);});
+  window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{
+    if(error){
+      _syncFailCount++;
+      console.warn('[sync] Save failed (attempt '+_syncFailCount+'):', error.message, '| code:', error.code);
+      if(_syncFailCount>=2)_showSyncError(error.message);
+    } else {
+      _syncFailCount=0;
+    }
+  });
 }
 // Smart merge: combine local DB with incoming blob without clobbering concurrent edits.
 // - Tasks/work requests: merge by ID, newer updatedAt wins (two users editing different tasks both survive)
