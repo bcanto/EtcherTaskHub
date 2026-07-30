@@ -10350,6 +10350,38 @@ function wsSaveInlineSubitem(){
   renderView('workspace');
 }
 function wsCancelInlineSubitem(){wsInlineAddSubtaskId=null;renderView('workspace');}
+function wsInlineSubitemPaste(e){
+  const text=e.clipboardData?.getData('text')||'';
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length<=1)return;
+  e.preventDefault();
+  const parentId=wsInlineAddSubtaskId;
+  if(!parentId)return;
+  const parent=DB.tasks.find(t=>t.id===parentId);
+  if(!parent)return;
+  const status=document.getElementById('ws-inline-subtask-status')?.value||'todo';
+  const priority=document.getElementById('ws-inline-subtask-priority')?.value||'med';
+  const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
+  const cwith=document.getElementById('ws-inline-subtask-cwith')?.value||'internal';
+  const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
+  const now=new Date().toISOString();
+  const _pGrp=DB.groups.find(g=>g.id===parent.groupId);
+  const baseOrder=DB.tasks.filter(t=>t.parentTaskId===parentId).length;
+  lines.forEach((line,i)=>{
+    DB.tasks.push({
+      id:'si_'+uid(),parentTaskId:parentId,name:line,status,priority,
+      clientId:parent.clientId||_pGrp?.clientId||null,
+      ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
+      groupId:parent.groupId,startDate:null,endDate:endDate||null,
+      percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
+      order:baseOrder+i,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
+    });
+  });
+  saveDB(DB);
+  wsInlineAddSubtaskId=null;
+  wsExpanded.add(parentId);
+  renderView('workspace');
+}
 function wsDeleteSubitem(id){
   const si=DB.tasks.find(t=>t.id===id);
   const parentId=si?.parentTaskId;
@@ -10919,7 +10951,8 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
           placeholder="Subitem name… (Enter to save)"
           style="flex:1;min-width:100px"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"/>
+          onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"
+          onpaste="wsInlineSubitemPaste(event)"/>
       </div>
     </td>
     ${cols.status?`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:28px">
