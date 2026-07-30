@@ -9966,13 +9966,16 @@ function addComment(taskId){
 // ═══════════════════════════════════════════════════════════
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  if(type==='task'){
+    DB.tasks=DB.tasks.filter(t=>t.id!==id);
+    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>ci.taskId!==id);
+    DB.comments=DB.comments.filter(c=>c.taskId!==id);
+    DB.timeEntries=DB.timeEntries.filter(e=>e.taskId!==id);
+    saveDB(DB);closeTaskModal();closeGenericModal();renderView(currentView);
+    return;
+  }
   confirmCallback=()=>{
-    if(type==='task'){
-      DB.tasks=DB.tasks.filter(t=>t.id!==id);
-      DB.checklistItems=(DB.checklistItems||[]).filter(ci=>ci.taskId!==id);
-      DB.comments=DB.comments.filter(c=>c.taskId!==id);
-      DB.timeEntries=DB.timeEntries.filter(e=>e.taskId!==id);
-    }else if(type==='client'){
+    if(type==='client'){
       const clientGroupIds=DB.groups.filter(g=>g.clientId===id).map(g=>g.id);
       DB.groups=DB.groups.filter(g=>g.clientId!==id);
       DB.tasks=DB.tasks.filter(t=>!clientGroupIds.includes(t.groupId));
@@ -10385,20 +10388,14 @@ function wsInlineSubitemPaste(e){
 function wsDeleteSubitem(id){
   const si=DB.tasks.find(t=>t.id===id);
   const parentId=si?.parentTaskId;
-  confirmCallback=()=>{
-    DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);
-    DB.comments=DB.comments.filter(c=>c.taskId!==id);
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id);
-    if(parentId){
-      const parent=DB.tasks.find(t=>t.id===parentId);
-      if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
-    }
-    saveDB(DB);closeConfirm();renderView('workspace');
-  };
-  document.getElementById('confirm-title').textContent='Delete Subitem';
-  document.getElementById('confirm-msg').textContent='Delete this subitem? This cannot be undone.';
-  document.getElementById('confirm-ok-btn').onclick=confirmCallback;
-  document.getElementById('confirm-modal').classList.remove('hidden');
+  DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);
+  DB.comments=DB.comments.filter(c=>c.taskId!==id);
+  DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id);
+  if(parentId){
+    const parent=DB.tasks.find(t=>t.id===parentId);
+    if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
+  }
+  saveDB(DB);renderView('workspace');
 }
 function wsSetGroupBy(val){wsGroupBy=val;document.getElementById('ws-gb-menu')?.classList.add('hidden');renderView('workspace');}
 function wsAddGroup(){
