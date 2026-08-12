@@ -1617,9 +1617,10 @@ async function _supabaseRestoreSession(session){
         console.info('[auth] Auto-created DB.users entry for',p.email,'→',_newId);
       }
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
-      // Sync immediately when we stored a new mapping or auto-created a user,
-      // so other sessions can see the new entry without waiting for a user action.
-      if(_newUidMapping||_autoCreated){setTimeout(()=>{if(_supabaseSyncEnabled)_syncToSupabase(DB);},1500);}
+      // Always force-sync after login so migration fixes (ghost deletion,
+      // email/name patches) reach Supabase before any other session can
+      // overwrite with stale data.
+      _syncToSupabase(DB);
       _startRealtimeSync();
       launchApp();
     }
