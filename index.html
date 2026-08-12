@@ -11536,17 +11536,25 @@ function tpAddComment(){
   const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
   const preview=body.length>120?body.slice(0,120)+'…':body;
-  // Notify task owner (if not self)
-  if(_tpCurrentTask.ownerId&&_tpCurrentTask.ownerId!==currentUser.id){
+  // Resolve @mentions — token prefix match (first name) + full name match (from dropdown)
+  const bodyLower=body.toLowerCase();
+  const mentioned=new Set();
+  const _staff=(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser.id);
+  for(const m of body.matchAll(/@([\w][\w\d_-]*)/g)){
+    const token=m[1].toLowerCase();
+    _staff.filter(s=>s.name.toLowerCase().replace(/\s+/g,'').startsWith(token)||s.name.toLowerCase().split(' ')[0].startsWith(token)).forEach(s=>mentioned.add(s.id));
+  }
+  _staff.forEach(u=>{if(bodyLower.includes('@'+u.name.toLowerCase()))mentioned.add(u.id);});
+  // Notify with dedup — mentions beat generic comment notification
+  const notified=new Set([currentUser.id]);
+  mentioned.forEach(sid=>{
+    notified.add(sid);
+    DB.notifications.push({id:'n'+uid(),recipientId:sid,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in: '+_tpCurrentTask.name,preview,createdAt:_now});
+  });
+  // Notify task owner if not already notified
+  if(_tpCurrentTask.ownerId&&!notified.has(_tpCurrentTask.ownerId)){
     DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:currentUser.name+' commented on: '+_tpCurrentTask.name,preview,createdAt:_now});
   }
-  // Notify @mentioned staff (distinct from owner, not self)
-  const bodyLower=body.toLowerCase();
-  (DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser.id&&u.id!==_tpCurrentTask.ownerId).forEach(u=>{
-    if(bodyLower.includes('@'+u.name.toLowerCase())){
-      DB.notifications.push({id:'n'+uid(),recipientId:u.id,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in: '+_tpCurrentTask.name,preview,createdAt:_now});
-    }
-  });
   clearTextareaDraft('tp-comment-input');
   document.getElementById('tp-mention-dropdown')?.style&&(document.getElementById('tp-mention-dropdown').style.display='none');
   saveDB(DB);updateNotifBadge();
