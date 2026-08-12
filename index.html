@@ -1052,9 +1052,9 @@ function _migrateDB(data){
     const _legacyId='u2';
     const _real=(data.users||[]).find(u=>u.id===_legacyId);
     if(!_real)return;
-    // Ensure real entry has the correct login email
+    // Always patch to correct login email — overrides whatever Supabase had
     _real.email=_loginEmail;
-    if(!_real.name||_real.name==='Operations Manager')_real.name='Samantha Wignall';
+    if(!_real.name||['Operations Manager','Sam Wignall'].includes(_real.name))_real.name='Samantha Wignall';
     if(!_real.initials||_real.initials==='OM')_real.initials='SW';
     // Find all ghosts: same email OR supabase_uid collision, not the real entry
     const _ghosts=(data.users||[]).filter(u=>u.id!==_legacyId&&(
@@ -1560,26 +1560,28 @@ async function _supabaseRestoreSession(session){
       // On first match we write the UUID back into DB.users so every future login
       // resolves instantly via the UUID lookup without fragile name matching.
       const _supaUid=session.user.id;
+      // Hardcoded email→legacyId for accounts where Supabase login email
+      // differs from the seed. This is the authoritative source — it never
+      // depends on what DB.users happens to contain in Supabase.
+      const _KNOWN_IDS={
+        'b.canto@etchersolutions.com':'u1',
+        's.wignall@etchersolutions.com':'u2',
+      };
       const _legacyUser=(()=>{
         // 1. Fast path: UUID was stored on a previous login
         const byUid=DB.users?.find(u=>u.supabase_uid===_supaUid);
         if(byUid)return byUid;
-        // 2. Email match
+        // 2. Hardcoded mapping — catches known email mismatches reliably
+        const _knownId=_KNOWN_IDS[(p.email||'').toLowerCase()];
+        if(_knownId){const byKnown=DB.users?.find(u=>u.id===_knownId);if(byKnown)return byKnown;}
+        // 3. Email match
         const byEmail=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
         if(byEmail)return byEmail;
-        // 3. Exact name match
+        // 4. Exact name match
         if(!p.name)return null;
         const pName=p.name.toLowerCase().trim();
-        const byName=DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
-          .find(u=>(u.name||'').toLowerCase().trim()===pName);
-        if(byName)return byName;
-        // 4. Last-name match — catches "Samantha Wignall" for login "s.wignall@..."
-        const pLast=pName.split(' ').pop();
-        if(pLast&&pLast.length>3){
-          return DB.users?.filter(u=>u.role!=='client'&&u.active!==false&&u.id.length<=4)
-            .find(u=>(u.name||'').toLowerCase().split(' ').pop()===pLast)||null;
-        }
-        return null;
+        return DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
+          .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
       })();
       const _newUidMapping=_legacyUser&&!_legacyUser.supabase_uid;
       let _autoCreated=false;
