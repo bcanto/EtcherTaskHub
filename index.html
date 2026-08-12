@@ -9322,6 +9322,25 @@ function notify(recipientId, taskId, type, message){
   DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
   updateNotifBadge();
 }
+// Scan text for @mentions and notify each matched staff member.
+// alreadyNotified — Set of user IDs that already received another notification for this action.
+function _notifyMentions(text, taskId, taskName, alreadyNotified){
+  if(!text)return;
+  const exclude=alreadyNotified||new Set();
+  const staff=(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser?.id);
+  const mentioned=new Set();
+  const lower=text.toLowerCase();
+  // Token prefix match (@Sam, @samwilson)
+  for(const m of text.matchAll(/@([\w][\w\d_-]*)/g)){
+    const token=m[1].toLowerCase();
+    staff.filter(s=>s.name.toLowerCase().replace(/\s+/g,'').startsWith(token)||s.name.toLowerCase().split(' ')[0].startsWith(token)).forEach(s=>mentioned.add(s.id));
+  }
+  // Full name match (from dropdowns / copy-paste)
+  staff.forEach(u=>{if(lower.includes('@'+u.name.toLowerCase()))mentioned.add(u.id);});
+  mentioned.forEach(sid=>{
+    if(!exclude.has(sid))notify(sid,taskId,'mention',`${currentUser?.name||'Someone'} mentioned you in: ${taskName}`);
+  });
+}
 
 function _notifyAllStaff(type, message, taskId=null){
   allStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
@@ -9782,6 +9801,11 @@ function saveTask(){
     if(old.ownerId!==t.ownerId){
       notify(t.ownerId,t.id,'owner_changed',`You are now the owner of: ${t.name}`);
     }
+    // Description @mention notifications
+    if(t.description){
+      const _notifSet=new Set([currentUser?.id,t.ownerId,t.currentlyWithUserId].filter(Boolean));
+      _notifyMentions(t.description,t.id,t.name,_notifSet);
+    }
     // Notifications — currently-with changed
     if(old.currentlyWith!==t.currentlyWith){
       if(t.currentlyWith==='client'){
@@ -9842,6 +9866,11 @@ function saveTask(){
       // Notify currently-with person if different from owner and self
       if(newTask.currentlyWithUserId&&newTask.currentlyWithUserId!==newTask.ownerId&&newTask.currentlyWithUserId!==currentUser.id)
         notify(newTask.currentlyWithUserId,newTask.id,'currently_with',`Task is now with you: ${newTask.name}`);
+      // Description @mention notifications
+      if(newTask.description){
+        const _nSet=new Set([currentUser?.id,newTask.ownerId,newTask.currentlyWithUserId].filter(Boolean));
+        _notifyMentions(newTask.description,newTask.id,newTask.name,_nSet);
+      }
     }
   }
   saveDB(DB);closeTaskModal();renderView(currentView);updateNotifBadge();
@@ -11426,6 +11455,14 @@ function tpSaveField(field,value){
   if(field==='ownerId'&&value&&value!==currentUser?.id){
     notify(value,_tpCurrentTask.id,'owner_changed',`You are now the owner of: ${taskTitle(_tpCurrentTask)}`);
   }
+  // Notify when currently-with changes to a staff member
+  if((field==='currentlyWith'||field==='currentlyWithUserId')&&value&&value!=='client'&&value!=='approver'&&value!==currentUser?.id){
+    notify(value,_tpCurrentTask.id,'currently_with',`Task is now with you: ${taskTitle(_tpCurrentTask)}`);
+  }
+  // Scan description for @mentions
+  if(field==='description'){
+    _notifyMentions(value,_tpCurrentTask.id,taskTitle(_tpCurrentTask),new Set([currentUser?.id,_tpCurrentTask.ownerId]));
+  }
   const idx=DB.tasks.findIndex(t=>t.id===_tpCurrentTask.id);
   if(idx>=0) DB.tasks[idx]=_tpCurrentTask;
   saveDB(DB);
@@ -11536,25 +11573,12 @@ function tpAddComment(){
   const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
   const preview=body.length>120?body.slice(0,120)+'…':body;
-  // Resolve @mentions — token prefix match (first name) + full name match (from dropdown)
-  const bodyLower=body.toLowerCase();
-  const mentioned=new Set();
-  const _staff=(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.id!==currentUser.id);
-  for(const m of body.matchAll(/@([\w][\w\d_-]*)/g)){
-    const token=m[1].toLowerCase();
-    _staff.filter(s=>s.name.toLowerCase().replace(/\s+/g,'').startsWith(token)||s.name.toLowerCase().split(' ')[0].startsWith(token)).forEach(s=>mentioned.add(s.id));
+  // Notify task owner (if not self)
+  if(_tpCurrentTask.ownerId&&_tpCurrentTask.ownerId!==currentUser.id){
+    notify(_tpCurrentTask.ownerId,_tpCurrentTask.id,'comment',currentUser.name+' commented on: '+_tpCurrentTask.name);
   }
-  _staff.forEach(u=>{if(bodyLower.includes('@'+u.name.toLowerCase()))mentioned.add(u.id);});
-  // Notify with dedup — mentions beat generic comment notification
-  const notified=new Set([currentUser.id]);
-  mentioned.forEach(sid=>{
-    notified.add(sid);
-    DB.notifications.push({id:'n'+uid(),recipientId:sid,taskId:_tpCurrentTask.id,type:'mention',read:false,message:currentUser.name+' mentioned you in: '+_tpCurrentTask.name,preview,createdAt:_now});
-  });
-  // Notify task owner if not already notified
-  if(_tpCurrentTask.ownerId&&!notified.has(_tpCurrentTask.ownerId)){
-    DB.notifications.push({id:'n'+uid(),recipientId:_tpCurrentTask.ownerId,taskId:_tpCurrentTask.id,type:'comment',read:false,message:currentUser.name+' commented on: '+_tpCurrentTask.name,preview,createdAt:_now});
-  }
+  // @mention notifications (owner already handled above, excluded from dedup set)
+  _notifyMentions(body,_tpCurrentTask.id,_tpCurrentTask.name,new Set([currentUser.id]));
   clearTextareaDraft('tp-comment-input');
   document.getElementById('tp-mention-dropdown')?.style&&(document.getElementById('tp-mention-dropdown').style.display='none');
   saveDB(DB);updateNotifBadge();
