@@ -691,7 +691,7 @@ const SEED = {
   // ── Users (staff + future client portal accounts) ──────
   users:[
     {id:'u1',name:'Bruna Canto',       email:'admin@etchersolutions.com',   password:'TaskHub123', role:'admin', clientId:null, displayColor:'#0d6e4e', initials:'BC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'u2',name:'Samantha Wignall',     email:'s.wignall@etchersolutions.com', password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'SW', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'u2',name:'Sam Wignall',           email:'s.wignall@etchersolutions.com', password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'SW', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u3',name:'Project Manager',   email:'pm@etchersolutions.com',         password:'TaskHub123', role:'staff', clientId:null, displayColor:'#7c3aed', initials:'PM', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u4',name:'Admin Officer',     email:'admin.officer@etchersolutions.com',password:'TaskHub123',role:'staff',clientId:null, displayColor:'#b45309', initials:'AO', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u5',name:'HSEQ Coordinator',  email:'hseq@etchersolutions.com',       password:'TaskHub123', role:'staff', clientId:null, displayColor:'#c2410c', initials:'HC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
@@ -1026,7 +1026,7 @@ function _migrateDB(data){
   if(!data.migrationFlags.seedUsersMergeV1){
     const _seedEmailFix={
       'u1':{email:'b.canto@etchersolutions.com',name:'Bruna Canto'},
-      'u2':{email:'s.wignall@etchersolutions.com',name:'Samantha Wignall'},
+      'u2':{email:'s.wignall@etchersolutions.com',name:'Sam Wignall'},
     };
     (SEED.users||[]).forEach(su=>{
       const existing=data.users?.find(u=>u.id===su.id);
@@ -1052,10 +1052,10 @@ function _migrateDB(data){
     const _legacyId='u2';
     const _real=(data.users||[]).find(u=>u.id===_legacyId);
     if(!_real)return;
-    // Always patch to correct login email — overrides whatever Supabase had
+    // Always patch to correct login email and canonical name
     _real.email=_loginEmail;
-    if(!_real.name||['Operations Manager','Sam Wignall'].includes(_real.name))_real.name='Samantha Wignall';
-    if(!_real.initials||_real.initials==='OM')_real.initials='SW';
+    _real.name='Sam Wignall';
+    _real.initials='SW';
     // Find all ghosts: same email OR supabase_uid collision, not the real entry
     const _ghosts=(data.users||[]).filter(u=>u.id!==_legacyId&&(
       (u.email||'').toLowerCase()===_loginEmail||
