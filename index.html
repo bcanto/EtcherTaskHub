@@ -1504,26 +1504,33 @@ async function _supabaseRestoreSession(session){
           localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
-      // Reconcile currentUser.id with legacy app IDs.
-      // Seed users use short IDs ('u1','u2'…) not UUIDs. Match by email first;
-      // fall back to name if seed email (e.g. admin@etchersolutions.com) differs
-      // from the user's real Supabase login email (e.g. b.canto@etchersolutions.com).
+      // Reconcile currentUser.id with legacy app IDs ('u1','u2'…) vs Supabase UUIDs.
+      // Priority: stored UUID mapping → email → display name (last resort).
+      // On first match we write the UUID back into DB.users so every future login
+      // resolves instantly via the UUID lookup without fragile name matching.
+      const _supaUid=session.user.id;
       const _legacyUser=(()=>{
+        // 1. Fast path: UUID was stored on a previous login
+        const byUid=DB.users?.find(u=>u.supabase_uid===_supaUid);
+        if(byUid)return byUid;
+        // 2. Email match (works when seed email === Supabase login email)
         const byEmail=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
         if(byEmail)return byEmail;
+        // 3. Name match fallback (seed name may differ from profile name)
         if(!p.name)return null;
         const pName=p.name.toLowerCase().trim();
-        const byName=DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
-          .find(u=>(u.name||'').toLowerCase().trim()===pName);
-        return byName||null;
+        return DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
+          .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
       })();
       if(_legacyUser){
         currentUser.id=_legacyUser.id;
         const _lc=_legacyUser.displayColor||_legacyUser.color;
         if(_lc){currentUser.color=_lc;currentUser.displayColor=_lc;}
         if(_legacyUser.initials)currentUser.initials=_legacyUser.initials;
-        // Patch the seed email so future email lookups work without name fallback
-        if(_legacyUser.email&&_legacyUser.email.toLowerCase()!==(p.email||'').toLowerCase()&&p.email){
+        // Persist UUID→legacyId mapping so future logins skip email/name guessing
+        if(!_legacyUser.supabase_uid){_legacyUser.supabase_uid=_supaUid;}
+        // Patch seed email so email lookup also works next time
+        if(p.email&&(_legacyUser.email||'').toLowerCase()!==(p.email||'').toLowerCase()){
           _legacyUser.email=p.email;
         }
       }
