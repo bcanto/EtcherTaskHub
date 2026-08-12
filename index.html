@@ -1505,14 +1505,27 @@ async function _supabaseRestoreSession(session){
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
       // Reconcile currentUser.id with legacy app IDs.
-      // Seed users were created with 'u1'/'u2'/etc — not UUIDs. Match by email so all
-      // existing tasks, comments, and notification records continue to resolve correctly.
-      const _legacyUser=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
+      // Seed users use short IDs ('u1','u2'…) not UUIDs. Match by email first;
+      // fall back to name if seed email (e.g. admin@etchersolutions.com) differs
+      // from the user's real Supabase login email (e.g. b.canto@etchersolutions.com).
+      const _legacyUser=(()=>{
+        const byEmail=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
+        if(byEmail)return byEmail;
+        if(!p.name)return null;
+        const pName=p.name.toLowerCase().trim();
+        const byName=DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
+          .find(u=>(u.name||'').toLowerCase().trim()===pName);
+        return byName||null;
+      })();
       if(_legacyUser){
         currentUser.id=_legacyUser.id;
         const _lc=_legacyUser.displayColor||_legacyUser.color;
         if(_lc){currentUser.color=_lc;currentUser.displayColor=_lc;}
         if(_legacyUser.initials)currentUser.initials=_legacyUser.initials;
+        // Patch the seed email so future email lookups work without name fallback
+        if(_legacyUser.email&&_legacyUser.email.toLowerCase()!==(p.email||'').toLowerCase()&&p.email){
+          _legacyUser.email=p.email;
+        }
       }
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
       _startRealtimeSync();
