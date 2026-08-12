@@ -1546,6 +1546,7 @@ async function _supabaseRestoreSession(session){
           .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
       })();
       const _newUidMapping=_legacyUser&&!_legacyUser.supabase_uid;
+      let _autoCreated=false;
       if(_legacyUser){
         currentUser.id=_legacyUser.id;
         const _lc=_legacyUser.displayColor||_legacyUser.color;
@@ -1557,16 +1558,30 @@ async function _supabaseRestoreSession(session){
         if(p.email&&(_legacyUser.email||'').toLowerCase()!==(p.email||'').toLowerCase()){
           _legacyUser.email=p.email;
         }
-        console.info('[auth] ID resolved:',p.email,'→',currentUser.id,'(legacy)');
+        console.info('[auth] ID resolved:',p.email,'→',currentUser.id);
       } else {
-        console.warn('[auth] ID NOT resolved: no DB.users match for',p.email,'/',p.name,
-          '— notifications will not work. Supabase UUID:',_supaUid,
-          '| DB emails:',(DB.users||[]).map(u=>u.email));
+        // No match — auto-create a DB.users entry from the Supabase profile.
+        // This makes any new staff member work on first login without admin setup.
+        const _newId='u'+uid();
+        const _newEntry={
+          id:_newId,name:p.name,email:p.email,role:p.role||'staff',
+          displayColor:p.display_color||currentUser.displayColor,
+          color:p.display_color||currentUser.color,
+          initials:p.initials||currentUser.initials,
+          supabase_uid:_supaUid,
+          capacityHoursPerDay:8,active:true,clientId:null,
+          createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+        };
+        if(!DB.users)DB.users=[];
+        DB.users.push(_newEntry);
+        currentUser.id=_newId;
+        _autoCreated=true;
+        console.info('[auth] Auto-created DB.users entry for',p.email,'→',_newId);
       }
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
-      // If we just stored a new supabase_uid mapping, sync immediately so other
-      // sessions (and future logins) benefit without waiting for a user action.
-      if(_newUidMapping){setTimeout(()=>{if(_supabaseSyncEnabled)_syncToSupabase(DB);},1500);}
+      // Sync immediately when we stored a new mapping or auto-created a user,
+      // so other sessions can see the new entry without waiting for a user action.
+      if(_newUidMapping||_autoCreated){setTimeout(()=>{if(_supabaseSyncEnabled)_syncToSupabase(DB);},1500);}
       _startRealtimeSync();
       launchApp();
     }
