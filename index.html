@@ -691,7 +691,7 @@ const SEED = {
   // ── Users (staff + future client portal accounts) ──────
   users:[
     {id:'u1',name:'Bruna Canto',       email:'admin@etchersolutions.com',   password:'TaskHub123', role:'admin', clientId:null, displayColor:'#0d6e4e', initials:'BC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'u2',name:'Sam Wignall',         email:'s.wignall@etchersolutions.com', password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'SW', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'u2',name:'Samantha Wignall',     email:'s.wignall@etchersolutions.com', password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'SW', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u3',name:'Project Manager',   email:'pm@etchersolutions.com',         password:'TaskHub123', role:'staff', clientId:null, displayColor:'#7c3aed', initials:'PM', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u4',name:'Admin Officer',     email:'admin.officer@etchersolutions.com',password:'TaskHub123',role:'staff',clientId:null, displayColor:'#b45309', initials:'AO', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u5',name:'HSEQ Coordinator',  email:'hseq@etchersolutions.com',       password:'TaskHub123', role:'staff', clientId:null, displayColor:'#c2410c', initials:'HC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
@@ -1026,7 +1026,7 @@ function _migrateDB(data){
   if(!data.migrationFlags.seedUsersMergeV1){
     const _seedEmailFix={
       'u1':{email:'b.canto@etchersolutions.com',name:'Bruna Canto'},
-      'u2':{email:'s.wignall@etchersolutions.com',name:'Sam Wignall'},
+      'u2':{email:'s.wignall@etchersolutions.com',name:'Samantha Wignall'},
     };
     (SEED.users||[]).forEach(su=>{
       const existing=data.users?.find(u=>u.id===su.id);
@@ -1042,6 +1042,25 @@ function _migrateDB(data){
       }
     });
     data.migrationFlags.seedUsersMergeV1=true;
+  }
+  // Merge the auto-created duplicate "Sam Wignall" ghost back into the real
+  // "Samantha Wignall" entry. The ghost was auto-created on first login because
+  // the email didn't match the seed. We need to:
+  //   1. Copy supabase_uid from the ghost to the real entry (so login resolves correctly)
+  //   2. Redirect any notifications that landed on the ghost ID
+  //   3. Delete the ghost
+  if(!data.migrationFlags.dedupeWignallV1){
+    const _ghost=(data.users||[]).find(u=>u.email==='s.wignall@etchersolutions.com'&&u.supabase_uid&&!u.id.startsWith('u')&&u.id.length>4);
+    const _real=(data.users||[]).find(u=>u.email==='s.wignall@etchersolutions.com'&&(u.id==='u2'||(u.id.startsWith('u')&&u.id.length<=4)));
+    if(_ghost&&_real){
+      // Copy the login mapping
+      if(!_real.supabase_uid)_real.supabase_uid=_ghost.supabase_uid;
+      // Redirect notifications
+      (data.notifications||[]).forEach(n=>{if(n.recipientId===_ghost.id)n.recipientId=_real.id;});
+      // Delete ghost
+      data.users=data.users.filter(u=>u.id!==_ghost.id);
+    }
+    data.migrationFlags.dedupeWignallV1=true;
   }
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
   if(data.taskFiles){
