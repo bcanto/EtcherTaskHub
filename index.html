@@ -691,7 +691,7 @@ const SEED = {
   // ── Users (staff + future client portal accounts) ──────
   users:[
     {id:'u1',name:'Bruna Canto',       email:'admin@etchersolutions.com',   password:'TaskHub123', role:'admin', clientId:null, displayColor:'#0d6e4e', initials:'BC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'u2',name:'Operations Manager',email:'ops@etchersolutions.com',        password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'OM', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'u2',name:'Sam Wignall',         email:'s.wignall@etchersolutions.com', password:'TaskHub123', role:'staff', clientId:null, displayColor:'#1d6fb8', initials:'SW', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u3',name:'Project Manager',   email:'pm@etchersolutions.com',         password:'TaskHub123', role:'staff', clientId:null, displayColor:'#7c3aed', initials:'PM', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u4',name:'Admin Officer',     email:'admin.officer@etchersolutions.com',password:'TaskHub123',role:'staff',clientId:null, displayColor:'#b45309', initials:'AO', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'u5',name:'HSEQ Coordinator',  email:'hseq@etchersolutions.com',       password:'TaskHub123', role:'staff', clientId:null, displayColor:'#c2410c', initials:'HC', capacityHoursPerDay:8, active:true, createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
@@ -1020,6 +1020,29 @@ function _migrateDB(data){
   }
   // Drop legacy personal tasks array — no longer used
   delete data.personalTasks;
+  // Merge any seed users missing from Supabase app_state.
+  // Happens when the DB was first saved with fewer users than the current seed.
+  // Also patches email/name so they match the real Supabase login credentials.
+  if(!data.migrationFlags.seedUsersMergeV1){
+    const _seedEmailFix={
+      'u1':{email:'b.canto@etchersolutions.com',name:'Bruna Canto'},
+      'u2':{email:'s.wignall@etchersolutions.com',name:'Sam Wignall'},
+    };
+    (SEED.users||[]).forEach(su=>{
+      const existing=data.users?.find(u=>u.id===su.id);
+      if(!existing){
+        data.users=data.users||[];
+        data.users.push(JSON.parse(JSON.stringify(su)));
+      }
+      // Patch email/name to match Supabase auth credentials
+      const u=data.users?.find(x=>x.id===su.id);
+      if(u&&_seedEmailFix[su.id]){
+        u.email=_seedEmailFix[su.id].email;
+        u.name=_seedEmailFix[su.id].name;
+      }
+    });
+    data.migrationFlags.seedUsersMergeV1=true;
+  }
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
   if(data.taskFiles){
     const _fs=JSON.parse(localStorage.getItem('etcher_files_v4')||'{}');
