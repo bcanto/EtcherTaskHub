@@ -9655,7 +9655,7 @@ function openTaskModal(id, defaultGroupId){
           ${comments.length===0
             ?'<p data-empty style="font-size:14px;color:#c8d4e0;margin:10px 0;text-align:center">💬 No comments yet.</p>'
             :[...comments].sort((a,b)=>new Date(a.createdAt||a.timestamp)-new Date(b.createdAt||b.timestamp)).map((c,i,arr)=>{
-              const author=getStaff(c.authorId);
+              const _aN=c.authorName||'Unknown';const author=getStaff(c.authorId)||{name:_aN,initials:_aN.charAt(0)||'?',color:'#8da2b2'};
               const ts=c.createdAt||c.timestamp;
               const isLast=i===arr.length-1;
               return`<div style="margin-bottom:${isLast?0:10}px;padding-bottom:${isLast?0:10}px;${isLast?'':'border-bottom:1px solid #f0f4f8'}">
@@ -9960,6 +9960,7 @@ function addComment(taskId){
     id:'cm'+uid(),
     taskId,
     authorId:currentUser.id,
+    authorName:currentUser.name,
     body,
     createdAt:now,   // canonical
     timestamp:now,   // backward-compat alias
@@ -10009,7 +10010,7 @@ function addComment(taskId){
   if(container){
     const empty=container.querySelector('p[data-empty]');
     if(empty)empty.remove();
-    const author=getStaff(currentUser.id);
+    const author=getStaff(currentUser.id)||currentUser;
     const div=document.createElement('div');
     div.style.cssText='margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f4f8';
     div.innerHTML=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
@@ -11292,7 +11293,7 @@ function renderTpComments(taskId){
   return`<div>
     ${comments.length?comments.map(c=>{
       const _cTs=c.timestamp||c.createdAt||'';
-      const author=DB.staff.find(s=>s.id===c.authorId)||{name:'Unknown',initials:'?',color:'#8da2b2'};
+      const _aName=c.authorName||'Unknown';const author=DB.staff.find(s=>s.id===c.authorId)||{name:_aName,initials:_aName.charAt(0)||'?',color:'#8da2b2'};
       const canDel=currentUser&&(currentUser.id===c.authorId||currentUser.role==='admin');
       return`<div style="display:flex;gap:10px;margin-bottom:16px">
         ${avatarHtml(author,28)}
@@ -11601,7 +11602,7 @@ function tpAddComment(){
   const body=(inp?inp.value:'').trim();
   if(!body)return;
   const _now=new Date().toISOString();
-  const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,body,timestamp:_now,createdAt:_now};
+  const comment={id:'cm'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,authorName:currentUser.name,body,timestamp:_now,createdAt:_now};
   DB.comments.push(comment);
   const preview=body.length>120?body.slice(0,120)+'…':body;
   // Notify task owner (if not self)
