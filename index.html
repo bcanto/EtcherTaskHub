@@ -1504,9 +1504,16 @@ async function _supabaseRestoreSession(session){
           localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
-      // Sync currentUser color/initials from DB.users — profiles table may be stale
-      const _dbU=DB.users?.find(u=>u.id===currentUser.id);
-      if(_dbU){const _c=_dbU.displayColor||_dbU.color;if(_c){currentUser.color=_c;currentUser.displayColor=_c;}if(_dbU.initials)currentUser.initials=_dbU.initials;}
+      // Reconcile currentUser.id with legacy app IDs.
+      // Seed users were created with 'u1'/'u2'/etc — not UUIDs. Match by email so all
+      // existing tasks, comments, and notification records continue to resolve correctly.
+      const _legacyUser=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
+      if(_legacyUser){
+        currentUser.id=_legacyUser.id;
+        const _lc=_legacyUser.displayColor||_legacyUser.color;
+        if(_lc){currentUser.color=_lc;currentUser.displayColor=_lc;}
+        if(_legacyUser.initials)currentUser.initials=_legacyUser.initials;
+      }
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
       _startRealtimeSync();
       launchApp();
@@ -9321,6 +9328,17 @@ function notify(recipientId, taskId, type, message){
   if(!DB.notifications)DB.notifications=[];
   DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
   updateNotifBadge();
+  // Email for high-value types (fire-and-forget, never blocks UI)
+  const _emailTypes=['mention','task_assigned','owner_changed','currently_with'];
+  if(_emailTypes.includes(type)){
+    const _rec=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
+    if(_rec?.email){
+      fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({to:_rec.email,recipientName:_rec.name,type,message,
+          senderName:currentUser?.name||'Etcher Team',taskId})
+      }).catch(()=>{});
+    }
+  }
 }
 // Scan text for @mentions and notify each matched staff member.
 // alreadyNotified — Set of user IDs that already received another notification for this action.
