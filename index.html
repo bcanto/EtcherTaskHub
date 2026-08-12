@@ -2076,7 +2076,19 @@ function launchApp(){
   renderNav();
   loadFilters();
   renderSidebarWorkboards();
-  navigate('dashboard');
+  // Restore last view — fall back to dashboard
+  try{
+    const _ln=JSON.parse(sessionStorage.getItem('etcher_last_nav')||'null');
+    if(_ln?.view&&_ln.view!=='dashboard'&&_ln.wbId){
+      const _wb=DB.workboards?.find(w=>w.id===_ln.wbId);
+      if(_wb&&canViewBoard(currentUser,_wb)){currentWorkboard=_wb;navigate(_ln.view);}
+      else navigate('dashboard');
+    } else if(_ln?.view){
+      navigate(_ln.view);
+    } else {
+      navigate('dashboard');
+    }
+  }catch(_){navigate('dashboard');}
   updateNotifBadge();updateClientReqBadge();
   startIntakePoller();
   _checkRecurringTasks();
@@ -2262,6 +2274,8 @@ function renderNav(){
 // ═══════════════════════════════════════════════════════════
 function navigate(view){
   currentView=view;
+  // Persist so page refresh lands on the same view
+  try{sessionStorage.setItem('etcher_last_nav',JSON.stringify({view,wbId:currentWorkboard?.id||null}));}catch(_){}
   closeTaskPanel();
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
