@@ -1043,25 +1043,34 @@ function _migrateDB(data){
     });
     data.migrationFlags.seedUsersMergeV1=true;
   }
-  // Merge the auto-created duplicate "Sam Wignall" ghost back into the real
-  // "Samantha Wignall" entry. The ghost was auto-created on first login because
-  // the email didn't match the seed. We need to:
-  //   1. Copy supabase_uid from the ghost to the real entry (so login resolves correctly)
-  //   2. Redirect any notifications that landed on the ghost ID
-  //   3. Delete the ghost
-  if(!data.migrationFlags.dedupeWignallV1){
-    const _ghost=(data.users||[]).find(u=>u.email==='s.wignall@etchersolutions.com'&&u.supabase_uid&&!u.id.startsWith('u')&&u.id.length>4);
-    const _real=(data.users||[]).find(u=>u.email==='s.wignall@etchersolutions.com'&&(u.id==='u2'||(u.id.startsWith('u')&&u.id.length<=4)));
-    if(_ghost&&_real){
-      // Copy the login mapping
-      if(!_real.supabase_uid)_real.supabase_uid=_ghost.supabase_uid;
-      // Redirect notifications
-      (data.notifications||[]).forEach(n=>{if(n.recipientId===_ghost.id)n.recipientId=_real.id;});
-      // Delete ghost
-      data.users=data.users.filter(u=>u.id!==_ghost.id);
-    }
-    data.migrationFlags.dedupeWignallV1=true;
-  }
+  // Fix duplicate Wignall entries. The auto-create code uses 'u'+uid() for IDs,
+  // so ghost IDs look like 'u8f3a...' (long) vs legacy 'u2' (short ≤3 chars).
+  // Find any ghost with Wignall's login email + supabase_uid, merge into u2, delete ghost.
+  // Runs every load (no flag) so it self-heals if Supabase restores old data.
+  (()=>{
+    const _loginEmail='s.wignall@etchersolutions.com';
+    const _legacyId='u2';
+    const _real=(data.users||[]).find(u=>u.id===_legacyId);
+    if(!_real)return;
+    // Ensure real entry has the correct login email
+    _real.email=_loginEmail;
+    if(!_real.name||_real.name==='Operations Manager')_real.name='Samantha Wignall';
+    if(!_real.initials||_real.initials==='OM')_real.initials='SW';
+    // Find all ghosts: same email OR supabase_uid collision, not the real entry
+    const _ghosts=(data.users||[]).filter(u=>u.id!==_legacyId&&(
+      (u.email||'').toLowerCase()===_loginEmail||
+      (u.name||'').toLowerCase().includes('wignall')&&u.id.length>4
+    ));
+    _ghosts.forEach(g=>{
+      if(g.supabase_uid&&!_real.supabase_uid)_real.supabase_uid=g.supabase_uid;
+      (data.notifications||[]).forEach(n=>{if(n.recipientId===g.id)n.recipientId=_legacyId;});
+      (data.tasks||[]).forEach(t=>{
+        if(t.ownerId===g.id)t.ownerId=_legacyId;
+        if(t.currentlyWithUserId===g.id)t.currentlyWithUserId=_legacyId;
+      });
+    });
+    if(_ghosts.length)data.users=(data.users||[]).filter(u=>!_ghosts.find(g=>g.id===u.id));
+  })();
   // Migrate inline base64 file data to the separate file store (keeps main DB JSON lean)
   if(data.taskFiles){
     const _fs=JSON.parse(localStorage.getItem('etcher_files_v4')||'{}');
@@ -1555,14 +1564,22 @@ async function _supabaseRestoreSession(session){
         // 1. Fast path: UUID was stored on a previous login
         const byUid=DB.users?.find(u=>u.supabase_uid===_supaUid);
         if(byUid)return byUid;
-        // 2. Email match (works when seed email === Supabase login email)
+        // 2. Email match
         const byEmail=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
         if(byEmail)return byEmail;
-        // 3. Name match fallback (seed name may differ from profile name)
+        // 3. Exact name match
         if(!p.name)return null;
         const pName=p.name.toLowerCase().trim();
-        return DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
-          .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
+        const byName=DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
+          .find(u=>(u.name||'').toLowerCase().trim()===pName);
+        if(byName)return byName;
+        // 4. Last-name match — catches "Samantha Wignall" for login "s.wignall@..."
+        const pLast=pName.split(' ').pop();
+        if(pLast&&pLast.length>3){
+          return DB.users?.filter(u=>u.role!=='client'&&u.active!==false&&u.id.length<=4)
+            .find(u=>(u.name||'').toLowerCase().split(' ').pop()===pLast)||null;
+        }
+        return null;
       })();
       const _newUidMapping=_legacyUser&&!_legacyUser.supabase_uid;
       let _autoCreated=false;
