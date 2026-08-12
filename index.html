@@ -333,7 +333,9 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tag-pill:hover{background:#d2e2f0}
 .tag-pill .tag-pill-remove{cursor:pointer;color:#8da2b2;margin-left:2px}
 .tag-pill .tag-pill-remove:hover{color:#991b1b}
-#ws-bulk-bar{transition:all 0.24s var(--ease);position:sticky;top:56px;z-index:40}
+#ws-bulk-bar{transition:opacity 0.18s,transform 0.18s;position:fixed;top:56px;left:220px;right:0;z-index:45;padding:0 28px;pointer-events:none}
+#ws-bulk-bar:empty{display:none}
+#ws-bulk-bar>*{pointer-events:all}
 .ws-sort-hdr{cursor:pointer;user-select:none}
 .ws-sort-hdr:hover{color:var(--navy)}
 .ws-overdue{color:#b91c1c!important;font-weight:700!important}
@@ -10244,7 +10246,7 @@ function updateBulkBar(){
   if(!bar)return;
   const count=wsSelected.size;
   if(count===0){bar.innerHTML='';return;}
-  bar.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0d1c33;color:#fff;border-radius:8px;margin-bottom:10px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(13,28,51,0.2)">
+  bar.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0d1c33;color:#fff;border-radius:0 0 8px 8px;margin-bottom:0;flex-wrap:wrap;box-shadow:0 4px 20px rgba(13,28,51,0.2)">
     <span style="font-size:13px;font-weight:700;color:#97bcbd">${count} task${count!==1?'s':''} selected</span>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1)"></div>
     <select onchange="wsBulkSetStatus(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
