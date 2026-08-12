@@ -1522,6 +1522,7 @@ async function _supabaseRestoreSession(session){
         return DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
           .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
       })();
+      const _newUidMapping=_legacyUser&&!_legacyUser.supabase_uid;
       if(_legacyUser){
         currentUser.id=_legacyUser.id;
         const _lc=_legacyUser.displayColor||_legacyUser.color;
@@ -1533,8 +1534,16 @@ async function _supabaseRestoreSession(session){
         if(p.email&&(_legacyUser.email||'').toLowerCase()!==(p.email||'').toLowerCase()){
           _legacyUser.email=p.email;
         }
+        console.info('[auth] ID resolved:',p.email,'→',currentUser.id,'(legacy)');
+      } else {
+        console.warn('[auth] ID NOT resolved: no DB.users match for',p.email,'/',p.name,
+          '— notifications will not work. Supabase UUID:',_supaUid,
+          '| DB emails:',(DB.users||[]).map(u=>u.email));
       }
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
+      // If we just stored a new supabase_uid mapping, sync immediately so other
+      // sessions (and future logins) benefit without waiting for a user action.
+      if(_newUidMapping){setTimeout(()=>{if(_supabaseSyncEnabled)_syncToSupabase(DB);},1500);}
       _startRealtimeSync();
       launchApp();
     }
