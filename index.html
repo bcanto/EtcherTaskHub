@@ -499,6 +499,11 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         Dashboard
         <span id="intake-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;line-height:1"></span>
       </div>
+      <div class="nav-item" data-view="notifications" onclick="navigate('notifications')">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5A4.5 4.5 0 0 0 3.5 7v3L2 12.5h12L12.5 10V7A4.5 4.5 0 0 0 8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+        Notifications
+        <span id="notif-count-badge" class="hidden" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:auto"></span>
+      </div>
       <div class="nav-item" data-view="my-week" onclick="navigate('my-week')" id="nav-my-week-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         My Week
@@ -573,11 +578,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div class="nav-item" data-view="archive" onclick="navigate('archive')" id="nav-archive-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Archive &amp; Bin
-      </div>
-      <div class="nav-item" data-view="notifications" onclick="navigate('notifications')">
-        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5A4.5 4.5 0 0 0 3.5 7v3L2 12.5h12L12.5 10V7A4.5 4.5 0 0 0 8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
-        Notifications
-        <span id="notif-count-badge" class="hidden" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:auto"></span>
       </div>
       </div>
     </nav>
@@ -1056,11 +1056,10 @@ function _migrateDB(data){
     _real.email=_loginEmail;
     _real.name='Sam Wignall';
     _real.initials='SW';
-    // Find all ghosts: same email OR supabase_uid collision, not the real entry
-    const _ghosts=(data.users||[]).filter(u=>u.id!==_legacyId&&(
-      (u.email||'').toLowerCase()===_loginEmail||
-      (u.name||'').toLowerCase().includes('wignall')&&u.id.length>4
-    ));
+    // Find all ghosts: same login email, not the real entry
+    const _ghosts=(data.users||[]).filter(u=>u.id!==_legacyId&&
+      (u.email||'').toLowerCase()===_loginEmail
+    );
     _ghosts.forEach(g=>{
       if(g.supabase_uid&&!_real.supabase_uid)_real.supabase_uid=g.supabase_uid;
       (data.notifications||[]).forEach(n=>{if(n.recipientId===g.id)n.recipientId=_legacyId;});
@@ -1359,7 +1358,7 @@ function _showSyncError(msg){
   const id='sync-err-toast';
   let el=document.getElementById(id);
   if(!el){el=document.createElement('div');el.id=id;el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px';document.body.appendChild(el);}
-  el.innerHTML='⚠ Sync failed: '+msg+' — <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">reload to reconnect</a>';
+  el.innerHTML='⚠ Sync failed: '+escHtml(msg)+' — <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">reload to reconnect</a>';
   clearTimeout(el._t);el._t=setTimeout(()=>el.remove(),12000);
 }
 function _syncToSupabase(data){
@@ -1395,6 +1394,7 @@ function _mergeDB(current, incoming){
   }
   const merged={...incoming};
   merged.tasks=mergeById(current.tasks,incoming.tasks,'updatedAt');
+  merged.comments=unionById(current.comments,incoming.comments);
   merged.clientComments=unionById(current.clientComments,incoming.clientComments);
   merged.notifications=unionById(current.notifications,incoming.notifications);
   merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
@@ -1431,6 +1431,7 @@ function _stripPasswords(data){
   // Never persist plaintext passwords to localStorage or Supabase
   const d=JSON.parse(JSON.stringify(data));
   (d.users||[]).forEach(u=>{delete u.password;});
+  (d.staff||[]).forEach(u=>{delete u.password;});
   (d.clients||[]).forEach(c=>{delete c.loginPassword;});
   return d;
 }
@@ -1629,6 +1630,7 @@ async function _supabaseRestoreSession(session){
 }
 
 function _showSetPasswordForm(session){
+  if(document.getElementById('set-pw-overlay'))return;
   const overlay=document.createElement('div');
   overlay.id='set-pw-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Jost,sans-serif';
@@ -1642,7 +1644,7 @@ function _showSetPasswordForm(session){
       <div style="display:grid;gap:14px">
         <div>
           <label style="font-size:11px;font-weight:700;color:#8da2b2;letter-spacing:0.07em;text-transform:uppercase;display:block;margin-bottom:6px">New Password</label>
-          <input id="spf-pw" type="password" autocomplete="new-password" placeholder="Min 6 characters"
+          <input id="spf-pw" type="password" autocomplete="new-password" placeholder="Min 8 characters"
             style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;font-family:Jost,sans-serif"
             oninput="document.getElementById('spf-err').textContent=''"/>
         </div>
@@ -2551,7 +2553,7 @@ function getDependentTasks(taskId){
 }
 function getStaff(id){
   const u=allStaff().find(u=>u.id===id);
-  if(!u) return {name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
+  if(!u) return {id:null,name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
   return {...u, color: getUserColor(u)};
 }
 const STATUS_META = {
@@ -6301,7 +6303,7 @@ function openClientModal(id){
                 <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
               </div>`
             :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>
+                <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 8 characters"/></div>
                 <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
               </div>
               <div style="font-size:11px;color:#8da2b2">Leave password blank to create client without portal access.</div>`}
@@ -6423,7 +6425,7 @@ function logTimeFromModal(taskId){
 
 // Delete a time entry from inside the task modal.
 function deleteTaskTimeEntry(entryId,taskId){
-  try{requireInternalUser(currentUser);}catch(e){return;}
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message,'Permission');return;}
   const entry=DB.timeEntries.find(e=>e.id===entryId);
   if(entry)writeAuditEvent('TimeEntry',entryId,'deleted',{taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
   DB.timeEntries=DB.timeEntries.filter(e=>e.id!==entryId);
@@ -6864,6 +6866,7 @@ function openTsBulkApproveModal(){
   document.getElementById('generic-modal').classList.remove('hidden');
 }
 function tsBulkApprove(){
+  if(currentUser?.role!=='admin'){showAlert('Only admins can approve timesheets.','Permission');return;}
   const ids=[...tsSelectedIds];const now=new Date().toISOString();let count=0;
   ids.forEach(id=>{
     const e=DB.timeEntries.find(t=>t.id===id);
@@ -6893,6 +6896,7 @@ function openTsBulkRejectModal(){
   setTimeout(()=>document.getElementById('ts-bulk-reject-reason')?.focus(),40);
 }
 function tsBulkReject(){
+  if(currentUser?.role!=='admin'){showAlert('Only admins can reject timesheets.','Permission');return;}
   const ids=[...tsSelectedIds];
   const reason=(document.getElementById('ts-bulk-reject-reason')?.value||'').trim();
   if(!reason){showAlert('Please enter a rejection reason.');return;}
@@ -7494,7 +7498,9 @@ function pfiSaveLineField(invId,liId,field,value){
   if(field==='rateOverride'){const v=parseFloat(value);li.rateOverride=(value===''||isNaN(v))?null:v;}
   else if(field==='hours')li.hours=parseFloat(value)||0;
   else li[field]=value;
-  inv.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
+  inv.updatedAt=new Date().toISOString();
+  (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'line_edited',liId,field,actorId:currentUser.id,at:new Date().toISOString()});
+  saveDB(DB);renderView('reports');
 }
 function pfiAddComment(id){
   const text=(document.getElementById('pfi-cmt-'+id)?.value||'').trim();
@@ -7858,7 +7864,9 @@ function _rptInvoiceHtml(){
 
 function rptExportCSV(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
-  const rate=parseFloat(document.getElementById('rpt-rate')?.value)||150;
+  const _rateRaw=document.getElementById('rpt-rate')?.value;
+  const rate=parseFloat(_rateRaw)||0;
+  if(!rate){showAlert('Please enter an hourly rate before exporting.','Export');return;}
   const startDate=rptDateFrom||'0000-01-01';
   const endDate=rptDateTo||'9999-12-31';
   const allProjected=DB.timeEntries.map(timeEntryForReport);
@@ -8426,7 +8434,7 @@ function openShareLinkManager(type,targetId,label){
     </div>
     <button onclick="revokeShareLink('${links[0].token}');closeGenericModal();showToast('Link revoked','info')" class="btn btn-ghost btn-sm" style="font-size:12px;color:#991b1b;border-color:#fecaca">Revoke link</button>`
     :`<p style="font-size:13px;color:#6b8399;margin-bottom:16px">Share a read-only progress view of this ${type} with anyone — no login required.</p>
-    <button onclick="createShareLink('${type}','${targetId}','${escHtml(label||'')}');closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
+    <button onclick="createShareLink('${type}','${targetId}','${(label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}');closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
   </div>`;
   openGenericModal(`Share Progress — ${escHtml(label||type)}`,body);
 }
@@ -9347,7 +9355,7 @@ function openStaffModal(id){
       ${id
         ?`<div><label class="form-label">New Password (leave blank to keep current)</label><input id="sm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="••••••••"/></div>`
         :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 6 characters"/></div>
+            <div><label class="form-label">Password</label><input id="sm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 8 characters"/></div>
             <div><label class="form-label">Confirm Password</label><input id="sm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
           </div>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -9378,7 +9386,12 @@ function deleteStaff(id){
     :`Remove ${s.name}? This cannot be undone.`;
   closeGenericModal();
   openConfirm('Remove Staff',msg,'Remove',()=>{
-    DB.tasks.forEach(t=>{if(t.ownerId===id)t.ownerId=null;});
+    DB.tasks.forEach(t=>{
+      if(t.ownerId===id)t.ownerId=null;
+      if(t.currentlyWithUserId===id){t.currentlyWithUserId=null;t.currentlyWith=null;}
+    });
+    DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id);
     DB.users=DB.users.filter(x=>x.id!==id);
     DB.staff=DB.users;
     saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
@@ -9395,7 +9408,7 @@ async function saveStaff(id){
     // Edit existing — update DB only
     const s=DB.staff.find(x=>x.id===id);
     s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
-    const pw=document.getElementById('sm-pw')?.value;if(pw){s.password=pw;_savePw(s.id,pw);}
+    const pw=document.getElementById('sm-pw')?.value;if(pw){_savePw(s.id,pw);}
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
     // New user — create account directly (no email needed)
@@ -9471,7 +9484,7 @@ function _notifyMentions(text, taskId, taskName, alreadyNotified){
   // Token prefix match (@Sam, @samwilson)
   for(const m of text.matchAll(/@([\w][\w\d_-]*)/g)){
     const token=m[1].toLowerCase();
-    staff.filter(s=>s.name.toLowerCase().replace(/\s+/g,'').startsWith(token)||s.name.toLowerCase().split(' ')[0].startsWith(token)).forEach(s=>mentioned.add(s.id));
+    staff.filter(s=>s.name.toLowerCase().replace(/\s+/g,'')===token||s.name.toLowerCase().split(' ')[0]===token).forEach(s=>mentioned.add(s.id));
   }
   // Full name match (from dropdowns / copy-paste)
   staff.forEach(u=>{if(lower.includes('@'+u.name.toLowerCase()))mentioned.add(u.id);});
@@ -9544,7 +9557,7 @@ function renderNotifications(){
       </div>
     </div>
     ${myNotifs.length===0
-      ?`<div style="text-align:center;padding:48px 24px;color:#8da2b2"><div style="font-size:32px;margin-bottom:10px">🔔</div>No notifications.</div>`
+      ?`<div style="text-align:center;padding:48px 24px;color:#8da2b2">No notifications.</div>`
       :rows}
   </div>`;
 }
@@ -10156,10 +10169,13 @@ function addComment(taskId){
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   if(type==='task'){
-    DB.tasks=DB.tasks.filter(t=>t.id!==id);
-    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>ci.taskId!==id);
-    DB.comments=DB.comments.filter(c=>c.taskId!==id);
-    DB.timeEntries=DB.timeEntries.filter(e=>e.taskId!==id);
+    // Collect the task and all its subitems recursively
+    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
+    const ids=_collectIds(id);
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
+    DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));
     saveDB(DB);closeTaskModal();closeGenericModal();renderView(currentView);
     return;
   }
@@ -10219,7 +10235,7 @@ function renderWbTabs(activeView){
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 8l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Shared with
       </button>`:''}
-      ${currentUser.role==='admin'?`<button onclick="openShareLinkManager('workboard','${wb.id}','${escHtml(wb.name).replace(/'/g,"\\'")}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Share progress link">
+      ${currentUser.role==='admin'?`<button onclick="openShareLinkManager('workboard','${wb.id}','${wb.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Share progress link">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="4" cy="8" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M10.3 4.2L5.7 6.8M5.7 9.2l4.6 2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Share
       </button>`:''}
@@ -10236,7 +10252,7 @@ function renderWbTabs(activeView){
 // BLOCKS (Workspace) view
 // ═══════════════════════════════════════════════════════════
 // Escapes for both text content and attribute values (& must be first)
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');}
+function escHtml(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');}
 
 // ── Inline add ──
 function wsStartInlineAdd(sectionId,groupId){
@@ -10317,7 +10333,8 @@ async function wsSendComms(){
   const attachments=[];
   for(const file of wsCommsFiles){
     if(file.size>4*1024*1024){showAlert(`"${file.name}" is over 4 MB — skipped to protect storage.`,'File Too Large');continue;}
-    const data=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
+    const data=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
+    if(!data){showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');continue;}
     attachments.push({name:file.name,type:file.type,data});
   }
   if(!DB.internalComms)DB.internalComms=[];
@@ -10413,7 +10430,7 @@ function wsToggleExpand(id){
 }
 function wsToggleDone(id,checked){
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
-  t.status=checked?'done':'not-started';
+  t.status=checked?'done':'todo';
   if(checked){t.percentComplete=100;t.completedAt=new Date().toISOString();}
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
@@ -10481,9 +10498,12 @@ function wsBulkArchiveTasks(){
 function wsBulkDeleteTasks(){
   const n=wsSelected.size;
   openConfirm('Delete Tasks',`Delete ${n} task${n!==1?'s':''}? This cannot be undone.`,'Delete',()=>{
-    const ids=[...wsSelected];
-    DB.tasks=DB.tasks.filter(t=>!ids.includes(t.id));
-    DB.checklistItems=DB.checklistItems.filter(ci=>!ids.includes(ci.taskId));
+    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
+    const ids=new Set();[...wsSelected].forEach(id=>_collectIds(id,ids));
+    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
+    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
+    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
     wsSelected.clear();saveDB(DB);closeConfirm();renderView('workspace');
   });
 }
@@ -10500,7 +10520,7 @@ function wsCycleStatus(id){
   const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','change-requested','completed-approved','done','blocked','cancelled'];
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   const idx=CYCLE.indexOf(t.status);
-  t.status=CYCLE[idx>=0?(idx+1)%CYCLE.length:1];
+  t.status=CYCLE[idx>=0?(idx+1)%CYCLE.length:0];
   if(t.status==='done'||t.status==='completed'){t.percentComplete=100;t.completedAt=new Date().toISOString();}
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
@@ -12038,7 +12058,7 @@ function _checkRecurringTasks(){
       updatedAt:_now,
     };
     if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
-    if(!r.copySameBoard){newTask.boardId=null;newTask.workboardId=null;newTask.groupId=null;}
+    if(!r.copySameBoard){newTask.boardId=source.boardId||null;newTask.workboardId=source.workboardId||null;newTask.groupId=source.groupId||null;}
     if(!r.copySamePriority)newTask.priority='med';
     if(!r.copySameDescription)newTask.description='';
     DB.tasks.push(newTask);
@@ -12409,9 +12429,11 @@ function duplicateWorkboard(id){
     groupIdMap[g.id]=newGid;
     DB.groups.push(Object.assign({},g,{id:newGid,workboardId:newId}));
   });
+  const taskIdMap={};
+  DB.tasks.filter(t=>t.workboardId===id).forEach(t=>{taskIdMap[t.id]='t_'+uid();});
   DB.tasks.filter(t=>t.workboardId===id).forEach(t=>{
     const _now2=new Date().toISOString();
-    DB.tasks.push(Object.assign({},t,{id:'t_'+uid(),workboardId:newId,groupId:groupIdMap[t.groupId]||t.groupId,createdAt:_now2,updatedAt:_now2,tags:[],archived:false,completedAt:null}));
+    DB.tasks.push(Object.assign({},t,{id:taskIdMap[t.id],workboardId:newId,groupId:groupIdMap[t.groupId]||t.groupId,parentTaskId:taskIdMap[t.parentTaskId]||null,createdAt:_now2,updatedAt:_now2,tags:[],archived:false,completedAt:null}));
   });
   saveDB(DB);
   renderSidebarWorkboards();
@@ -12443,7 +12465,7 @@ function wsBuildDropdownHtml(taskId,field){
               <span style="position:absolute;inset:0;background:${sm.dot||sm.color}"></span>
               <input type="color" value="${sm.color}" onchange="wsLabelColor('status','${k}',this.value)" style="opacity:0;position:absolute;inset:0;cursor:pointer"/>
             </label>
-            <span style="background:${sm.bg};color:${sm.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">${sm.label}</span>
+            <span style="background:${sm.bg};color:${sm.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">${escHtml(sm.label)}</span>
           </div>
           ${isCust?`<div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
             <input type="text" value="${escHtml(sm.label)}" onchange="wsLabelRename('status','${k}',this.value)" style="width:74px;font-size:10px;border:1px solid #e2eaf2;border-radius:4px;padding:2px 5px;color:#1a2940;outline:none"/>
@@ -12468,7 +12490,7 @@ function wsBuildDropdownHtml(taskId,field){
               <span style="position:absolute;inset:0;background:${m.color}"></span>
               <input type="color" value="${m.color}" onchange="wsLabelColor('priority','${p}',this.value)" style="opacity:0;position:absolute;inset:0;cursor:pointer"/>
             </label>
-            <span style="background:${m.bg};color:${m.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">${m.icon} ${m.label}</span>
+            <span style="background:${m.bg};color:${m.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">${m.icon} ${escHtml(m.label)}</span>
           </div>
           ${isCust?`<div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
             <input type="text" value="${escHtml(m.label)}" onchange="wsLabelRename('priority','${p}',this.value)" style="width:74px;font-size:10px;border:1px solid #e2eaf2;border-radius:4px;padding:2px 5px;color:#1a2940;outline:none"/>
@@ -12826,6 +12848,7 @@ function wsAddAttachment(taskId,input){
       renderView('workspace');
       process(rest);
     };
+    reader.onerror=()=>{showAlert(`Failed to read "${f.name}" — skipped.`,'File Error');process(rest);};
     reader.readAsDataURL(f);
   };
   process(Array.from(input.files));
@@ -12948,11 +12971,11 @@ function renderCustomColCell(taskId,cc){
     }
     case 'status':{
       const sm=getStatusMeta(val);
-      return val?`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
+      return val?`<span class="badge" style="background:${sm.bg};color:${sm.color}">${escHtml(sm.label)}</span>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
     }
     case 'priority':{
       const pm=getPrioMeta(val);
-      return val?`<span class="prio-badge ${pm.cls}">${pm.icon} ${pm.label}</span>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
+      return val?`<span class="prio-badge ${pm.cls}">${pm.icon} ${escHtml(pm.label)}</span>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
     }
     case 'link':
       return val?`<a href="${escHtml(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">🔗 Link</a>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
@@ -13909,6 +13932,7 @@ function cpUploadToTask(taskId,input){
         cpOpenTaskModal(taskId);
       }
     };
+    reader.onerror=()=>{showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');done++;if(done===valid.length){input.value='';}};
     reader.readAsDataURL(file);
   });
 }
@@ -14126,19 +14150,19 @@ document.addEventListener('keydown',e=>{
     const tick=()=>{if(window._supabase!==undefined||Date.now()-t>2000)return resolve();setTimeout(tick,50);};
     tick();
   });
-  // Load shared DB from Supabase so the token lookup works in any browser
+  // Load shared DB from Supabase — validate token FIRST, only populate global DB if valid
+  let _shareData=null;
   if(window._supabase){
     try{
       const{data:stateRow}=await window._supabase.from('app_state').select('data').eq('id',1).single();
       if(stateRow?.data&&(stateRow.data.shareLinks?.length>0||stateRow.data.tasks?.length>0)){
-        const fresh=stateRow.data;
-        _migrateDB(fresh);
-        for(const k in DB)delete DB[k];
-        Object.assign(DB,fresh);
+        _shareData=stateRow.data;
       }
     }catch(e){console.warn('[share] Supabase load failed:',e.message);}
   }
-  const link=(DB.shareLinks||[]).find(l=>l.token===token&&!l.revoked);
+  // Validate token against fetched data — never write to global DB for invalid tokens
+  const _shareLinks=(_shareData?.shareLinks)||DB.shareLinks||[];
+  const link=_shareLinks.find(l=>l.token===token&&!l.revoked);
   if(!link){
     document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px">
       <div style="font-size:32px;margin-bottom:16px">🔒</div>
@@ -14146,6 +14170,12 @@ document.addEventListener('keydown',e=>{
       <div style="font-size:14px;color:#8da2b2">This progress link may have expired or been revoked.</div>
     </div>`;
     return;
+  }
+  // Token is valid — now safe to populate DB for rendering
+  if(_shareData){
+    _migrateDB(_shareData);
+    for(const k in DB)delete DB[k];
+    Object.assign(DB,_shareData);
   }
   document.getElementById('share-page-body').innerHTML=renderSharePage(link);
 })();
@@ -14193,6 +14223,8 @@ document.addEventListener('keydown',e=>{
 // ── GCS Tracker one-time import ───────────────────────────────────────────────
 (async function _importGCSTracker(){
   if(DB.migrationFlags&&DB.migrationFlags.gcsTrackerImported)return; // already ran
+  // Only run when a real authenticated user is present — never on share-link pages or cold loads
+  if(window._shareRouteActive||!currentUser?.id)return;
   let importData;
   try{
     const res=await fetch('/taskhub_gcs_tracker_import.json');
@@ -14210,14 +14242,9 @@ document.addEventListener('keydown',e=>{
   if(client){client.name='General Crane Services / GCS';client.shortCode='GCS';client.updatedAt=now;}
   const clientId=client?client.id:'c1';
 
-  // Ensure Samantha Wignall exists
-  const samId='u-sam-wignall';
-  if(!DB.staff.find(s=>s.id===samId)){
-    DB.staff.push({id:samId,name:'Samantha Wignall',email:'sam.wignall@etchersolutions.com',
-      password:'TaskHub123',role:'staff',clientId:null,displayColor:'#0e7490',initials:'SW',
-      capacityHoursPerDay:8,active:true,createdAt:now,updatedAt:now});
-  }
-  if(DB.users&&!DB.users.find(u=>u.id===samId)) DB.users.push(DB.staff.find(s=>s.id===samId));
+  // Map Samantha Wignall tasks to u2 (the canonical Sam Wignall entry)
+  // Never create a separate user entry — the dedup migration already consolidates everything on u2
+  const samId='u2';
   const staffByName={'Bruna Canto':'u1','Samantha Wignall':samId};
 
   // Board
