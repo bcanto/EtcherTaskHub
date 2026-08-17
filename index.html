@@ -1961,7 +1961,7 @@ function getFilteredTasks(){
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
   if(pmin>0||pmax<100)t=t.filter(x=>{const p=typeof x.percentComplete==='number'?x.percentComplete:0;return p>=pmin&&p<=pmax;});
-  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.notes||'').toLowerCase().includes(q);t=t.filter(_tm);const sub=getVisibleTasks().filter(x=>x.parentTaskId&&_tm(x));if(sub.length)t=[...t,...sub];}
+  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.notes||'').toLowerCase().includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(getWbGroups().map(g=>g.id));const sub=(DB.tasks||[]).filter(x=>!x.archived&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>x.ownerId===wsMtPersonFilter||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
   return t;
 }
@@ -10933,6 +10933,9 @@ function renderWorkspace(){
       sections.push({id:p,label:PL[p],sub:'',color:PC[p],defGrp:wbDefGrp,tasks:tasks.filter(t=>t.priority===p)});
     });
   }
+
+  // When searching, drop empty sections to keep the view clean
+  if(wsMtSearch) sections=sections.filter(s=>s.tasks.length>0);
 
   // Apply sort to section tasks
   if(wsSort.col){
