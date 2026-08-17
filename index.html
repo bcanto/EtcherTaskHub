@@ -1946,7 +1946,7 @@ function getFilteredTasks(){
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
   if(pmin>0||pmax<100)t=t.filter(x=>{const p=typeof x.percentComplete==='number'?x.percentComplete:0;return p>=pmin&&p<=pmax;});
-  if(wsMtSearch){const q=wsMtSearch.toLowerCase();t=t.filter(x=>(x.name||x.title||'').toLowerCase().includes(q));}
+  if(wsMtSearch){const q=wsMtSearch.toLowerCase();t=t.filter(x=>(x.name||x.title||'').toLowerCase().includes(q));const sub=getVisibleTasks().filter(x=>x.parentTaskId&&(x.name||x.title||'').toLowerCase().includes(q));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>x.ownerId===wsMtPersonFilter||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
   return t;
 }
