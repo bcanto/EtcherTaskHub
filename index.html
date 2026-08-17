@@ -8834,6 +8834,8 @@ let _mwCollapsed={overdue:false,today:false,week:false,approval:false,done:true}
 let _mwOverdueExpanded=false;
 let _mwDensity=(()=>{try{return localStorage.getItem('mw_density')||'compact';}catch(_){return'compact';}})();
 let _mwViewMode=(()=>{try{return localStorage.getItem('mw_view_mode')||'this';}catch(_){return'this';}})(); // 'this' | 'next7'
+let _mwSearch='';
+let _mwStatusFilter=[];
 
 function _mwToggleGroup(key){_mwCollapsed[key]=!_mwCollapsed[key];renderView('my-week');}
 function _mwToggleOverdue(){_mwOverdueExpanded=!_mwOverdueExpanded;renderView('my-week');}
@@ -8841,6 +8843,9 @@ function _mwSetDensity(d){_mwDensity=d;try{localStorage.setItem('mw_density',d);
 function _mwScrollTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
 function _mwSetView(v){_mwViewMode=v;try{localStorage.setItem('mw_view_mode',v);}catch(_){}renderView('my-week');}
 function mwQuickComplete(taskId,e){e.stopPropagation();const task=DB.tasks.find(t=>t.id===taskId);if(!task)return;const done=task.status==='done'||task.percentComplete===100;if(done){task.status='todo';task.percentComplete=0;task.completedAt=null;}else{task.status='done';task.percentComplete=100;task.completedAt=new Date().toISOString();}task.updatedAt=new Date().toISOString();saveDB(DB);renderView('my-week');}
+function _mwSetStatusFilter(s){const i=_mwStatusFilter.indexOf(s);if(i===-1)_mwStatusFilter.push(s);else _mwStatusFilter.splice(i,1);renderView('my-week');}
+function _mwClearFilters(){_mwSearch='';_mwStatusFilter=[];renderView('my-week');}
+function onMwSearch(el){_mwSearch=el.value;const pos=el.selectionStart;renderView('my-week');setTimeout(()=>{const s=document.getElementById('mw-search');if(s){s.focus();s.setSelectionRange(pos,pos);}},0);}
 
 function renderMyWeek(){
   if(!currentUser||currentUser.role==='client')return _acDeniedHtml();
@@ -8860,6 +8865,29 @@ function renderMyWeek(){
     (t.ownerId===currentUser.id||t.currentlyWithUserId===currentUser.id||
      (t.currentlyWithType==='staff'&&t.currentlyWith===currentUser.id))
   );
+  let _mwFiltered=myTasks;
+  if(_mwSearch){const _q=_mwSearch.toLowerCase();_mwFiltered=_mwFiltered.filter(t=>(t.name||t.title||'').toLowerCase().includes(_q)||(t.description||'').toLowerCase().includes(_q)||(t.notes||'').toLowerCase().includes(_q));}
+  if(_mwStatusFilter.length>0){_mwFiltered=_mwFiltered.filter(t=>_mwStatusFilter.includes(t.status));}
+
+  // ── Filter bar HTML ──────────────────────────────────────────────────
+  const _mwTaskStatuses=[...new Set(myTasks.map(t=>t.status||'todo'))].filter(s=>STATUS_META[s]);
+  const _anyMwFilter=!!(_mwSearch||_mwStatusFilter.length>0);
+  const _mwChips=_mwTaskStatuses.map(s=>{
+    const sm=STATUS_META[s]||STATUS_META['todo'];
+    const active=_mwStatusFilter.includes(s);
+    return '<button onclick="_mwSetStatusFilter(\''+s+'\')" style="padding:3px 10px;border-radius:20px;border:1.5px solid '+(active?sm.color:'#e2eaf2')+';background:'+(active?sm.bg:'transparent')+';color:'+(active?sm.color:'#8da2b2')+';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:border-color 0.12s,background 0.12s,color 0.12s">'+escHtml(sm.label)+'</button>';
+  }).join('');
+  const _mwFilterBar='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #e8f0f5">'+
+    '<div style="position:relative;flex:1;min-width:160px;max-width:260px">'+
+    '<input id="mw-search" type="text" placeholder="Search tasks…" value="'+escHtml(_mwSearch)+'"'+
+    ' oninput="onMwSearch(this)" onkeydown="if(event.key===\'Escape\'){_mwClearFilters();}"'+
+    ' style="width:100%;box-sizing:border-box;padding:5px 10px 5px 28px;border:1.5px solid #e2eaf2;border-radius:7px;font-size:12px;color:#0d1c33;background:#f8fbff;outline:none;transition:border-color 0.15s"'+
+    ' onfocus="this.style.borderColor=\'#97bcbd\'" onblur="this.style.borderColor=\'#e2eaf2\'"/>'+
+    '<svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none" width="12" height="12" viewBox="0 0 16 16" fill="none">'+
+    '<circle cx="7" cy="7" r="5" stroke="#94a3b8" stroke-width="1.5"/><path d="M11 11l3 3" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>'+
+    '</div>'+_mwChips+
+    (_anyMwFilter?'<button onclick="_mwClearFilters()" style="padding:3px 10px;border-radius:20px;border:1.5px solid #fecaca;background:#fef2f2;color:#dc2626;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">&#x2715; Clear</button>':'')+
+    '</div>';
 
   // ── Group tasks (unchanged classification) ────────────────────────────
   const G={
@@ -8870,7 +8898,7 @@ function renderMyWeek(){
     done:     {label:'Completed',          color:'#64748b',accent:'#94a3b8',empty:'No completions this week',tasks:[]},
   };
 
-  myTasks.forEach(t=>{
+  _mwFiltered.forEach(t=>{
     const done=t.status==='done'||t.status==='completed'||t.percentComplete===100;
     const waiting=t.awaitingClient||t.status==='ready-approval'||t.status==='waiting-client';
     if(done){
@@ -8896,7 +8924,7 @@ function renderMyWeek(){
     for(let i=1;i<=7;i++){const d=new Date();d.setDate(d.getDate()+i);n7Days.push(toDateStr(d));}
     const n7Map={};n7Days.forEach(d=>n7Map[d]=[]);
     const noDate=[];
-    myTasks.filter(t=>t.status!=='done'&&t.percentComplete!==100).forEach(t=>{
+    _mwFiltered.filter(t=>t.status!=='done'&&t.percentComplete!==100).forEach(t=>{
       if(t.endDate&&n7Map[t.endDate]!==undefined)n7Map[t.endDate].push(t);
       else if(!t.endDate)noDate.push(t);
     });
@@ -8964,6 +8992,7 @@ function renderMyWeek(){
             </div>
           </div>
         </div>
+        ${_mwFilterBar}
       </div>
       <div id="mw-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
         <div style="display:grid;gap:18px">${dayPanels.slice(0,4).join('')}</div>
@@ -9092,6 +9121,7 @@ function renderMyWeek(){
           </div>
         </div>
       </div>
+      ${_mwFilterBar}
       <!-- Stats strip -->
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)" role="navigation" aria-label="Jump to section">
         ${_stat('overdue','Overdue',G.overdue.tasks.length,'#dc2626')}
