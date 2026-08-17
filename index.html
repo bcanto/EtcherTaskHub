@@ -2026,7 +2026,7 @@ function renderUniversalToolbar(view,opts){
     <div style="position:relative;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       <input class="mt-search" type="text" placeholder="Search tasks…" value="${escHtml(search)}"
-        oninput="wsMtSearch=this.value;renderView('${view}')" onclick="event.stopPropagation()"
+        oninput="onMtSearch(this,'${view}')" onclick="event.stopPropagation()"
         style="padding-left:28px"/>
       ${search?`<button onclick="wsMtSearch='';renderView('${view}')" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:14px;line-height:1;padding:0">\xd7</button>`:''}
     </div>
@@ -2382,6 +2382,12 @@ function navigate(view){
   vc.style.padding=view==='notes'?'0':'24px';
   updateSidebarWorkboard();
   renderView(view);
+}
+function onMtSearch(el,view){
+  wsMtSearch=el.value;
+  const pos=el.selectionStart;
+  renderView(view);
+  setTimeout(()=>{const s=document.querySelector('.mt-search');if(s){s.focus();s.setSelectionRange(pos,pos);}},0);
 }
 function onGlobalSearch(){
   const q=(document.getElementById('global-search')?.value||'').trim().toLowerCase();
