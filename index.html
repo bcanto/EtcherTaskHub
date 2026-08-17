@@ -1947,7 +1947,7 @@ function getFilteredTasks(){
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
   if(pmin>0||pmax<100)t=t.filter(x=>{const p=typeof x.percentComplete==='number'?x.percentComplete:0;return p>=pmin&&p<=pmax;});
-  if(wsMtSearch){const q=wsMtSearch.toLowerCase();t=t.filter(x=>(x.name||x.title||'').toLowerCase().includes(q));const sub=getVisibleTasks().filter(x=>x.parentTaskId&&(x.name||x.title||'').toLowerCase().includes(q));if(sub.length)t=[...t,...sub];}
+  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.notes||'').toLowerCase().includes(q);t=t.filter(_tm);const sub=getVisibleTasks().filter(x=>x.parentTaskId&&_tm(x));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>x.ownerId===wsMtPersonFilter||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
   return t;
 }
@@ -2392,9 +2392,37 @@ function onMtSearch(el,view){
 }
 function onDashWbSearch(val){
   dashWbSearch=val;
-  _vcClear();
-  renderView('dashboard');
-  setTimeout(()=>{const el=document.getElementById('dash-wb-search');if(el){el.focus();el.setSelectionRange(val.length,val.length);}},0);
+  const dd=document.getElementById('dash-search-dropdown');
+  if(dd)dd.innerHTML=_dashSearchDropdownHtml(val);
+}
+function _dashSearchDropdownHtml(q){
+  if(!q||!q.trim())return'';
+  const ql=q.trim().toLowerCase();
+  const accessibleWbs=(DB.workboards||[]).filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
+  const accessibleWbIds=new Set(accessibleWbs.map(w=>w.id));
+  // Boards
+  const boards=accessibleWbs.filter(wb=>wb.name.toLowerCase().includes(ql)).slice(0,5);
+  // Groups
+  const groups=(DB.groups||[]).filter(g=>accessibleWbIds.has(g.workboardId||g.boardId)&&g.name.toLowerCase().includes(ql)).slice(0,5);
+  // Tasks + subitems
+  const tasks=(DB.tasks||[]).filter(t=>!t.archived&&canViewTask(currentUser,t)&&accessibleWbIds.has(t.workboardId||t.boardId)&&(t.name||t.title||'').toLowerCase().includes(ql));
+  const topTasks=tasks.filter(t=>!t.parentTaskId).slice(0,5);
+  const subTasks=tasks.filter(t=>t.parentTaskId).slice(0,5);
+  if(!boards.length&&!groups.length&&!topTasks.length&&!subTasks.length){
+    return`<div style="padding:16px;text-align:center;font-size:13px;color:#8da2b2">No results for "${escHtml(q)}"</div>`;
+  }
+  const wbName=id=>{const w=accessibleWbs.find(w=>w.id===id);return w?escHtml(w.name):'';};
+  const section=(title,icon,rows)=>rows.length?`<div style="padding:6px 0 2px"><div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.07em;padding:4px 14px 2px">${icon} ${title}</div>${rows.join('')}</div>`:'';
+  const row=(label,sub,onclick)=>`<div onclick="${onclick}" style="display:flex;flex-direction:column;padding:7px 14px;cursor:pointer;border-radius:6px;transition:background 0.08s" onmouseover="this.style.background='#f0f7f7'" onmouseout="this.style.background=''">
+    <span style="font-size:13px;font-weight:600;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(label)}</span>
+    ${sub?`<span style="font-size:11px;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</span>`:''}
+  </div>`;
+  return`<div style="padding:4px 6px">
+    ${section('Boards','▦',boards.map(wb=>row(wb.name,'',`openWorkboard('${wb.id}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`)))}
+    ${section('Groups','◫',groups.map(g=>{const wb=accessibleWbs.find(w=>w.id===(g.workboardId||g.boardId));return row(g.name,wb?wbName(wb.id):'',`openWorkboard('${wb?.id||g.workboardId||g.boardId}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`);}))}
+    ${section('Tasks','✓',topTasks.map(t=>row(t.name||t.title||'Untitled',wbName(t.workboardId||t.boardId),`openTaskModal('${t.id}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`)))}
+    ${section('Sub-tasks','↳',subTasks.map(t=>{const parent=DB.tasks.find(p=>p.id===t.parentTaskId);return row(t.name||t.title||'Untitled',(parent?escHtml(parent.name||parent.title||''):'')+(wbName(t.workboardId||t.boardId)?(' · '+wbName(t.workboardId||t.boardId)):''),`openTaskModal('${t.id}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`);}))}
+  </div>`;
 }
 function onGlobalSearch(){
   const q=(document.getElementById('global-search')?.value||'').trim().toLowerCase();
@@ -4575,8 +4603,7 @@ function incomingApprovalAction(taskId,newStatus){
 function renderDashboard(){
   if(currentUser.role==='client') return renderClientDashboard();
   const allWbs=DB.workboards||[];
-  const _wbsAll=allWbs.filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
-  const wbs=dashWbSearch?_wbsAll.filter(wb=>wb.name.toLowerCase().includes(dashWbSearch.toLowerCase())):_wbsAll;
+  const wbs=allWbs.filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
   const archivedWbs=allWbs.filter(wb=>wb.archived&&canViewBoard(currentUser,wb));
   const allTasks=DB.tasks;
   const COLORS=['#0d1c33','#97bcbd','#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#f97316'];
@@ -4598,12 +4625,14 @@ function renderDashboard(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <div style="position:relative">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <input id="dash-wb-search" type="text" placeholder="Search boards…" value="${escHtml(dashWbSearch)}"
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:9px;color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input id="dash-wb-search" type="text" placeholder="Search everything…" value="${escHtml(dashWbSearch)}"
           oninput="onDashWbSearch(this.value)"
-          style="padding:6px 28px 6px 28px;border:1.5px solid #e2eaf2;border-radius:8px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;outline:none;width:180px;height:34px;box-sizing:border-box;transition:border-color 0.15s"
+          onkeydown="if(event.key==='Escape'){onDashWbSearch('');this.value='';this.blur();}"
+          style="padding:6px 28px 6px 28px;border:1.5px solid #e2eaf2;border-radius:8px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;outline:none;width:220px;height:34px;box-sizing:border-box;transition:border-color 0.15s"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
-        ${dashWbSearch?`<button onclick="onDashWbSearch('')" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:14px;line-height:1;padding:0" title="Clear">×</button>`:''}
+        ${dashWbSearch?`<button onclick="onDashWbSearch('');document.getElementById('dash-wb-search').value=''" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0" title="Clear">×</button>`:''}
+        <div id="dash-search-dropdown" style="position:absolute;top:calc(100% + 4px);left:0;min-width:340px;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 24px rgba(13,28,51,0.12);z-index:900;overflow:hidden;max-height:420px;overflow-y:auto">${_dashSearchDropdownHtml(dashWbSearch)}</div>
       </div>
       <button onclick="openCreateWbForm()" class="btn btn-teal">+ New WorkBoard</button>
     </div>
