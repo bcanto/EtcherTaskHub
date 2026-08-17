@@ -2428,8 +2428,8 @@ function _dashSearchDropdownHtml(q){
   const wbName=id=>{const w=accessibleWbs.find(w=>w.id===id);return w?escHtml(w.name):'';};
   const section=(title,icon,rows)=>rows.length?`<div style="padding:6px 0 2px"><div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.07em;padding:4px 14px 2px">${icon} ${title}</div>${rows.join('')}</div>`:'';
   const row=(label,sub,onclick)=>`<div onclick="${onclick}" style="display:flex;flex-direction:column;padding:7px 14px;cursor:pointer;border-radius:6px;transition:background 0.08s" onmouseover="this.style.background='#f0f7f7'" onmouseout="this.style.background=''">
-    <span style="font-size:13px;font-weight:600;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(label)}</span>
-    ${sub?`<span style="font-size:11px;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</span>`:''}
+    <span style="font-size:13px;font-weight:600;color:#0d1c33;line-height:1.4;word-break:break-word">${escHtml(label)}</span>
+    ${sub?`<span style="font-size:11px;color:#8da2b2;margin-top:1px;line-height:1.3;word-break:break-word">${sub}</span>`:''}
   </div>`;
   return`<div style="padding:4px 6px">
     ${section('Boards','▦',boards.map(wb=>row(wb.name,'',`openWorkboard('${wb.id}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`)))}
@@ -4646,7 +4646,7 @@ function renderDashboard(){
           style="padding:6px 28px 6px 28px;border:1.5px solid #e2eaf2;border-radius:8px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;outline:none;width:220px;height:34px;box-sizing:border-box;transition:border-color 0.15s"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
         ${dashWbSearch?`<button onclick="onDashWbSearch('');document.getElementById('dash-wb-search').value=''" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0" title="Clear">×</button>`:''}
-        <div id="dash-search-dropdown" style="position:absolute;top:calc(100% + 4px);left:0;min-width:340px;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 24px rgba(13,28,51,0.12);z-index:900;overflow:hidden;max-height:420px;overflow-y:auto">${_dashSearchDropdownHtml(dashWbSearch)}</div>
+        <div id="dash-search-dropdown" style="position:absolute;top:calc(100% + 4px);left:0;min-width:420px;max-width:560px;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 24px rgba(13,28,51,0.12);z-index:900;overflow:hidden;max-height:460px;overflow-y:auto">${_dashSearchDropdownHtml(dashWbSearch)}</div>
       </div>
       <button onclick="openCreateWbForm()" class="btn btn-teal">+ New WorkBoard</button>
     </div>
@@ -8854,6 +8854,8 @@ function _mwBulkComplete(){const now=new Date().toISOString();_mwSelected.forEac
 function _mwBulkHide(){const now=new Date().toISOString();_mwSelected.forEach(id=>{const t=DB.tasks.find(x=>x.id===id);if(!t)return;if(!t.mwHiddenBy)t.mwHiddenBy=[];if(!t.mwHiddenBy.includes(currentUser.id))t.mwHiddenBy.push(currentUser.id);t.updatedAt=now;});saveDB(DB);_mwSelected.clear();renderView('my-week');}
 function _mwUnhide(id){const t=DB.tasks.find(x=>x.id===id);if(!t)return;t.mwHiddenBy=(t.mwHiddenBy||[]).filter(u=>u!==currentUser.id);t.updatedAt=new Date().toISOString();saveDB(DB);renderView('my-week');}
 function _mwToggleShowHidden(){_mwShowHidden=!_mwShowHidden;renderView('my-week');}
+function _mwPinTask(id,e){if(e)e.stopPropagation();const t=DB.tasks.find(x=>x.id===id);if(!t)return;if(!t.mwPinnedBy)t.mwPinnedBy=[];if(!t.mwPinnedBy.includes(currentUser.id))t.mwPinnedBy.push(currentUser.id);t.updatedAt=new Date().toISOString();saveDB(DB);renderView('my-week');}
+function _mwUnpinTask(id,e){if(e)e.stopPropagation();const t=DB.tasks.find(x=>x.id===id);if(!t)return;t.mwPinnedBy=(t.mwPinnedBy||[]).filter(u=>u!==currentUser.id);t.updatedAt=new Date().toISOString();saveDB(DB);renderView('my-week');}
 
 function renderMyWeek(){
   if(!currentUser||currentUser.role==='client')return _acDeniedHtml();
@@ -8875,6 +8877,8 @@ function renderMyWeek(){
   );
   const _mwHiddenCount=myTasks.filter(t=>(t.mwHiddenBy||[]).includes(currentUser.id)).length;
   if(!_mwShowHidden) myTasks=myTasks.filter(t=>!(t.mwHiddenBy||[]).includes(currentUser.id));
+  const _mwPinned=myTasks.filter(t=>(t.mwPinnedBy||[]).includes(currentUser.id));
+  const _mwPinnedIds=new Set(_mwPinned.map(t=>t.id));
   let _mwFiltered=myTasks;
   if(_mwSearch){const _q=_mwSearch.toLowerCase();_mwFiltered=_mwFiltered.filter(t=>(t.name||t.title||'').toLowerCase().includes(_q)||(t.description||'').toLowerCase().includes(_q)||(t.notes||'').toLowerCase().includes(_q));}
   if(_mwStatusFilter.length>0){_mwFiltered=_mwFiltered.filter(t=>_mwStatusFilter.includes(t.status));}
@@ -8919,6 +8923,7 @@ function renderMyWeek(){
   };
 
   _mwFiltered.forEach(t=>{
+    if(_mwPinnedIds.has(t.id)) return; // shown in pinned section
     const done=t.status==='done'||t.status==='completed'||t.percentComplete===100;
     const waiting=t.awaitingClient||t.status==='ready-approval'||t.status==='waiting-client';
     if(done){
@@ -9048,14 +9053,15 @@ function renderMyWeek(){
     const pct=t.percentComplete||0;
     const sel=_mwSelected.has(t.id);
     const isHidden=_mwShowHidden&&(t.mwHiddenBy||[]).includes(currentUser.id);
-    const rowBg=sel?'rgba(151,188,189,0.1)':'';
+    const isPinned=(t.mwPinnedBy||[]).includes(currentUser.id);
+    const rowBg=sel?'rgba(151,188,189,0.1)':isPinned?'rgba(245,158,11,0.04)':'';
     return`<div
-      role="row" tabindex="0"
+      role="row" tabindex="0" class="mw-row${isPinned?' mw-pinned':''}"
       onclick="openTaskPanel('${t.id}')"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTaskPanel('${t.id}');}"
       title="${escHtml(t.name||t.title||'')}"
       style="display:flex;align-items:center;gap:0;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background 0.08s;${isHidden?'opacity:0.5;':passive&&!sel?'opacity:0.75;':''}background:${rowBg}"
-      onmouseover="this.style.background='${sel?'rgba(151,188,189,0.16)':'#f8fbff'}'" onmouseout="this.style.background='${rowBg}'">
+      onmouseover="this.style.background='${sel?'rgba(151,188,189,0.16)':isPinned?'rgba(245,158,11,0.08)':'#f8fbff'}'" onmouseout="this.style.background='${rowBg}'">
       <label onclick="event.stopPropagation()" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:26px;align-self:stretch;cursor:pointer;padding-left:8px">
         <input type="checkbox" ${sel?'checked':''} onchange="event.stopPropagation();_mwToggleSelect('${t.id}',event)" style="width:13px;height:13px;cursor:pointer;accent-color:#97bcbd"/>
       </label>
@@ -9077,9 +9083,10 @@ function renderMyWeek(){
             ${t.recurrence?.freq?`<span title="Recurring task" style="font-size:${tagFs};color:#0d6e4e;font-weight:700">↻</span>`:''}
           </div>
         </div>
-        <div style="flex-shrink:0;text-align:right;min-width:54px">
+        <div style="flex-shrink:0;text-align:right;min-width:60px;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          <button onclick="event.stopPropagation();${isPinned?'_mwUnpinTask':'_mwPinTask'}('${t.id}',event)" title="${isPinned?'Unpin':'Pin for immediate action'}" class="mw-pin-btn" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:11px;color:${isPinned?'#f59e0b':'#c8d6e0'};line-height:1;flex-shrink:0;border-radius:4px">📌</button>
           ${due?`<div style="font-size:${tagFs};font-weight:${isOverdue?700:500};color:${isOverdue?'#dc2626':'#94a3b8'}">${isOverdue?'⚠ ':''}${due}</div>`:''}
-          ${pct>=10&&pct<100?`<div style="font-size:10px;color:#97bcbd;margin-top:2px">${pct}%</div>`:''}
+          ${pct>=10&&pct<100?`<div style="font-size:10px;color:#97bcbd">${pct}%</div>`:''}
         </div>
       </div>
     </div>`;
@@ -9131,6 +9138,8 @@ function renderMyWeek(){
   <style>
     @media(max-width:700px){#mw-grid{display:block!important;}#mw-grid>div{margin-bottom:14px;}}
     #mw-grid *:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:4px;}
+    .mw-row:not(.mw-pinned) .mw-pin-btn{opacity:0;transition:opacity 0.15s}
+    .mw-row:hover .mw-pin-btn{opacity:1!important}
   </style>
   ${_mwBulkBar}
   <div style="display:grid;gap:18px">
@@ -9167,6 +9176,16 @@ function renderMyWeek(){
         ${_stat('done','Completed',G.done.tasks.length,'#64748b')}
       </div>
     </div>
+
+    <!-- Pinned / Immediate Action -->
+    ${_mwPinned.length>0?`<div class="card" style="padding:0;overflow:hidden;border-color:#f59e0b40">
+      <div style="padding:8px 16px;background:linear-gradient(90deg,#fffbeb,#fff8f0);border-bottom:1px solid #fde68a60;display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px">📌</span>
+        <span style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#92400e;flex:1">Immediate Action</span>
+        <span style="font-size:10px;font-weight:700;background:#fef3c7;color:#b45309;padding:1px 8px;border-radius:6px">${_mwPinned.length}</span>
+      </div>
+      <div>${_mwPinned.map(t=>_row(t,'#f59e0b')).join('')}</div>
+    </div>`:''}
 
     <!-- Two-column grid -->
     <div id="mw-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
