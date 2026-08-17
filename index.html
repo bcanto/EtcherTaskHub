@@ -126,6 +126,20 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .form-input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease)}
 .form-input:focus{outline:none;border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.2)}
 .form-textarea{resize:vertical;min-height:80px}
+/* ── Rich description editor ── */
+.rich-desc-wrap{border:1.5px solid #e2eaf2;border-radius:8px;overflow:hidden;transition:border-color 0.15s}
+.rich-desc-wrap:focus-within{border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.15)}
+.rich-desc-toolbar{display:flex;align-items:center;gap:1px;padding:4px 8px;background:#f8fbff;border-bottom:1px solid #e8f0f5;flex-wrap:wrap}
+.rdt-btn{background:none;border:none;cursor:pointer;font-size:12px;color:#4a5568;border-radius:4px;padding:2px 7px;line-height:1.5;transition:background 0.1s,color 0.1s;font-family:'Lato',sans-serif}
+.rdt-btn:hover{background:#e2eaf2;color:#0d1c33}
+.rdt-sep{width:1px;height:14px;background:#e2eaf2;margin:0 3px;display:inline-block;flex-shrink:0}
+.rich-desc-editor{min-height:80px;max-height:400px;overflow-y:auto;padding:10px 12px;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;line-height:1.75;outline:none;word-break:break-word}
+.rich-desc-editor:empty::before{content:attr(data-placeholder);color:#94a3b8;pointer-events:none}
+.rich-desc-editor ul,.rich-desc-editor ol{padding-left:20px;margin:4px 0}
+.rich-desc-editor li{margin:2px 0}
+.rich-desc-editor p{margin:4px 0}
+.rich-desc-editor b,.rich-desc-editor strong{font-weight:700}
+.rich-desc-editor-sm .rich-desc-editor{min-height:60px}
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:transform 0.2s var(--ease),box-shadow 0.2s var(--ease),background 0.2s,border-color 0.2s,color 0.2s;letter-spacing:0.02em}
 .btn:active{transform:scale(0.97)!important;transition-duration:0.08s!important}
@@ -9733,8 +9747,8 @@ function openTaskModal(id, defaultGroupId){
         <div></div>
       </div>`}
       <!-- AC: description hidden from clients (internal content) -->
-      ${!isClientView?(canEdit?`<div><label class="form-label">Description</label><textarea id="tm-desc" class="form-input form-textarea" style="min-height:70px">${t.description||''}</textarea></div>`
-      :t.description?`<div style="background:#f8fbff;border-radius:8px;padding:12px;font-size:13px;color:#4a5568;line-height:1.6">${escHtml(t.description)}</div>`:''):''}
+      ${!isClientView?(canEdit?`<div><label class="form-label">Description</label>${_descEditorHtml('tm-desc',t.description,'rich-desc-editor-sm')}</div>`
+      :t.description?`<div style="background:#f8fbff;border-radius:8px;padding:12px;font-size:13px;color:#4a5568;line-height:1.6;word-break:break-word">${_descToHtml(t.description)}</div>`:''):''}
 
       <!-- AC: subitems hidden from clients entirely -->
       ${!isClientView&&id?`<div>
@@ -9907,6 +9921,7 @@ function openTaskModal(id, defaultGroupId){
     </div>`;
 
   document.getElementById('task-modal').classList.remove('hidden');
+  setTimeout(()=>_initDescEditor('tm-desc',()=>{}),0);
 }
 function closeTaskModal(){
   document.getElementById('task-modal').classList.add('hidden');
@@ -9984,7 +9999,7 @@ function saveTask(){
     if(pct===100){t.status='done';if(!t.completedAt)t.completedAt=new Date().toISOString();}
     else if(pct>0&&['todo','not-started','done','completed'].includes(st)){t.status='in-progress';t.completedAt=null;}
     else if(pct===0&&(st==='done'||st==='completed')){t.status='todo';t.completedAt=null;}}
-    t.description=document.getElementById('tm-desc')?.value||'';
+    t.description=document.getElementById('tm-desc')?.innerHTML||'';
     // Dependency update — block circular dependencies, sync DB.dependencies entity list
     const depEl=document.getElementById('tm-deps');
     if(depEl){
@@ -10073,7 +10088,7 @@ function saveTask(){
       hourBudget:parseFloat(document.getElementById('tm-budget').value)||0,
       lockedDates:false,
       order:0,
-      description:document.getElementById('tm-desc')?.value||'',
+      description:document.getElementById('tm-desc')?.innerHTML||'',
       dependencies:[],tags:[],archived:false,
       createdAt:_taskNow,updatedAt:_taskNow,completedAt:null
     };
@@ -10306,6 +10321,44 @@ function renderWbTabs(activeView){
 // ═══════════════════════════════════════════════════════════
 // Escapes for both text content and attribute values (& must be first)
 function escHtml(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');}
+// ── Rich text description editor ────────────────────────────
+function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s))return s;return escHtml(s).replace(/\n/g,'<br>');}
+function _descSanitize(html){try{const d=document.createElement('div');d.innerHTML=html;d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta').forEach(e=>e.remove());d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','src','alt','title','type']);[...e.attributes].forEach(a=>{if(!keep.has(a.name)||/javascript:/i.test(a.value))e.removeAttribute(a.name);});if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
+function _descEditorHtml(id,content,cls){const html=_descToHtml(content);return`<div class="rich-desc-wrap${cls?' '+cls:''}"><div class="rich-desc-toolbar"><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button><span class="rdt-sep"></span><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">• list</button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="1. list">1. list</button></div><div id="${id}" contenteditable="true" class="rich-desc-editor" data-placeholder="Add a description…">${html}</div></div>`;}
+let _pendingPaste=null;
+function _initDescEditor(id,onSave){
+  const el=document.getElementById(id);if(!el)return;
+  let _dt;
+  el.addEventListener('input',()=>{clearTimeout(_dt);_dt=setTimeout(()=>onSave(el.innerHTML),800);});
+  el.addEventListener('blur',()=>{clearTimeout(_dt);onSave(el.innerHTML);});
+  el.addEventListener('paste',e=>_handleDescPaste(e,id));
+}
+function _handleDescPaste(e,id){
+  const cb=e.clipboardData||window.clipboardData;
+  const html=cb.getData('text/html');const plain=cb.getData('text/plain');
+  e.preventDefault();
+  if(!html||!/<[a-z]/i.test(html)){document.execCommand('insertText',false,plain);return;}
+  _pendingPaste={html:_descSanitize(html),plain};
+  const sel=window.getSelection();const rect=sel?.rangeCount?sel.getRangeAt(0).getBoundingClientRect():null;
+  _showPasteChoice(rect,id);
+}
+function _showPasteChoice(rect,id){
+  document.getElementById('paste-choice-popup')?.remove();
+  const pop=document.createElement('div');pop.id='paste-choice-popup';
+  const top=Math.min((rect?.bottom||0)+window.scrollY+4,window.scrollY+window.innerHeight-60);
+  const left=Math.max((rect?.left||80),8);
+  pop.style.cssText=`position:absolute;top:${top}px;left:${left}px;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;box-shadow:0 4px 18px rgba(13,28,51,0.14);z-index:9999;display:flex;overflow:hidden;font-family:'Jost',sans-serif;font-size:12px`;
+  pop.innerHTML=`<div style="padding:7px 10px;font-weight:600;color:#8da2b2;border-right:1px solid #f0f4f8;display:flex;align-items:center;gap:4px;white-space:nowrap">Paste as:</div><button onclick="_applyPaste('${id}','plain');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:600;color:#0d1c33;font-size:12px;font-family:'Jost',sans-serif;border-right:1px solid #f0f4f8" onmouseover="this.style.background='#f0f7f7'" onmouseout="this.style.background='#fff'">Plain text</button><button onclick="_applyPaste('${id}','html');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:700;color:#0d6e4e;font-size:12px;font-family:'Jost',sans-serif" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">Keep formatting</button>`;
+  document.body.appendChild(pop);
+  const dismiss=(e)=>{if(!pop.contains(e.target)){pop.remove();document.removeEventListener('mousedown',dismiss);}};
+  setTimeout(()=>document.addEventListener('mousedown',dismiss),0);
+}
+function _applyPaste(id,mode){
+  if(!_pendingPaste)return;
+  const el=document.getElementById(id);if(!el)return;el.focus();
+  document.execCommand(mode==='plain'?'insertText':'insertHTML',false,mode==='plain'?_pendingPaste.plain:_pendingPaste.html);
+  _pendingPaste=null;
+}
 
 // ── Inline add ──
 function wsStartInlineAdd(sectionId,groupId){
@@ -11397,7 +11450,7 @@ function renderTpDetails(task){
           <span id="tp-desc-expand-label">Expand</span>
         </button>
       </div>
-      <textarea id="tp-desc" data-expanded="0" style="width:100%;font-family:'Lato',sans-serif;font-size:13px;color:#1a2940;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;resize:vertical;min-height:80px;line-height:1.75;box-sizing:border-box;transition:border-color 0.15s,min-height 0.18s;outline:none" placeholder="Add a description..." onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2';tpSaveField('description',this.value)">${escHtml(task.description||'')}</textarea>
+      ${_descEditorHtml('tp-desc',task.description)}
     </div>
     ${currentUser?.role!=='client'?_recurSummaryRow(task):''}
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
@@ -11429,11 +11482,11 @@ function tpToggleDescExpand(){
   if(!ta)return;
   const expanded=ta.dataset.expanded==='1';
   if(expanded){
-    ta.style.minHeight='80px';ta.style.height='auto';ta.dataset.expanded='0';
+    ta.style.maxHeight='400px';ta.dataset.expanded='0';
     if(lbl)lbl.textContent='Expand';
     if(icon)icon.innerHTML='<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
   }else{
-    ta.style.minHeight=Math.max(ta.scrollHeight,260)+'px';ta.dataset.expanded='1';
+    ta.style.maxHeight='none';ta.dataset.expanded='1';
     if(lbl)lbl.textContent='Collapse';
     if(icon)icon.innerHTML='<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>';
   }
@@ -11654,7 +11707,7 @@ function tpShowTab(tabName){
   if(el)el.classList.add('active');
   const body=document.getElementById('tp-body');
   if(!body)return;
-  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');const cs=body.querySelector('#tp-comment-input');if(cs)cs.scrollIntoView({block:'nearest',behavior:'smooth'});const td=document.getElementById('tp-desc');if(td&&td.scrollHeight>80)td.style.minHeight=Math.min(td.scrollHeight,200)+'px';},0);}
+  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');const cs=body.querySelector('#tp-comment-input');if(cs)cs.scrollIntoView({block:'nearest',behavior:'smooth'});_initDescEditor('tp-desc',v=>tpSaveField('description',v));},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
