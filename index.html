@@ -40,27 +40,28 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text-1);-web
 h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .hidden{display:none!important}
 /* ── Sidebar ── */
-#sidebar{width:215px;height:100vh;background:linear-gradient(180deg,#0c1b31 0%,#071422 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.04);overflow:hidden}
+#sidebar{width:215px;height:100vh;background:linear-gradient(168deg,#0e2038 0%,#091628 52%,#060e1a 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.05);overflow:hidden}
+#sidebar::before{content:'';position:absolute;top:-80px;left:-50px;width:300px;height:260px;background:radial-gradient(ellipse at 40% 35%,rgba(151,188,189,0.07) 0%,transparent 65%);pointer-events:none;z-index:0}
 #app-shell{display:flex;min-height:100vh}
 #main-content{margin-left:215px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.nav-item{position:relative;display:flex;align-items:center;gap:7px;padding:6px 10px;margin:1px 6px;color:#4a6a84;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;border-radius:7px;transition:background 0.2s var(--ease),color 0.2s var(--ease);letter-spacing:0.01em;user-select:none}
-.nav-item:hover{background:rgba(255,255,255,0.07);color:#a8c8d8}
-.nav-item.active{background:rgba(151,188,189,0.15);color:#e8f0f6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd}
-.nav-item.active .nav-icon{opacity:1}
+.nav-item{position:relative;display:flex;align-items:center;gap:8px;padding:6px 11px;margin:1px 8px;color:#3e5c75;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;border-radius:8px;transition:background 0.18s,color 0.18s;letter-spacing:0.015em;user-select:none}
+.nav-item:hover{background:rgba(151,188,189,0.1);color:#97bcbd}
+.nav-item.active{background:linear-gradient(90deg,rgba(151,188,189,0.2) 0%,rgba(151,188,189,0.05) 100%);color:#e2eef6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd}
+.nav-item.active .nav-icon{opacity:1;color:#97bcbd}
 /* Sidebar: collapsible sections + pinned items */
 .nav-sec-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:color 0.15s var(--ease)}
-.nav-sec-toggle:hover{color:#3d5f80}
+.nav-sec-toggle:hover{color:#3d6080}
 .nav-sec-toggle:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px;border-radius:4px}
-.nav-sec-chevron{font-size:9px;color:#2d4a66;line-height:1;display:inline-block;transition:transform 0.2s var(--ease);margin-left:6px}
+.nav-sec-chevron{font-size:9px;color:#253e58;line-height:1;display:inline-block;transition:transform 0.2s var(--ease);margin-left:6px}
 .nav-sec-body{overflow:hidden;max-height:1200px;opacity:1;transition:max-height 0.25s var(--ease),opacity 0.2s var(--ease)}
 .nav-sec-body.collapsed{max-height:0;opacity:0}
-.nav-pin-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:5px;background:rgba(13,28,51,0.92);color:#5a7a96;cursor:pointer;opacity:0;transition:opacity 0.15s var(--ease),color 0.15s var(--ease)}
+.nav-pin-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0;border:none;border-radius:5px;background:rgba(7,16,30,0.92);color:#4a6a88;cursor:pointer;opacity:0;transition:opacity 0.15s var(--ease),color 0.15s var(--ease)}
 .nav-item:hover .nav-pin-btn,.nav-pin-btn:focus-visible{opacity:1}
 .nav-pin-btn:hover{color:#c8dae8}
 .nav-pin-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
 .nav-pin-btn:active{transform:translateY(-50%) scale(0.9)}
 .nav-pin-btn.pinned{color:#97bcbd}
-.nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.8}
+.nav-icon{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.75}
 /* ── Topbar ── */
 #topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(13,28,51,0.03)}
 /* ── Cards ── */
@@ -220,7 +221,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .notes-list-item.active{background:var(--navy);color:#fff}
 /* ── Avatar ── */
 .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Jost',sans-serif;color:#fff;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.12)}
-#sidebar-avatar{border:2px solid currentColor;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.45),0 1px 4px rgba(0,0,0,0.2)}
+#sidebar-avatar{border:2px solid rgba(151,188,189,0.6);box-shadow:0 0 0 1px rgba(151,188,189,0.15),0 2px 8px rgba(0,0,0,0.3)}
 /* ── Progress bar ── */
 .progress-bar{background:#e4eaf3;border-radius:4px;height:6px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:width 0.45s var(--ease)}
@@ -255,7 +256,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── Misc ── */
 .notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;animation:_notifPulse 2s ease-in-out infinite}
 @keyframes _notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 4px rgba(239,68,68,0)}}
-.section-header{font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1e3a54;padding:10px 16px 4px}
+.section-header{font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1c3856;padding:12px 19px 5px}
 .stat-card{background:#fff;border-radius:var(--r-md);padding:18px 18px 28px;box-shadow:var(--sh-xs);border:1px solid rgba(13,28,51,0.06);border-top-width:3px}
 .stat-val{font-family:'Jost',sans-serif;font-size:30px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-0.02em}
 .stat-label{font-size:11px;font-weight:600;color:var(--slate);margin-top:5px;text-transform:uppercase;letter-spacing:0.04em}
@@ -488,19 +489,19 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <!-- SIDEBAR -->
   <aside id="sidebar">
     <!-- Logo -->
-    <div style="padding:16px 12px 20px;border-bottom:1px solid rgba(255,255,255,0.06)">
-      <img src="Etcher White Logo.png" alt="Etcher" style="width:100%;height:auto;display:block;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
+    <div style="padding:22px 18px 24px;border-bottom:1px solid rgba(255,255,255,0.05);position:relative;z-index:1">
+      <img src="Etcher White Logo.png" alt="Etcher" style="width:97%;height:auto;display:block;margin:0 auto;opacity:0.9;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
     </div>
 
     <!-- User -->
-    <div id="user-info" style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+    <div id="user-info" style="padding:9px 12px 9px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:9px;background:rgba(0,0,0,0.12);position:relative;z-index:1">
       <div style="position:relative;flex-shrink:0">
-        <div id="sidebar-avatar" class="avatar" style="width:28px;height:28px;background:#97bcbd;color:#0d1c33;font-size:11px;font-weight:700">?</div>
-        <div style="position:absolute;bottom:0;right:0;width:7px;height:7px;background:#22c55e;border-radius:50%;border:2px solid #091628"></div>
+        <div id="sidebar-avatar" class="avatar" style="width:28px;height:28px;background:#97bcbd;color:#0c1a2e;font-size:11px;font-weight:700">?</div>
+        <div style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;background:#22c55e;border-radius:50%;border:2px solid #091628"></div>
       </div>
       <div style="flex:1;min-width:0">
-        <div id="sidebar-name" style="font-family:'Jost',sans-serif;font-size:11.5px;font-weight:600;color:#e2ecf4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">User</div>
-        <div id="sidebar-role" style="font-size:9.5px;color:#2d4a66;text-transform:uppercase;letter-spacing:0.07em;margin-top:1px">Staff</div>
+        <div id="sidebar-name" style="font-family:'Jost',sans-serif;font-size:11.5px;font-weight:600;color:#cfe0ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">User</div>
+        <div id="sidebar-role" style="font-size:9.5px;color:#28465e;text-transform:uppercase;letter-spacing:0.08em;margin-top:1px">Staff</div>
       </div>
     </div>
 
@@ -508,7 +509,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <div id="wb-context" style="display:none"></div>
 
     <!-- Nav -->
-    <nav id="main-nav" style="flex:1;padding:6px 0;overflow-y:auto">
+    <nav id="main-nav" style="flex:1;padding:8px 0;overflow-y:auto;position:relative;z-index:1">
       <div id="nav-pinned-container"></div>
       <div class="section-header nav-sec-toggle" id="nav-overview-section" onclick="toggleNavSection('overview')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('overview')}">Overview<span class="nav-sec-chevron" id="nav-chev-overview">&#9662;</span></div>
       <div class="nav-sec-body" id="nav-section-overview">
@@ -533,7 +534,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       </div>
 
       <!-- WorkBoards -->
-      <div id="nav-workboards-header" style="display:flex;align-items:center;padding:10px 16px 4px;justify-content:space-between">
+      <div id="nav-workboards-header" style="display:flex;align-items:center;padding:12px 19px 5px;justify-content:space-between">
         <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('workboards')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('workboards')}">WorkBoards<span class="nav-sec-chevron" id="nav-chev-workboards">&#9662;</span></span>
         <div style="position:relative" onclick="event.stopPropagation()">
           <button id="wb-add-btn" onclick="toggleWbAddMenu()" title="Add WorkBoard or Folder"
@@ -601,8 +602,8 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     </nav>
 
     <!-- Footer -->
-    <div style="padding:10px 10px 14px;border-top:1px solid rgba(255,255,255,0.06)">
-      <button onclick="doLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#3d5872;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:background 0.15s,color 0.15s;letter-spacing:0.02em" onmouseover="this.style.background='rgba(255,255,255,0.09)';this.style.color='#8da2b2'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='#3d5872'">
+    <div style="padding:10px 10px 14px;border-top:1px solid rgba(255,255,255,0.05);position:relative;z-index:1">
+      <button onclick="doLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);color:#334e68;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:500;cursor:pointer;transition:background 0.18s,color 0.18s,border-color 0.18s;letter-spacing:0.03em" onmouseover="this.style.background='rgba(151,188,189,0.1)';this.style.color='#7aaabb';this.style.borderColor='rgba(151,188,189,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.035)';this.style.color='#334e68';this.style.borderColor='rgba(255,255,255,0.06)'">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11 11l3-3-3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="8" x2="6" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Sign Out
       </button>
