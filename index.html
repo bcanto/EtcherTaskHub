@@ -319,7 +319,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── WS actions / misc ── */
 .ws-add-row:hover td{background:#f4f8ff;color:var(--navy)}
 .ws-actions{opacity:0;display:flex;gap:2px;justify-content:center}
-.ws-row:hover .ws-actions{opacity:1}
+.ws-row:hover .ws-actions,.ws-subrow:hover .ws-actions{opacity:1}
 .ws-actions button{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:5px;color:#8da2b2;font-size:12px;transition:background 0.15s,color 0.15s}
 .ws-actions button:hover{background:#eaeef5;color:var(--text-1)}
 /* ── Workspace tabs ── */
@@ -2199,14 +2199,23 @@ function launchApp(){
     const _ln=JSON.parse(sessionStorage.getItem('etcher_last_nav')||'null');
     if(_ln?.view&&_ln.view!=='dashboard'&&_ln.wbId){
       const _wb=DB.workboards?.find(w=>w.id===_ln.wbId);
-      if(_wb&&canViewBoard(currentUser,_wb)){currentWorkboard=_wb;navigate(_ln.view);}
-      else navigate('dashboard');
+      if(_wb&&canViewBoard(currentUser,_wb)){
+        currentWorkboard=_wb;
+        const _sc=_wsStateRestore();
+        navigate(_ln.view);
+        if(_sc){setTimeout(()=>{const vc=document.getElementById('view-container');if(vc)vc.scrollTop=_sc;},80);}
+      } else navigate('dashboard');
     } else if(_ln?.view){
       navigate(_ln.view);
     } else {
       navigate('dashboard');
     }
   }catch(_){navigate('dashboard');}
+  // Persist scroll position across refresh
+  try{
+    const _vc=document.getElementById('view-container');
+    if(_vc){let _st=null;_vc.addEventListener('scroll',()=>{clearTimeout(_st);_st=setTimeout(_wsStateSave,250);});}
+  }catch(_){}
   updateNotifBadge();updateClientReqBadge();
   startIntakePoller();
   _checkRecurringTasks();
@@ -10624,12 +10633,31 @@ function renderCommsPanel(){
   </div>`;
 }
 
-function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);renderView('workspace');}
+function _wsStateSave(){
+  if(currentView!=='workspace'||!currentWorkboard)return;
+  try{
+    const vc=document.getElementById('view-container');
+    sessionStorage.setItem('etcher_ws_state_'+currentWorkboard.id,JSON.stringify({
+      expanded:[...wsExpanded],collapsed:[...wsCollapsed],scroll:vc?.scrollTop||0
+    }));
+  }catch(_){}
+}
+function _wsStateRestore(){
+  if(!currentWorkboard)return 0;
+  try{
+    const s=JSON.parse(sessionStorage.getItem('etcher_ws_state_'+currentWorkboard.id)||'null');
+    if(!s)return 0;
+    wsExpanded=new Set(s.expanded||[]);
+    wsCollapsed=new Set(s.collapsed||[]);
+    return s.scroll||0;
+  }catch(_){return 0;}
+}
+function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);renderView('workspace');_wsStateSave();}
 function wsToggleExpand(id){
   const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
   if(!hasChildren&&!wsExpanded.has(id)){wsStartInlineSubitem(id);return;}
   wsExpanded.has(id)?wsExpanded.delete(id):wsExpanded.add(id);
-  renderView('workspace');
+  renderView('workspace');_wsStateSave();
 }
 function wsToggleDone(id,checked){
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
@@ -10643,12 +10671,31 @@ function wsToggleSelect(id,checked){
   updateBulkBar();
 }
 function wsSelectAll(checked){
-  if(checked)getFilteredTasks().forEach(t=>wsSelected.add(t.id));
-  else wsSelected.clear();
+  if(checked){
+    getFilteredTasks().forEach(t=>{
+      wsSelected.add(t.id);
+      // Also select visible subitems when parent is expanded
+      if(wsExpanded.has(t.id)){
+        (DB.tasks||[]).filter(c=>c.parentTaskId===t.id&&!c.archived)
+          .forEach(c=>wsSelected.add(c.id));
+      }
+    });
+  } else {
+    wsSelected.clear();
+  }
   renderView('workspace');
   updateBulkBar();
 }
 function updateBulkBar(){
+  // Sync header checkbox state
+  const hcb=document.getElementById('ws-select-all-cb');
+  if(hcb){
+    const topIds=getFilteredTasks().map(t=>t.id);
+    const allSel=topIds.length>0&&topIds.every(id=>wsSelected.has(id));
+    const anySel=wsSelected.size>0;
+    hcb.checked=allSel;
+    hcb.indeterminate=!allSel&&anySel;
+  }
   const bar=document.getElementById('ws-bulk-bar');
   if(!bar)return;
   const count=wsSelected.size;
@@ -11104,7 +11151,7 @@ function renderWorkspace(){
     <table class="ws-table">
       <thead>
         <tr>
-          <th style="width:36px;text-align:center"><input type="checkbox" onchange="wsSelectAll(this.checked)" style="cursor:pointer;accent-color:#97bcbd" title="Select all"/></th>
+          <th style="width:36px;text-align:center"><input type="checkbox" id="ws-select-all-cb" onchange="wsSelectAll(this.checked)" style="cursor:pointer;accent-color:#97bcbd" title="Select all"/></th>
           <th class="ws-sort-hdr" onclick="wsSortBy('name')" style="min-width:240px">Task Name${sortIcon('name')}</th>
           ${visCols.map(c=>`<th class="ws-sort-hdr ws-col-draggable" draggable="true"
             ondragstart="_wsColDragStart(event,'${c.key}')"
@@ -11272,7 +11319,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const hours=hoursForTask(t.id);
   const deps=(t.dependencies||[]).length;
   const cr=checklistRatio(t.id);
-  const isSelected=!isSubitem&&wsSelected.has(t.id);
+  const isSelected=wsSelected.has(t.id);
   const isOverdue=t.endDate&&t.endDate<toDateStr(new Date())&&t.status!=='done'&&t.status!=='completed'&&!t.archived;
   const commentCount=_wsCache?.commentCountMap.get(t.id)||( (DB.comments||[]).filter(c=>c.taskId===t.id).length );
   const attachCount=_wsCache?.fileCountMap.get(t.id)||( (DB.taskFiles||[]).filter(f=>f.taskId===t.id).length );
@@ -11283,14 +11330,14 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const indent=10;
 
   return`
-  <tr class="${isSubitem?'ws-subrow':`ws-row${isSelected?' ws-row-selected':''}`}"${isSubitem?' style="background:#f5f7fc"':t.archived?' style="opacity:0.45"':''}>
+  <tr class="${isSubitem?`ws-subrow${isSelected?' ws-row-selected':''}`:`ws-row${isSelected?' ws-row-selected':''}`}"${isSubitem&&!isSelected?' style="background:#f5f7fc"':t.archived&&!isSubitem?' style="opacity:0.45"':''}>
     <td style="text-align:center;width:36px" onclick="event.stopPropagation()">
       ${isSubitem?'':`<input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>`}
     </td>
     <td onclick="openTaskPanel('${t.id}')" style="cursor:pointer;max-width:300px">
-      <div style="display:flex;align-items:center;gap:5px;padding:0 10px 0 ${indent}px;${isSubitem?'':'border-left:3px solid '+groupColor}">
+      <div style="display:flex;align-items:center;gap:5px;padding:0 10px 0 ${isSubitem?13:indent}px;${isSubitem?'':'border-left:3px solid '+groupColor}">
         ${isSubitem
-          ?`<svg width="22" height="38" viewBox="0 0 22 38" fill="none" style="flex-shrink:0;margin-left:-2px"><line x1="8" y1="0" x2="8" y2="${isLast?19:38}" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="19" x2="22" y2="19" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/></svg>`
+          ?`<input type="checkbox" ${isSelected?'checked':''} onchange="event.stopPropagation();wsToggleSelect('${t.id}',this.checked)" onclick="event.stopPropagation()" style="cursor:pointer;accent-color:#97bcbd;flex-shrink:0;margin-right:2px"/><svg width="22" height="38" viewBox="0 0 22 38" fill="none" style="flex-shrink:0;margin-left:-2px"><line x1="8" y1="0" x2="8" y2="${isLast?19:38}" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="19" x2="22" y2="19" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/></svg>`
           :(hasChildren||currentUser?.role!=='client'
             ?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" style="background:none;border:none;cursor:pointer;padding:2px;color:${hasChildren?'#8da2b2':'#d4dde8'};font-size:9px;width:14px;flex-shrink:0;line-height:1">${wsExpanded.has(t.id)?'▼':'▶'}</button>`
             :'<span style="width:14px;flex-shrink:0"></span>')}
@@ -12821,7 +12868,7 @@ function wsBuildDropdownHtml(taskId,field){
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
-            ${href?_iconBtn(href,'Open',_eyeSvg,false):_iconBtnDim(_eyeSvg)}
+            ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')" style="display:inline-flex;align-items:center;justify-content:center;color:#97bcbd;text-decoration:none;padding:3px 5px;border-radius:4px;border:1px solid #e2eaf2;line-height:1;background:none;cursor:pointer" onmouseover="this.style.color='#0d6e4e';this.style.borderColor='#97bcbd'" onmouseout="this.style.color='#97bcbd';this.style.borderColor='#e2eaf2'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
             ${!isLink?(href?_iconBtn(href,'Download',_dlSvg,escHtml(f.name)):_iconBtnDim(_dlSvg)):''}
             <button onclick="wsDeleteAttachment('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;cursor:pointer;color:#d0d8e4;padding:3px 5px;border-radius:4px;line-height:1" onmouseover="this.style.color='#dc2626';this.style.borderColor='#fee2e2'" onmouseout="this.style.color='#d0d8e4';this.style.borderColor='transparent'" title="Remove">${_xSvg}</button>
           </div>
@@ -13123,6 +13170,36 @@ function wsAddAttachment(taskId,input){
     reader.readAsDataURL(f);
   };
   process(Array.from(input.files));
+}
+function wsPreviewFile(id,name,type){
+  const href=_getFileData(id);
+  if(!href){showToast&&showToast('File data not found','error');return;}
+  const isImg=type&&type.startsWith('image/');
+  const isPdf=type==='application/pdf'||(name||'').toLowerCase().endsWith('.pdf');
+  let body='';
+  if(isImg){
+    body=`<img src="${href}" style="max-width:100%;max-height:calc(85vh - 80px);object-fit:contain;display:block;border-radius:4px"/>`;
+  }else if(isPdf){
+    body=`<iframe src="${href}" style="width:min(820px,82vw);height:calc(85vh - 80px);border:none;display:block"></iframe>`;
+  }else{
+    body=`<div style="padding:48px 32px;text-align:center"><div style="font-size:36px;margin-bottom:12px">📄</div><div style="font-size:14px;color:#4a5568;margin-bottom:16px">Preview not available for this file type.</div><a href="${href}" download="${name}" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;padding:8px 18px;border-radius:8px;text-decoration:none">↓ Download ${name}</a></div>`;
+  }
+  const ov=document.createElement('div');
+  ov.id='_file-preview-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`<div style="background:#fff;border-radius:12px;overflow:hidden;max-width:min(900px,92vw);box-shadow:0 24px 64px rgba(0,0,0,0.45);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e8edf4;flex-shrink:0">
+      <span style="font-size:13px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">${escHtml(name)}</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <a href="${href}" download="${escHtml(name)}" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#6b8399;text-decoration:none;padding:4px 10px;border:1px solid #e2eaf2;border-radius:6px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#6b8399'">↓ Download</a>
+        <button onclick="document.getElementById('_file-preview-ov').remove()" style="background:none;border:none;cursor:pointer;color:#6b8399;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">×</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;background:#f4f7fc;overflow:auto">${body}</div>
+  </div>`;
+  document.getElementById('_file-preview-ov')?.remove();
+  document.body.appendChild(ov);
 }
 function wsDeleteAttachment(attId){
   _deleteFileData(attId);
