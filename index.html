@@ -11335,7 +11335,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
       <div style="display:inline-flex;align-items:center;gap:5px;padding:0 6px">
         <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${effectivePct}%;background:${effectivePct===100?'#22c55e':'#97bcbd'}"></div></div>
         <span style="font-size:11px;color:${effectivePct===100?'#16a34a':'#6b8399'}">${effectivePct}%</span>
-        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">⊞${cr.done}/${cr.total}</span>`:''}
+        ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">${cr.done}/${cr.total}</span>`:''}
         ${hasChildren&&!isSubitem?'':'<span class="ws-cell-caret">▾</span>'}
       </div>
     </td>`:''}
