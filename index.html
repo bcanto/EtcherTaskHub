@@ -11621,9 +11621,9 @@ function renderTpSubtasks(taskId){
         const owner=DB.staff.find(s=>s.id===si.ownerId);
         const isDone=si.status==='done'||si.status==='completed';
         const siPct=si.percentComplete||0;
-        return`<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff;cursor:pointer;transition:border-color 0.1s" onclick="openTaskPanel('${si.id}')" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#e2eaf2'">
+        return`<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff;cursor:pointer;transition:border-color 0.1s" onclick="openTaskPanel('${si.id}')" onmouseover="this.style.borderColor='#97bcbd';this.querySelector('.si-actions').style.opacity='1'" onmouseout="this.style.borderColor='#e2eaf2';this.querySelector('.si-actions').style.opacity='0'">
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:500;color:${isDone?'#b0bec5':'#1a2940'};text-decoration:${isDone?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${escHtml(si.name)}</div>
+            <div id="si-name-${si.id}" style="font-size:13px;font-weight:500;color:${isDone?'#b0bec5':'#1a2940'};text-decoration:${isDone?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${escHtml(si.name)}</div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <span style="background:${sm.bg};color:${sm.color};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${sm.label}</span>
               <span style="background:${pm.bg};color:${pm.color};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">${pm.icon} ${pm.label}</span>
@@ -11636,7 +11636,10 @@ function renderTpSubtasks(taskId){
               <div class="progress-bar" style="width:28px"><div class="progress-fill" style="width:${siPct}%;background:${siPct===100?'#22c55e':'#97bcbd'}"></div></div>
               <span style="font-size:10px;color:#8da2b2">${siPct}%</span>
             </div>
-            <button onclick="event.stopPropagation();tpDeleteSubitem('${si.id}')" style="border:none;background:none;cursor:pointer;color:#c0cdd8;font-size:15px;line-height:1;padding:0 2px" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">&#215;</button>
+            <div class="si-actions" style="display:flex;align-items:center;gap:2px;opacity:0;transition:opacity 0.15s">
+              <button onclick="event.stopPropagation();tpRenameSubitem('${si.id}')" title="Rename" style="border:none;background:none;cursor:pointer;color:#c0cdd8;padding:2px 3px;line-height:1;border-radius:4px;transition:color 0.15s" onmouseover="this.style.color='#3d7abf'" onmouseout="this.style.color='#c0cdd8'"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5a1.5 1.5 0 0 1 2.121 2.121L5 13.243l-2.828.707.707-2.828L11.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+              <button onclick="event.stopPropagation();tpDeleteSubitem('${si.id}')" title="Delete" style="border:none;background:none;cursor:pointer;color:#c0cdd8;font-size:15px;line-height:1;padding:0 2px;transition:color 0.15s" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">&#215;</button>
+            </div>
           </div>
         </div>`;
       }).join('')}
@@ -11956,6 +11959,34 @@ function tpDeleteSubitem(siId){
   }
   saveDB(DB);
   tpShowTab('subtasks');
+}
+function tpRenameSubitem(siId){
+  const nameEl=document.getElementById('si-name-'+siId);
+  const si=DB.tasks.find(t=>t.id===siId);
+  if(!nameEl||!si)return;
+  const orig=si.name||'';
+  const inp=document.createElement('input');
+  inp.value=orig;
+  inp.style.cssText='width:100%;border:none;background:transparent;font-size:13px;font-weight:500;color:#1a2940;outline:none;padding:0;font-family:inherit';
+  nameEl.style.overflow='visible';nameEl.style.whiteSpace='normal';
+  nameEl.textContent='';
+  nameEl.appendChild(inp);
+  inp.focus();inp.select();
+  const save=()=>{
+    const newName=inp.value.trim();
+    if(newName&&newName!==orig){
+      si.name=newName;si.updatedAt=new Date().toISOString();
+      const idx=DB.tasks.findIndex(t=>t.id===siId);if(idx>=0)DB.tasks[idx]=si;
+      saveDB(DB);
+    }
+    const body=document.getElementById('tp-body');
+    if(body)body.innerHTML=renderTpSubtasks(si.parentTaskId);
+  };
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();inp.removeEventListener('blur',save);save();}
+    if(e.key==='Escape'){const body=document.getElementById('tp-body');if(body)body.innerHTML=renderTpSubtasks(si.parentTaskId);}
+  });
 }
 // Legacy aliases (no-op stubs to prevent JS errors if referenced from old data)
 function tpToggleChecklist(){}
