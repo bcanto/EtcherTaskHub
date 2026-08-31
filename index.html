@@ -564,7 +564,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       </div>
       <div class="nav-item" data-view="time" onclick="navigate('time')" id="nav-time-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3.2l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        Time Tracking
+        Timesheets
       </div>
       <div class="nav-item" data-view="reports" onclick="navigate('reports')" id="nav-reports-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12.5L5.5 8 8.5 10.5 13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="13" cy="4" r="1.5" fill="currentColor"/></svg></span>
@@ -577,6 +577,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div class="nav-item" data-view="notes" onclick="navigate('notes')" id="nav-notes-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><line x1="5.5" y1="5.5" x2="10.5" y2="5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="8" x2="10.5" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5.5" y1="10.5" x2="8.5" y2="10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Client Notes
+      </div>
+      <div class="nav-item" data-view="quotes" onclick="navigate('quotes')" id="nav-quotes-item">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5h6M5 8h6M5 11h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="11.5" cy="11.5" r="2.5" fill="currentColor" fill-opacity=".15" stroke="currentColor" stroke-width="1.2"/><path d="M11.5 10.5v1.5l1 .7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg></span>
+        Quotes
       </div>
       </div>
 
@@ -718,6 +722,7 @@ const SEED = {
 
   // ── Clients ────────────────────────────────────────────
   clients:[
+    {id:'c0',name:'Etcher Solutions',  contactName:'Bruna Canto',   contactEmail:'b.canto@etchersolutions.com', portalEnabled:false, loginEmail:'', loginPassword:'', archived:false, color:'#0d6e4e', shortCode:'ETR', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'c1',name:'General Cranes',    contactName:'John Smith',    contactEmail:'john@generalcranes.com.au',  portalEnabled:true,  loginEmail:'client@generalcranes.com.au', loginPassword:'TaskHub123', archived:false, color:'#c2410c', shortCode:'GCR', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'c2',name:'Daltech',           contactName:'Sarah Johnson', contactEmail:'sarah@daltech.com.au',       portalEnabled:true,  loginEmail:'client@daltech.com.au',        loginPassword:'TaskHub123', archived:false, color:'#1d6fb8', shortCode:'DAL', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
     {id:'c3',name:'Retained Services', contactName:'Michael Brown', contactEmail:'michael@retained.com.au',   portalEnabled:true,  loginEmail:'client@retained.com.au',       loginPassword:'TaskHub123', archived:false, color:'#7c3aed', shortCode:'RTS', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
@@ -1018,6 +1023,19 @@ function _migrateDB(data){
   if(!data.migrationFlags)     data.migrationFlags      = {};
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   if(!data.proFormaInvoices)   data.proFormaInvoices    = [];
+  if(!data.quotes)             data.quotes              = [];
+  // Ensure recipient fields on existing quotes
+  (data.quotes||[]).forEach(q=>{
+    if(q.recipientName===undefined)q.recipientName='';
+    if(q.recipientContact===undefined)q.recipientContact='';
+    if(q.recipientEmail===undefined)q.recipientEmail='';
+  });
+  // Add coOwnerId to existing tasks
+  (data.tasks||[]).forEach(t=>{if(t.coOwnerId===undefined)t.coOwnerId=null;});
+  // Seed Etcher Solutions as internal client (c0) if missing
+  if(!(data.clients||[]).find(c=>c.id==='c0')){
+    (data.clients=data.clients||[]).unshift({id:'c0',name:'Etcher Solutions',contactName:'Bruna Canto',contactEmail:'b.canto@etchersolutions.com',portalEnabled:false,loginEmail:'',loginPassword:'',archived:false,color:'#0d6e4e',shortCode:'ETR',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'});
+  }
   if(!data.errorLog)           data.errorLog            = [];
   if(!data.emailIntake)        data.emailIntake         = [];
   if(!data.clientNotes)        data.clientNotes         = [];
@@ -1897,6 +1915,11 @@ let tsSelectedIds=new Set();
 let pfiCurrentId=null;
 let pfiListClientFilter='all';
 let pfiListStatusFilter='all';
+// ── Quote management state ──
+let quoteCurrentId=null;
+let quoteListClientFilter='all';
+let quoteListStatusFilter='all';
+let quoteSelectedItems=new Set();
 
 // ── Filter system ──
 function freshFilters(){
@@ -2286,6 +2309,10 @@ function applyRolePermissions(){
   const navNotesEl=document.getElementById('nav-notes-item');
   if(navNotesEl)navNotesEl.style.display=isAdmin?'':'none';
 
+  // Quotes: admin only
+  const navQuotesEl=document.getElementById('nav-quotes-item');
+  if(navQuotesEl)navQuotesEl.style.display=isAdmin?'':'none';
+
   // My Week: internal staff only
   const navMyWeekEl=document.getElementById('nav-my-week-item');
   if(navMyWeekEl)navMyWeekEl.style.display=(isAdmin||isMedium||isRestricted)?'':'none';
@@ -2407,7 +2434,7 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Time Tracking',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
+  const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   document.getElementById('view-title').textContent=(workboardViews.has(view)&&currentWorkboard)?currentWorkboard.name:(viewTitles[view]||view);
   const vc=document.getElementById('view-container');
@@ -2496,6 +2523,7 @@ function renderView(v){
       case 'audit':     vc.innerHTML=renderAudit();break;
       case 'archive':   vc.innerHTML=renderArchiveBin();break;
       case 'notes':     renderNotes();break;
+      case 'quotes':    vc.innerHTML=renderQuotes();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
       default: vc.innerHTML=_render404Html(v);break;
     }
@@ -5284,7 +5312,7 @@ function renderGantt(){
             ${cr?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
           </div>
         </div>
-        ${owner?`<div title="${escHtml(owner.name)}">${avatarHtml(owner,20)}</div>`:''}
+        ${owner?`<div style="display:inline-flex;align-items:center" title="${escHtml(owner.name)}${t.coOwnerId&&DB.staff.find(s=>s.id===t.coOwnerId)?' + '+escHtml(DB.staff.find(s=>s.id===t.coOwnerId).name):''}">${avatarHtml(owner,20)}${t.coOwnerId&&DB.staff.find(s=>s.id===t.coOwnerId)?`<span style="margin-left:-5px;border:1.5px solid #fff;border-radius:50%;display:inline-block">${avatarHtml(DB.staff.find(s=>s.id===t.coOwnerId),16)}</span>`:''}</div>`:''}
         ${cw&&cw.id!==t.ownerId?`<div title="${escHtml(cw.name)}">${avatarHtml(cw,16)}</div>`:''}
       </div>`;
 
@@ -6550,24 +6578,64 @@ function tmOnPercentModeChange(mode){
 }
 
 // ═══════════════════════════════════════════════════════════
-// TIME TRACKING
+// TIMESHEETS
 // ═══════════════════════════════════════════════════════════
+let _teMode='task'; // 'task' | 'client' — which selector the log form shows
+let _teBillableOn=true; // billable toggle state for the log form
+let _teViewAll=false; // admin: false = My Timesheets, true = All Staff
+
+function _teSetMode(mode){
+  _teMode=(mode==='client')?'client':'task';
+  renderView('time');
+}
+function _teSetViewAll(v){
+  _teViewAll=!!v;
+  renderView('time');
+}
+function _teToggleBillable(){
+  _teBillableOn=!_teBillableOn;
+  renderView('time');
+}
+
+const _TE_STATUS_META={
+  draft:{label:'Draft',bg:'#f1f5f9',color:'#64748b'},
+  submitted:{label:'Submitted',bg:'#fef3c7',color:'#92400e'},
+  approved:{label:'Approved',bg:'#dcfce7',color:'#166534'},
+  rejected:{label:'Rejected',bg:'#fee2e2',color:'#b91c1c'},
+};
+
 function renderTime(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
   const todayStr=new Date().toISOString().slice(0,10);
+  const isAdmin=currentUser.role==='admin';
+  const mode=_teMode==='client'?'client':'task';
+
   const taskOpts=DB.tasks.filter(t=>!t.archived).map(t=>{
     const cl=getTaskClient(t);
-    return`<option value="${t.id}">${cl?cl.name+' — ':''} ${escHtml(t.name)}</option>`;
+    return`<option value="${t.id}">${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;
   }).join('');
+  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id==='er1'?' selected':''}>${escHtml(r.name)}</option>`).join('');
 
-  const logForm=`<div class="card" style="margin-bottom:18px">
-    <h3 style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:14px">Log Time</h3>
-    <div style="display:grid;grid-template-columns:2fr ${currentUser.role==='admin'?'1.2fr ':''} 80px 110px 2fr auto;gap:10px;align-items:end">
-      <div><label class="form-label">Task <span style="color:#ef4444">*</span></label>
-        <select id="te-task" class="form-input">${taskOpts}</select></div>
-      ${currentUser.role==='admin'?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
+  const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:7px 18px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
+
+  const selectorCols=isAdmin?'1.3fr 1fr':'1.6fr';
+  const logForm=`<div class="card" style="margin-bottom:20px;padding:20px 22px;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <h3 style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin:0">Log Time</h3>
+      <div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:9px;padding:3px">
+        ${toggleBtn('task','Task')}${toggleBtn('client','Client')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 140px;gap:12px;align-items:end;margin-bottom:16px">
+      ${mode==='task'
+        ?`<div><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
+        <select id="te-task" class="form-input"><option value="">— No task —</option>${taskOpts}</select></div>`
+        :`<div><label class="form-label">Client <span style="color:#ef4444">*</span></label>
+        <select id="te-client" class="form-input">${clientOpts}</select></div>`}
+      ${isAdmin?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
         <select id="te-staff" class="form-input">${staffOpts}</select></div>`:''}
       <div><label class="form-label">Hours <span style="color:#ef4444">*</span></label>
         <input id="te-hours" type="number" step="0.25" min="0.25" class="form-input" value="1"/></div>
@@ -6575,74 +6643,119 @@ function renderTime(){
         <input id="te-date" type="date" class="form-input" value="${todayStr}"/></div>
       <div><label class="form-label">Note</label>
         <input id="te-note" class="form-input" placeholder="What did you work on?"/></div>
-      <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:2px">
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap">
-          <input type="checkbox" id="te-billable" checked style="accent-color:#97bcbd"/> Billable
-        </label>
-        <button onclick="logTime()" class="btn btn-teal btn-sm" style="white-space:nowrap">Log Time</button>
+      <div><label class="form-label">Rate</label>
+        <select id="te-rate" class="form-input">${rateOpts}</select></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div onclick="_teToggleBillable()" style="display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;padding:8px 16px;border-radius:22px;background:${_teBillableOn?'#dcfce7':'#f1f5f9'};border:1px solid ${_teBillableOn?'#bbf0cf':'#e2eaf2'};transition:background .12s,border-color .12s">
+        <span style="position:relative;width:30px;height:16px;border-radius:9px;background:${_teBillableOn?'#0d6e4e':'#c8d3dc'};display:inline-block;transition:background .12s">
+          <span style="position:absolute;top:2px;left:${_teBillableOn?'16px':'2px'};width:12px;height:12px;border-radius:50%;background:#fff;transition:left .12s"></span>
+        </span>
+        <span style="font-size:12px;font-weight:700;color:${_teBillableOn?'#166534':'#64748b'}">${_teBillableOn?'Billable':'Non-billable'}</span>
       </div>
+      <button onclick="logTime()" class="btn btn-teal" style="padding:11px 30px;font-family:'Jost',sans-serif;font-weight:700;font-size:13px;flex:1;max-width:260px">+ Log Time</button>
     </div>
   </div>`;
 
   // All entries scoped by role
-  const allEntries=[...DB.timeEntries].sort((a,b)=>b.date.localeCompare(a.date));
-  const visibleEntries=currentUser.role==='admin'?allEntries:allEntries.filter(e=>e.staffId===currentUser.id);
+  const allEntries=[...DB.timeEntries].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
+  const visibleEntries=isAdmin&&_teViewAll?allEntries:allEntries.filter(e=>e.staffId===currentUser.id);
   const totalH=visibleEntries.reduce((s,e)=>s+e.hours,0);
   const billableH=visibleEntries.filter(e=>e.billable!==false).reduce((s,e)=>s+e.hours,0);
+  const nonBillableH=totalH-billableH;
 
-  const rows=visibleEntries.map(e=>{
+  // Group by date, preserving sort order
+  const groups=[];
+  const groupMap=new Map();
+  visibleEntries.forEach(e=>{
+    if(!groupMap.has(e.date)){
+      const g={date:e.date,entries:[]};
+      groupMap.set(e.date,g);
+      groups.push(g);
+    }
+    groupMap.get(e.date).entries.push(e);
+  });
+
+  const rowHtml=(e)=>{
     const task=DB.tasks.find(t=>t.id===e.taskId);
     const staff=getStaff(e.staffId);
     const client=(task?getTaskClient(task):null)||DB.clients.find(c=>c.id===e.clientId);
-    const canDel=currentUser.role==='admin'||e.staffId===currentUser.id;
-    return`<tr>
-      <td style="font-size:12px;color:#6b8399;white-space:nowrap">${formatDate(e.date)}</td>
-      <td style="font-size:12px;font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task?escHtml(task.name):'—'}</td>
-      <td style="font-size:12px">${client?`<span style="color:${client.color};font-weight:700;font-size:11px">${escHtml(client.shortCode||client.name)}</span>`:'—'}</td>
-      <td><div style="display:flex;align-items:center;gap:5px">${avatarHtml(staff,20)}<span style="font-size:11px">${escHtml(staff.name.split(' ')[0])}</span></div></td>
-      <td style="font-size:12px;color:#4a5568;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.note||'—')}</td>
-      <td>${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:10px;font-weight:700">Billable</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 7px;border-radius:10px;font-weight:700">Non-bill.</span>`}</td>
-      <td style="font-size:13px;font-weight:700;color:#0d1c33;white-space:nowrap">${e.hours}h
-        ${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;margin-left:6px;opacity:0.7" title="Delete">✕</button>`:''}
-      </td>
-    </tr>`;
+    const canDel=isAdmin||e.staffId===currentUser.id;
+    const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
+    return`<div style="display:grid;grid-template-columns:auto 1.6fr 100px 70px 1.6fr 100px 90px 32px;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid #f0f4f8">
+      <div title="${escHtml(staff.name)}">${avatarHtml(staff,24)}</div>
+      <div style="font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task?escHtml(task.name):'<span style="color:#8da2b2;font-style:italic;font-weight:500">— Client only —</span>'}</div>
+      <div style="font-size:11px">${client?`<span style="color:${client.color||'#0d6e4e'};font-weight:700">${escHtml(client.shortCode||client.name)}</span>`:'—'}</div>
+      <div style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${e.hours}h</div>
+      <div style="font-size:12px;color:#6b8399;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.note||'')}">${escHtml(e.note||'—')}</div>
+      <div>${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Billable</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Non-bill.</span>`}</div>
+      <div><span style="font-size:9px;background:${sm.bg};color:${sm.color};padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">${sm.label}</span></div>
+      <div style="text-align:right">${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;opacity:0.55;padding:2px" title="Delete" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">✕</button>`:''}</div>
+    </div>`;
+  };
+
+  const groupsHtml=groups.map(g=>{
+    const dayTotal=g.entries.reduce((s,e)=>s+e.hours,0);
+    return`<div>
+      <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:8px 18px;border-bottom:1px solid #e2eaf2;border-top:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#0d1c33;letter-spacing:0.02em">${formatDate(g.date)}</span>
+        <span style="font-size:11px;color:#8da2b2;font-weight:600">${dayTotal.toFixed(2)}h</span>
+      </div>
+      ${g.entries.map(rowHtml).join('')}
+    </div>`;
   }).join('');
 
-  return logForm+`<div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:13px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:14px">
+  const emptyState=`<div style="text-align:center;padding:56px 20px;color:#8da2b2">
+    <div style="font-size:34px;margin-bottom:10px;opacity:0.5">🕒</div>
+    <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">No time logged yet</div>
+    <div style="font-size:12px">Use the form above to log your first time entry.</div>
+  </div>`;
+
+  const teViewTabBtn=(key,label)=>`<button type="button" onclick="_teSetViewAll(${key})" style="border:none;cursor:pointer;padding:6px 14px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${_teViewAll===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
+  const teViewTabs=isAdmin?`<div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:9px;padding:3px;margin-left:auto">
+        ${teViewTabBtn(false,'My Timesheets')}${teViewTabBtn(true,'All Staff')}
+      </div>`:'';
+
+  return logForm+`<div class="card" style="padding:0;overflow:hidden;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
+    <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:14px">
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">Time Log</span>
       <span style="font-size:12px;color:#8da2b2">${visibleEntries.length} entr${visibleEntries.length!==1?'ies':'y'}</span>
-      <span style="margin-left:auto;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${totalH.toFixed(1)}h total</span>
-      <span style="font-size:12px;color:#166534">${billableH.toFixed(1)}h billable</span>
+      ${teViewTabs}
     </div>
-    <div style="overflow-x:auto">
-      <table class="data-table" style="min-width:640px">
-        <thead><tr><th>Date</th><th>Task</th><th>Client</th><th>Staff</th><th>Note</th><th>Type</th><th>Hours</th></tr></thead>
-        <tbody>${rows}${visibleEntries.length===0?`<tr><td colspan="7" style="text-align:center;padding:32px;color:#8da2b2">No time entries yet.</td></tr>`:''}</tbody>
-      </table>
+    <div style="max-height:520px;overflow-y:auto">
+      ${groups.length?groupsHtml:emptyState}
     </div>
+    ${groups.length?`<div style="padding:12px 18px;border-top:1px solid #e2eaf2;background:#f9fbfc;display:flex;align-items:center;gap:22px">
+      <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${totalH.toFixed(2)}h total</span>
+      <span style="font-size:12px;color:#166534;font-weight:600">${billableH.toFixed(2)}h billable</span>
+      <span style="font-size:12px;color:#64748b;font-weight:600">${nonBillableH.toFixed(2)}h non-billable</span>
+    </div>`:''}
   </div>`;
 }
 
 function logTime(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
-  const taskId=document.getElementById('te-task')?.value;
+  const mode=_teMode==='client'?'client':'task';
+  const taskId=mode==='task'?(document.getElementById('te-task')?.value||''):'';
+  const selectedClientId=mode==='client'?(document.getElementById('te-client')?.value||''):'';
   const staffId=document.getElementById('te-staff')?.value||currentUser.id;
   const hours=parseFloat(document.getElementById('te-hours')?.value||'0');
   const date=document.getElementById('te-date')?.value;
   const note=(document.getElementById('te-note')?.value||'').trim();
-  const billable=document.getElementById('te-billable')?.checked!==false;
+  const earningsRateId=document.getElementById('te-rate')?.value||'er1';
+  const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||'Ordinary Hours';
+  const billable=_teBillableOn;
   // Validation
-  if(!taskId){showAlert('Task is required.','Validation');return;}
+  if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
   if(!staffId){showAlert('Staff member is required.','Validation');return;}
   if(!date){showAlert('Date is required.','Validation');return;}
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
-  const task=DB.tasks.find(t=>t.id===taskId);
-  const clientId=(task?task.clientId||(getTaskClient(task)?.id):'')||'';
-  const entry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,earningsRateId:'er1',earningsRateName:'Ordinary Hours',status:'draft',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const task=mode==='task'?DB.tasks.find(t=>t.id===taskId):null;
+  const clientId=mode==='client'?selectedClientId:((task?task.clientId||(getTaskClient(task)?.id):'')||'');
+  const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,earningsRateId,earningsRateName,status:'draft',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   DB.timeEntries.push(entry);
-  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId,staffId,date,hours,billable,note:note||null});
-  applyHourBudgetPct(taskId);
+  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
+  if(taskId)applyHourBudgetPct(taskId);
   saveDB(DB);
   renderView('time');
 }
@@ -6653,7 +6766,7 @@ function deleteTimeEntry(id){
   if(entry){
     writeAuditEvent('TimeEntry',id,'deleted',{taskId:entry.taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
     DB.timeEntries=DB.timeEntries.filter(e=>e.id!==id);
-    applyHourBudgetPct(entry.taskId);
+    if(entry.taskId)applyHourBudgetPct(entry.taskId);
   }
   saveDB(DB);
   renderView('time');
@@ -8255,6 +8368,1253 @@ function rptExportPDF(){
 }
 
 // ═══════════════════════════════════════════════════════════
+// QUOTE MODULE
+// ═══════════════════════════════════════════════════════════
+function quoteNextNumber(){
+  const nums=(DB.quotes||[]).map(q=>parseInt((q.number||'').replace('Q-',''))||0);
+  return'Q-'+(((nums.length?Math.max(...nums):0)+1).toString().padStart(4,'0'));
+}
+function quoteStatusMeta(s){
+  return({
+    draft:{label:'Draft',bg:'#f1f5f9',color:'#64748b',border:'#cbd5e1'},
+    sent:{label:'Sent',bg:'#e0e7ff',color:'#4338ca',border:'#a5b4fc'},
+    accepted:{label:'Accepted',bg:'#dcfce7',color:'#166534',border:'#86efac'},
+    declined:{label:'Declined',bg:'#fee2e2',color:'#b91c1c',border:'#fca5a5'},
+  }[s||'draft'])||{label:'Draft',bg:'#f1f5f9',color:'#64748b',border:'#cbd5e1'};
+}
+function quoteLineTotal(item){
+  return parseFloat(((item.qty||0)*(item.unitPrice||0)).toFixed(2));
+}
+function quoteCalcTotals(q){
+  const subtotal=(q.lineItems||[]).reduce((s,l)=>s+quoteLineTotal(l),0);
+  const discountAmt=parseFloat((subtotal*(q.discountPct||0)/100).toFixed(2));
+  const taxBase=parseFloat((subtotal-discountAmt).toFixed(2));
+  const taxAmt=parseFloat((taxBase*(q.taxPct||0)/100).toFixed(2));
+  const grandTotal=parseFloat((taxBase+taxAmt).toFixed(2));
+  return{subtotal,discountAmt,taxAmt,grandTotal};
+}
+function renderQuotes(){
+  if(currentUser?.role!=='admin')return _acDeniedHtml();
+  if(quoteCurrentId){
+    const q=(DB.quotes||[]).find(q=>q.id===quoteCurrentId);
+    if(q)return _quoteEditorHtml(q);
+    quoteCurrentId=null;
+  }
+  quoteSelectedItems.clear();
+  return _quotesListHtml();
+}
+function _quotesListHtml(){
+  const clients=DB.clients||[];
+  const quotes=[...(DB.quotes||[])].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const filtered=quotes.filter(q=>{
+    if(quoteListClientFilter!=='all'&&q.clientId!==quoteListClientFilter)return false;
+    if(quoteListStatusFilter!=='all'&&q.status!==quoteListStatusFilter)return false;
+    return true;
+  });
+  const clientOpts=clients.map(c=>`<option value="${escHtml(c.id)}"${quoteListClientFilter===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  const statusOpts=['draft','sent','accepted','declined'].map(s=>{
+    const m=quoteStatusMeta(s);
+    return`<option value="${s}"${quoteListStatusFilter===s?' selected':''}>${m.label}</option>`;
+  }).join('');
+  const hdr=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap">
+    <div>
+      <h2 style="margin:0 0 2px;font-size:22px;font-weight:800;color:#0d1c33;font-family:'Jost',sans-serif;letter-spacing:-0.03em">Quotes</h2>
+      <div style="font-size:12px;color:#8da2b2">${quotes.length} total &middot; ${filtered.length} shown</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <select onchange="quoteListClientFilter=this.value;renderView('quotes')" style="height:32px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 10px;font-size:12px;color:#1a2940;cursor:pointer;outline:none">
+        <option value="all"${quoteListClientFilter==='all'?' selected':''}>All Clients</option>
+        ${clientOpts}
+      </select>
+      <select onchange="quoteListStatusFilter=this.value;renderView('quotes')" style="height:32px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 10px;font-size:12px;color:#1a2940;cursor:pointer;outline:none">
+        <option value="all"${quoteListStatusFilter==='all'?' selected':''}>All Statuses</option>
+        ${statusOpts}
+      </select>
+      <button onclick="quoteCreate()" style="height:32px;padding:0 16px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#0d1c33;color:#fff;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.background='#1e3a5f'" onmouseout="this.style.background='#0d1c33'">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New Quote
+      </button>
+    </div>
+  </div>`;
+  if(!filtered.length){
+    return hdr+`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:14px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="4" y="2" width="16" height="20" rx="2" stroke="#97bcbd" stroke-width="1.8"/><path d="M8 7h8M8 11h8M8 15h5" stroke="#97bcbd" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:#0d1c33;margin-bottom:6px">${quoteListClientFilter!=='all'||quoteListStatusFilter!=='all'?'No quotes match your filters':'No quotes yet'}</div>
+      <div style="font-size:13px;color:#8da2b2;margin-bottom:20px">${quoteListClientFilter!=='all'||quoteListStatusFilter!=='all'?'Try clearing the filters above.':'Create your first quote to get started.'}</div>
+      ${quoteListClientFilter==='all'&&quoteListStatusFilter==='all'?`<button onclick="quoteCreate()" style="height:36px;padding:0 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#0d1c33;color:#fff" onmouseover="this.style.background='#1e3a5f'" onmouseout="this.style.background='#0d1c33'">+ Create your first quote</button>`:''}
+    </div>`;
+  }
+  const thS='padding:10px 14px;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;border-bottom:2px solid #e2eaf2;white-space:nowrap;background:#f8fbff;text-align:left';
+  const tdS='padding:11px 14px;font-size:13px;border-bottom:1px solid #f0f4f8;vertical-align:middle';
+  const rows=filtered.map(q=>{
+    const c=clients.find(x=>x.id===q.clientId);
+    const sm=quoteStatusMeta(q.status);
+    const t=quoteCalcTotals(q);
+    const itemCount=(q.lineItems||[]).length;
+    return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''" style="cursor:pointer">
+      <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${escHtml(q.number)}</td>
+      <td style="${tdS}" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${c?`<span style="color:${c.color||'#97bcbd'};font-weight:700;background:${c.color||'#97bcbd'}18;padding:3px 10px;border-radius:20px;font-size:12px">${escHtml(c.name)}</span>`:'<span style="color:#c8d7e1;font-size:11px">No client</span>'}</td>
+      <td style="${tdS};color:#1a2940" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${escHtml(q.title||'—')}</td>
+      <td style="${tdS};font-size:11px;color:#6b8399;white-space:nowrap" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${q.date||'—'}</td>
+      <td style="${tdS};font-size:11px;color:#6b8399;white-space:nowrap" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${q.expiryDate||'—'}</td>
+      <td style="${tdS};font-size:11px;color:#8da2b2;text-align:center" onclick="quoteCurrentId='${q.id}';renderView('quotes')">${itemCount}</td>
+      <td style="${tdS};text-align:right;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33" onclick="quoteCurrentId='${q.id}';renderView('quotes')">$${t.grandTotal.toFixed(2)}</td>
+      <td style="${tdS}" onclick="quoteCurrentId='${q.id}';renderView('quotes')"><span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sm.bg};color:${sm.color};border:1px solid ${sm.border}">${sm.label}</span></td>
+      <td style="${tdS}"><div style="display:flex;gap:5px;align-items:center">
+        <button onclick="quoteDuplicate('${q.id}')" title="Duplicate" style="padding:0 8px;height:26px;border-radius:6px;font-size:11px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#6b8399" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#6b8399'" title="Duplicate">Copy</button>
+        <button onclick="quoteDelete('${q.id}')" title="Delete" style="padding:0 8px;height:26px;border-radius:6px;font-size:11px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  return hdr+`<div class="card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="${thS}">Quote #</th>
+        <th style="${thS}">Client</th>
+        <th style="${thS}">Title</th>
+        <th style="${thS}">Issued</th>
+        <th style="${thS}">Expires</th>
+        <th style="${thS};text-align:center">Lines</th>
+        <th style="${thS};text-align:right">Total</th>
+        <th style="${thS}">Status</th>
+        <th style="${thS}">Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function _quoteEditorHtml(q){
+  const clients=DB.clients||[];
+  const sm=quoteStatusMeta(q.status);
+  const t=quoteCalcTotals(q);
+  const client=clients.find(x=>x.id===q.clientId);
+  const statusOpts=['draft','sent','accepted','declined'].map(s=>{
+    const m=quoteStatusMeta(s);
+    return`<option value="${s}"${q.status===s?' selected':''}>${m.label}</option>`;
+  }).join('');
+  const labelS='display:block;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px';
+  const inputS='width:100%;height:36px;border:1.5px solid #e2eaf2;border-radius:8px;padding:0 12px;font-size:13px;color:#1a2940;box-sizing:border-box;outline:none;font-family:inherit;transition:border-color 0.15s';
+  const btnBase='height:32px;padding:0 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s';
+  const header=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button onclick="quoteCurrentId=null;renderView('quotes')" style="${btnBase};border:1.5px solid #e2eaf2;background:#fff;color:#6b8399" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#6b8399'">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Quotes
+    </button>
+    <span style="font-size:12px;color:#b0bec5">&#8250;</span>
+    <input id="quote-number-input" type="text" value="${escHtml(q.number)}"
+      title="Click to edit quote number"
+      onfocus="this.style.borderColor='#97bcbd';this.style.background='#f8fbff';this.style.color='#0d1c33'"
+      onblur="quoteSaveField('${q.id}','number',this.value.trim()||'${escHtml(q.number)}');this.style.borderColor='transparent';this.style.background='transparent';this.style.color='#6b8399'"
+      style="font-size:13px;font-weight:700;color:#6b8399;border:1.5px solid transparent;border-radius:6px;padding:3px 8px;font-family:'Jost',sans-serif;outline:none;width:90px;background:transparent;cursor:text;transition:all 0.15s"
+      onmouseover="if(document.activeElement!==this)this.style.borderColor='#e2eaf2'"
+      onmouseout="if(document.activeElement!==this)this.style.borderColor='transparent'"/>
+    <span id="quote-saved-ind" style="font-size:11px;color:#16a34a;opacity:0;transition:opacity 0.5s">&#10003; Saved</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <select onchange="quoteUpdateStatus('${q.id}',this.value)" style="height:32px;border:1.5px solid ${sm.border};border-radius:7px;padding:0 8px;font-size:12px;font-weight:700;color:${sm.color};background:${sm.bg};cursor:pointer;outline:none">
+        ${statusOpts}
+      </select>
+      <button onclick="quoteOpenEmailModal('${q.id}')" style="${btnBase};border:1.5px solid #e2eaf2;background:#fff;color:#4338ca" onmouseover="this.style.background='#eef2ff';this.style.borderColor='#a5b4fc'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2eaf2'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4.5l6 4 6-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Email
+      </button>
+      <button onclick="quotePrint('${q.id}')" style="${btnBase};border:1.5px solid #e2eaf2;background:#fff;color:#1a2940" onmouseover="this.style.background='#f8fbff';this.style.borderColor='#97bcbd'" onmouseout="this.style.background='#fff';this.style.borderColor='#e2eaf2'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 4V2h7v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="4" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="3.5" y="7.5" width="7" height="4.5" rx="1" fill="currentColor" opacity=".2"/><circle cx="10.5" cy="6.5" r=".8" fill="currentColor"/></svg>
+        Print
+      </button>
+      <button onclick="quotePdf('${q.id}')" style="${btnBase};border:none;background:#0d1c33;color:#fff" onmouseover="this.style.background='#1e3a5f'" onmouseout="this.style.background='#0d1c33'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 11h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        PDF
+      </button>
+    </div>
+  </div>`;
+  const infoGrid=`<div class="card" style="padding:18px 20px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px">
+      <div><label style="${labelS}">Client <span style="font-weight:400;color:#b0bec5;font-size:10px;text-transform:none">(optional)</span></label>${_quoteClientComboHtml(q)}</div>
+      <div><label style="${labelS}">Title / Reference</label>
+        <input type="text" value="${escHtml(q.title||'')}" onblur="quoteSaveField('${q.id}','title',this.value)" style="${inputS}" placeholder="e.g. Site Survey Services" onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${q.id}','title',this.value);this.style.borderColor='#e2eaf2'" />
+      </div>
+      <div><label style="${labelS}">Issue Date</label>
+        <input type="date" value="${escHtml(q.date||'')}" onchange="quoteSaveField('${q.id}','date',this.value)" style="${inputS}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" />
+      </div>
+      <div><label style="${labelS}">Expiry Date</label>
+        <input type="date" value="${escHtml(q.expiryDate||'')}" onchange="quoteSaveField('${q.id}','expiryDate',this.value)" style="${inputS}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" />
+      </div>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
+      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4" r="2.2" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 11c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Send To <span style="font-weight:400;color:#b0bec5;font-size:10px;text-transform:none;letter-spacing:0">&mdash; printed on PDF &amp; used for email</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px">
+      <div><label style="${labelS}">Company / Name</label>
+        <input type="text" value="${escHtml(q.recipientName||'')}"
+          onblur="quoteSaveField('${q.id}','recipientName',this.value)"
+          style="${inputS}" placeholder="e.g. Acme Pty Ltd"
+          onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${q.id}','recipientName',this.value);this.style.borderColor='#e2eaf2'" />
+      </div>
+      <div><label style="${labelS}">Contact Person</label>
+        <input type="text" value="${escHtml(q.recipientContact||'')}"
+          onblur="quoteSaveField('${q.id}','recipientContact',this.value)"
+          style="${inputS}" placeholder="e.g. Jane Smith"
+          onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${q.id}','recipientContact',this.value);this.style.borderColor='#e2eaf2'" />
+      </div>
+      <div><label style="${labelS}">Email</label>
+        <input type="email" value="${escHtml(q.recipientEmail||'')}"
+          onblur="quoteSaveField('${q.id}','recipientEmail',this.value)"
+          style="${inputS}" placeholder="e.g. jane@acme.com"
+          onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${q.id}','recipientEmail',this.value);this.style.borderColor='#e2eaf2'" />
+      </div>
+    </div>
+    </div>
+  </div>`;
+  const thS='padding:9px 12px;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;border-bottom:2px solid #e2eaf2;white-space:nowrap;background:#f8fbff;text-align:left';
+  const tdS='padding:6px 8px;border-bottom:1px solid #f0f4f8;vertical-align:middle';
+  const numInputS='border:1.5px solid transparent;border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;background:transparent;transition:all 0.1s;text-align:right';
+  const allSelectable=(q.lineItems||[]).filter(li=>!li.taskId);
+  const allSelected=allSelectable.length>0&&allSelectable.every(li=>quoteSelectedItems.has(li.id));
+  const anySelected=quoteSelectedItems.size>0;
+  const liRows=(q.lineItems||[]).map((item,i)=>{
+    const lt=quoteLineTotal(item);
+    const isSelected=quoteSelectedItems.has(item.id);
+    const task=item.taskId?(DB.tasks||[]).find(t=>t.id===item.taskId):null;
+    const taskCell=task
+      ?`<span style="font-size:11px;background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:4px">${escHtml(task.name||task.title||'Task')} <button onclick="openTaskPanel('${item.taskId}')" style="background:none;border:none;cursor:pointer;color:#16a34a;font-size:10px;padding:0" title="View task">&#8599;</button></span>`
+      :`<button onclick="openQuoteConvertModal('${q.id}','${item.id}')" style="padding:2px 8px;height:24px;border-radius:5px;font-size:11px;cursor:pointer;border:1.5px dashed #c8d7e1;background:transparent;color:#8da2b2;display:inline-flex;align-items:center;gap:3px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#c8d7e1';this.style.color='#8da2b2'">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5h6M6 2.5l2.5 2.5L6 7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Task
+        </button>`;
+    const cbCell=task
+      ?`<td style="${tdS};width:36px;text-align:center"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" title="Already a task"><circle cx="7" cy="7" r="5.5" stroke="#86efac" stroke-width="1.5"/><path d="M4.5 7l2 2 3-3" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></td>`
+      :`<td style="${tdS};width:36px;text-align:center"><input type="checkbox" data-quote-item-cb="${item.id}" ${isSelected?'checked':''} onchange="quoteToggleSelectItem('${item.id}',this.checked,'${q.id}')" style="width:15px;height:15px;cursor:pointer;accent-color:#0d1c33"/></td>`;
+    return`<tr style="${isSelected?'background:#f0f4ff;':''}" id="qli-row-${item.id}">
+      ${cbCell}
+      <td style="${tdS};color:#b0bec5;font-size:12px;text-align:center;width:30px">${i+1}</td>
+      <td style="${tdS}"><input type="text" value="${escHtml(item.description||'')}"
+        onblur="quoteSaveItemField('${q.id}','${item.id}','description',this.value)"
+        onfocus="this.style.borderColor='#97bcbd';this.style.background='#f8fbff'"
+        onblur="quoteSaveItemField('${q.id}','${item.id}','description',this.value);this.style.borderColor='transparent';this.style.background='transparent'"
+        style="width:100%;border:1.5px solid transparent;border-radius:6px;padding:5px 8px;font-size:13px;color:#1a2940;font-family:inherit;outline:none;min-width:180px;box-sizing:border-box;background:transparent;transition:all 0.1s" placeholder="Item description&#8230;"/></td>
+      <td style="${tdS};width:80px"><input type="number" value="${item.qty}"
+        onclick="this.select()"
+        onblur="quoteSaveItemField('${q.id}','${item.id}','qty',parseFloat(this.value)||1)"
+        onchange="quoteSaveItemField('${q.id}','${item.id}','qty',parseFloat(this.value)||1)"
+        onfocus="this.style.borderColor='#97bcbd';this.style.background='#f8fbff'"
+        onblur="quoteSaveItemField('${q.id}','${item.id}','qty',parseFloat(this.value)||1);this.style.borderColor='transparent';this.style.background='transparent'"
+        style="${numInputS};width:70px" min="0" step="any"/></td>
+      <td style="${tdS};width:120px">
+        <div style="display:flex;align-items:center;gap:3px">
+          <span style="font-size:12px;color:#8da2b2">$</span>
+          <input type="number" value="${item.unitPrice.toFixed(2)}"
+            onclick="this.select()"
+            onblur="quoteSaveItemField('${q.id}','${item.id}','unitPrice',parseFloat(this.value)||0)"
+            onchange="quoteSaveItemField('${q.id}','${item.id}','unitPrice',parseFloat(this.value)||0)"
+            onfocus="this.style.borderColor='#97bcbd';this.style.background='#f8fbff'"
+            onblur="quoteSaveItemField('${q.id}','${item.id}','unitPrice',parseFloat(this.value)||0);this.style.borderColor='transparent';this.style.background='transparent'"
+            style="${numInputS};width:90px" min="0" step="0.01"/>
+        </div>
+      </td>
+      <td style="${tdS};text-align:right;width:110px;font-weight:600;color:#0d1c33;font-family:'Jost',sans-serif">$${lt.toFixed(2)}</td>
+      <td style="${tdS};width:140px">${taskCell}</td>
+      <td style="${tdS};text-align:center;width:40px">
+        <button onclick="removeQuoteItem('${q.id}','${item.id}')" style="background:none;border:none;cursor:pointer;color:#d1d9e0;font-size:18px;line-height:1;padding:3px 6px;border-radius:4px" onmouseover="this.style.color='#b91c1c';this.style.background='#fee2e2'" onmouseout="this.style.color='#d1d9e0';this.style.background='none'" title="Remove line">&#215;</button>
+      </td>
+    </tr>`;
+  }).join('');
+  const lineTable=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+    <table id="quote-li-table" style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="${thS};width:36px;text-align:center">
+          <input type="checkbox" id="quote-select-all" ${allSelected?'checked':''} onchange="quoteSelectAll('${q.id}',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#0d1c33" title="Select all"/>
+        </th>
+        <th style="${thS};width:30px">#</th>
+        <th style="${thS}">Description</th>
+        <th style="${thS};width:80px">Qty</th>
+        <th style="${thS};width:120px">Unit Price</th>
+        <th style="${thS};width:110px;text-align:right">Total</th>
+        <th style="${thS};width:140px">Task</th>
+        <th style="${thS};width:40px"></th>
+      </tr></thead>
+      <tbody>${liRows.length?liRows:`<tr><td colspan="8" style="padding:28px;text-align:center;color:#b0bec5;font-size:13px">No line items yet &mdash; click &ldquo;Add Line&rdquo; below</td></tr>`}</tbody>
+    </table>
+    <div id="quote-bulk-bar" style="${anySelected?'display:flex':'display:none'};align-items:center;gap:10px;padding:10px 14px;background:#eef2ff;border-top:1px solid #c7d2fe;flex-wrap:wrap">
+      <span id="quote-bulk-count" style="font-size:13px;font-weight:600;color:#4338ca">${quoteSelectedItems.size} item${quoteSelectedItems.size!==1?'s':''} selected</span>
+      <button onclick="quoteBulkConvertModal('${q.id}')" style="height:30px;padding:0 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#4338ca;color:#fff;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.background='#3730a3'" onmouseout="this.style.background='#4338ca'">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Convert to Tasks on Board
+      </button>
+      <button onclick="quoteClearSelection('${q.id}')" style="height:30px;padding:0 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1.5px solid #c7d2fe;background:transparent;color:#4338ca" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='transparent'">Deselect all</button>
+    </div>
+    <div style="padding:10px 14px;border-top:1px solid #f0f4f8;display:flex;align-items:center;gap:8px">
+      <button onclick="addQuoteItem('${q.id}')" style="padding:0 14px;height:30px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px dashed #c8d7e1;background:transparent;color:#6b8399;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#c8d7e1';this.style.color='#6b8399'">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add Line
+      </button>
+      ${(q.lineItems||[]).filter(li=>!li.taskId).length>1?`<span style="font-size:11px;color:#b0bec5">Tick items to bulk-convert to tasks</span>`:''}
+    </div>
+  </div>`;
+  const totalsBox=`<div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <div class="card" id="quote-totals-box" style="padding:18px 22px;min-width:290px;background:linear-gradient(135deg,#f8fbff 0%,#eef4f9 100%)">
+      ${_quoteTotalsInner(q,t)}
+    </div>
+  </div>`;
+  const taS='width:100%;min-height:90px;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;font-size:13px;color:#1a2940;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;transition:border-color 0.15s';
+  const notesCard=`<div class="card" style="padding:18px 20px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <label style="${labelS}">Client Notes <span style="font-weight:400;color:#b0bec5;font-size:10px;text-transform:none">(printed on PDF)</span></label>
+        <textarea onblur="quoteSaveField('${q.id}','notes',this.value)" style="${taS}" placeholder="Notes visible to the client&#8230;" onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${q.id}','notes',this.value);this.style.borderColor='#e2eaf2'">${escHtml(q.notes||'')}</textarea>
+      </div>
+      <div>
+        <label style="${labelS}">Internal Notes <span style="font-weight:400;color:#b0bec5;font-size:10px;text-transform:none">(not printed)</span></label>
+        <textarea onblur="quoteSaveField('${q.id}','internalNotes',this.value)" style="${taS};background:#fffbeb;border-color:#fef3c7" placeholder="Internal notes&#8230;" onfocus="this.style.borderColor='#f59e0b'" onblur="quoteSaveField('${q.id}','internalNotes',this.value);this.style.borderColor='#fef3c7'">${escHtml(q.internalNotes||'')}</textarea>
+      </div>
+    </div>
+  </div>`;
+  return header+infoGrid+lineTable+totalsBox+notesCard;
+}
+
+function _quoteTotalsInner(q,t){
+  if(!t)t=quoteCalcTotals(q);
+  const id=q.id;
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-size:13px;color:#6b8399">Subtotal</span>
+    <span style="font-size:13px;font-weight:600;color:#1a2940;font-family:'Jost',sans-serif">$${t.subtotal.toFixed(2)}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:13px;color:#6b8399">Discount</span>
+      <input id="quote-disc-input" type="number" value="${q.discountPct||0}" min="0" max="100" step="0.1"
+        onclick="this.select()"
+        onblur="quoteSaveField('${id}','discountPct',parseFloat(this.value)||0)"
+        onchange="quoteSaveField('${id}','discountPct',parseFloat(this.value)||0)"
+        style="width:54px;height:26px;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 6px;font-size:12px;text-align:right;font-family:inherit;outline:none;background:#fff" onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${id}','discountPct',parseFloat(this.value)||0);this.style.borderColor='#e2eaf2'"/>
+      <span style="font-size:12px;color:#8da2b2">%</span>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:#b91c1c">-$${t.discountAmt.toFixed(2)}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:13px;color:#6b8399">Tax</span>
+      <input id="quote-tax-input" type="number" value="${q.taxPct||0}" min="0" max="100" step="0.1"
+        onclick="this.select()"
+        onblur="quoteSaveField('${id}','taxPct',parseFloat(this.value)||0)"
+        onchange="quoteSaveField('${id}','taxPct',parseFloat(this.value)||0)"
+        style="width:54px;height:26px;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 6px;font-size:12px;text-align:right;font-family:inherit;outline:none;background:#fff" onfocus="this.style.borderColor='#97bcbd'" onblur="quoteSaveField('${id}','taxPct',parseFloat(this.value)||0);this.style.borderColor='#e2eaf2'"/>
+      <span style="font-size:12px;color:#8da2b2">%</span>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:#166534">+$${t.taxAmt.toFixed(2)}</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid #e2eaf2;padding-top:14px">
+    <span style="font-size:15px;font-weight:800;color:#0d1c33;font-family:'Jost',sans-serif">Grand Total</span>
+    <span style="font-size:20px;font-weight:800;color:#97bcbd;font-family:'Jost',sans-serif">$${t.grandTotal.toFixed(2)}</span>
+  </div>`;
+}
+
+// ── Quote client combobox ──────────────────────────────────
+function _qccDd(qId){return document.getElementById('qcc-dd-'+qId);}
+function _qccInp(qId){return document.getElementById('qcc-inp-'+qId);}
+function _qccBuild(qId,filter){
+  const clients=DB.clients||[];
+  const f=(filter||'').trim().toLowerCase();
+  const matched=f?clients.filter(c=>c.name.toLowerCase().includes(f)):clients;
+  let html=matched.map(c=>`<div
+    onmousedown="event.preventDefault();_qccPick('${qId}','${c.id}')"
+    style="padding:8px 12px;cursor:pointer;font-size:13px;color:#1a2940;display:flex;align-items:center;gap:8px"
+    onmouseover="this.style.background='#f0f9f9'" onmouseout="this.style.background=''">
+    <span style="width:8px;height:8px;border-radius:50%;background:${c.color||'#97bcbd'};flex-shrink:0;display:inline-block"></span>
+    ${escHtml(c.name)}
+  </div>`).join('');
+  const trimmed=(filter||'').trim();
+  const exact=clients.find(c=>c.name.toLowerCase()===trimmed.toLowerCase());
+  if(trimmed&&!exact){
+    html+=`<div
+      onmousedown="event.preventDefault();_qccCreate('${qId}','${escHtml(trimmed).replace(/'/g,"&#39;")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;color:#0d6e4e;font-weight:600;border-top:1px solid #e8edf4;display:flex;align-items:center;gap:6px"
+      onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Create &ldquo;${escHtml(trimmed)}&rdquo;
+    </div>`;
+  }
+  if(!html)html=`<div style="padding:10px 12px;color:#b0bec5;font-size:12px;font-style:italic">No clients match</div>`;
+  const dd=_qccDd(qId);if(dd)dd.innerHTML=html;
+}
+function _qccOpen(qId){
+  const dd=_qccDd(qId);if(!dd)return;
+  dd.style.display='block';
+  _qccBuild(qId,_qccInp(qId)?.value||'');
+}
+function _qccFilter(qId,val){
+  _qccBuild(qId,val);
+  const dd=_qccDd(qId);if(dd)dd.style.display='block';
+}
+function _qccBlur(qId){
+  // delay so mousedown on option fires first
+  setTimeout(()=>{const dd=_qccDd(qId);if(dd)dd.style.display='none';},180);
+}
+function _qccPick(qId,clientId){
+  const q=(DB.quotes||[]).find(q=>q.id===qId);if(!q)return;
+  q.clientId=clientId;q.updatedAt=new Date().toISOString();
+  const c=(DB.clients||[]).find(c=>c.id===clientId);
+  // Auto-fill recipient fields from client if currently empty
+  if(c){
+    if(!q.recipientName)q.recipientName=c.name||'';
+    if(!q.recipientContact)q.recipientContact=c.contactName||'';
+    if(!q.recipientEmail)q.recipientEmail=c.contactEmail||'';
+  }
+  saveDB(DB);
+  renderView('quotes');
+}
+function _qccCreate(qId,name){
+  if(!name||!name.trim())return;
+  const now=new Date().toISOString();
+  const colors=['#0d6e4e','#1d6fb8','#7c3aed','#b45309','#c2410c','#0e7490','#4338ca'];
+  const newClient={
+    id:'c'+uid(),name:name.trim(),
+    contactName:'',contactEmail:'',
+    portalEnabled:false,loginEmail:'',loginPassword:'',
+    archived:false,color:colors[Math.floor(Math.random()*colors.length)],
+    shortCode:name.trim().substring(0,3).toUpperCase(),
+    createdAt:now,updatedAt:now
+  };
+  (DB.clients=DB.clients||[]).push(newClient);
+  saveDB(DB);
+  _qccPick(qId,newClient.id);
+  showToast(`Client "${newClient.name}" created`,'success');
+}
+function _quoteClientComboHtml(q){
+  const client=(DB.clients||[]).find(c=>c.id===q.clientId);
+  const inputS='width:100%;height:36px;border:1.5px solid #e2eaf2;border-radius:8px;padding:0 12px;font-size:13px;color:#1a2940;box-sizing:border-box;outline:none;font-family:inherit;transition:border-color 0.15s';
+  return`<div style="position:relative" id="qcc-wrap-${q.id}">
+    <input id="qcc-inp-${q.id}" type="text"
+      value="${escHtml(client?.name||'')}"
+      placeholder="Search or add client&#8230;"
+      autocomplete="off"
+      oninput="_qccFilter('${q.id}',this.value)"
+      onfocus="this.style.borderColor='#97bcbd';_qccOpen('${q.id}')"
+      onblur="this.style.borderColor='#e2eaf2';_qccBlur('${q.id}')"
+      style="${inputS}"
+    />
+    ${client?`<span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:${client.color||'#97bcbd'};pointer-events:none"></span>`:''}
+    <div id="qcc-dd-${q.id}" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #97bcbd;border-radius:8px;box-shadow:0 8px 28px rgba(13,28,51,0.13);z-index:9000;max-height:210px;overflow-y:auto"></div>
+  </div>`;
+}
+
+function quoteCreate(){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  const now=new Date().toISOString();
+  const q={
+    id:'q'+uid(),number:quoteNextNumber(),clientId:'',title:'',
+    recipientName:'',recipientContact:'',recipientEmail:'',
+    date:now.slice(0,10),expiryDate:'',status:'draft',notes:'',internalNotes:'',
+    discountPct:0,taxPct:10,lineItems:[],
+    createdBy:currentUser.id,createdAt:now,updatedAt:now,
+    sentAt:null,acceptedAt:null,declinedAt:null,
+    auditEvents:[{id:'ae'+uid(),event:'created',actorId:currentUser.id,at:now}],
+  };
+  (DB.quotes=DB.quotes||[]).push(q);
+  saveDB(DB);quoteCurrentId=q.id;renderView('quotes');
+}
+function quoteDuplicate(id){
+  const src=(DB.quotes||[]).find(q=>q.id===id);if(!src)return;
+  const now=new Date().toISOString();
+  const copy={...JSON.parse(JSON.stringify(src)),id:'q'+uid(),number:quoteNextNumber(),
+    status:'draft',date:now.slice(0,10),expiryDate:'',
+    createdAt:now,createdBy:currentUser.id,updatedAt:now,
+    sentAt:null,acceptedAt:null,declinedAt:null,
+    auditEvents:[{id:'ae'+uid(),event:'duplicated',actorId:currentUser.id,at:now,detail:{sourceId:id}}]};
+  copy.lineItems=(copy.lineItems||[]).map(l=>({...l,id:'qli'+uid(),taskId:null,workboardId:null,groupId:null}));
+  (DB.quotes=DB.quotes||[]).push(copy);
+  saveDB(DB);quoteCurrentId=copy.id;renderView('quotes');
+}
+function quoteDelete(id){
+  openConfirm('Delete Quote','Delete this quote? This cannot be undone.','Delete',()=>{
+    DB.quotes=(DB.quotes||[]).filter(q=>q.id!==id);
+    if(quoteCurrentId===id)quoteCurrentId=null;
+    saveDB(DB);renderView('quotes');
+  },true);
+}
+function quoteSaveField(id,field,val){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  if(typeof val==='string')val=val.trim();
+  q[field]=val;q.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  const ind=document.getElementById('quote-saved-ind');
+  if(ind){ind.style.opacity='1';setTimeout(()=>{ind.style.opacity='0';},1400);}
+  if(['discountPct','taxPct'].includes(field)){_quoteRefreshTotals(id);}
+}
+function quoteSaveItemField(id,itemId,field,val){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const item=(q.lineItems||[]).find(l=>l.id===itemId);if(!item)return;
+  if(field==='qty')item.qty=parseFloat(val)||1;
+  else if(field==='unitPrice')item.unitPrice=parseFloat(val)||0;
+  else item[field]=val;
+  q.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  _quoteRefreshTotals(id);
+  // Update just this row's total cell without losing focus
+  const rows=document.querySelectorAll('#quote-li-table tbody tr');
+  const idx=(q.lineItems||[]).findIndex(l=>l.id===itemId);
+  if(rows[idx]){
+    const totalCell=rows[idx].querySelectorAll('td')[4];
+    if(totalCell)totalCell.textContent='$'+quoteLineTotal(item).toFixed(2);
+  }
+}
+function _quoteRefreshTotals(id){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const t=quoteCalcTotals(q);
+  const box=document.getElementById('quote-totals-box');
+  if(box){box.innerHTML=_quoteTotalsInner(q,t);}
+}
+function addQuoteItem(id){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const item={id:'qli'+uid(),description:'',qty:1,unitPrice:0,workboardId:null,groupId:null,taskId:null,order:(q.lineItems||[]).length};
+  (q.lineItems=q.lineItems||[]).push(item);
+  q.updatedAt=new Date().toISOString();
+  saveDB(DB);renderView('quotes');
+  // Focus the description of the new row
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('#quote-li-table tbody tr');
+    if(rows.length){const last=rows[rows.length-1];const inp=last.querySelector('input[type="text"]');if(inp)inp.focus();}
+  },60);
+}
+function removeQuoteItem(id,itemId){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const item=(q.lineItems||[]).find(l=>l.id===itemId);if(!item)return;
+  const doRemove=()=>{
+    q.lineItems=q.lineItems.filter(l=>l.id!==itemId);
+    q.updatedAt=new Date().toISOString();
+    saveDB(DB);renderView('quotes');
+  };
+  if(item.taskId){
+    openConfirm('Remove Line Item','This item is linked to a task. Remove it from the quote?','Remove',doRemove,true);
+  }else{doRemove();}
+}
+function quoteUpdateStatus(id,status){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const now=new Date().toISOString();
+  q.status=status;q.updatedAt=now;
+  if(status==='sent')q.sentAt=now;
+  if(status==='accepted')q.acceptedAt=now;
+  if(status==='declined')q.declinedAt=now;
+  (q.auditEvents=q.auditEvents||[]).push({id:'ae'+uid(),event:'status_changed',next:status,actorId:currentUser.id,at:now});
+  saveDB(DB);renderView('quotes');
+}
+
+function _quoteEmailBody(q){
+  const client=(DB.clients||[]).find(c=>c.id===q.clientId);
+  const toName=q.recipientContact||q.recipientName||client?.contactName||client?.name||'';
+  const t=quoteCalcTotals(q);
+  const fmtDate=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}):'-';
+  let body=`Dear ${toName||'Client'},\n\nPlease find your quote details below.\n\n`;
+  body+=`QUOTE: ${q.number}${q.title?'\nTitle: '+q.title:''}\n`;
+  body+=`Date: ${fmtDate(q.date)}\n`;
+  if(q.expiryDate)body+=`Valid until: ${fmtDate(q.expiryDate)}\n`;
+  body+=`\n${'─'.repeat(50)}\nLINE ITEMS\n${'─'.repeat(50)}\n`;
+  (q.lineItems||[]).forEach((li,i)=>{
+    body+=`${i+1}. ${li.description||'(no description)'}\n   Qty: ${li.qty}  ×  $${li.unitPrice.toFixed(2)}  =  $${quoteLineTotal(li).toFixed(2)}\n`;
+  });
+  body+=`\n${'─'.repeat(50)}\n`;
+  body+=`Subtotal:  $${t.subtotal.toFixed(2)}\n`;
+  if(t.discountAmt>0)body+=`Discount (${q.discountPct}%):  -$${t.discountAmt.toFixed(2)}\n`;
+  if(t.taxAmt>0)body+=`Tax (${q.taxPct}%):  +$${t.taxAmt.toFixed(2)}\n`;
+  body+=`TOTAL:  $${t.grandTotal.toFixed(2)}\n${'─'.repeat(50)}\n`;
+  if(q.notes)body+=`\nNotes:\n${q.notes}\n`;
+  body+=`\nPlease don't hesitate to reach out if you have any questions.\n\nKind regards,\n${currentUser?.name||'Etcher Solutions'}`;
+  return body;
+}
+
+function quoteOpenEmailModal(id){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const client=(DB.clients||[]).find(c=>c.id===q.clientId);
+  const toEmail=q.recipientEmail||client?.contactEmail||client?.loginEmail||'';
+  const subject=`Quote ${q.number}${q.title?' - '+q.title:''}`;
+  const body=_quoteEmailBody(q);
+  document.getElementById('_quote-email-ov')?.remove();
+  const ov=document.createElement('div');
+  ov.id='_quote-email-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(13,28,51,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;backdrop-filter:blur(2px)';
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  const inputS='width:100%;height:36px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 12px;font-size:13px;color:#1a2940;box-sizing:border-box;outline:none;font-family:inherit';
+  const labelS='display:block;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;width:min(580px,94vw);box-shadow:0 24px 80px rgba(0,0,0,0.25);overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e8edf4;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:#eef2ff;display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="#4338ca" stroke-width="1.5"/><path d="M1 5.5l7 4.5 7-4.5" stroke="#4338ca" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#0d1c33;font-family:'Jost',sans-serif">Send Quote</div>
+          <div style="font-size:11px;color:#8da2b2">${escHtml(q.number)}${q.title?' &middot; '+escHtml(q.title):''}</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('_quote-email-ov').remove()" style="background:none;border:none;cursor:pointer;color:#8da2b2;font-size:22px;line-height:1;padding:4px 6px;border-radius:6px" onmouseover="this.style.background='#f0f4f8';this.style.color='#0d1c33'" onmouseout="this.style.background='none';this.style.color='#8da2b2'">&#215;</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1">
+      <div><label style="${labelS}">To (client email)</label>
+        <input id="qem-to" type="email" value="${escHtml(toEmail)}" style="${inputS}" placeholder="client@example.com" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+        ${!toEmail?`<div style="font-size:11px;color:#f59e0b;margin-top:4px">&#9888; No email on file for this client &mdash; enter one above.</div>`:''}
+      </div>
+      <div><label style="${labelS}">Subject</label>
+        <input id="qem-subject" type="text" value="${escHtml(subject)}" style="${inputS}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+      </div>
+      <div><label style="${labelS}">Email Body Preview</label>
+        <textarea id="qem-body" style="width:100%;min-height:220px;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;font-size:12px;color:#1a2940;font-family:monospace;resize:vertical;outline:none;box-sizing:border-box;line-height:1.55" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'">${escHtml(body)}</textarea>
+        <div style="font-size:11px;color:#8da2b2;margin-top:4px">You can edit the body before sending.</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid #e8edf4;flex-shrink:0;background:#f8fbff">
+      <button onclick="document.getElementById('_quote-email-ov').remove()" style="height:36px;padding:0 16px;border-radius:7px;font-size:13px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#6b8399">Cancel</button>
+      <button onclick="(function(){const b=document.getElementById('qem-body').value;navigator.clipboard.writeText(b).then(()=>{showToast('Email body copied to clipboard','success');document.getElementById('_quote-email-ov').remove();}).catch(()=>showAlert('Could not copy — please select and copy the text manually.'));})();" style="height:36px;padding:0 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#1a2940;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#e2eaf2'">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="3" y="1" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="3" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="white"/></svg>
+        Copy Body
+      </button>
+      <button onclick="(function(){const to=encodeURIComponent(document.getElementById('qem-to').value||'');const sub=encodeURIComponent(document.getElementById('qem-subject').value||'');const body=encodeURIComponent(document.getElementById('qem-body').value||'');const url='mailto:'+to+'?subject='+sub+'&body='+body;window.open(url,'_blank');if(document.getElementById('qem-to').value){quoteUpdateStatus('${id}','sent');}})();" style="height:36px;padding:0 18px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#4338ca;color:#fff;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.background='#3730a3'" onmouseout="this.style.background='#4338ca'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4.5l6 4 6-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Open in Outlook
+      </button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function quotePdf(id){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  // Fetch logo first (async), then generate PDF
+  const _doGenerate=(logoDataUrl)=>{
+    _ensureJsPdf(()=>{
+      try{
+      const client=(DB.clients||[]).find(c=>c.id===q.clientId);
+      const t=quoteCalcTotals(q);
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const W=210,M=18,cW=W-M*2;
+      const fmtDate=d=>{if(!d)return'';const[y,mo,dy]=(d+'').split('-');return dy?`${dy}/${mo}/${y}`:d;};
+      const sm=quoteStatusMeta(q.status);
+
+      // ── HEADER BAR ──────────────────────────────────────────
+      const hdrH=38;
+      doc.setFillColor(13,28,51);doc.rect(0,0,W,hdrH,'F');
+      // Teal accent strip at bottom of header
+      doc.setFillColor(151,188,189);doc.rect(0,hdrH-2.5,W,2.5,'F');
+
+      // Logo (top-left)
+      if(logoDataUrl){
+        try{doc.addImage(logoDataUrl,'PNG',M,6,42,0);}catch(_){}
+      }else{
+        // Text fallback
+        doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(255,255,255);
+        doc.text('ETCHER',M,16);
+        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(151,188,189);
+        doc.text('SOLUTIONS',M,21);
+      }
+
+      // QUOTE label + number (top-right)
+      doc.setFont('helvetica','bold');doc.setFontSize(22);doc.setTextColor(255,255,255);
+      doc.text('QUOTE',W-M,16,'right');
+      doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(151,188,189);
+      doc.text(q.number,W-M,23,'right');
+      // Status badge
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(151,188,189);
+      doc.text(sm.label.toUpperCase(),W-M,30,'right');
+
+      // ── SUB-HEADER: two-column info ──────────────────────────
+      let y=hdrH+8;
+      // Left: recipient info (quote fields take priority over client record)
+      const toName=q.recipientName||client?.name||'';
+      const toContact=q.recipientContact||client?.contactName||'';
+      const toEmail=q.recipientEmail||client?.contactEmail||'';
+      if(toName||toContact||toEmail){
+        if(toName){doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(13,28,51);doc.text(toName,M,y);y+=5.5;}
+        if(toContact){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(107,131,153);doc.text('Attn: '+toContact,M,y);y+=4.5;}
+        if(toEmail){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(107,131,153);doc.text(toEmail,M,y);y+=4.5;}
+      }else{
+        doc.setFont('helvetica','italic');doc.setFontSize(10);doc.setTextColor(180,190,200);
+        doc.text('No recipient set',M,y);y+=6;
+      }
+      if(q.title){
+        doc.setFont('helvetica','italic');doc.setFontSize(9.5);doc.setTextColor(100,116,139);
+        const titleLines=doc.splitTextToSize(q.title,90);
+        doc.text(titleLines,M,y);y+=titleLines.length*4.5;
+      }
+
+      // Right column: dates
+      const rCol=W-M;
+      let ry=hdrH+8;
+      const dateRowH=5.5;
+      const drawDateRow=(label,val)=>{
+        doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(107,131,153);
+        doc.text(label,rCol-55,ry);
+        doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(13,28,51);
+        doc.text(val||'—',rCol,ry,'right');
+        ry+=dateRowH;
+      };
+      drawDateRow('Issue Date:',fmtDate(q.date));
+      drawDateRow('Valid Until:',fmtDate(q.expiryDate));
+
+      // Separator line
+      y=Math.max(y,ry)+5;
+      doc.setDrawColor(225,234,242);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=8;
+
+      // ── LINE ITEMS TABLE ──────────────────────────────────────
+      const colN={w:8};const colDesc={w:cW-8-18-30-30};const colQty={w:18};const colUp={w:30};const colTot={w:30};
+      const tblCols=[colN,colDesc,colQty,colUp,colTot];
+      const tblLabels=['#','Description','Qty','Unit Price','Total'];
+      const tblAligns=['center','left','right','right','right'];
+      const rowH=6.5;
+
+      // Table header
+      doc.setFillColor(13,28,51);doc.rect(M,y,cW,rowH+1,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(255,255,255);
+      let cx=M+2;
+      tblCols.forEach((col,i)=>{
+        const a=tblAligns[i];const label=tblLabels[i];
+        if(a==='right')doc.text(label,cx+col.w-2,y+rowH-1,'right');
+        else if(a==='center')doc.text(label,cx+col.w/2,y+rowH-1,'center');
+        else doc.text(label,cx,y+rowH-1);
+        cx+=col.w;
+      });
+      y+=rowH+1;
+
+      // Table rows
+      const items=q.lineItems||[];
+      items.forEach((li,i)=>{
+        if(i%2===0){doc.setFillColor(247,250,255);doc.rect(M,y,cW,rowH,'F');}
+        doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,41,64);
+        let cx2=M+2;
+        // #
+        doc.text(String(i+1),cx2+colN.w/2,y+rowH-1.5,'center');cx2+=colN.w;
+        // Description
+        const dTxt=doc.splitTextToSize(li.description||'',colDesc.w-4)[0]||'';
+        doc.text(dTxt,cx2,y+rowH-1.5);cx2+=colDesc.w;
+        // Qty
+        doc.text(String(li.qty||0),cx2+colQty.w-2,y+rowH-1.5,'right');cx2+=colQty.w;
+        // Unit price
+        doc.text('$'+parseFloat(li.unitPrice||0).toFixed(2),cx2+colUp.w-2,y+rowH-1.5,'right');cx2+=colUp.w;
+        // Total
+        doc.setFont('helvetica','bold');doc.setTextColor(13,28,51);
+        doc.text('$'+quoteLineTotal(li).toFixed(2),cx2+colTot.w-2,y+rowH-1.5,'right');
+        doc.setFont('helvetica','normal');doc.setTextColor(26,41,64);
+        y+=rowH;
+      });
+      if(!items.length){
+        doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(180,190,200);
+        doc.text('No line items.',M+cW/2,y+5,'center');y+=8;
+      }
+      // Table bottom border
+      doc.setDrawColor(225,234,242);doc.setLineWidth(0.3);
+      doc.line(M,y,W-M,y);
+      y+=8;
+
+      // ── TOTALS ────────────────────────────────────────────────
+      const totW=78;const totX=W-M-totW;
+      const drawTotRow=(label,val,labelColor,valColor,bold)=>{
+        doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(9);
+        doc.setTextColor(...(labelColor||[107,131,153]));doc.text(label,totX,y);
+        doc.setTextColor(...(valColor||[26,41,64]));doc.text(val,W-M,y,'right');
+        y+=5.5;
+      };
+      drawTotRow('Subtotal','$'+t.subtotal.toFixed(2));
+      if(t.discountAmt>0)drawTotRow(`Discount (${q.discountPct}%)`,'- $'+t.discountAmt.toFixed(2),[107,131,153],[185,28,28]);
+      if(t.taxAmt>0)drawTotRow(`Tax (${q.taxPct}%)`,'+ $'+t.taxAmt.toFixed(2),[107,131,153],[22,101,52]);
+      // Grand total highlight
+      y+=1;
+      doc.setFillColor(13,28,51);doc.rect(totX-3,y-0.5,totW+3+M-M+M,9,'F');
+      // oops — just draw from totX-3 to W-M+3
+      doc.setFillColor(13,28,51);doc.rect(totX-3,y-0.5,W-M-totX+6,9,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(151,188,189);
+      doc.text('TOTAL',totX,y+6,'left');
+      doc.setFontSize(12);doc.setTextColor(255,255,255);
+      doc.text('$'+t.grandTotal.toFixed(2),W-M,y+6,'right');
+      y+=14;
+
+      // ── NOTES ────────────────────────────────────────────────
+      if(q.notes){
+        doc.setFillColor(247,250,255);doc.rect(M,y,cW,4,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(107,131,153);
+        doc.text('NOTES',M+2,y+2.8);
+        doc.setFillColor(247,250,255);
+        y+=5;
+        doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(55,71,91);
+        const noteLines=doc.splitTextToSize(q.notes,cW-4);
+        // Light notes bg
+        doc.setFillColor(247,250,255);doc.rect(M,y-1,cW,noteLines.length*4.5+4,'F');
+        doc.setDrawColor(225,234,242);doc.setLineWidth(0.3);doc.rect(M,y-1,cW,noteLines.length*4.5+4);
+        doc.text(noteLines,M+3,y+3);
+        y+=noteLines.length*4.5+8;
+      }
+
+      // ── FOOTER ───────────────────────────────────────────────
+      const footerY=285;
+      doc.setFillColor(13,28,51);doc.rect(0,footerY,W,12,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(151,188,189);
+      doc.text('Etcher Solutions',M,footerY+7.5);
+      doc.setTextColor(100,130,150);
+      doc.text('Generated by Etcher Task Hub  •  Page 1',W-M,footerY+7.5,'right');
+
+        doc.save(q.number+'_Quote.pdf');
+      }catch(err){
+        console.error('Quote PDF error',err);quotePrint(id);
+      }
+    },()=>{quotePrint(id);});
+  };
+  // Load logo then generate
+  fetch(window.location.origin+'/Etcher_Logo_2026.png',{cache:'force-cache'})
+    .then(r=>r.ok?r.blob():null)
+    .then(blob=>{
+      if(!blob){_doGenerate(null);return;}
+      const fr=new FileReader();
+      fr.onload=()=>_doGenerate(fr.result);
+      fr.onerror=()=>_doGenerate(null);
+      fr.readAsDataURL(blob);
+    })
+    .catch(()=>_doGenerate(null));
+}
+
+function quotePrint(id){
+  const q=(DB.quotes||[]).find(q=>q.id===id);if(!q)return;
+  const client=(DB.clients||[]).find(c=>c.id===q.clientId);
+  const t=quoteCalcTotals(q);
+  const sm=quoteStatusMeta(q.status);
+  const logoSrc=window.location.origin+'/Etcher_Logo_2026.png';
+  const fmtDate=d=>{if(!d)return'';const[y,mo,dy]=(d+'').split('-');return dy?`${dy}/${mo}/${y}`:d;};
+  const liRows=(q.lineItems||[]).map((li,i)=>`<tr>
+    <td style="color:#8da2b2">${i+1}</td>
+    <td>${escHtml(li.description||'')}</td>
+    <td style="text-align:center">${li.qty}</td>
+    <td style="text-align:right">$${parseFloat(li.unitPrice||0).toFixed(2)}</td>
+    <td style="text-align:right;font-weight:700;color:#0d1c33">$${quoteLineTotal(li).toFixed(2)}</td>
+  </tr>`).join('');
+  const win=window.open('','_blank','width=960,height=800');
+  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${escHtml(q.number)} — Quote</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#1a2940;background:#e8edf4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar{background:#fff;border-bottom:1px solid #e2eaf2;padding:10px 32px;display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:10}
+    .toolbar button{height:34px;padding:0 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+    .btn-dark{background:#0d1c33;color:#fff;border:none}
+    .btn-dark:hover{background:#1e3a5f}
+    .btn-light{background:#fff;border:1.5px solid #e2eaf2;color:#6b8399}
+    .btn-light:hover{border-color:#97bcbd;color:#0d1c33}
+    .wrap{max-width:820px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(0,0,0,0.12);border-radius:4px;overflow:hidden}
+    .hdr{background:#0d1c33;padding:0;display:flex;justify-content:space-between;align-items:stretch;min-height:80px}
+    .hdr-left{padding:20px 28px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+    .hdr-logo{max-height:42px;max-width:160px;object-fit:contain;filter:brightness(0) invert(1)}
+    .hdr-right{padding:20px 28px;text-align:right;display:flex;flex-direction:column;justify-content:center;gap:4px}
+    .hdr-quote-label{font-size:28px;font-weight:900;color:#fff;letter-spacing:-0.03em;line-height:1}
+    .hdr-number{font-size:13px;color:#97bcbd;font-weight:500}
+    .hdr-date{font-size:11px;color:#7a9db5}
+    .teal-strip{background:#97bcbd;height:4px}
+    .body{padding:28px 32px}
+    .meta-row{display:grid;grid-template-columns:1fr auto;gap:20px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #e8edf4}
+    .client-name{font-size:17px;font-weight:800;color:#0d1c33;margin-bottom:4px}
+    .client-sub{font-size:12px;color:#6b8399;margin-top:2px}
+    .quote-title{font-size:12px;font-style:italic;color:#8da2b2;margin-top:6px}
+    .meta-dates{text-align:right}
+    .date-row{display:flex;justify-content:flex-end;gap:10px;margin-bottom:4px;font-size:11px}
+    .date-label{color:#8da2b2;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+    .date-val{color:#1a2940;font-weight:600}
+    .status-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:${sm.bg};color:${sm.color};border:1px solid ${sm.border};margin-top:6px;text-transform:uppercase;letter-spacing:0.05em}
+    table{width:100%;border-collapse:collapse;margin-bottom:0}
+    thead th{background:#0d1c33;color:#fff;padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;text-align:left}
+    thead th:last-child,thead th:nth-child(3),thead th:nth-child(4){text-align:right}
+    tbody td{padding:9px 12px;border-bottom:1px solid #f0f4f8;font-size:12.5px;vertical-align:middle}
+    tbody tr:nth-child(even) td{background:#f7fafd}
+    tbody tr:last-child td{border-bottom:none}
+    .totals-wrap{display:flex;justify-content:flex-end;margin-top:16px}
+    .totals{width:300px}
+    .total-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+    .total-label{color:#6b8399}
+    .total-val{font-weight:600;color:#1a2940}
+    .grand-row{background:#0d1c33;color:#fff;border-radius:8px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    .grand-label{font-size:14px;font-weight:700;letter-spacing:0.02em;color:#97bcbd}
+    .grand-val{font-size:20px;font-weight:900;color:#fff}
+    .notes-section{margin-top:24px;background:#f8fbff;border-radius:8px;border:1px solid #e2eaf2;padding:16px 18px}
+    .notes-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#8da2b2;margin-bottom:8px}
+    .notes-body{font-size:12.5px;color:#4b5e72;line-height:1.65;white-space:pre-line}
+    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:32px;padding-top:14px;border-top:1px solid #e2eaf2;font-size:10px;color:#b0bec5}
+    @media print{
+      .toolbar{display:none!important}
+      body{background:#fff}
+      .wrap{box-shadow:none;margin:0;border-radius:0}
+    }
+  </style></head><body>
+  <div class="toolbar no-print">
+    <button class="btn-dark" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 4V2h7v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="1" y="4" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="7.5" width="7" height="4.5" rx="1" fill="currentColor" opacity=".3"/><circle cx="10.5" cy="6.5" r=".8" fill="currentColor"/></svg>
+      Print
+    </button>
+    <button class="btn-light" onclick="window.close()">Close</button>
+    <span style="font-size:11px;color:#b0bec5;margin-left:8px">${escHtml(q.number)}${q.title?' — '+escHtml(q.title):''}</span>
+  </div>
+  <div class="wrap">
+    <div class="hdr">
+      <div class="hdr-left">
+        <img class="hdr-logo" src="${logoSrc}" alt="Etcher Solutions" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+        <div style="display:none;font-size:16px;font-weight:900;color:#fff;letter-spacing:-0.02em">ETCHER<br><span style="font-size:9px;font-weight:400;color:#97bcbd;letter-spacing:0.08em">SOLUTIONS</span></div>
+      </div>
+      <div class="hdr-right">
+        <div class="hdr-quote-label">QUOTE</div>
+        <div class="hdr-number">${escHtml(q.number)}</div>
+        ${q.date?`<div class="hdr-date">Issued: ${fmtDate(q.date)}</div>`:''}
+        ${q.expiryDate?`<div class="hdr-date">Valid until: ${fmtDate(q.expiryDate)}</div>`:''}
+      </div>
+    </div>
+    <div class="teal-strip"></div>
+    <div class="body">
+      <div class="meta-row">
+        <div>
+          ${(q.recipientName||client)?`<div class="client-name">${escHtml(q.recipientName||client?.name||'')}</div>
+            ${(q.recipientContact||client?.contactName)?`<div class="client-sub">Attn: ${escHtml(q.recipientContact||client?.contactName||'')}</div>`:''}
+            ${(q.recipientEmail||client?.contactEmail)?`<div class="client-sub">${escHtml(q.recipientEmail||client?.contactEmail||'')}</div>`:''}`:
+            '<div style="font-size:13px;color:#b0bec5;font-style:italic">No recipient set</div>'}
+          ${q.title?`<div class="quote-title">${escHtml(q.title)}</div>`:''}
+        </div>
+        <div class="meta-dates">
+          ${q.date?`<div class="date-row"><span class="date-label">Issued</span><span class="date-val">${fmtDate(q.date)}</span></div>`:''}
+          ${q.expiryDate?`<div class="date-row"><span class="date-label">Expires</span><span class="date-val">${fmtDate(q.expiryDate)}</span></div>`:''}
+          <div><span class="status-badge">${sm.label}</span></div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:36px">#</th>
+          <th>Description</th>
+          <th style="width:64px;text-align:right">Qty</th>
+          <th style="width:110px;text-align:right">Unit Price</th>
+          <th style="width:110px;text-align:right">Total</th>
+        </tr></thead>
+        <tbody>${liRows||`<tr><td colspan="5" style="text-align:center;color:#b0bec5;padding:24px;font-style:italic">No line items</td></tr>`}</tbody>
+      </table>
+      <div class="totals-wrap">
+        <div class="totals">
+          <div class="total-row"><span class="total-label">Subtotal</span><span class="total-val">$${t.subtotal.toFixed(2)}</span></div>
+          ${t.discountAmt>0?`<div class="total-row"><span class="total-label">Discount (${q.discountPct}%)</span><span style="font-weight:600;color:#b91c1c">-$${t.discountAmt.toFixed(2)}</span></div>`:''}
+          ${t.taxAmt>0?`<div class="total-row"><span class="total-label">Tax (${q.taxPct}%)</span><span style="font-weight:600;color:#166534">+$${t.taxAmt.toFixed(2)}</span></div>`:''}
+          <div class="grand-row"><span class="grand-label">TOTAL</span><span class="grand-val">$${t.grandTotal.toFixed(2)}</span></div>
+        </div>
+      </div>
+      ${q.notes?`<div class="notes-section"><div class="notes-label">Notes</div><div class="notes-body">${escHtml(q.notes)}</div></div>`:''}
+      <div class="footer">
+        <span>Etcher Solutions &mdash; Etcher Task Hub</span>
+        <span>${new Date().toLocaleDateString('en-AU')}</span>
+      </div>
+    </div>
+  </div>
+</body></html>`);
+  win.document.close();
+}
+
+function _qctGroupOpts(boardId){
+  // Only real groups: must have a name string and not be a task/notification/other entity
+  const groups=(DB.groups||[]).filter(g=>
+    (g.workboardId||g.boardId)===boardId &&
+    typeof g.name==='string' && g.name.length<120 &&
+    !g.archived
+  );
+  const opts=groups.map(g=>`<option value="${escHtml(g.id)}">${escHtml(g.name)}</option>`).join('');
+  return`<option value="">&#8212; No group &#8212;</option>${opts}<option value="__new__" style="color:#0d6e4e;font-weight:600">&#43; Create new group&#8230;</option>`;
+}
+function openQuoteConvertModal(quoteId,itemId){
+  const q=(DB.quotes||[]).find(q=>q.id===quoteId);if(!q)return;
+  const item=(q.lineItems||[]).find(l=>l.id===itemId);if(!item)return;
+  const boards=(DB.workboards||DB.boards||[]).filter(w=>!w.archived);
+  const staff=DB.users||DB.staff||[];
+  const boardOpts=boards.map(b=>`<option value="${escHtml(b.id)}">${escHtml(b.name)}</option>`).join('');
+  const firstBoardId=boards[0]?.id||'';
+  const groupOpts=_qctGroupOpts(firstBoardId);
+  const staffOpts=staff.map(s=>`<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
+  const labelS='display:block;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px';
+  const inputS='width:100%;height:34px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 10px;font-size:13px;color:#1a2940;box-sizing:border-box;outline:none;font-family:inherit';
+  document.getElementById('_quote-convert-ov')?.remove();
+  const ov=document.createElement('div');
+  ov.id='_quote-convert-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;width:min(520px,92vw);box-shadow:0 24px 64px rgba(0,0,0,0.25);overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e8edf4">
+      <span style="font-size:15px;font-weight:800;color:#0d1c33;font-family:'Jost',sans-serif">Convert Line Item to Task</span>
+      <button onclick="document.getElementById('_quote-convert-ov').remove()" style="background:none;border:none;cursor:pointer;color:#8da2b2;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">&#215;</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div><label style="${labelS}">Task Name</label>
+        <input id="qct-name" type="text" value="${escHtml(item.description||q.title||'')}" style="${inputS}" placeholder="Task name&#8230;" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label style="${labelS}">Workboard</label>
+          <select id="qct-board" style="${inputS};height:34px" onchange="_quoteConvertBoardChange('${quoteId}','${itemId}',this.value)">${boardOpts}</select>
+        </div>
+        <div><label style="${labelS}">Priority</label>
+          <select id="qct-priority" style="${inputS};height:34px">
+            <option value="low">Low</option><option value="med" selected>Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="${labelS}">Group</label>
+        <select id="qct-group" style="${inputS};height:34px" onchange="_qctGroupSelChange(this)">${groupOpts}</select>
+        <div id="qct-newgroup-wrap" style="display:none;margin-top:6px">
+          <input id="qct-newgroup-name" type="text" style="${inputS}" placeholder="New group name&#8230;" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label style="${labelS}">Assignee</label>
+          <select id="qct-assignee" style="${inputS};height:34px">
+            <option value="">&#8212; Unassigned &#8212;</option>${staffOpts}
+          </select>
+        </div>
+        <div><label style="${labelS}">Due Date</label>
+          <input id="qct-duedate" type="date" style="${inputS}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid #e8edf4;background:#f8fbff">
+      <button onclick="document.getElementById('_quote-convert-ov').remove()" style="height:36px;padding:0 16px;border-radius:7px;font-size:13px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#6b8399">Cancel</button>
+      <button onclick="quoteConvertToTask('${quoteId}','${itemId}',{name:document.getElementById('qct-name').value,boardId:document.getElementById('qct-board').value,groupId:document.getElementById('qct-group').value,newGroupName:(document.getElementById('qct-newgroup-name')?.value||'').trim(),ownerId:document.getElementById('qct-assignee').value,priority:document.getElementById('qct-priority').value,dueDate:document.getElementById('qct-duedate').value})" style="height:36px;padding:0 18px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#0d1c33;color:#fff" onmouseover="this.style.background='#1e3a5f'" onmouseout="this.style.background='#0d1c33'">Create Task</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function _qctGroupSelChange(sel){
+  const wrap=document.getElementById('qct-newgroup-wrap');
+  if(!wrap)return;
+  if(sel.value==='__new__'){
+    wrap.style.display='block';
+    setTimeout(()=>{const inp=document.getElementById('qct-newgroup-name');if(inp)inp.focus();},50);
+  }else{
+    wrap.style.display='none';
+  }
+}
+function _quoteConvertBoardChange(quoteId,itemId,boardId){
+  const sel=document.getElementById('qct-group');
+  if(sel){sel.innerHTML=_qctGroupOpts(boardId);}
+  const wrap=document.getElementById('qct-newgroup-wrap');
+  if(wrap)wrap.style.display='none';
+}
+function quoteConvertToTask(quoteId,itemId,formData){
+  const q=(DB.quotes||[]).find(q=>q.id===quoteId);if(!q)return;
+  const item=(q.lineItems||[]).find(l=>l.id===itemId);if(!item)return;
+  const name=(formData.name||'').trim();
+  if(!name){showAlert('Please enter a task name.');return;}
+  if(!formData.boardId){showAlert('Please select a workboard.');return;}
+  const now=new Date().toISOString();
+  // Create new group if requested
+  let resolvedGroupId=formData.groupId||null;
+  if(formData.groupId==='__new__'){
+    const newGroupName=(formData.newGroupName||'').trim();
+    if(!newGroupName){showAlert('Please enter a name for the new group.');return;}
+    const newGroup={id:'g'+uid(),name:newGroupName,workboardId:formData.boardId,boardId:formData.boardId,
+      order:(DB.groups||[]).filter(g=>(g.workboardId||g.boardId)===formData.boardId).length,
+      createdAt:now,updatedAt:now,archived:false};
+    (DB.groups=DB.groups||[]).push(newGroup);
+    resolvedGroupId=newGroup.id;
+  }
+  const taskId='t'+uid();
+  DB.tasks.push({
+    id:taskId,name,title:name,
+    boardId:formData.boardId,workboardId:formData.boardId,
+    groupId:resolvedGroupId,parentTaskId:null,
+    status:'todo',priority:formData.priority||'med',
+    ownerId:formData.ownerId||null,
+    currentlyWith:formData.ownerId||null,currentlyWithType:formData.ownerId?'staff':'none',currentlyWithUserId:formData.ownerId||null,
+    clientId:q.clientId||null,startDate:null,endDate:formData.dueDate||null,
+    percentComplete:0,percentMode:'manual',hourBudget:0,
+    lockedDates:false,order:0,description:'',
+    dependencies:[],tags:[],archived:false,
+    createdAt:now,updatedAt:now,completedAt:null,
+  });
+  if(formData.ownerId)notify(formData.ownerId,taskId,'task_assigned',`Task assigned from quote ${q.number}: "${name}"`);
+  item.taskId=taskId;item.workboardId=formData.boardId;item.groupId=formData.groupId||null;
+  q.updatedAt=now;
+  (q.auditEvents=q.auditEvents||[]).push({id:'ae'+uid(),event:'item_converted_to_task',itemId,taskId,actorId:currentUser.id,at:now});
+  saveDB(DB);
+  document.getElementById('_quote-convert-ov')?.remove();
+  renderView('quotes');
+  showToast(`Task "${name}" created successfully`,'success');
+}
+
+function quoteToggleSelectItem(itemId,checked,quoteId){
+  if(checked)quoteSelectedItems.add(itemId);
+  else quoteSelectedItems.delete(itemId);
+  // Update bulk bar visibility/count without full re-render
+  const bar=document.getElementById('quote-bulk-bar');
+  const countEl=document.getElementById('quote-bulk-count');
+  const selAll=document.getElementById('quote-select-all');
+  if(bar){
+    bar.style.display=quoteSelectedItems.size>0?'flex':'none';
+    if(countEl){const n=quoteSelectedItems.size;countEl.textContent=n+' item'+(n!==1?'s':'')+' selected';}
+  }
+  // Sync select-all state
+  if(selAll){
+    const q=(DB.quotes||[]).find(q=>q.id===quoteId);
+    if(q){
+      const selectable=(q.lineItems||[]).filter(li=>!li.taskId);
+      selAll.checked=selectable.length>0&&selectable.every(li=>quoteSelectedItems.has(li.id));
+      selAll.indeterminate=!selAll.checked&&quoteSelectedItems.size>0;
+    }
+  }
+}
+
+function quoteSelectAll(quoteId,checked){
+  const q=(DB.quotes||[]).find(q=>q.id===quoteId);if(!q)return;
+  (q.lineItems||[]).filter(li=>!li.taskId).forEach(li=>{
+    if(checked)quoteSelectedItems.add(li.id);
+    else quoteSelectedItems.delete(li.id);
+  });
+  renderView('quotes');
+}
+
+function quoteClearSelection(quoteId){
+  quoteSelectedItems.clear();
+  renderView('quotes');
+}
+
+function quoteBulkConvertModal(quoteId){
+  const q=(DB.quotes||[]).find(q=>q.id===quoteId);if(!q)return;
+  const items=(q.lineItems||[]).filter(li=>quoteSelectedItems.has(li.id)&&!li.taskId);
+  if(!items.length){showAlert('No unconverted items selected.');return;}
+  const boards=(DB.workboards||DB.boards||[]).filter(b=>!b.archived);
+  const members=(DB.staff||DB.users||[]).filter(u=>u.active!==false);
+  const bOpts=boards.map(b=>`<option value="${b.id}">${escHtml(b.name||b.title||'Board')}</option>`).join('');
+  const mOpts=`<option value="">Unassigned</option>`+members.map(m=>`<option value="${m.id}">${escHtml(m.name||m.email||'')}</option>`).join('');
+  const itemRows=items.map((item,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f4f8">
+      <span style="font-size:11px;color:#b0bec5;min-width:18px">${i+1}</span>
+      <input type="text" name="task_name_${item.id}" value="${escHtml(item.description||'')}"
+        style="flex:1;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 10px;font-size:13px;color:#1a2940;font-family:inherit;outline:none"
+        onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
+        placeholder="Task name…"/>
+      <span style="font-size:11px;color:#8da2b2;white-space:nowrap">$${quoteLineTotal(item).toFixed(2)}</span>
+    </div>`).join('');
+  const ov=document.createElement('div');
+  ov.id='_quote-bulk-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(13,28,51,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`
+  <div style="background:#fff;border-radius:14px;padding:28px 28px 24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,28,51,0.22)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#0d1c33">Bulk Convert to Tasks</div>
+        <div style="font-size:12px;color:#8da2b2;margin-top:2px">${items.length} item${items.length!==1?'s':''} → tasks on a workboard</div>
+      </div>
+      <button onclick="document.getElementById('_quote-bulk-ov').remove()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#b0bec5;padding:0 4px" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">&times;</button>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">Task Names (edit if needed)</div>
+      ${itemRows}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:5px">Workboard *</label>
+        <select id="_qb-board" onchange="(function(v){
+          var grpSel=document.getElementById('_qb-group');
+          var newGrpWrap=document.getElementById('_qb-newgrp-wrap');
+          grpSel.innerHTML='<option value=\"\">&#8212; No group &#8212;</option>'+
+            (DB.groups||[]).filter(g=>(g.workboardId||g.boardId)===v&&typeof g.name===\"string\"&&g.name.length<120&&!g.archived)
+              .map(g=>'<option value=\"'+g.id+'\">'+escHtml(g.name)+'</option>').join('')+
+            '<option value=\"__new__\" style=\"color:#0d6e4e;font-weight:600\">&#43; Create new group&#8230;</option>';
+          grpSel.value='';
+        })(this.value)" style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:8px 10px;font-size:13px;color:#1a2940;font-family:inherit;outline:none;background:#fff">
+          <option value="">Select workboard…</option>
+          ${bOpts}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:5px">Group</label>
+        <select id="_qb-group" onchange="document.getElementById('_qb-newgrp-wrap').style.display=this.value==='__new__'?'block':'none'"
+          style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:8px 10px;font-size:13px;color:#1a2940;font-family:inherit;outline:none;background:#fff">
+          <option value="">&#8212; No group &#8212;</option>
+        </select>
+        <div id="_qb-newgrp-wrap" style="display:none;margin-top:6px">
+          <input type="text" id="_qb-newgrp-name" placeholder="New group name…"
+            style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"
+            onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:5px">Assignee</label>
+        <select id="_qb-owner" style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:8px 10px;font-size:13px;color:#1a2940;font-family:inherit;outline:none;background:#fff">
+          ${mOpts}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:5px">Priority</label>
+        <select id="_qb-priority" style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:8px 10px;font-size:13px;color:#1a2940;font-family:inherit;outline:none;background:#fff">
+          <option value="low">Low</option>
+          <option value="med" selected>Medium</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:5px">Due Date</label>
+        <input type="date" id="_qb-due" style="width:100%;border:1.5px solid #e2eaf2;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;box-sizing:border-box"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+      <button onclick="document.getElementById('_quote-bulk-ov').remove()" style="padding:0 18px;height:36px;border-radius:7px;font-size:13px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#6b8399" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background='#fff'">Cancel</button>
+      <button onclick="quoteBulkConvertToTasks('${quoteId}')" style="padding:0 20px;height:36px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:#0d1c33;color:#fff" onmouseover="this.style.background='#1a3a5c'" onmouseout="this.style.background='#0d1c33'">
+        Create ${items.length} Task${items.length!==1?'s':''}
+      </button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function quoteBulkConvertToTasks(quoteId){
+  const q=(DB.quotes||[]).find(q=>q.id===quoteId);if(!q)return;
+  const boardId=document.getElementById('_qb-board')?.value||'';
+  if(!boardId){showAlert('Please select a workboard.');return;}
+  const groupSel=document.getElementById('_qb-group')?.value||'';
+  const newGroupName=(document.getElementById('_qb-newgrp-name')?.value||'').trim();
+  const ownerId=document.getElementById('_qb-owner')?.value||null;
+  const priority=document.getElementById('_qb-priority')?.value||'med';
+  const dueDate=document.getElementById('_qb-due')?.value||null;
+  const now=new Date().toISOString();
+  // Resolve or create group
+  let resolvedGroupId=groupSel&&groupSel!=='__new__'?groupSel:null;
+  if(groupSel==='__new__'){
+    if(!newGroupName){showAlert('Please enter a name for the new group.');return;}
+    const newGroup={id:'g'+uid(),name:newGroupName,workboardId:boardId,boardId,
+      order:(DB.groups||[]).filter(g=>(g.workboardId||g.boardId)===boardId).length,
+      createdAt:now,updatedAt:now,archived:false};
+    (DB.groups=DB.groups||[]).push(newGroup);
+    resolvedGroupId=newGroup.id;
+  }
+  const items=(q.lineItems||[]).filter(li=>quoteSelectedItems.has(li.id)&&!li.taskId);
+  let created=0;
+  items.forEach(item=>{
+    const nameInput=document.querySelector(`[name="task_name_${item.id}"]`);
+    const name=(nameInput?nameInput.value.trim():item.description||'').trim()||item.description||'Task';
+    const taskId='t'+uid();
+    DB.tasks.push({
+      id:taskId,name,title:name,
+      boardId,workboardId:boardId,
+      groupId:resolvedGroupId,parentTaskId:null,
+      status:'todo',priority,
+      ownerId:ownerId||null,
+      currentlyWith:ownerId||null,currentlyWithType:ownerId?'staff':'none',currentlyWithUserId:ownerId||null,
+      clientId:q.clientId||null,startDate:null,endDate:dueDate||null,
+      percentComplete:0,percentMode:'manual',hourBudget:0,
+      lockedDates:false,order:created,description:'',
+      dependencies:[],tags:[],archived:false,
+      createdAt:now,updatedAt:now,completedAt:null,
+    });
+    if(ownerId)notify(ownerId,taskId,'task_assigned',`Task assigned from quote ${q.number}: "${name}"`);
+    item.taskId=taskId;item.workboardId=boardId;item.groupId=resolvedGroupId;
+    (q.auditEvents=q.auditEvents||[]).push({id:'ae'+uid(),event:'item_converted_to_task',itemId:item.id,taskId,actorId:currentUser.id,at:now});
+    created++;
+  });
+  q.updatedAt=now;
+  saveDB(DB);
+  quoteSelectedItems.clear();
+  document.getElementById('_quote-bulk-ov')?.remove();
+  renderView('quotes');
+  showToast(`${created} task${created!==1?'s':''} created successfully`,'success');
+}
+
+// ═══════════════════════════════════════════════════════════
 // CLIENT NOTES (OneNote-like)
 // ═══════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
@@ -9797,6 +11157,7 @@ function openTaskModal(id, defaultGroupId){
   }).join('');
 
   const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+DB.staff.map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${s.name}</option>`).join('');
+  const coStaffOptions=`<option value="">— None —</option>`+DB.staff.filter(s=>s.id!==t.ownerId).map(s=>`<option value="${s.id}" ${t.coOwnerId===s.id?'selected':''}>${s.name}</option>`).join('');
   const currentlyWithOptions=
     `<option value="" ${!t.currentlyWith||t.currentlyWith==='none'?'selected':''}>— None —</option>`+
     `<option value="client" ${t.currentlyWith==='client'?'selected':''}>Client</option>`+
@@ -9820,7 +11181,10 @@ function openTaskModal(id, defaultGroupId){
       </div>
       <!-- AC: owner and staff allocation hidden from clients -->
       ${!isClientView?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Owner</label><select id="tm-owner" class="form-input" ${canEdit?'':' disabled'}>${staffOptions}</select></div>
+        <div><label class="form-label">Owner</label><select id="tm-owner" class="form-input" ${canEdit?'':' disabled'} onchange="(function(v){var c=document.getElementById('tm-coowner');if(c){Array.from(c.options).forEach(o=>{o.disabled=o.value&&o.value===v;if(o.value===v&&c.value===v)c.value='';});})(this.value)">${staffOptions}</select></div>
+        <div><label class="form-label">Co-owner</label><select id="tm-coowner" class="form-input" ${canEdit?'':' disabled'}>${coStaffOptions}</select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Currently With</label><select id="tm-cw" class="form-input" ${canEdit?'':' disabled'}>${currentlyWithOptions}</select></div>
       </div>`:(t.currentlyWithType==='client'||t.status==='waiting-client'?`<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;font-weight:600">⏳ Awaiting your response</div>`:'')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -10075,6 +11439,7 @@ function saveTask(){
     t.status=document.getElementById('tm-status').value;
     t.priority=document.getElementById('tm-priority').value;
     t.ownerId=document.getElementById('tm-owner').value;
+    t.coOwnerId=document.getElementById('tm-coowner')?.value||null;
     t.currentlyWith=document.getElementById('tm-cw').value;
     // Keep new schema fields in sync
     t.title=t.name;
@@ -10142,6 +11507,9 @@ function saveTask(){
     if(old.ownerId!==t.ownerId){
       notify(t.ownerId,t.id,'owner_changed',`You are now the owner of: ${t.name}`);
     }
+    if(t.coOwnerId&&old.coOwnerId!==t.coOwnerId){
+      notify(t.coOwnerId,t.id,'owner_changed',`You are co-owner of: ${t.name}`);
+    }
     // Description @mention notifications
     if(t.description){
       const _notifSet=new Set([currentUser?.id,t.ownerId,t.currentlyWithUserId].filter(Boolean));
@@ -10181,6 +11549,7 @@ function saveTask(){
       status:document.getElementById('tm-status').value,
       priority:document.getElementById('tm-priority').value,
       ownerId:document.getElementById('tm-owner').value,
+      coOwnerId:document.getElementById('tm-coowner')?.value||null,
       currentlyWith:_cwVal,
       currentlyWithType:_cwVal==='client'?'client':(_cwVal?'staff':'none'),
       currentlyWithUserId:(_cwVal&&_cwVal!=='client')?_cwVal:null,
@@ -11366,20 +12735,23 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         <span class="ws-cell-caret" style="color:${pm.color}">▾</span>
       </div>
     </td>`:''}
-    ${cols.owner?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px" title="${owner?escHtml(owner.name):'Unassigned'} — Owner (accountable)">
-      <div style="display:inline-flex;align-items:center;gap:4px">${owner?avatarHtml(owner,26):'<span style="font-size:18px;color:#d4dde8">○</span>'}<span class="ws-cell-caret">▾</span></div>
+    ${cols.owner?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px;text-align:center" title="${owner?escHtml(owner.name):'Unassigned'}${t.coOwnerId&&DB.staff.find(s=>s.id===t.coOwnerId)?' + '+escHtml(DB.staff.find(s=>s.id===t.coOwnerId).name):''} — Owner">
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        ${owner?`<div style="display:inline-flex;align-items:center">${avatarHtml(owner,26)}${t.coOwnerId&&DB.staff.find(s=>s.id===t.coOwnerId)?`<span style="margin-left:-8px;display:inline-block;border:1.5px solid #fff;border-radius:50%">${avatarHtml(DB.staff.find(s=>s.id===t.coOwnerId),22)}</span>`:''}</div>`:'<span style="font-size:18px;color:#d4dde8">○</span>'}
+        <span class="ws-cell-caret">▾</span>
+      </div>
     </td>`:''}
-    ${cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder">
-      <div style="display:inline-flex;align-items:center;gap:5px">${cw?avatarHtml(cw,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cw?.name?.split(' ')[0]||''}</span><span class="ws-cell-caret">▾</span></div>
+    ${cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px">${cw?avatarHtml(cw,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cw?.name?.split(' ')[0]||''}</span><span class="ws-cell-caret">▾</span></div>
     </td>`:''}
-    ${cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="Set timeline">
-      <div style="display:inline-flex;align-items:center;gap:3px">
+    ${cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="Set timeline" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:3px">
         <span style="font-size:11px;white-space:nowrap;${isOverdue?'color:#dc2626;font-weight:700':'color:#6b8399'}">${isOverdue?'⚠ ':''}${tlText}</span>
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''}
-    ${cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}">
-      <div style="display:inline-flex;align-items:center;gap:5px;padding:0 6px">
+    ${cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px">
         <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${effectivePct}%;background:${effectivePct===100?'#22c55e':'#97bcbd'}"></div></div>
         <span style="font-size:11px;color:${effectivePct===100?'#16a34a':'#6b8399'}">${effectivePct}%</span>
         ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">${cr.done}/${cr.total}</span>`:''}
@@ -11556,6 +12928,13 @@ function renderTpDetails(task){
       <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('ownerId',this.value)">
         <option value="">Unassigned</option>
         ${DB.staff.map(s=>`<option value="${s.id}" ${task.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="tp-field-row">
+      <span class="tp-field-label">Co-owner</span>
+      <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('coOwnerId',this.value||null)">
+        <option value="">— None —</option>
+        ${DB.staff.filter(s=>s.id!==task.ownerId).map(s=>`<option value="${s.id}" ${task.coOwnerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('')}
       </select>
     </div>
     <div class="tp-field-row">
