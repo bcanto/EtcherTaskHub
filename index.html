@@ -6760,7 +6760,7 @@ function renderTime(){
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id==='er1'?' selected':''}>${escHtml(r.name)}</option>`).join('');
 
-  const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
+  const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d6e4e;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
 
   const selectorCols=isAdmin?'1.3fr 1fr':'1.6fr';
   const logForm=`<div class="card" style="margin-bottom:20px;padding:20px 22px;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
