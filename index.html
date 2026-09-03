@@ -6707,11 +6707,27 @@ let _teWeekOffset=0; // weeks relative to current week (calendar view)
 function _teSetCalView(v){_teCalView=!!v;renderView('time');}
 function _teWeekNav(delta){_teWeekOffset+=delta;renderView('time');}
 function _teWeekReset(){_teWeekOffset=0;renderView('time');}
+let _teSelectedDay=null;
 function _teSetDateFromBar(dateStr){
+  _teSelectedDay=dateStr;
   const inp=document.getElementById('te-date');
   if(inp){inp.value=dateStr;inp.dispatchEvent(new Event('change'));}
+  // Re-render just the bar to show selection without full re-render
+  const bar=document.getElementById('te-week-bar');
+  if(bar){
+    bar.querySelectorAll('[data-teday]').forEach(el=>{
+      const ds=el.dataset.teday;
+      const isSelected=ds===dateStr;
+      const isToday=el.dataset.today==='1';
+      const hasHours=el.dataset.hashours==='1';
+      el.style.background=isSelected?'#0d6e4e':(hasHours?'#eaf4ee':'#fff');
+      el.style.border=`1px solid ${isSelected?'#0d6e4e':isToday?'#0d6e4e':(hasHours?'#cfe8d9':'#e2eaf2')}`;
+      el.querySelector('.te-day-name').style.color=isSelected?'#fff':(isToday?'#0d6e4e':'#8da2b2');
+      el.querySelector('.te-day-date').style.color=isSelected?'rgba(255,255,255,0.75)':'#b0bec5';
+      el.querySelector('.te-day-hrs').style.color=isSelected?'#fff':(hasHours?'#0d6e4e':'#c3d0da');
+    });
+  }
   document.getElementById('te-hours')?.focus();
-  document.querySelector('.card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function _teFmtYMD(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
 function _teMonday(offsetWeeks){
@@ -6880,15 +6896,16 @@ function renderTime(){
   const thisWeekMonday=_teMonday(0);
   const weekDays=[...Array(7)].map((_,i)=>{const d=new Date(thisWeekMonday);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
   const weekTotals=weekDays.map(ds=>visibleEntries.filter(e=>e.date===ds).reduce((s,e)=>s+e.hours,0));
-  const weekBarHtml=`<div style="display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;overflow-x:auto">
+  const weekBarHtml=`<div id="te-week-bar" style="display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;overflow-x:auto">
     ${weekDays.map((ds,i)=>{
       const h=weekTotals[i];
       const has=h>0;
       const isToday=ds===todayYMD;
-      return`<div onclick="_teSetDateFromBar('${ds}')" title="Log time for ${dayNamesShort[i]} ${ds.slice(8,10)}/${ds.slice(5,7)}" style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${has?'#eaf4ee':'#fff'};border:1px solid ${isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')};cursor:pointer;transition:box-shadow 0.12s" onmouseover="this.style.boxShadow='0 2px 8px rgba(13,110,78,0.15)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isToday?'#0d6e4e':'#8da2b2'};letter-spacing:.03em;text-transform:uppercase">${dayNamesShort[i]}</div>
-        <div style="font-size:9.5px;color:#b0bec5;margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
-        <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:${has?'#0d6e4e':'#c3d0da'}">${has?h.toFixed(2)+'h':'—'}</div>
+      const isSel=ds===_teSelectedDay;
+      return`<div data-teday="${ds}" data-today="${isToday?'1':'0'}" data-hashours="${has?'1':'0'}" onclick="_teSetDateFromBar('${ds}')" title="Log time for ${dayNamesShort[i]} ${ds.slice(8,10)}/${ds.slice(5,7)}" style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${isSel?'#0d6e4e':(has?'#eaf4ee':'#fff')};border:1px solid ${isSel||isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')};cursor:pointer;transition:background 0.15s,box-shadow 0.12s" onmouseover="this.style.boxShadow='0 2px 8px rgba(13,110,78,0.18)'" onmouseout="this.style.boxShadow='none'">
+        <div class="te-day-name" style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isSel?'#fff':(isToday?'#0d6e4e':'#8da2b2')};letter-spacing:.03em;text-transform:uppercase">${dayNamesShort[i]}</div>
+        <div class="te-day-date" style="font-size:9.5px;color:${isSel?'rgba(255,255,255,0.75)':'#b0bec5'};margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
+        <div class="te-day-hrs" style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:${isSel?'#fff':(has?'#0d6e4e':'#c3d0da')}">${has?h.toFixed(2)+'h':'—'}</div>
       </div>`;
     }).join('')}
   </div>`;
