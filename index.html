@@ -6707,6 +6707,12 @@ let _teWeekOffset=0; // weeks relative to current week (calendar view)
 function _teSetCalView(v){_teCalView=!!v;renderView('time');}
 function _teWeekNav(delta){_teWeekOffset+=delta;renderView('time');}
 function _teWeekReset(){_teWeekOffset=0;renderView('time');}
+function _teSetDateFromBar(dateStr){
+  const inp=document.getElementById('te-date');
+  if(inp){inp.value=dateStr;inp.dispatchEvent(new Event('change'));}
+  document.getElementById('te-hours')?.focus();
+  document.querySelector('.card')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function _teFmtYMD(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
 function _teMonday(offsetWeeks){
   const now=new Date();
@@ -6879,7 +6885,7 @@ function renderTime(){
       const h=weekTotals[i];
       const has=h>0;
       const isToday=ds===todayYMD;
-      return`<div style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${has?'#eaf4ee':'#fff'};border:1px solid ${isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')}">
+      return`<div onclick="_teSetDateFromBar('${ds}')" title="Log time for ${dayNamesShort[i]} ${ds.slice(8,10)}/${ds.slice(5,7)}" style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${has?'#eaf4ee':'#fff'};border:1px solid ${isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')};cursor:pointer;transition:box-shadow 0.12s" onmouseover="this.style.boxShadow='0 2px 8px rgba(13,110,78,0.15)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isToday?'#0d6e4e':'#8da2b2'};letter-spacing:.03em;text-transform:uppercase">${dayNamesShort[i]}</div>
         <div style="font-size:9.5px;color:#b0bec5;margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
         <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:${has?'#0d6e4e':'#c3d0da'}">${has?h.toFixed(2)+'h':'—'}</div>
