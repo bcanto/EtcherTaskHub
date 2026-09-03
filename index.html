@@ -6902,7 +6902,7 @@ function renderTime(){
     const isApproved=e.status==='approved';
     const rowBg=isSelDay?'#e8f4f4':(isApproved?'#f8fcfa':'transparent');
     // Short client badge: up to 4 uppercase chars from initials of each word
-    const clientShort=client?client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4):'';
+    const clientShort=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
     const taskLabel=task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
     return`<div data-terowdate="${e.date}" class="te-row" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
       <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
@@ -7295,7 +7295,7 @@ function _tePickerPick(id,taskId,clientId,el){
     else nameCell.innerHTML=`<span style="color:#8da2b2;font-style:italic;font-weight:500">— No task —</span>`;
   }
   if(clientCell){
-    const cs=client?client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4):'';
+    const cs=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
     clientCell.innerHTML=client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${cs}</span>`:'<span style="color:#c8d3dc">—</span>';
   }
 }
