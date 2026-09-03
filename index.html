@@ -6702,6 +6702,19 @@ function _teToggleBillable(){
   renderView('time');
 }
 
+let _teCalView=false; // false = list, true = calendar
+let _teWeekOffset=0; // weeks relative to current week (calendar view)
+function _teSetCalView(v){_teCalView=!!v;renderView('time');}
+function _teWeekNav(delta){_teWeekOffset+=delta;renderView('time');}
+function _teWeekReset(){_teWeekOffset=0;renderView('time');}
+function _teFmtYMD(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
+function _teMonday(offsetWeeks){
+  const now=new Date();
+  const day=now.getDay();
+  const diff=(day===0?-6:1-day);
+  return new Date(now.getFullYear(),now.getMonth(),now.getDate()+diff+offsetWeeks*7);
+}
+
 const _TE_STATUS_META={
   draft:{label:'Draft',bg:'#f1f5f9',color:'#64748b'},
   submitted:{label:'Submitted',bg:'#fef3c7',color:'#92400e'},
@@ -6831,9 +6844,9 @@ function renderTime(){
   const groupsHtml=groups.map(g=>{
     const dayTotal=g.entries.reduce((s,e)=>s+e.hours,0);
     return`<div>
-      <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:8px 18px;border-bottom:1px solid #e2eaf2;border-top:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
+      <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:9px 18px;border-bottom:1px solid #e2eaf2;border-top:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
         <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#0d1c33;letter-spacing:0.02em">${formatDate(g.date)}</span>
-        <span style="font-size:11px;color:#8da2b2;font-weight:600">${dayTotal.toFixed(2)}h</span>
+        <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:800;color:#0d6e4e;background:#eaf4ee;padding:2px 10px;border-radius:10px">${dayTotal.toFixed(2)}h</span>
       </div>
       ${g.entries.map(rowHtml).join('')}
     </div>`;
@@ -6850,16 +6863,84 @@ function renderTime(){
         ${teViewTabBtn(false,'My Timesheets')}${teViewTabBtn(true,'All Staff')}
       </div>`:'';
 
+  const calToggleBtn=(key,label)=>`<button type="button" onclick="_teSetCalView(${key})" style="border:none;cursor:pointer;padding:6px 14px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${_teCalView===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
+  const calViewToggle=`<div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:9px;padding:3px">
+        ${calToggleBtn(false,'List')}${calToggleBtn(true,'Calendar')}
+      </div>`;
+
+  // ── Weekly summary bar (list view) — Mon–Sun of the current real week ──
+  const dayNamesShort=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const todayYMD=_teFmtYMD(new Date());
+  const thisWeekMonday=_teMonday(0);
+  const weekDays=[...Array(7)].map((_,i)=>{const d=new Date(thisWeekMonday);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
+  const weekTotals=weekDays.map(ds=>visibleEntries.filter(e=>e.date===ds).reduce((s,e)=>s+e.hours,0));
+  const weekBarHtml=`<div style="display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;overflow-x:auto">
+    ${weekDays.map((ds,i)=>{
+      const h=weekTotals[i];
+      const has=h>0;
+      const isToday=ds===todayYMD;
+      return`<div style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${has?'#eaf4ee':'#fff'};border:1px solid ${isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')}">
+        <div style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isToday?'#0d6e4e':'#8da2b2'};letter-spacing:.03em;text-transform:uppercase">${dayNamesShort[i]}</div>
+        <div style="font-size:9.5px;color:#b0bec5;margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
+        <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:${has?'#0d6e4e':'#c3d0da'}">${has?h.toFixed(2)+'h':'—'}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // ── Calendar view — navigable Mon–Sun week ──
+  const calMonday=_teMonday(_teWeekOffset);
+  const calDayStrs=[...Array(7)].map((_,i)=>{const d=new Date(calMonday);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
+  const calWeekLabel=`${formatDate(calDayStrs[0])} – ${formatDate(calDayStrs[6])}`;
+  const calStatusBorder={draft:'#94a3b8',submitted:'#f59e0b',approved:'#16a34a',rejected:'#dc2626'};
+  const calHeaderBar=`<div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;flex-wrap:wrap">
+    <button onclick="_teWeekNav(-1)" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">‹ Prev</button>
+    <button onclick="_teWeekReset()" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">Today</button>
+    <button onclick="_teWeekNav(1)" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">Next ›</button>
+    <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;margin-left:6px">${calWeekLabel}</span>
+  </div>`;
+  const calCols=calDayStrs.map((ds,i)=>{
+    const dayEntries=visibleEntries.filter(e=>e.date===ds);
+    const dayTotal=dayEntries.reduce((s,e)=>s+e.hours,0);
+    const isToday=ds===todayYMD;
+    const cards=dayEntries.map(e=>{
+      const task=DB.tasks.find(t=>t.id===e.taskId);
+      const client=(task?getTaskClient(task):null)||DB.clients.find(c=>c.id===e.clientId);
+      const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
+      const bc=calStatusBorder[e.status]||calStatusBorder.draft;
+      const title=task?escHtml(task.name):(client?escHtml(client.name):'Time entry');
+      return`<div onclick="openEditTimeEntry('${e.id}')" title="Click to edit" style="cursor:pointer;background:#fff;border:1px solid #e2eaf2;border-left:3px solid ${bc};border-radius:8px;padding:7px 9px;margin-bottom:6px;box-shadow:0 1px 3px rgba(13,28,51,0.05);transition:box-shadow .12s,transform .12s" onmouseover="this.style.boxShadow='0 3px 8px rgba(13,28,51,0.12)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(13,28,51,0.05)';this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <span style="font-size:11.5px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
+          <span style="font-family:'Jost',sans-serif;font-size:11.5px;font-weight:800;color:#0d6e4e;white-space:nowrap">${e.hours}h</span>
+        </div>
+        ${e.note?`<div style="font-size:10.5px;color:#8da2b2;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.note)}</div>`:''}
+        <div style="margin-top:4px"><span style="font-size:8.5px;background:${sm.bg};color:${sm.color};padding:2px 6px;border-radius:8px;font-weight:700">${sm.label}</span></div>
+      </div>`;
+    }).join('');
+    return`<div style="min-width:0;background:${isToday?'#f0f9f4':'transparent'};border-radius:10px;padding:8px 6px">
+      <div style="text-align:center;padding:6px 4px 10px;border-bottom:2px solid ${isToday?'#0d6e4e':'#e2eaf2'};margin-bottom:8px">
+        <div style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isToday?'#0d6e4e':'#8da2b2'};letter-spacing:.04em;text-transform:uppercase">${dayNamesShort[i]}</div>
+        <div style="font-size:10.5px;color:#b0bec5;margin:1px 0 4px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
+        <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:800;color:${dayTotal>0?'#0d1c33':'#c3d0da'}">${dayTotal>0?dayTotal.toFixed(2)+'h':'—'}</div>
+      </div>
+      <div style="min-height:40px">${cards||`<div style="text-align:center;font-size:10px;color:#c3d0da;padding:10px 0">No entries</div>`}</div>
+    </div>`;
+  }).join('');
+  const calendarBody=calHeaderBar+`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;padding:12px 10px;max-height:480px;overflow-y:auto">${calCols}</div>`;
+
+  const listBody=weekBarHtml+`<div style="max-height:460px;overflow-y:auto">
+      ${groups.length?groupsHtml:emptyState}
+    </div>`;
+
   return logForm+`<div class="card" style="padding:0;overflow:hidden;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
-    <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:14px">
+    <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">Time Log</span>
       <span style="font-size:12px;color:#8da2b2">${visibleEntries.length} entr${visibleEntries.length!==1?'ies':'y'}</span>
+      ${calViewToggle}
       ${teViewTabs}
     </div>
-    <div style="max-height:520px;overflow-y:auto">
-      ${groups.length?groupsHtml:emptyState}
-    </div>
-    ${groups.length?`<div style="padding:12px 18px;border-top:1px solid #e2eaf2;background:#f9fbfc;display:flex;align-items:center;gap:22px">
+    ${_teCalView?calendarBody:listBody}
+    ${visibleEntries.length?`<div style="padding:12px 18px;border-top:1px solid #e2eaf2;background:#f9fbfc;display:flex;align-items:center;gap:22px">
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${totalH.toFixed(2)}h total</span>
       <span style="font-size:12px;color:#166534;font-weight:600">${billableH.toFixed(2)}h billable</span>
       <span style="font-size:12px;color:#64748b;font-weight:600">${nonBillableH.toFixed(2)}h non-billable</span>
@@ -10655,7 +10736,7 @@ function renderMyWeek(){
       <div class="card" style="padding:14px 20px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
-            <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">My Week</div>
+            <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Focus</div>
             <div style="font-size:11px;color:#94a3b8;margin-top:1px">Next 7 days</div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -10797,8 +10878,8 @@ function renderMyWeek(){
     <div class="card" style="padding:14px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">My Week</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:1px">${weekLabel} · ${totalActive} active task${totalActive!==1?'s':''}</div>
+          <div style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">${weekLabel}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:1px">${totalActive} active task${totalActive!==1?'s':''}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <div style="display:flex;background:#f4f7fa;border-radius:7px;padding:3px" role="group" aria-label="View">
