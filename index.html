@@ -6689,6 +6689,7 @@ function renderTime(){
     const cl=getTaskClient(t);
     return`<option value="${t.id}">${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;
   }).join('');
+  window._teTaskAllItems=DB.tasks.filter(t=>!t.archived).map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
   const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id==='er1'?' selected':''}>${escHtml(r.name)}</option>`).join('');
@@ -6705,8 +6706,10 @@ function renderTime(){
     </div>
     <div style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
       ${mode==='task'
-        ?`<div><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
-        <select id="te-task" class="form-input"><option value="">— No task —</option>${taskOpts}</select></div>`
+        ?`<div style="position:relative"><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
+        <input id="te-task-input" class="form-input" autocomplete="off" placeholder="Search task…" oninput="_teTaskFilter(this)" onfocus="_teTaskOpen(this)" onblur="_teTaskBlur()" style="cursor:text"/>
+        <input type="hidden" id="te-task" value=""/>
+        <div id="te-task-drop" style="display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid #d4dde8;border-radius:8px;box-shadow:0 4px 16px rgba(13,28,51,0.13);max-height:220px;overflow-y:auto;z-index:9999"></div></div>`
         :`<div><label class="form-label">Client <span style="color:#ef4444">*</span></label>
         <select id="te-client" class="form-input">${clientOpts}</select></div>`}
       ${isAdmin?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
@@ -6815,6 +6818,42 @@ function renderTime(){
   </div>`;
 }
 
+function _teTaskRenderDrop(items){
+  const drop=document.getElementById('te-task-drop');
+  if(!drop)return;
+  if(!items.length){drop.style.display='none';return;}
+  drop.innerHTML=`<div data-val="" style="padding:8px 12px;cursor:pointer;font-size:13px;color:#6b8399;border-bottom:1px solid #f0f4f8" onmousedown="_teTaskPick('',this)">— No task —</div>`
+    +items.slice(0,80).map(it=>`<div data-val="${escHtml(it.id)}" style="padding:8px 12px;cursor:pointer;font-size:13px;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onmousedown="_teTaskPick('${escHtml(it.id)}',this)" title="${escHtml(it.label)}">${escHtml(it.label)}</div>`).join('');
+  const inp=document.getElementById('te-task-input');
+  if(inp){
+    const rect=inp.getBoundingClientRect();
+    const spaceBelow=window.innerHeight-rect.bottom;
+    if(spaceBelow<240&&rect.top>240){drop.style.bottom='100%';drop.style.top='auto';}
+    else{drop.style.top='100%';drop.style.bottom='auto';}
+  }
+  drop.style.display='block';
+}
+function _teTaskFilter(inp){
+  const q=(inp.value||'').toLowerCase().trim();
+  const all=window._teTaskAllItems||[];
+  const filtered=q?all.filter(it=>it.label.toLowerCase().includes(q)):all;
+  _teTaskRenderDrop(filtered);
+}
+function _teTaskOpen(inp){
+  const all=window._teTaskAllItems||[];
+  _teTaskRenderDrop(all);
+}
+function _teTaskBlur(){
+  setTimeout(()=>{const d=document.getElementById('te-task-drop');if(d)d.style.display='none';},180);
+}
+function _teTaskPick(id,el){
+  const inp=document.getElementById('te-task-input');
+  const hidden=document.getElementById('te-task');
+  if(inp)inp.value=id?(window._teTaskAllItems||[]).find(x=>x.id===id)?.label||'':'';
+  if(hidden)hidden.value=id;
+  const drop=document.getElementById('te-task-drop');
+  if(drop)drop.style.display='none';
+}
 function logTime(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const mode=_teMode==='client'?'client':'task';
