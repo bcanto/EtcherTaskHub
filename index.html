@@ -1086,6 +1086,9 @@ function _migrateDB(data){
   if(!data.boardShares)         data.boardShares         = [];
   if(!data.personalChecklist)  data.personalChecklist   = [];
   if(!data.migrationFlags)     data.migrationFlags      = {};
+  if(!data.deletedClientIds)   data.deletedClientIds    = [];
+  // Apply tombstones — ensure deleted clients never reappear after migration
+  if(data.deletedClientIds.length)data.clients=(data.clients||[]).filter(c=>!data.deletedClientIds.includes(c.id));
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   if(!data.proFormaInvoices)   data.proFormaInvoices    = [];
   if(!data.quotes)             data.quotes              = [];
@@ -1500,6 +1503,10 @@ function _mergeDB(current, incoming){
   merged.clientComments=unionById(current.clientComments,incoming.clientComments);
   merged.notifications=unionById(current.notifications,incoming.notifications);
   merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
+  // Carry forward deleted-ID tombstones from both sides; filter out tombstoned clients
+  const deletedClientIds=new Set([...(current.deletedClientIds||[]),...(incoming.deletedClientIds||[])]);
+  merged.deletedClientIds=[...deletedClientIds];
+  if(deletedClientIds.size)merged.clients=(merged.clients||[]).filter(c=>!deletedClientIds.has(c.id));
   if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
   return merged;
 }
@@ -1542,6 +1549,15 @@ function saveDB(data){
   data._savedAt=new Date().toISOString(); // timestamp for conflict detection
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=setTimeout(()=>{_saveDebounceTimer=null;const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
+}
+// Immediate flush — bypasses the 300ms debounce. Use after structural deletes (client, board)
+// so the change reaches localStorage + Supabase before any page reload or realtime event can overwrite it.
+function _flushDB(){
+  clearTimeout(_saveDebounceTimer);
+  _saveDebounceTimer=null;
+  const safe=_stripPasswords(DB);
+  localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));
+  _syncToSupabase(safe);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
@@ -6709,25 +6725,28 @@ function _teWeekNav(delta){_teWeekOffset+=delta;renderView('time');}
 function _teWeekReset(){_teWeekOffset=0;renderView('time');}
 let _teSelectedDay=null;
 function _teSetDateFromBar(dateStr){
-  _teSelectedDay=dateStr;
+  // Toggle off if same day clicked again
+  _teSelectedDay=(_teSelectedDay===dateStr)?null:dateStr;
+  renderView('time');
+  if(_teSelectedDay){
+    setTimeout(()=>document.getElementById('te-hours')?.focus(),0);
+  }
+}
+function _teQuickAddFocus(dateStr){
   const inp=document.getElementById('te-date');
   if(inp){inp.value=dateStr;inp.dispatchEvent(new Event('change'));}
-  // Re-render just the bar to show selection without full re-render
-  const bar=document.getElementById('te-week-bar');
-  if(bar){
-    bar.querySelectorAll('[data-teday]').forEach(el=>{
-      const ds=el.dataset.teday;
-      const isSelected=ds===dateStr;
-      const isToday=el.dataset.today==='1';
-      const hasHours=el.dataset.hashours==='1';
-      el.style.background=isSelected?'#0d6e4e':(hasHours?'#eaf4ee':'#fff');
-      el.style.border=`1px solid ${isSelected?'#0d6e4e':isToday?'#0d6e4e':(hasHours?'#cfe8d9':'#e2eaf2')}`;
-      el.querySelector('.te-day-name').style.color=isSelected?'#fff':(isToday?'#0d6e4e':'#8da2b2');
-      el.querySelector('.te-day-date').style.color=isSelected?'rgba(255,255,255,0.75)':'#b0bec5';
-      el.querySelector('.te-day-hrs').style.color=isSelected?'#fff':(hasHours?'#0d6e4e':'#c3d0da');
-    });
-  }
-  document.getElementById('te-hours')?.focus();
+  const h=document.getElementById('te-hours');
+  h?.scrollIntoView({behavior:'smooth',block:'center'});
+  h?.focus();
+}
+function _teApplyRowDayFilter(dateStr){
+  document.querySelectorAll('[data-terowdate]').forEach(row=>{
+    const match=!dateStr||row.dataset.terowdate===dateStr;
+    row.style.opacity=match?'1':'0.3';
+    row.style.paddingLeft=match&&dateStr?'15px':'18px';
+    row.style.borderLeft=match&&dateStr?'3px solid #7aabac':'3px solid transparent';
+    row.style.background=match&&dateStr?'#e8f4f4':'transparent';
+  });
 }
 function _teFmtYMD(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
 function _teMonday(offsetWeeks){
@@ -6760,10 +6779,20 @@ function renderTime(){
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id==='er1'?' selected':''}>${escHtml(r.name)}</option>`).join('');
 
-  const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d6e4e;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
+  const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
 
   const selectorCols=isAdmin?'1.3fr 1fr':'1.6fr';
-  const logForm=`<div class="card" style="margin-bottom:20px;padding:20px 22px;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
+  const teStyleBlock=`<style>
+    #te-hours::-webkit-outer-spin-button,#te-hours::-webkit-inner-spin-button,.te-inline-hours::-webkit-outer-spin-button,.te-inline-hours::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    #te-hours,.te-inline-hours{-moz-appearance:textfield}
+    .te-row{transition:background .14s,opacity .14s}
+    .te-row:hover{background:#f7f9fc !important}
+    .te-daypill:hover{box-shadow:0 3px 10px rgba(13,110,78,0.16) !important;transform:translateY(-1px)}
+    .te-daypill{transition:box-shadow .14s,transform .14s,background .14s,border-color .14s}
+    .te-quickadd{cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border:1px dashed #bcdfcb;border-radius:8px;padding:8px 14px;margin:8px 18px;text-align:center;transition:background .12s,border-color .12s}
+    .te-quickadd:hover{background:#dcefe3;border-color:#0d6e4e}
+  </style>`;
+  const logForm=`${teStyleBlock}<div class="card" style="margin-bottom:20px;padding:22px 24px;border-radius:14px;border:1px solid #e7edf3;box-shadow:0 4px 18px rgba(13,28,51,0.07),0 1px 3px rgba(13,28,51,0.05);background:#fff">
     <div style="display:flex;align-items:center;margin-bottom:16px;gap:12px">
       <h3 style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin:0">Log Time</h3>
       <div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:8px;padding:2px">
@@ -6772,7 +6801,7 @@ function renderTime(){
     </div>
     <div style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
       ${mode==='task'
-        ?`<div style="position:relative"><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
+        ?`<div style="position:relative"><label class="form-label">Task <span style="color:#ef4444">*</span></label>
         <input id="te-task-input" class="form-input" autocomplete="off" placeholder="Search task…" oninput="_teTaskFilter(this)" onfocus="_teTaskOpen(this)" onblur="_teTaskBlur()" style="cursor:text"/>
         <input type="hidden" id="te-task" value=""/>
         <div id="te-task-drop" style="display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid #d4dde8;border-radius:8px;box-shadow:0 4px 16px rgba(13,28,51,0.13);max-height:220px;overflow-y:auto;z-index:9999"></div></div>`
@@ -6781,9 +6810,12 @@ function renderTime(){
       ${isAdmin?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
         <select id="te-staff" class="form-input">${staffOpts}</select></div>`:''}
       <div><label class="form-label">Hours <span style="color:#ef4444">*</span></label>
-        <input id="te-hours" type="number" step="0.25" min="0.25" class="form-input" value="1"/></div>
+        <div style="display:flex;align-items:center;gap:4px;background:#f4f7fa;border:1px solid #dce5ee;border-radius:8px;padding:0 10px;height:38px;transition:border-color .12s,background .12s" onfocusin="this.style.borderColor='#0d6e4e';this.style.background='#f0fdf4'" onfocusout="this.style.borderColor='#dce5ee';this.style.background='#f4f7fa'">
+          <input id="te-hours" type="number" step="0.25" min="0.25" value="1" style="border:none;outline:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;width:100%;min-width:0;text-align:right;padding:0;appearance:textfield" class="te-inline-hours"/>
+          <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;flex-shrink:0">h</span>
+        </div></div>
       <div><label class="form-label">Date <span style="color:#ef4444">*</span></label>
-        <input id="te-date" type="date" class="form-input" value="${todayStr}"/></div>
+        <input id="te-date" type="date" class="form-input" value="${_teSelectedDay||todayStr}"/></div>
       <div><label class="form-label">Note</label>
         <textarea id="te-note" class="form-input" placeholder="What did you work on?" rows="1" style="resize:none;overflow:hidden;min-height:36px;line-height:1.4" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></div>
       <div><label class="form-label">Location</label>
@@ -6802,7 +6834,7 @@ function renderTime(){
         </span>
         <span style="font-size:12px;font-weight:700;color:${_teBillableOn?'#166534':'#64748b'}">${_teBillableOn?'Billable':'Non-billable'}</span>
       </div>
-      <button onclick="logTime()" class="btn btn-teal" style="padding:11px 30px;font-family:'Jost',sans-serif;font-weight:700;font-size:13px;flex:1;max-width:260px">+ Log Time</button>
+      <button onclick="logTime()" class="btn btn-teal" style="padding:12px 20px;font-family:'Jost',sans-serif;font-weight:700;font-size:13px;width:282px;box-shadow:0 4px 14px rgba(13,110,78,0.28);letter-spacing:.01em;text-align:left">+ Log Time</button>
     </div>
   </div>`;
 
@@ -6833,12 +6865,12 @@ function renderTime(){
     const canEdit=(isAdmin||e.staffId===currentUser.id)&&e.status!=='approved';
     const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
     const locMeta={remote:{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'},client_office:{label:'Client Office',bg:'#fef3c7',color:'#92400e'},office:{label:'Office',bg:'#f0fdf4',color:'#166534'}}[e.location||'remote']||{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'};
-    const inlineStyle='border:none;outline:none;background:transparent;font-family:inherit;width:100%;box-sizing:border-box;padding:2px 4px;border-radius:4px;transition:background 0.12s';
+    const inlineStyle='border:none;outline:none;background:transparent;font-family:inherit;width:100%;box-sizing:border-box;padding:0;margin:0;border-radius:4px;transition:background 0.12s;display:block';
     const hoursCell=canEdit
-      ?`<div style="display:inline-flex;align-items:center;gap:2px;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:1px 6px 1px 4px;transition:border-color 0.12s"
+      ?`<div style="display:inline-flex;align-items:center;gap:3px;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:2px 7px 2px 5px;transition:border-color 0.12s"
            onfocusin="this.style.borderColor='#0d6e4e';this.style.background='#f0fdf4'" onfocusout="this.style.borderColor='#e2eaf2';this.style.background='#f4f7fa'">
-          <input type="number" step="0.25" min="0.25" value="${e.hours}" title="Click to edit hours"
-            style="border:none;outline:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;width:38px;text-align:right;padding:1px 0"
+          <input type="number" step="0.25" min="0.25" value="${e.hours}" title="Click to edit hours" class="te-inline-hours"
+            style="border:none;outline:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;width:56px;min-width:56px;text-align:right;padding:0;appearance:textfield"
             onfocus="this.select()"
             onblur="_teSaveInline('${e.id}','hours',this.value)"
             onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${e.hours}';this.blur();}"/>
@@ -6846,27 +6878,43 @@ function renderTime(){
         </div>`
       :`<span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:2px 8px;white-space:nowrap">${e.hours}h</span>`;
     const noteCell=canEdit
-      ?`<textarea placeholder="Add a note…" title="Click to edit note" rows="1"
-          style="${inlineStyle}font-size:12px;color:#6b8399;resize:none;overflow:hidden;line-height:1.4"
-          onfocus="this.style.background='#f0fdf4';this.style.outline='1.5px solid #0d6e4e';this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-          onblur="this.style.background='transparent';this.style.outline='none';_teSaveInline('${e.id}','note',this.value)"
-          onkeydown="if(event.key==='Escape')this.blur();">${escHtml(e.note||'')}</textarea>`
-      :`<div style="position:relative;cursor:pointer" onclick="_teNoteToggle(this)" title="Click to expand">
-          <div class="_te-note-body" style="font-size:12px;color:#6b8399;white-space:pre-wrap;line-height:1.4;max-height:40px;overflow:hidden;transition:max-height 0.2s ease">${escHtml(e.note||'—')}</div>
-          <div class="_te-note-fade" style="position:absolute;bottom:0;left:0;right:0;height:18px;background:linear-gradient(transparent,#fff);pointer-events:none"></div>
+      ?`<div style="display:flex;align-items:center;gap:4px;min-width:0;width:100%">
+          <textarea placeholder="Add a note…" title="Click to edit note" rows="1" class="_te-note-ta"
+            style="${inlineStyle}font-size:12px;color:#6b8399;resize:none;overflow:hidden;line-height:20px;height:20px;flex:1;min-width:0"
+            onfocus="this.style.background='#f0fdf4';this.style.height='auto';this.style.height=this.scrollHeight+'px';this.nextElementSibling&&(this.nextElementSibling.style.visibility='hidden')"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+            onblur="this.style.background='transparent';this.style.height='20px';_teNoteInitFades();_teSaveInline('${e.id}','note',this.value)"
+            onkeydown="if(event.key==='Escape')this.blur();">${escHtml(e.note||'')}</textarea>
+          <span class="_te-note-chev" onclick="_teNoteToggleTA(this)" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;visibility:hidden;cursor:pointer;transition:transform 0.15s;padding:2px 0 2px 2px">▾</span>
+        </div>`
+      :`<div class="_te-note-wrapper" onclick="_teNoteToggle(this)" style="display:flex;align-items:center;gap:4px;cursor:pointer;min-width:0" title="Click to expand">
+          <div class="_te-note-body" style="flex:1;min-width:0;font-size:12px;color:#6b8399;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;transition:max-height 0.2s ease">${escHtml(e.note||'')}</div>
+          <span class="_te-note-chevron _te-note-chev" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;transition:transform 0.15s;visibility:hidden;cursor:pointer;padding:2px 0 2px 2px">▾</span>
         </div>`;
-    return`<div style="display:grid;grid-template-columns:auto 1.6fr 100px 70px 1.6fr 90px 100px 90px 32px;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid #f0f4f8">
-      <div title="${escHtml(staff.name)}">${avatarHtml(staff,24)}</div>
-      <div style="font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task?escHtml(task.name):'<span style="color:#8da2b2;font-style:italic;font-weight:500">— Client only —</span>'}</div>
-      <div style="font-size:11px">${client?`<span style="color:${client.color||'#0d6e4e'};font-weight:700">${escHtml(client.shortCode||client.name)}</span>`:'—'}</div>
-      <div>${hoursCell}</div>
-      <div>${noteCell}</div>
-      <div><span style="font-size:9px;background:${locMeta.bg};color:${locMeta.color};padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">${locMeta.label}</span></div>
-      <div>${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Billable</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Non-bill.</span>`}</div>
-      <div><span style="font-size:9px;background:${sm.bg};color:${sm.color};padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">${sm.label}</span></div>
-      <div style="text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:4px">
-        ${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;opacity:0.55;padding:2px" title="Delete" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">✕</button>`:''}
+    const isSelDay=_teSelectedDay&&_teSelectedDay===e.date;
+    const locPill=canEdit
+      ?`<span onclick="_teLocCycle('${e.id}',this)" title="Click to change location" style="cursor:pointer;font-size:10px;background:${locMeta.bg};color:${locMeta.color};padding:4px 10px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${locMeta.color}30;letter-spacing:.01em;transition:filter 0.1s" onmouseover="this.style.filter='brightness(0.93)'" onmouseout="this.style.filter='none'">${locMeta.label}</span>`
+      :`<span style="font-size:10px;background:${locMeta.bg};color:${locMeta.color};padding:4px 10px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${locMeta.color}20">${locMeta.label}</span>`;
+    const isBillable=e.billable!==false;
+    const billPill=canEdit
+      ?`<span onclick="_teBillToggle('${e.id}',this)" title="Click to toggle billable" style="cursor:pointer;font-size:10px;background:${isBillable?'#ecfdf5':'#f8fafc'};color:${isBillable?'#059669':'#94a3b8'};padding:4px 10px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${isBillable?'#05966930':'#cbd5e130'};letter-spacing:.01em;transition:filter 0.1s" onmouseover="this.style.filter='brightness(0.93)'" onmouseout="this.style.filter='none'">${isBillable?'Billable':'Non-bill.'}</span>`
+      :`<span style="font-size:10px;background:${isBillable?'#ecfdf5':'#f8fafc'};color:${isBillable?'#059669':'#94a3b8'};padding:4px 10px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${isBillable?'#05966920':'#cbd5e120'}">${isBillable?'Billable':'Non-bill.'}</span>`;
+    const isApproved=e.status==='approved';
+    const rowBg=isSelDay?'#e8f4f4':(isApproved?'#f8fcfa':'transparent');
+    // Short client badge: up to 4 uppercase chars from initials of each word
+    const clientShort=client?client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4):'';
+    const taskLabel=task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
+    return`<div data-terowdate="${e.date}" class="te-row" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
+      <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
+      <div id="te-name-cell-${e.id}" onclick="${canEdit?`_teOpenTaskPicker('${e.id}',this)`:''}" style="display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;${canEdit?'cursor:pointer;':''}" ${canEdit?'title="Click to change task or client"':''}><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLabel}</span></div>
+      <div id="te-client-cell-${e.id}" style="display:flex;align-items:center">${client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${clientShort}</span>`:'<span style="color:#c8d3dc">—</span>'}</div>
+      <div style="display:flex;align-items:center">${hoursCell}</div>
+      <div style="display:flex;align-items:center;min-width:0;width:100%">${noteCell}</div>
+      <div style="display:flex;align-items:center">${locPill}</div>
+      <div style="display:flex;align-items:center">${billPill}</div>
+      <div style="display:flex;align-items:center"><span style="font-size:10px;background:${sm.bg};color:${sm.color};padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${sm.color}20">${sm.label}</span></div>
+      <div style="display:flex;align-items:center;justify-content:flex-end">
+        ${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#c8d3dc;cursor:pointer;font-size:12px;padding:4px;border-radius:4px;line-height:1;transition:color .12s" title="Delete" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c8d3dc'">✕</button>`:''}
       </div>
     </div>`;
   };
@@ -6874,16 +6922,21 @@ function renderTime(){
   const groupsHtml=groups.map(g=>{
     const dayTotal=g.entries.reduce((s,e)=>s+e.hours,0);
     return`<div>
-      <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:9px 18px;border-bottom:1px solid #e2eaf2;border-top:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#0d1c33;letter-spacing:0.02em">${formatDate(g.date)}</span>
-        <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:800;color:#0d6e4e;background:#eaf4ee;padding:2px 10px;border-radius:10px">${dayTotal.toFixed(2)}h</span>
+      <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:10px 18px;display:flex;align-items:center;gap:10px">
+        <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:800;color:#fff;background:#0d1c33;letter-spacing:0.03em;padding:4px 12px;border-radius:20px;white-space:nowrap">${formatDate(g.date)}</span>
+        <span style="flex:1;height:1px;background:linear-gradient(to right,#dbe4ec,transparent)"></span>
+        <span style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:#0d6e4e;background:#eaf4ee;padding:3px 12px;border-radius:10px;border:1px solid #cfe8d9">${dayTotal.toFixed(2)}h</span>
       </div>
       ${g.entries.map(rowHtml).join('')}
     </div>`;
   }).join('');
 
+  const standaloneQuickAdd='';
+
   const emptyState=`<div style="text-align:center;padding:56px 20px;color:#8da2b2">
-    <div style="font-size:34px;margin-bottom:10px;opacity:0.5">🕒</div>
+    <div style="width:56px;height:56px;border-radius:50%;background:#eaf4ee;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <span style="font-size:26px">📅</span>
+    </div>
     <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">No time logged yet</div>
     <div style="font-size:12px">Use the form above to log your first time entry.</div>
   </div>`;
@@ -6893,88 +6946,64 @@ function renderTime(){
         ${teViewTabBtn(false,'My Timesheets')}${teViewTabBtn(true,'All Staff')}
       </div>`:'';
 
-  const calToggleBtn=(key,label)=>`<button type="button" onclick="_teSetCalView(${key})" style="border:none;cursor:pointer;padding:6px 14px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${_teCalView===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
-  const calViewToggle=`<div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:9px;padding:3px">
-        ${calToggleBtn(false,'List')}${calToggleBtn(true,'Calendar')}
-      </div>`;
-
-  // ── Weekly summary bar (list view) — Mon–Sun of the current real week ──
+  // ── 14-day bar with Prev/Today/Next navigation ──
   const dayNamesShort=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const todayYMD=_teFmtYMD(new Date());
-  const thisWeekMonday=_teMonday(0);
-  const weekDays=[...Array(7)].map((_,i)=>{const d=new Date(thisWeekMonday);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
-  const weekTotals=weekDays.map(ds=>visibleEntries.filter(e=>e.date===ds).reduce((s,e)=>s+e.hours,0));
-  const weekBarHtml=`<div id="te-week-bar" style="display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;overflow-x:auto">
-    ${weekDays.map((ds,i)=>{
-      const h=weekTotals[i];
-      const has=h>0;
-      const isToday=ds===todayYMD;
-      const isSel=ds===_teSelectedDay;
-      return`<div data-teday="${ds}" data-today="${isToday?'1':'0'}" data-hashours="${has?'1':'0'}" onclick="_teSetDateFromBar('${ds}')" title="Log time for ${dayNamesShort[i]} ${ds.slice(8,10)}/${ds.slice(5,7)}" style="flex:1;min-width:62px;text-align:center;padding:7px 6px;border-radius:9px;background:${isSel?'#0d6e4e':(has?'#eaf4ee':'#fff')};border:1px solid ${isSel||isToday?'#0d6e4e':(has?'#cfe8d9':'#e2eaf2')};cursor:pointer;transition:background 0.15s,box-shadow 0.12s" onmouseover="this.style.boxShadow='0 2px 8px rgba(13,110,78,0.18)'" onmouseout="this.style.boxShadow='none'">
-        <div class="te-day-name" style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isSel?'#fff':(isToday?'#0d6e4e':'#8da2b2')};letter-spacing:.03em;text-transform:uppercase">${dayNamesShort[i]}</div>
-        <div class="te-day-date" style="font-size:9.5px;color:${isSel?'rgba(255,255,255,0.75)':'#b0bec5'};margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
-        <div class="te-day-hrs" style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:800;color:${isSel?'#fff':(has?'#0d6e4e':'#c3d0da')}">${has?h.toFixed(2)+'h':'—'}</div>
-      </div>`;
-    }).join('')}
+  // Anchor so today sits at index 6 (center-left of 14), shifted by navigation
+  const _barAnchor=new Date();_barAnchor.setHours(0,0,0,0);_barAnchor.setDate(_barAnchor.getDate()-6+(_teWeekOffset*7));
+  const barStart=_barAnchor;
+  const fortnight=[...Array(14)].map((_,i)=>{const d=new Date(barStart);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
+  const fortnightTotals=fortnight.map(ds=>visibleEntries.filter(e=>e.date===ds).reduce((s,e)=>s+e.hours,0));
+  const navBtn=(label,fn)=>`<button onclick="${fn}" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:5px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s" onmouseover="this.style.background='#f4f7fa'" onmouseout="this.style.background='#fff'">${label}</button>`;
+  const barLabel=`${fortnight[0].slice(8,10)}/${fortnight[0].slice(5,7)} – ${fortnight[13].slice(8,10)}/${fortnight[13].slice(5,7)}`;
+  const weekBarHtml=`<div style="border-bottom:1px solid #e2eaf2;background:#f9fbfc">
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:10px 20px 8px">
+      <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#b0bec5">${barLabel}</span>
+      ${navBtn('‹ Prev','_teWeekNav(-1)')}
+      ${navBtn('Today','_teWeekReset()')}
+      ${navBtn('Next ›','_teWeekNav(1)')}
+    </div>
+    <div id="te-week-bar" style="display:flex;gap:6px;padding:0 0 12px;overflow-x:auto">
+      <div style="min-width:18px;flex-shrink:0"></div>
+      ${fortnight.map((ds,i)=>{
+        const h=fortnightTotals[i];
+        const has=h>0;
+        const isToday=ds===todayYMD;
+        const isSel=ds===_teSelectedDay;
+        const dayName=dayNamesShort[(new Date(ds).getDay()+6)%7];
+        const pillShadow=isSel?'inset 0 2px 5px rgba(0,0,0,0.20),0 1px 2px rgba(13,110,78,0.3)':'0 1px 2px rgba(13,28,51,0.06)';
+        return`<div data-teday="${ds}" data-today="${isToday?'1':'0'}" data-hashours="${has?'1':'0'}" onclick="_teSetDateFromBar('${ds}')" title="${dayName} ${ds.slice(8,10)}/${ds.slice(5,7)}" class="te-daypill" style="flex:1;min-width:54px;text-align:center;padding:7px 4px 6px;border-radius:12px;background:${isSel?'#97bcbd':(has?'#eaf4ee':'#fff')};border:1px solid ${isSel?'#7aa3a4':isToday?'#97bcbd':(has?'#cfe8d9':'#e2eaf2')};box-shadow:${pillShadow};cursor:pointer">
+          <div class="te-day-name" style="font-family:'Jost',sans-serif;font-size:9px;font-weight:700;color:${isSel?'#0d1c33':(isToday?'#0d6e4e':'#8da2b2')};letter-spacing:.03em;text-transform:uppercase">${isToday?'Today':dayName}</div>
+          <div class="te-day-date" style="font-size:9px;color:${isSel?'rgba(13,28,51,0.65)':'#b0bec5'};margin:1px 0 3px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
+          <div class="te-day-hrs" style="font-family:'Jost',sans-serif;font-size:11.5px;font-weight:800;color:${isSel?'#0d1c33':(has?'#0d6e4e':'#c3d0da')}">${has?h.toFixed(2)+'h':'—'}</div>
+          <div class="te-day-dot" style="width:4px;height:4px;border-radius:50%;margin:3px auto 0;background:${isSel?'rgba(13,28,51,0.4)':(has?'#0d6e4e':'transparent')}"></div>
+        </div>`;
+      }).join('')}
+    </div>
   </div>`;
 
-  // ── Calendar view — navigable Mon–Sun week ──
-  const calMonday=_teMonday(_teWeekOffset);
-  const calDayStrs=[...Array(7)].map((_,i)=>{const d=new Date(calMonday);d.setDate(d.getDate()+i);return _teFmtYMD(d);});
-  const calWeekLabel=`${formatDate(calDayStrs[0])} – ${formatDate(calDayStrs[6])}`;
-  const calStatusBorder={draft:'#94a3b8',submitted:'#f59e0b',approved:'#16a34a',rejected:'#dc2626'};
-  const calHeaderBar=`<div style="display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid #e2eaf2;background:#f9fbfc;flex-wrap:wrap">
-    <button onclick="_teWeekNav(-1)" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">‹ Prev</button>
-    <button onclick="_teWeekReset()" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">Today</button>
-    <button onclick="_teWeekNav(1)" style="border:1px solid #e2eaf2;background:#fff;color:#0d1c33;cursor:pointer;padding:6px 12px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700">Next ›</button>
-    <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;margin-left:6px">${calWeekLabel}</span>
-  </div>`;
-  const calCols=calDayStrs.map((ds,i)=>{
-    const dayEntries=visibleEntries.filter(e=>e.date===ds);
-    const dayTotal=dayEntries.reduce((s,e)=>s+e.hours,0);
-    const isToday=ds===todayYMD;
-    const cards=dayEntries.map(e=>{
-      const task=DB.tasks.find(t=>t.id===e.taskId);
-      const client=(task?getTaskClient(task):null)||DB.clients.find(c=>c.id===e.clientId);
-      const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
-      const bc=calStatusBorder[e.status]||calStatusBorder.draft;
-      const title=task?escHtml(task.name):(client?escHtml(client.name):'Time entry');
-      return`<div onclick="openEditTimeEntry('${e.id}')" title="Click to edit" style="cursor:pointer;background:#fff;border:1px solid #e2eaf2;border-left:3px solid ${bc};border-radius:8px;padding:7px 9px;margin-bottom:6px;box-shadow:0 1px 3px rgba(13,28,51,0.05);transition:box-shadow .12s,transform .12s" onmouseover="this.style.boxShadow='0 3px 8px rgba(13,28,51,0.12)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(13,28,51,0.05)';this.style.transform='translateY(0)'">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-          <span style="font-size:11.5px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
-          <span style="font-family:'Jost',sans-serif;font-size:11.5px;font-weight:800;color:#0d6e4e;white-space:nowrap">${e.hours}h</span>
-        </div>
-        ${e.note?`<div style="font-size:10.5px;color:#8da2b2;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.note)}</div>`:''}
-        <div style="margin-top:4px"><span style="font-size:8.5px;background:${sm.bg};color:${sm.color};padding:2px 6px;border-radius:8px;font-weight:700">${sm.label}</span></div>
-      </div>`;
-    }).join('');
-    return`<div style="min-width:0;background:${isToday?'#f0f9f4':'transparent'};border-radius:10px;padding:8px 6px">
-      <div style="text-align:center;padding:6px 4px 10px;border-bottom:2px solid ${isToday?'#0d6e4e':'#e2eaf2'};margin-bottom:8px">
-        <div style="font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:${isToday?'#0d6e4e':'#8da2b2'};letter-spacing:.04em;text-transform:uppercase">${dayNamesShort[i]}</div>
-        <div style="font-size:10.5px;color:#b0bec5;margin:1px 0 4px">${ds.slice(8,10)}/${ds.slice(5,7)}</div>
-        <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:800;color:${dayTotal>0?'#0d1c33':'#c3d0da'}">${dayTotal>0?dayTotal.toFixed(2)+'h':'—'}</div>
-      </div>
-      <div style="min-height:40px">${cards||`<div style="text-align:center;font-size:10px;color:#c3d0da;padding:10px 0">No entries</div>`}</div>
-    </div>`;
-  }).join('');
-  const calendarBody=calHeaderBar+`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;padding:12px 10px;max-height:480px;overflow-y:auto">${calCols}</div>`;
-
-  const listBody=weekBarHtml+`<div style="max-height:460px;overflow-y:auto">
+  const listBody=weekBarHtml+standaloneQuickAdd+`<div>
       ${groups.length?groupsHtml:emptyState}
+    </div>`;
+
+  const summaryStat=(label,value,color)=>`<div style="display:flex;flex-direction:column;gap:1px">
+      <span style="font-family:'Jost',sans-serif;font-size:15px;font-weight:800;color:${color}">${value}</span>
+      <span style="font-size:10px;color:#8da2b2;font-weight:600;letter-spacing:.02em;text-transform:uppercase">${label}</span>
     </div>`;
 
   return logForm+`<div class="card" style="padding:0;overflow:hidden;border-radius:14px;box-shadow:0 2px 8px rgba(13,28,51,0.08)">
     <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">Time Log</span>
       <span style="font-size:12px;color:#8da2b2">${visibleEntries.length} entr${visibleEntries.length!==1?'ies':'y'}</span>
-      ${calViewToggle}
       ${teViewTabs}
     </div>
-    ${_teCalView?calendarBody:listBody}
-    ${visibleEntries.length?`<div style="padding:12px 18px;border-top:1px solid #e2eaf2;background:#f9fbfc;display:flex;align-items:center;gap:22px">
-      <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${totalH.toFixed(2)}h total</span>
-      <span style="font-size:12px;color:#166534;font-weight:600">${billableH.toFixed(2)}h billable</span>
-      <span style="font-size:12px;color:#64748b;font-weight:600">${nonBillableH.toFixed(2)}h non-billable</span>
+    ${listBody}
+    ${visibleEntries.length?`<div style="padding:14px 20px;border-top:1px solid #e2eaf2;background:linear-gradient(180deg,#f9fbfc,#f4f7fa);display:flex;align-items:center;justify-content:flex-end;gap:28px">
+      ${summaryStat('Total',totalH.toFixed(2)+'h','#0d1c33')}
+      <span style="width:1px;height:26px;background:#e2eaf2"></span>
+      ${summaryStat('Billable',billableH.toFixed(2)+'h','#166534')}
+      <span style="width:1px;height:26px;background:#e2eaf2"></span>
+      ${summaryStat('Non-billable',nonBillableH.toFixed(2)+'h','#64748b')}
     </div>`:''}
   </div>`;
 }
@@ -6993,7 +7022,7 @@ function openEditTimeEntry(id){
   document.getElementById('generic-modal-title').textContent='Edit Time Entry';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
-      <div><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
+      <div><label class="form-label">Task <span style="color:#ef4444">*</span></label>
         <select id="ete-task" class="form-input">${taskOpts}</select></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div><label class="form-label">Hours <span style="color:#ef4444">*</span></label>
@@ -7063,31 +7092,78 @@ function saveEditTimeEntry(id){
 }
 function _teNoteToggle(wrapper){
   const body=wrapper.querySelector('._te-note-body');
-  const fade=wrapper.querySelector('._te-note-fade');
+  const chev=wrapper.querySelector('._te-note-chevron');
   if(!body)return;
   const isExpanded=wrapper.dataset.expanded==='1';
   if(isExpanded){
-    body.style.maxHeight='40px';
-    fade.style.display='block';
+    body.style.whiteSpace='nowrap';
+    body.style.overflow='hidden';
+    body.style.textOverflow='ellipsis';
+    wrapper.style.alignItems='flex-start';
     wrapper.dataset.expanded='0';
     wrapper.title='Click to expand';
+    if(chev){chev.style.transform='rotate(0deg)';_teNoteInitFades();}
   } else {
-    body.style.maxHeight=body.scrollHeight+'px';
-    fade.style.display='none';
+    body.style.whiteSpace='pre-wrap';
+    body.style.overflow='visible';
+    body.style.textOverflow='clip';
+    wrapper.style.alignItems='flex-start';
     wrapper.dataset.expanded='1';
     wrapper.title='Click to collapse';
-    // Collapse when clicking anywhere outside
-    const collapse=ev=>{if(!wrapper.contains(ev.target)){body.style.maxHeight='40px';fade.style.display='block';wrapper.dataset.expanded='0';wrapper.title='Click to expand';document.removeEventListener('click',collapse,true);}};
+    if(chev){chev.style.visibility='visible';chev.style.transform='rotate(180deg)';}
+    const collapse=ev=>{
+      if(!wrapper.contains(ev.target)){
+        body.style.whiteSpace='nowrap';body.style.overflow='hidden';body.style.textOverflow='ellipsis';
+        wrapper.dataset.expanded='0';wrapper.title='Click to expand';
+        if(chev)chev.style.transform='rotate(0deg)';
+        document.removeEventListener('click',collapse,true);
+      }
+    };
     setTimeout(()=>document.addEventListener('click',collapse,true),0);
   }
 }
-// After render, hide fade on notes that don't overflow
+function _teNoteToggleTA(chevEl){
+  const wrapper=chevEl.parentElement;
+  const ta=wrapper?.querySelector('._te-note-ta');
+  if(!ta)return;
+  const isExpanded=wrapper.dataset.expanded==='1';
+  if(isExpanded){
+    ta.style.height='20px';
+    ta.style.overflow='hidden';
+    chevEl.style.transform='rotate(0deg)';
+    wrapper.dataset.expanded='0';
+  } else {
+    ta.style.height='auto';
+    ta.style.height=ta.scrollHeight+'px';
+    chevEl.style.transform='rotate(180deg)';
+    wrapper.dataset.expanded='1';
+    const collapse=ev=>{
+      if(!wrapper.contains(ev.target)){
+        ta.style.height='20px';ta.style.overflow='hidden';
+        chevEl.style.transform='rotate(0deg)';
+        wrapper.dataset.expanded='0';
+        document.removeEventListener('click',collapse,true);
+      }
+    };
+    setTimeout(()=>document.addEventListener('click',collapse,true),0);
+  }
+}
+// After render, hide fade+chevron on notes that don't overflow
 function _teNoteInitFades(){
+  // Editable textareas: show chevron if content overflows the collapsed height
+  document.querySelectorAll('._te-note-ta').forEach(ta=>{
+    const chev=ta.nextElementSibling;
+    if(!chev)return;
+    chev.style.visibility=ta.scrollHeight>ta.clientHeight+2?'visible':'hidden';
+  });
+  // Read-only note bodies: show chevron if text is truncated (scrollWidth > clientWidth)
   document.querySelectorAll('._te-note-body').forEach(body=>{
-    const fade=body.parentElement?.querySelector('._te-note-fade');
-    if(fade)fade.style.display=body.scrollHeight>42?'block':'none';
-    const wrapper=body.parentElement;
-    if(wrapper&&body.scrollHeight<=42)wrapper.style.cursor='default';
+    const wrapper=body.closest('._te-note-wrapper');
+    const chev=wrapper?.querySelector('._te-note-chevron');
+    if(!chev)return;
+    const expanded=wrapper.dataset.expanded==='1';
+    if(expanded){chev.style.visibility='visible';return;}
+    chev.style.visibility=body.scrollWidth>body.clientWidth+2?'visible':'hidden';
   });
 }
 function _teSaveInline(id,field,value){
@@ -7100,9 +7176,128 @@ function _teSaveInline(id,field,value){
     if(e.taskId)applyHourBudgetPct(e.taskId);
   } else if(field==='note'){
     e.note=value.trim();
+  } else if(field==='location'){
+    e.location=value;
+  } else if(field==='billable'){
+    e.billable=!!value;
   }
   e.updatedAt=new Date().toISOString();
   saveDB(DB);
+}
+const _TE_LOC_CYCLE=['remote','client_office','office'];
+const _TE_LOC_META={remote:{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'},client_office:{label:'Client Office',bg:'#fef3c7',color:'#92400e'},office:{label:'Office',bg:'#f0fdf4',color:'#166534'}};
+function _teLocCycle(id,el){
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e||e.status==='approved')return;
+  const cur=e.location||'remote';
+  const idx=_TE_LOC_CYCLE.indexOf(cur);
+  const next=_TE_LOC_CYCLE[(idx+1)%_TE_LOC_CYCLE.length];
+  e.location=next;
+  e.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  const m=_TE_LOC_META[next];
+  el.textContent=m.label+' ▾';
+  el.style.background=m.bg;
+  el.style.color=m.color;
+  el.style.borderColor=m.color+'44';
+}
+function _teBillToggle(id,el){
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e||e.status==='approved')return;
+  e.billable=e.billable===false?true:false;
+  e.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  const on=e.billable!==false;
+  el.textContent=(on?'Billable':'Non-bill.')+' ▾';
+  el.style.background=on?'#dcfce7':'#f1f5f9';
+  el.style.color=on?'#166534':'#64748b';
+  el.style.borderColor=on?'#16653444':'#64748b44';
+}
+function _teOpenTaskPicker(id,anchor){
+  // Remove any existing picker
+  const existing=document.getElementById('_te-picker-pop');
+  if(existing){existing.remove();if(existing.dataset.for===id)return;}
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e||e.status==='approved')return;
+
+  // Build item list: clients then tasks
+  const clients=DB.clients||[];
+  const tasks=(DB.tasks||[]).filter(t=>!t.archived);
+
+  const pop=document.createElement('div');
+  pop.id='_te-picker-pop';
+  pop.dataset.for=id;
+  pop.style.cssText='position:fixed;z-index:10000;background:#fff;border:1px solid #d4dde8;border-radius:10px;box-shadow:0 8px 32px rgba(13,28,51,0.16);width:320px;padding:0;overflow:hidden;font-family:Jost,sans-serif';
+  const rect=anchor.getBoundingClientRect();
+  const spaceBelow=window.innerHeight-rect.bottom;
+  pop.style.left=Math.min(rect.left,window.innerWidth-340)+'px';
+  if(spaceBelow>260){pop.style.top=(rect.bottom+4)+'px';}
+  else{pop.style.bottom=(window.innerHeight-rect.top+4)+'px';}
+
+  pop.innerHTML=`
+    <div style="padding:10px;border-bottom:1px solid #f0f4f8">
+      <input id="_te-picker-inp" autocomplete="off" placeholder="Search task or client…"
+        style="width:100%;box-sizing:border-box;border:1px solid #d4dde8;border-radius:6px;padding:7px 10px;font-size:13px;font-family:Jost,sans-serif;outline:none;color:#0d1c33"
+        oninput="_tePickerFilter(this.value,'${id}')" onfocus="this.style.borderColor='#0d6e4e'" onblur="this.style.borderColor='#d4dde8'"/>
+    </div>
+    <div id="_te-picker-list" style="max-height:240px;overflow-y:auto;padding:4px 0"></div>`;
+  document.body.appendChild(pop);
+  document.getElementById('_te-picker-inp')?.focus();
+  _tePickerFilter('',id);
+
+  // Close on outside click
+  const close=ev=>{if(!pop.contains(ev.target)&&ev.target!==anchor){pop.remove();document.removeEventListener('mousedown',close,true);}};
+  setTimeout(()=>document.addEventListener('mousedown',close,true),0);
+}
+function _tePickerFilter(q,id){
+  const list=document.getElementById('_te-picker-list');
+  if(!list)return;
+  const ql=q.toLowerCase().trim();
+  const clients=(DB.clients||[]).filter(c=>!ql||c.name.toLowerCase().includes(ql));
+  const tasks=(DB.tasks||[]).filter(t=>!t.archived).filter(t=>{
+    if(!ql)return true;
+    const cl=getTaskClient(t);
+    return t.name.toLowerCase().includes(ql)||(cl&&cl.name.toLowerCase().includes(ql));
+  });
+  let html='';
+  if(!ql){html+=`<div onclick="_tePickerPick('${id}',null,null,this)" style="padding:8px 14px;cursor:pointer;font-size:12px;color:#8da2b2;font-style:italic;border-bottom:1px solid #f0f4f8" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">— No task / client —</div>`;}
+  if(clients.length){
+    html+=`<div style="padding:4px 14px 2px;font-size:10px;font-weight:700;color:#8da2b2;letter-spacing:0.06em;text-transform:uppercase">Clients</div>`;
+    html+=clients.map(c=>`<div onclick="_tePickerPick('${id}',null,'${c.id}',this)" style="padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;color:${c.color||'#0d6e4e'};display:flex;align-items:center;gap:6px" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span style="width:8px;height:8px;border-radius:50%;background:${c.color||'#0d6e4e'};flex-shrink:0;display:inline-block"></span>${escHtml(c.name)}</div>`).join('');
+  }
+  if(tasks.length){
+    html+=`<div style="padding:4px 14px 2px;font-size:10px;font-weight:700;color:#8da2b2;letter-spacing:0.06em;text-transform:uppercase;border-top:1px solid #f0f4f8;margin-top:4px">Tasks</div>`;
+    html+=tasks.slice(0,60).map(t=>{
+      const cl=getTaskClient(t);
+      return`<div onclick="_tePickerPick('${id}','${t.id}',null,this)" style="padding:7px 14px;cursor:pointer;font-size:12.5px;color:#0d1c33" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.name)}</div>${cl?`<div style="font-size:10px;color:#8da2b2;margin-top:1px">${escHtml(cl.name)}</div>`:''}</div>`;
+    }).join('');
+  }
+  if(!html)html=`<div style="padding:12px 14px;font-size:12px;color:#8da2b2;text-align:center">No results</div>`;
+  list.innerHTML=html;
+}
+function _tePickerPick(id,taskId,clientId,el){
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e)return;
+  e.taskId=taskId||null;
+  e.clientId=taskId?(DB.tasks.find(t=>t.id===taskId)?.clientId||(getTaskClient(DB.tasks.find(t=>t.id===taskId))?.id)||null):clientId||null;
+  e.updatedAt=new Date().toISOString();
+  if(taskId)applyHourBudgetPct(taskId);
+  saveDB(DB);
+  document.getElementById('_te-picker-pop')?.remove();
+  // Update cells inline without full re-render
+  const task=taskId?DB.tasks.find(t=>t.id===taskId):null;
+  const client=e.clientId?DB.clients.find(c=>c.id===e.clientId):null;
+  const nameCell=document.getElementById('te-name-cell-'+id);
+  const clientCell=document.getElementById('te-client-cell-'+id);
+  if(nameCell){
+    if(task)nameCell.innerHTML=escHtml(task.name);
+    else if(client)nameCell.innerHTML=`<span style="color:${client.color||'#0d6e4e'}">${escHtml(client.name)}</span>`;
+    else nameCell.innerHTML=`<span style="color:#8da2b2;font-style:italic;font-weight:500">— No task —</span>`;
+  }
+  if(clientCell){
+    const cs=client?client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4):'';
+    clientCell.innerHTML=client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${cs}</span>`:'<span style="color:#c8d3dc">—</span>';
+  }
 }
 function _teTaskRenderDrop(items){
   const drop=document.getElementById('te-task-drop');
@@ -7154,6 +7349,7 @@ function logTime(){
   const location=document.getElementById('te-location')?.value||'remote';
   const billable=_teBillableOn;
   // Validation
+  if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
   if(!staffId){showAlert('Staff member is required.','Validation');return;}
   if(!date){showAlert('Date is required.','Validation');return;}
@@ -12130,8 +12326,12 @@ function confirmDelete(type, id){
       DB.groups=DB.groups.filter(g=>g.clientId!==id);
       DB.tasks=DB.tasks.filter(t=>!clientGroupIds.includes(t.groupId));
       DB.clients=DB.clients.filter(c=>c.id!==id);
+      // Track deleted client IDs so realtime merge can't restore them
+      (DB.deletedClientIds=DB.deletedClientIds||[]).push(id);
     }
-    saveDB(DB);closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
+    // Flush immediately (no debounce) so Supabase is updated before any reload or realtime event
+    _flushDB();
+    closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
   };
   document.getElementById('confirm-title').textContent='Confirm Delete';
   document.getElementById('confirm-msg').textContent=`Are you sure you want to delete this ${type}? This cannot be undone.`;
