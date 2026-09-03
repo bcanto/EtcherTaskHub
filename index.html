@@ -5874,7 +5874,7 @@ function renderCapacity(){
     return`<div id="mc-tooltip"></div>
   <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
     <div>
-      <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#0d1c33;margin-bottom:2px">Master Capacity</h2>
+      <h2 style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Capacity Overview</h2>
       <p style="font-size:12px;color:#8da2b2">${_tc} task${_tc!==1?'s':''} \xb7 ${_sc} staff member${_sc!==1?'s':''} \xb7 Admin view only</p>
     </div>
   </div>
@@ -6070,7 +6070,7 @@ function renderCapacity(){
   return`<div id="mc-tooltip"></div>
   <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
     <div>
-      <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#0d1c33;margin-bottom:2px">Master Capacity</h2>
+      <h2 style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Capacity Overview</h2>
       <p style="font-size:12px;color:#8da2b2">${taskCount} task${taskCount!==1?'s':''} \xb7 ${staffCount} staff member${staffCount!==1?'s':''} \xb7 Admin view only</p>
     </div>
     ${legend}
@@ -10290,8 +10290,7 @@ function renderDigests(){
     <div class="card" style="padding:14px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Digest</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:1px">Summarise activity, hold for approval, then send to clients</div>
+          <div style="font-size:11px;color:#94a3b8">Summarise activity, hold for approval, then send to clients</div>
         </div>
         <button onclick="openCreateDigest()" class="btn btn-teal btn-sm">+ New Digest</button>
       </div>
@@ -10998,8 +10997,7 @@ function renderArchiveBin(){
     <!-- Header card -->
     <div class="card" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <div style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33;letter-spacing:-0.02em">Archive &amp; Bin</div>
-        <div style="font-size:12px;color:#8da2b2;margin-top:3px">Archived items can be restored. Permanently deleted items cannot be recovered.</div>
+        <div style="font-size:12px;color:#8da2b2">Archived items can be restored. Permanently deleted items cannot be recovered.</div>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
         <span style="font-size:12px;color:#8da2b2">${archivedWbs.length} board${archivedWbs.length!==1?'s':''} · ${archivedTasks.length} task${archivedTasks.length!==1?'s':''}</span>
