@@ -2605,7 +2605,7 @@ function renderView(v){
       case 'board':     vc.innerHTML=renderBoard();break;
       case 'list':      renderListView(getFilteredTasks());break;
       case 'clients':   vc.innerHTML=renderClients();break;
-      case 'time':      vc.innerHTML=renderTime();break;
+      case 'time':      vc.innerHTML=renderTime();setTimeout(_teNoteInitFades,0);break;
       case 'reports':   vc.innerHTML=renderReports();break;
       case 'audit':     vc.innerHTML=renderAudit();break;
       case 'archive':   vc.innerHTML=renderArchiveBin();break;
@@ -6848,7 +6848,10 @@ function renderTime(){
           oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
           onblur="this.style.background='transparent';this.style.outline='none';_teSaveInline('${e.id}','note',this.value)"
           onkeydown="if(event.key==='Escape')this.blur();">${escHtml(e.note||'')}</textarea>`
-      :`<div style="font-size:12px;color:#6b8399;white-space:pre-wrap;line-height:1.4;max-height:48px;overflow:hidden" title="${escHtml(e.note||'')}">${escHtml(e.note||'—')}</div>`;
+      :`<div style="position:relative;cursor:pointer" onclick="_teNoteToggle(this)" title="Click to expand">
+          <div class="_te-note-body" style="font-size:12px;color:#6b8399;white-space:pre-wrap;line-height:1.4;max-height:40px;overflow:hidden;transition:max-height 0.2s ease">${escHtml(e.note||'—')}</div>
+          <div class="_te-note-fade" style="position:absolute;bottom:0;left:0;right:0;height:18px;background:linear-gradient(transparent,#fff);pointer-events:none"></div>
+        </div>`;
     return`<div style="display:grid;grid-template-columns:auto 1.6fr 100px 70px 1.6fr 90px 100px 90px 32px;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid #f0f4f8">
       <div title="${escHtml(staff.name)}">${avatarHtml(staff,24)}</div>
       <div style="font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task?escHtml(task.name):'<span style="color:#8da2b2;font-style:italic;font-weight:500">— Client only —</span>'}</div>
@@ -7053,6 +7056,35 @@ function saveEditTimeEntry(id){
   closeGenericModal();
   renderView('time');
   showToast('Time entry updated','success');
+}
+function _teNoteToggle(wrapper){
+  const body=wrapper.querySelector('._te-note-body');
+  const fade=wrapper.querySelector('._te-note-fade');
+  if(!body)return;
+  const isExpanded=wrapper.dataset.expanded==='1';
+  if(isExpanded){
+    body.style.maxHeight='40px';
+    fade.style.display='block';
+    wrapper.dataset.expanded='0';
+    wrapper.title='Click to expand';
+  } else {
+    body.style.maxHeight=body.scrollHeight+'px';
+    fade.style.display='none';
+    wrapper.dataset.expanded='1';
+    wrapper.title='Click to collapse';
+    // Collapse when clicking anywhere outside
+    const collapse=ev=>{if(!wrapper.contains(ev.target)){body.style.maxHeight='40px';fade.style.display='block';wrapper.dataset.expanded='0';wrapper.title='Click to expand';document.removeEventListener('click',collapse,true);}};
+    setTimeout(()=>document.addEventListener('click',collapse,true),0);
+  }
+}
+// After render, hide fade on notes that don't overflow
+function _teNoteInitFades(){
+  document.querySelectorAll('._te-note-body').forEach(body=>{
+    const fade=body.parentElement?.querySelector('._te-note-fade');
+    if(fade)fade.style.display=body.scrollHeight>42?'block':'none';
+    const wrapper=body.parentElement;
+    if(wrapper&&body.scrollHeight<=42)wrapper.style.cursor='default';
+  });
 }
 function _teSaveInline(id,field,value){
   const e=DB.timeEntries.find(x=>x.id===id);
