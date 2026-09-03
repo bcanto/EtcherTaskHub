@@ -2068,8 +2068,21 @@ function utToggleFilter(view){utFilterOpen=!utFilterOpen;renderView(view||curren
 
 function _utPersonChips(){
   if(!DB.staff||!DB.staff.length)return'';
+  const wb=currentWorkboard;
+  let visibleStaff;
+  if(!wb){
+    visibleStaff=DB.staff;
+  } else if(wb.visibility==='all_internal'){
+    visibleStaff=DB.staff.filter(s=>s.active!==false);
+  } else {
+    // private board — owner + explicitly shared staff only
+    const sharedIds=new Set((DB.boardShares||[]).filter(s=>s.boardId===wb.id).map(s=>s.userId));
+    sharedIds.add(wb.ownerId);
+    visibleStaff=DB.staff.filter(s=>sharedIds.has(s.id)&&s.active!==false);
+  }
+  if(!visibleStaff.length)return'';
   return`<div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
-    ${DB.staff.map(s=>`<button onclick="wsMtSetPerson('${s.id}')" title="${escHtml(s.name)}"
+    ${visibleStaff.map(s=>`<button onclick="wsMtSetPerson('${s.id}')" title="${escHtml(s.name)}"
       style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid ${wsMtPersonFilter===s.id?s.displayColor||s.color||'#97bcbd':'transparent'};overflow:hidden;padding:0;background:transparent;flex-shrink:0;transition:border-color 0.12s">
       ${avatarHtml(s,24)}
     </button>`).join('')}
@@ -4846,34 +4859,52 @@ function renderDashboard(){
           </div>
           <button onclick="event.stopPropagation();toggleWbMenu('${wb.id}')" style="background:none;border:none;cursor:pointer;color:#c0ccda;font-size:20px;padding:0 4px;line-height:1;border-radius:4px;transition:color 0.12s;flex-shrink:0" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#c0ccda'" title="Options">⋯</button>
         </div>
-        <!-- Inline options row — stays inside the card, no overflow -->
-        <div id="wb-opts-${wb.id}" class="hidden" onclick="event.stopPropagation()" style="background:#f4f8fc;border:1px solid #e2eaf2;border-radius:8px;padding:9px 10px;margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <button onclick="openRenameWb('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px">✎ Rename</button>
-          <label onclick="event.stopPropagation()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;margin:0">
-            <span style="width:11px;height:11px;border-radius:50%;background:${wb.color};border:1.5px solid rgba(0,0,0,0.12);flex-shrink:0;display:inline-block"></span>Colour
-            <input type="color" value="${wb.color}" onchange="saveWbColor('${wb.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/>
-          </label>
-          <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568">
-            Client:
-            <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:2px 5px;background:#fff;color:#1a2940;cursor:pointer">
-              <option value="">— None —</option>
-              ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
-            </select>
-          </label>
-          ${(DB.wbFolders||[]).length?`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568">
-            📁 Folder:
-            <select onchange="event.stopPropagation();moveWbToFolder('${wb.id}',this.value)" onclick="event.stopPropagation()" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:2px 5px;background:#fff;color:#1a2940;cursor:pointer">
-              <option value="">— None —</option>
-              ${(DB.wbFolders||[]).map(f=>`<option value="${f.id}"${wb.folderId===f.id?' selected':''}>${escHtml(f.name)}</option>`).join('')}
-            </select>
-          </label>`:''}
-          <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px">⧉ Duplicate</button>
-          <button onclick="event.stopPropagation();archiveWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#92400e">◫ Archive</button>
-          <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:#4a5568;cursor:pointer;padding:4px 6px;border-radius:5px;border:1px solid #e2eaf2;background:#fff">
-            <input type="checkbox" ${wb.excludeFromReports?'checked':''} onchange="event.stopPropagation();saveWbExclude('${wb.id}',this.checked)" style="accent-color:#0d1c33;width:12px;height:12px"/>
-            Exclude from reports
-          </label>
-          <button onclick="deleteWorkboard('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;color:#dc2626;margin-left:auto">✕ Delete</button>
+        <!-- Inline options panel -->
+        <div id="wb-opts-${wb.id}" class="hidden" onclick="event.stopPropagation()" style="background:#f8fafc;border:1px solid #e2eaf2;border-radius:10px;margin-bottom:12px;overflow:hidden">
+          <!-- Action row -->
+          <div style="display:flex;align-items:center;gap:2px;padding:8px 8px 6px;border-bottom:1px solid #edf1f6">
+            <button onclick="openRenameWb('${wb.id}')" title="Rename" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;cursor:pointer;border-radius:7px;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+              Rename
+            </button>
+            <label onclick="event.stopPropagation()" title="Change colour" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:7px;cursor:pointer;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s;position:relative" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
+              <span style="width:14px;height:14px;border-radius:50%;background:${wb.color};border:2px solid rgba(0,0,0,0.1);flex-shrink:0;display:block"></span>
+              Colour
+              <input type="color" value="${wb.color}" onchange="saveWbColor('${wb.id}',this.value)" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer"/>
+            </label>
+            <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" title="Duplicate" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;cursor:pointer;border-radius:7px;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Duplicate
+            </button>
+            <button onclick="event.stopPropagation();archiveWorkboard('${wb.id}')" title="Archive" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;cursor:pointer;border-radius:7px;color:#92400e;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='none'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M2 6v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6" stroke="currentColor" stroke-width="1.4"/><path d="M6 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Archive
+            </button>
+          </div>
+          <!-- Settings rows -->
+          <div style="padding:8px 12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Client</span>
+              <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
+                <option value="">— None —</option>
+                ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
+              </select>
+            </div>
+            ${(DB.wbFolders||[]).length?`<div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Folder</span>
+              <select onchange="event.stopPropagation();moveWbToFolder('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
+                <option value="">— None —</option>
+                ${(DB.wbFolders||[]).map(f=>`<option value="${f.id}"${wb.folderId===f.id?' selected':''}>${escHtml(f.name)}</option>`).join('')}
+              </select>
+            </div>`:''}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:2px">
+              <label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4a5568;cursor:pointer">
+                <input type="checkbox" ${wb.excludeFromReports?'checked':''} onchange="event.stopPropagation();saveWbExclude('${wb.id}',this.checked)" style="accent-color:#0d1c33;width:12px;height:12px"/>
+                Exclude from reports
+              </label>
+              <button onclick="deleteWorkboard('${wb.id}')" style="border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:#dc2626;padding:2px 6px;border-radius:5px;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">Delete</button>
+            </div>
+          </div>
         </div>
         <div style="background:#f0f4f8;border-radius:4px;height:5px;margin-bottom:10px;overflow:hidden">
           <div style="height:100%;border-radius:4px;background:${wb.color};width:${pct}%;transition:width 0.3s"></div>
@@ -6764,9 +6795,10 @@ function renderTime(){
     const staff=getStaff(e.staffId);
     const client=(task?getTaskClient(task):null)||DB.clients.find(c=>c.id===e.clientId);
     const canDel=isAdmin||e.staffId===currentUser.id;
+    const canEdit=(isAdmin||e.staffId===currentUser.id)&&e.status!=='approved';
     const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
     const locMeta={remote:{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'},client_office:{label:'Client Office',bg:'#fef3c7',color:'#92400e'},office:{label:'Office',bg:'#f0fdf4',color:'#166534'}}[e.location||'remote']||{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'};
-    return`<div style="display:grid;grid-template-columns:auto 1.6fr 100px 70px 1.6fr 90px 100px 90px 32px;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid #f0f4f8">
+    return`<div style="display:grid;grid-template-columns:auto 1.6fr 100px 70px 1.6fr 90px 100px 90px 56px;gap:12px;align-items:center;padding:10px 18px;border-bottom:1px solid #f0f4f8">
       <div title="${escHtml(staff.name)}">${avatarHtml(staff,24)}</div>
       <div style="font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task?escHtml(task.name):'<span style="color:#8da2b2;font-style:italic;font-weight:500">— Client only —</span>'}</div>
       <div style="font-size:11px">${client?`<span style="color:${client.color||'#0d6e4e'};font-weight:700">${escHtml(client.shortCode||client.name)}</span>`:'—'}</div>
@@ -6775,7 +6807,10 @@ function renderTime(){
       <div><span style="font-size:9px;background:${locMeta.bg};color:${locMeta.color};padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">${locMeta.label}</span></div>
       <div>${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Billable</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">Non-bill.</span>`}</div>
       <div><span style="font-size:9px;background:${sm.bg};color:${sm.color};padding:3px 8px;border-radius:10px;font-weight:700;white-space:nowrap">${sm.label}</span></div>
-      <div style="text-align:right">${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;opacity:0.55;padding:2px" title="Delete" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">✕</button>`:''}</div>
+      <div style="text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:4px">
+        ${canEdit?`<button onclick="openEditTimeEntry('${e.id}')" style="background:none;border:none;color:#0d6e4e;cursor:pointer;font-size:13px;opacity:0.55;padding:2px" title="Edit" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">✏</button>`:''}
+        ${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;opacity:0.55;padding:2px" title="Delete" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55">✕</button>`:''}
+      </div>
     </div>`;
   };
 
@@ -6818,6 +6853,88 @@ function renderTime(){
   </div>`;
 }
 
+function openEditTimeEntry(id){
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e){showAlert('Entry not found.');return;}
+  if(e.status==='approved'){showAlert('Approved entries cannot be edited.');return;}
+  const isAdmin=currentUser.role==='admin';
+  if(!isAdmin&&e.staffId!==currentUser.id){showAlert('You can only edit your own entries.');return;}
+  const tasks=DB.tasks.filter(t=>!t.archived);
+  const taskOpts=`<option value="">— No task —</option>`+tasks.map(t=>{const cl=getTaskClient(t);return`<option value="${t.id}"${t.id===e.taskId?' selected':''}>${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;}).join('');
+  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id===e.earningsRateId?' selected':''}>${escHtml(r.name)}</option>`).join('');
+  const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===e.staffId?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  document.getElementById('generic-modal-title').textContent='Edit Time Entry';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div><label class="form-label">Task <span style="font-size:10px;color:#b0bec5">(optional)</span></label>
+        <select id="ete-task" class="form-input">${taskOpts}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Hours <span style="color:#ef4444">*</span></label>
+          <input id="ete-hours" type="number" step="0.25" min="0.25" class="form-input" value="${e.hours}"/></div>
+        <div><label class="form-label">Date <span style="color:#ef4444">*</span></label>
+          <input id="ete-date" type="date" class="form-input" value="${e.date}"/></div>
+      </div>
+      <div><label class="form-label">Client</label>
+        <select id="ete-client" class="form-input">${clientOpts}</select></div>
+      <div><label class="form-label">Note</label>
+        <input id="ete-note" class="form-input" value="${escHtml(e.note||'')}"/></div>
+      <div><label class="form-label">Location</label>
+        <select id="ete-location" class="form-input">
+          <option value="remote"${(e.location||'remote')==='remote'?' selected':''}>Remote</option>
+          <option value="client_office"${e.location==='client_office'?' selected':''}>Client Office</option>
+          <option value="office"${e.location==='office'?' selected':''}>Office</option>
+        </select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Rate</label>
+          <select id="ete-rate" class="form-input">${rateOpts}</select></div>
+        ${isAdmin?`<div><label class="form-label">Staff</label><select id="ete-staff" class="form-input">${staffOpts}</select></div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="ete-billable" ${e.billable!==false?'checked':''}/>
+        <label for="ete-billable" style="font-size:13px;color:#0d1c33;cursor:pointer">Billable</label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button onclick="closeGenericModal()" class="btn btn-sm" style="background:#f1f5f9;color:#0d1c33;border:none">Cancel</button>
+        <button onclick="saveEditTimeEntry('${id}')" class="btn btn-sm btn-teal">Save Changes</button>
+      </div>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function saveEditTimeEntry(id){
+  const e=DB.timeEntries.find(x=>x.id===id);
+  if(!e){showAlert('Entry not found.');return;}
+  const hours=parseFloat(document.getElementById('ete-hours')?.value||'0');
+  const date=document.getElementById('ete-date')?.value;
+  if(!date){showAlert('Date is required.','Validation');return;}
+  if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
+  const taskId=document.getElementById('ete-task')?.value||'';
+  const clientId=document.getElementById('ete-client')?.value||'';
+  const note=(document.getElementById('ete-note')?.value||'').trim();
+  const location=document.getElementById('ete-location')?.value||'remote';
+  const earningsRateId=document.getElementById('ete-rate')?.value||e.earningsRateId||'er1';
+  const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||e.earningsRateName||'Ordinary Hours';
+  const billable=document.getElementById('ete-billable')?.checked!==false;
+  const staffId=document.getElementById('ete-staff')?.value||e.staffId;
+  const task=taskId?DB.tasks.find(t=>t.id===taskId):null;
+  const resolvedClientId=task?getTaskClient(task)?.id||clientId:clientId;
+  e.taskId=taskId||null;
+  e.clientId=resolvedClientId;
+  e.staffId=staffId;
+  e.hours=hours;
+  e.date=date;
+  e.note=note;
+  e.location=location;
+  e.billable=billable;
+  e.earningsRateId=earningsRateId;
+  e.earningsRateName=earningsRateName;
+  e.updatedAt=new Date().toISOString();
+  if(e.taskId)applyHourBudgetPct(e.taskId);
+  saveDB(DB);
+  closeGenericModal();
+  renderView('time');
+  showToast('Time entry updated','success');
+}
 function _teTaskRenderDrop(items){
   const drop=document.getElementById('te-task-drop');
   if(!drop)return;
