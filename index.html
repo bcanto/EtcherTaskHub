@@ -2628,9 +2628,10 @@ function applyRolePermissions(){
   const navTimeEl=document.getElementById('nav-time-item');
   if(navTimeEl)navTimeEl.style.display=(isAdmin||isMedium)?'':'none';
 
-  // Client Notes: admin only — contains sensitive credential and access data
+  // Client Notes: admin + full staff. Hidden for restricted staff — holds sensitive
+  // credential and access data.
   const navNotesEl=document.getElementById('nav-notes-item');
-  if(navNotesEl)navNotesEl.style.display=isAdmin?'':'none';
+  if(navNotesEl)navNotesEl.style.display=(isAdmin||isMedium)?'':'none';
 
   // Quotes: admin only
   const navQuotesEl=document.getElementById('nav-quotes-item');
@@ -3606,7 +3607,9 @@ function canViewMasterCapacity(user){
 }
 
 // ── Route-level blocked-views per role ───────────────────────
-const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients','notes']);
+const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients']);
+// Restricted staff are further limited: no Client Notes (confidential credentials).
+const _RESTRICTED_BLOCKED=new Set([..._STAFF_BLOCKED,'notes']);
 function _acBlockedViews(user){
   if(!user)return new Set(['*']);
   if(user.role==='admin')return new Set();
@@ -3614,7 +3617,7 @@ function _acBlockedViews(user){
     return new Set(['schedule','workspace','board','list','gantt',
                     'capacity','clients','time','reports','notes','staff','audit','notifications']);
   if(user.role==='staff')   return _STAFF_BLOCKED;
-  if(user.role==='restricted') return _STAFF_BLOCKED;
+  if(user.role==='restricted') return _RESTRICTED_BLOCKED;
   return new Set(['*']);
 }
 // Shared "access denied" HTML for the view container
@@ -13614,15 +13617,20 @@ function wsMeetingNoteDelete(id){
 function _wsFitTableHeight(){
   const sc=document.getElementById('ws-table-scroll');
   if(!sc)return;
+  sc.style.maxHeight='none';
   const top=sc.getBoundingClientRect().top;
-  // Anything rendered after the table (the Add Group button) has to stay on screen.
+  // Everything rendered after the table (the Add Group button and its margins) has to
+  // stay on screen below it.
   let after=0;
   for(let el=sc.nextElementSibling;el;el=el.nextElementSibling){
     const cs=getComputedStyle(el);
     after+=el.getBoundingClientRect().height+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
   }
-  const bottomGap=24; // matches #view-container's padding
-  sc.style.maxHeight=Math.max(240,window.innerHeight-top-after-bottomGap)+'px';
+  // Align the bottom of the board (Add Group) with the sidebar's Sign Out button, so the
+  // table always fills the window instead of shrinking to content and leaving dead space.
+  const signOut=[...document.querySelectorAll('#sidebar button')].find(b=>/sign\s*out/i.test(b.textContent));
+  const target=signOut?signOut.getBoundingClientRect().bottom:(window.innerHeight-14);
+  sc.style.height=Math.max(240,target-top-after)+'px';
 }
 window.addEventListener('resize',()=>{if(currentView==='workspace')_wsFitTableHeight();});
 
@@ -14204,7 +14212,7 @@ function renderWorkspace(){
   <div id="ws-bulk-bar"></div>
 
   <!-- Main table -->
-  <div id="ws-table-scroll" style="overflow:auto;max-height:70vh;border:1.5px solid #e8edf4;border-radius:10px;background:#fff">
+  <div id="ws-table-scroll" style="overflow:auto;max-height:78vh;border:1.5px solid #e8edf4;border-radius:10px;background:#fff">
     <table class="ws-table">
       <thead>
         <tr>
