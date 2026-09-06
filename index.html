@@ -8698,14 +8698,32 @@ function pfiImportEntries(id){
   if(!inv.clientId){showAlert('Please select a client first.');return;}
   if(!inv.dateFrom||!inv.dateTo){showAlert('Please set a date range first.');return;}
   const existing=new Set((inv.lineItems||[]).map(l=>l.timeEntryId).filter(Boolean));
-  const candidates=(DB.timeEntries||[]).filter(e=>{
-    if(e.deletedAt||existing.has(e.id))return false;
-    if(e.status!=='approved')return false;
+  // A time entry belongs to this client if its own clientId matches, or its task resolves
+  // to the client — and a task's client can come from its group, not just task.clientId,
+  // so resolve it the same way the rest of the module does (getTaskClient).
+  const entryClientId=e=>{
+    if(e.clientId)return e.clientId;
+    const t=e.taskId&&DB.tasks.find(x=>x.id===e.taskId);
+    return t?(getTaskClient(t)?.id||null):null;
+  };
+  const approvedForClient=(DB.timeEntries||[]).filter(e=>
+    !e.deletedAt&&e.status==='approved'&&entryClientId(e)===inv.clientId);
+  const candidates=approvedForClient.filter(e=>{
+    if(existing.has(e.id))return false;
     if(e.date<inv.dateFrom||e.date>inv.dateTo)return false;
-    const t=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
-    return e.clientId===inv.clientId||(t&&t.clientId===inv.clientId);
+    return true;
   }).sort((a,b)=>a.date.localeCompare(b.date)||(getStaff(a.staffId)?.name||'').localeCompare(getStaff(b.staffId)?.name||''));
-  if(!candidates.length){showAlert('No approved time entries found for this client and date range.');return;}
+  if(!candidates.length){
+    // Say why nothing matched, so the fix is obvious.
+    const outside=approvedForClient.filter(e=>!existing.has(e.id)&&(e.date<inv.dateFrom||e.date>inv.dateTo)).length;
+    const alreadyOn=approvedForClient.filter(e=>existing.has(e.id)).length;
+    let msg;
+    if(!approvedForClient.length)msg='No approved time entries exist for this client. Approve the timesheet entries in Timesheets first.';
+    else if(outside)msg=`This client has ${approvedForClient.length} approved ${approvedForClient.length===1?'entry':'entries'}, but ${outside===approvedForClient.length?'all are':`${outside} fall`} outside ${formatDate(inv.dateFrom)} – ${formatDate(inv.dateTo)}. Widen the invoice date range.`;
+    else if(alreadyOn===approvedForClient.length)msg='Every approved entry for this client and date range is already on this invoice.';
+    else msg='No approved time entries found for this client and date range.';
+    showAlert(msg);return;
+  }
   _pfiOpenImportModal(id,candidates);
 }
 function _pfiOpenImportModal(invId,candidates){
