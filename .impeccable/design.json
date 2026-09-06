@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-06T00:00:00.000Z",
+  "title": "Design System: Etcher Task Hub",
+  "extensions": {
+    "colorMeta": {
+      "navy": {
+        "role": "primary",
+        "displayName": "Deep Instrument Navy",
+        "canonical": "#0d1c33",
+        "tonalRamp": ["#05090f", "#0a121f", "#0d1c33", "#16304f", "#22456d", "#3d6289", "#7a95b0", "#c7d4e1"]
+      },
+      "teal": {
+        "role": "primary",
+        "displayName": "Muted Signal Teal",
+        "canonical": "#97bcbd",
+        "tonalRamp": ["#20393a", "#345455", "#4c7071", "#658c8d", "#7aa3a4", "#97bcbd", "#bcd5d6", "#e2eeee"]
+      },
+      "teal-hover": {
+        "role": "primary",
+        "displayName": "Teal Pressed",
+        "canonical": "#7aa3a4"
+      },
+      "teal-dim": {
+        "role": "primary",
+        "displayName": "Teal Wash",
+        "canonical": "rgba(151,188,189,0.12)"
+      },
+      "slate": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "#8da2b2"
+      },
+      "page-ground": {
+        "role": "neutral",
+        "displayName": "Cool Page Ground",
+        "canonical": "#edf0f5",
+        "tonalRamp": ["#232a35", "#39424f", "#525d6b", "#6f7b8a", "#98a3b0", "#c2cad4", "#edf0f5", "#f8fafc"]
+      },
+      "surface": { "role": "neutral", "displayName": "Instrument White", "canonical": "#ffffff" },
+      "surface-raised": { "role": "neutral", "displayName": "Raised Tint", "canonical": "#f7f9fc" },
+      "surface-sunken": { "role": "neutral", "displayName": "Sunken Tint", "canonical": "#f1f4f8" },
+      "border": { "role": "neutral", "displayName": "Hairline", "canonical": "#e4eaf3" },
+      "border-mid": { "role": "neutral", "displayName": "Hairline Strong", "canonical": "#d8e0ec" },
+      "text-1": { "role": "neutral", "displayName": "Ink", "canonical": "#0f1929" },
+      "text-2": { "role": "neutral", "displayName": "Ink Muted", "canonical": "#3d5269" },
+      "text-3": { "role": "neutral", "displayName": "Ink Quiet", "canonical": "#7a96ad" },
+      "status-neutral": { "role": "tertiary", "displayName": "Not Started", "canonical": "#64748b" },
+      "status-progress": { "role": "tertiary", "displayName": "In Progress", "canonical": "#1d6fb8" },
+      "status-review": { "role": "tertiary", "displayName": "In Review", "canonical": "#6d28d9" },
+      "status-waiting": { "role": "tertiary", "displayName": "Waiting on Client", "canonical": "#b45309" },
+      "status-blocked": { "role": "tertiary", "displayName": "Blocked", "canonical": "#b91c1c" },
+      "status-approval": { "role": "tertiary", "displayName": "Sent for Approval", "canonical": "#0d6e4e" },
+      "status-approved": { "role": "tertiary", "displayName": "Client Approved", "canonical": "#065f46" },
+      "status-done": { "role": "tertiary", "displayName": "Completed", "canonical": "#15803d" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "KPI and statistic values only. The largest type in the product is a number." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles." },
+      "title": { "displayName": "Title", "purpose": "Panel titles, modal headers, card headings." },
+      "body": { "displayName": "Body", "purpose": "Descriptions, comments, notes, table cells. Anything a user wrote." },
+      "label": { "displayName": "Label", "purpose": "Uppercase micro-labels: section headers, table columns, property labels." }
+    },
+    "shadows": [
+      { "name": "hairline", "value": "0 1px 2px rgba(13,28,51,0.05), 0 0 0 1px rgba(13,28,51,0.04)", "purpose": "Chips and small controls that need an edge more than a lift." },
+      { "name": "card", "value": "0 1px 3px rgba(13,28,51,0.05), 0 4px 12px rgba(13,28,51,0.05), 0 0 0 1px rgba(13,28,51,0.04)", "purpose": "Default resting elevation for cards and panels." },
+      { "name": "raised", "value": "0 2px 8px rgba(13,28,51,0.07), 0 12px 28px rgba(13,28,51,0.06), 0 0 0 1px rgba(13,28,51,0.04)", "purpose": "Hover on clickable cards; dropdowns anchored to a control." },
+      { "name": "floating", "value": "0 4px 16px rgba(13,28,51,0.1), 0 24px 48px rgba(13,28,51,0.08), 0 0 0 1px rgba(13,28,51,0.05)", "purpose": "Popovers, menus, the assignee picker." },
+      { "name": "overlay", "value": "0 8px 32px rgba(13,28,51,0.13), 0 40px 80px rgba(13,28,51,0.09), 0 0 0 1px rgba(13,28,51,0.06)", "purpose": "Modals only." },
+      { "name": "modal-scrim", "value": "rgba(8,18,34,0.55) with backdrop-filter: blur(7px)", "purpose": "Behind modals; page stays legible as context but clearly out of reach." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.2,0,0,1)", "purpose": "Every state transition in the product. Decelerating, no overshoot." },
+      { "name": "duration-instant", "value": "0.12s", "purpose": "Hover tints on dense controls and table rows." },
+      { "name": "duration-fast", "value": "0.15s", "purpose": "Colour and background transitions on buttons and nav items." },
+      { "name": "duration-base", "value": "0.2s", "purpose": "Transform and shadow on buttons; input focus ring." },
+      { "name": "duration-section", "value": "0.25s", "purpose": "Collapsible section max-height and opacity." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "540px" },
+      { "name": "stack-grid", "value": "700px" },
+      { "name": "table-min", "value": "820px" }
+    ],
+    "layout": [
+      { "name": "sidebar-width", "value": "215px", "purpose": "Fixed navy rail; never collapses." },
+      { "name": "row-height", "value": "38px", "purpose": "Data table row." },
+      { "name": "row-height-group", "value": "36px", "purpose": "Table group header." },
+      { "name": "header-height", "value": "34px", "purpose": "Sticky table column header." },
+      { "name": "prop-row-height", "value": "30px", "purpose": "Task panel property row." },
+      { "name": "prop-label-width", "value": "66px", "purpose": "Task panel uppercase label column." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (Teal)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The product's signature action. Teal fill with navy text — the inversion of the usual dark-button convention.",
+      "html": "<button class=\"ds-btn-teal\">+ Log Time</button>",
+      "css": ".ds-btn-teal{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;background:#97bcbd;color:#0d1c33;box-shadow:0 1px 3px rgba(151,188,189,0.2);transition:transform 0.2s cubic-bezier(0.2,0,0,1),box-shadow 0.2s cubic-bezier(0.2,0,0,1),background 0.15s}.ds-btn-teal:hover{background:#7aa3a4;transform:translateY(-1px);box-shadow:0 2px 8px rgba(151,188,189,0.3)}.ds-btn-teal:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}.ds-btn-teal:active{transform:translateY(0)}"
+    },
+    {
+      "name": "Primary Button (Navy)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Confirmations and dense contexts where teal would over-signal.",
+      "html": "<button class=\"ds-btn-navy\">Open &rarr;</button>",
+      "css": ".ds-btn-navy{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;background:#0d1c33;color:#fff;transition:transform 0.2s cubic-bezier(0.2,0,0,1),box-shadow 0.2s cubic-bezier(0.2,0,0,1)}.ds-btn-navy:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(13,28,51,0.18)}.ds-btn-navy:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action. Hairline border that turns teal on hover with a teal wash ground.",
+      "html": "<button class=\"ds-btn-ghost\">Archive</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#3d5269;border:1.5px solid #e4eaf3;transition:border-color 0.15s,color 0.15s,background 0.15s}.ds-btn-ghost:hover{border-color:#97bcbd;color:#0d1c33;background:rgba(151,188,189,0.12)}.ds-btn-ghost:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard form field. Focus shifts the border to teal and adds a 3px teal glow; the fill never changes.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search tasks…\" />",
+      "css": ".ds-input{width:260px;padding:8px 12px;border:1.5px solid #e4eaf3;border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;color:#0f1929;background:#fff;transition:border-color 0.2s cubic-bezier(0.2,0,0,1),box-shadow 0.2s cubic-bezier(0.2,0,0,1)}.ds-input::placeholder{color:#c4cdd6}.ds-input:focus{outline:none;border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.2)}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-status",
+      "description": "Pill carrying a task status. Text, background and dot always move together as a triple.",
+      "html": "<span class=\"ds-chip-status\"><span class=\"ds-chip-dot\"></span>In Progress</span>",
+      "css": ".ds-chip-status{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;background:#e8f2fc;color:#1d6fb8}.ds-chip-dot{width:6px;height:6px;border-radius:50%;background:#60a5fa;flex-shrink:0}"
+    },
+    {
+      "name": "Tag Pill",
+      "kind": "chip",
+      "refersTo": "tag-pill",
+      "description": "Free-text tag with an inline remove affordance revealed on hover.",
+      "html": "<span class=\"ds-tag\">inspection<span class=\"ds-tag-x\">&#215;</span></span>",
+      "css": ".ds-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-family:'Lato',sans-serif;font-size:11px;font-weight:600;background:#e6eff8;color:#4d6275;transition:background 0.15s}.ds-tag:hover{background:#dae7f5}.ds-tag-x{cursor:pointer;opacity:0.5;font-size:13px;line-height:1;transition:opacity 0.15s}.ds-tag-x:hover{opacity:1;color:#b91c1c}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default container on the cool page ground. Two-layer navy-tinted shadow plus a hairline ring.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-label\">Total Tasks</div><div class=\"ds-card-val\">33</div></div>",
+      "css": ".ds-card{background:#fff;border-radius:10px;padding:20px;border:1px solid rgba(13,28,51,0.04);box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);transition:transform 0.2s cubic-bezier(0.2,0,0,1),box-shadow 0.2s cubic-bezier(0.2,0,0,1)}.ds-card:hover{transform:translateY(-2px);box-shadow:0 2px 8px rgba(13,28,51,0.07),0 12px 28px rgba(13,28,51,0.06)}.ds-card-val{font-family:'Jost',sans-serif;font-size:30px;font-weight:700;color:#0d1c33;line-height:1.1;letter-spacing:-0.02em}.ds-card-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:#8da2b2;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:5px}"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Navy rail navigation. Active state fills with a teal gradient and insets a 3px teal bar on the left edge.",
+      "html": "<div class=\"ds-nav\"><div class=\"ds-nav-item\">Dashboard</div><div class=\"ds-nav-item ds-nav-active\">Timesheets</div></div>",
+      "css": ".ds-nav{background:#0d1c33;padding:8px 0;width:215px;border-radius:0}.ds-nav-item{display:flex;align-items:center;gap:8px;padding:6px 11px;margin:1px 8px;color:#3e5c75;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;border-radius:8px;letter-spacing:0.015em;transition:background 0.18s,color 0.18s}.ds-nav-item:hover{background:rgba(151,188,189,0.1);color:#97bcbd}.ds-nav-item:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px}.ds-nav-active{background:linear-gradient(90deg,rgba(151,188,189,0.2) 0%,rgba(151,188,189,0.05) 100%);color:#e2eef6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd}"
+    },
+    {
+      "name": "Collapsible Section Header",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature pattern from the task detail panel. Chevron plus uppercase label plus count badge, with a one-line content peek shown only while collapsed.",
+      "html": "<div class=\"ds-sec\"><button class=\"ds-sec-hd\"><svg class=\"ds-sec-chev\" width=\"9\" height=\"9\" viewBox=\"0 0 12 12\" fill=\"none\"><path d=\"M4 2l4 4-4 4\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Comments<span class=\"ds-sec-count\">2</span><span class=\"ds-sec-peek\">Chase Daltech for the API key…</span></button></div>",
+      "css": ".ds-sec{border-top:1px solid #f1f4f8}.ds-sec-hd{display:flex;align-items:center;gap:7px;width:100%;padding:9px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;color:#7a96ad;text-transform:uppercase;letter-spacing:0.07em;transition:color 0.15s}.ds-sec-hd:hover{color:#0d1c33}.ds-sec-chev{flex-shrink:0;color:#c8d4e0;transition:transform 0.18s cubic-bezier(0.2,0,0,1)}.ds-sec-count{background:#eef3f8;color:#6b8399;border-radius:9px;padding:0 6px;font-size:10px;font-weight:700;letter-spacing:0}.ds-sec-peek{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;font-weight:400;letter-spacing:0;color:#a8b8c8;text-transform:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    },
+    {
+      "name": "Avatar Stack",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Task assignees as overlapping circles with white rings; lead owner first, overflow collapsed into a count.",
+      "html": "<div class=\"ds-people\"><span class=\"ds-av\" style=\"background:#0d6e4e\">HC</span><span class=\"ds-av\" style=\"background:#1d6fb8\">BC</span><span class=\"ds-av\" style=\"background:#6d28d9\">SW</span><span class=\"ds-av-more\">+2</span></div>",
+      "css": ".ds-people{display:inline-flex;align-items:center;cursor:pointer;padding:3px 5px;border-radius:7px;transition:background 0.12s;width:fit-content}.ds-people:hover{background:#f0f4f8}.ds-av{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#fff;border:2px solid #fff;margin-left:-6px}.ds-av:first-child{margin-left:0}.ds-av-more{margin-left:-6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#e2eaf2;color:#5b7080;font-size:10px;font-weight:700;font-family:'Jost',sans-serif;display:inline-flex;align-items:center;justify-content:center}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Control Room",
+    "overview": "Task Hub is where Etcher Solutions runs its work: crane inspections, HSEQ coordination, client approvals, timesheets and the money that follows them. The interface behaves like a well-built control room. A navy chassis holds the edges of the screen; inside it, white instrument surfaces carry dense, precisely ruled information. Teal is the only voice that raises itself, and it does so sparingly — on the thing you are looking at now, the thing you can act on, the thing that just changed.\n\nDensity is a feature here, not a compromise. An operator opening a workboard expects to see thirty rows, not eight, and to read status without reading words — the colour of a chip and the position of a dot do that work before the label does. So the system spends its budget on legibility at small sizes: Jost for anything structural (labels, headings, buttons, table columns), Lato for anything a human wrote (descriptions, comments, notes). The two never swap roles.\n\nCalm under load is the governing constraint. Nothing pulses, nothing slides in from the side to announce itself, nothing competes with the data. Motion exists to explain a state change and then get out of the way. Depth is almost subliminal — surfaces are separated by tone first and shadow second, and every shadow is tinted navy so the interface never picks up the grey cast of a generic admin panel.",
+    "keyCharacteristics": [
+      "Navy chassis, white instruments, teal signal — in that order of area",
+      "Information density treated as the product, not as clutter",
+      "Two fonts with fixed roles: Jost structures, Lato speaks",
+      "Status communicated by colour and shape before it is communicated by text",
+      "Depth that you feel rather than see; navy-tinted, never black",
+      "Quiet at rest, responsive on interaction"
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Teal marks exactly one thing per region: the active nav item, the focused field, the primary action. If two teal elements compete for attention inside the same panel, one of them is wrong.", "section": "colors" },
+      { "name": "The Green Means Approved Rule", "body": "The green band (#0d6e4e through #15803d) belongs to the approval lifecycle and nothing else. Never use green for a generic success toast, a positive metric, or an accent — in this product green is a contractual state.", "section": "colors" },
+      { "name": "The Navy Shadow Rule", "body": "Every shadow, ring and overlay is tinted #0d1c33. Pure black and neutral grey shadows are prohibited; they flatten the palette's cool cast into generic admin grey.", "section": "colors" },
+      { "name": "The Two Roles Rule", "body": "Jost structures, Lato speaks. Headings, buttons, labels, nav, table headers and status chips are Jost. Anything a user typed — descriptions, comments, meeting notes, client messages — is Lato. Never set a heading in Lato or a paragraph in Jost.", "section": "typography" },
+      { "name": "The Tracked Label Rule", "body": "Any uppercase label under 12px carries at least 0.06em letter-spacing and weight 700. Uppercase without tracking is illegible at these sizes and reads as a bug.", "section": "typography" },
+      { "name": "The Number Is The Hero Rule", "body": "In any statistic or KPI, the value gets Display treatment and the caption gets Label treatment. Never the reverse, and never set them at similar sizes.", "section": "typography" },
+      { "name": "The Sidebar Is Furniture Rule", "body": "The navy rail is fixed at 215px and is never collapsed, themed, or re-coloured per view. It is the one constant on screen.", "section": "layout" },
+      { "name": "The Bottom Alignment Rule", "body": "Long scrolling surfaces end where the sidebar's Sign Out button sits. Board content that stops well short of the viewport bottom, leaving dead space, is a layout bug.", "section": "layout" },
+      { "name": "The Tone Before Shadow Rule", "body": "Reach for a surface tint before reaching for a shadow. Shadow is reserved for elements that genuinely leave the page plane: menus, popovers, modals, the sliding task panel.", "section": "elevation" },
+      { "name": "The Two-Layer Rule", "body": "Never ship a single-layer box-shadow. Every elevation is contact plus diffuse plus ring; a lone blur reads flat and cheap at these low opacities.", "section": "elevation" },
+      { "name": "The Pill Means Metadata Rule", "body": "Full pill radius (20px) is reserved for status, priority and tags. A pill-shaped button would read as a status chip and is prohibited.", "section": "shapes" },
+      { "name": "The Radius Follows Size Rule", "body": "Radius scales with the element. A 6px radius on a modal or an 18px radius on a chip both break the form language.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep teal to a single element per region — the One Signal Rule is the difference between a control room and a dashboard demo.",
+      "Do set every label under 12px in Jost 700 uppercase with at least 0.06em tracking.",
+      "Do tint every shadow, ring and overlay with navy #0d1c33.",
+      "Do pull status and priority colours from the tables above as a triple (text + chip + dot); they are never chosen individually.",
+      "Do give every interactive element hover, :focus-visible and active states. Focus-visible is a 2px teal outline at 2px offset.",
+      "Do collapse long user-entered text — descriptions, comments, notes — behind an expand affordance. Pasted content must never be allowed to dominate a panel.",
+      "Do reach for a surface tint before a shadow when separating two areas.",
+      "Do keep the panel and table chrome dense: 38px rows, 30px property rows, 34px headers."
+    ],
+    "donts": [
+      "Don't use pure black or neutral-grey shadows, or a single-layer box-shadow.",
+      "Don't use green outside the approval lifecycle, or any status colour as a decorative accent.",
+      "Don't set a heading in Lato or a paragraph in Jost.",
+      "Don't give a button a full pill radius — pills mean metadata.",
+      "Don't use transition: all; animate transform and opacity (and box-shadow on buttons) only.",
+      "Don't introduce a third font family or a second accent colour.",
+      "Don't let a scroll container wrap the page-level view — it breaks the sticky table headers, which are load-bearing.",
+      "Don't leave an overflowing tab strip or toolbar scrollable without hiding its scrollbar; a scrollbar sitting above a bottom border reads as a doubled rule.",
+      "Don't trade density for whitespace in data views. Fewer visible rows is a regression, not a cleaner design."
+    ]
+  }
+}

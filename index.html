@@ -143,6 +143,27 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .rich-desc-editor p{margin:4px 0}
 .rich-desc-editor b,.rich-desc-editor strong{font-weight:700}
 .rich-desc-editor-sm .rich-desc-editor{min-height:60px}
+/* Rich formatting, shared by the editors and the read-only note/description views, so a
+   pasted AI summary looks the same while editing and after saving. */
+.rich-text{font-family:'Lato',sans-serif;font-size:12.5px;color:#374151;line-height:1.65;word-break:break-word}
+.rich-desc-editor h1,.rich-text h1{font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;letter-spacing:-0.01em;margin:12px 0 5px;line-height:1.3}
+.rich-desc-editor h2,.rich-text h2{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;letter-spacing:-0.01em;margin:11px 0 4px;line-height:1.3}
+.rich-desc-editor h3,.rich-text h3{font-family:'Jost',sans-serif;font-size:13.5px;font-weight:700;color:#0d1c33;margin:10px 0 4px;line-height:1.35}
+.rich-desc-editor h4,.rich-text h4{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#7a96ad;text-transform:uppercase;letter-spacing:0.07em;margin:10px 0 3px}
+.rich-desc-editor>:first-child,.rich-text>:first-child{margin-top:0}
+.rich-text ul,.rich-text ol{padding-left:20px;margin:4px 0}
+.rich-text li{margin:2px 0}
+.rich-text p{margin:4px 0}
+.rich-desc-editor code,.rich-text code{background:#eef3f8;border-radius:4px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;color:#3d5269}
+.rich-desc-editor pre,.rich-text pre{background:#f7f9fc;border:1px solid #e4eaf3;border-radius:8px;padding:10px 12px;margin:8px 0;overflow-x:auto}
+.rich-desc-editor pre code,.rich-text pre code{background:none;padding:0;font-size:11.5px;line-height:1.55;color:#0f1929}
+.rich-desc-editor blockquote,.rich-text blockquote{margin:8px 0;padding:2px 0 2px 12px;border-left:3px solid #97bcbd;color:#3d5269}
+.rich-desc-editor hr,.rich-text hr{border:none;border-top:1px solid #e4eaf3;margin:12px 0}
+.rich-desc-editor table,.rich-text table{border-collapse:collapse;width:100%;table-layout:fixed;margin:8px 0;font-size:12px}
+.rich-desc-editor th,.rich-desc-editor td,.rich-text th,.rich-text td{border:1px solid #e4eaf3;padding:5px 8px;text-align:left;word-break:break-word;vertical-align:top}
+.rich-desc-editor th,.rich-text th{background:#f7f9fc;font-family:'Jost',sans-serif;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;color:#7a96ad}
+.rich-desc-editor a,.rich-text a{color:#0d6e4e;text-decoration:underline}
+.rich-desc-editor a:hover,.rich-text a:hover{color:#065f46}
 .rich-desc-expand-btn{display:none;align-items:center;gap:4px;width:100%;padding:5px 12px;background:#f8fbff;border:none;border-top:1px solid #e8f0f5;cursor:pointer;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:#6b8399}
 .rich-desc-expand-btn:hover{background:#f0f4f8;color:#0d1c33}
 .rich-desc-expand-btn.show{display:flex}
@@ -356,13 +377,56 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tp-field-row{display:flex;align-items:center;padding:5px 0;border-bottom:1px solid var(--surface-3);gap:8px}
 .tp-field-label{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;width:78px;flex-shrink:0}
 .tp-field-val{font-size:13px;color:var(--text-1);flex:1}
-.tp-tab{display:inline-flex;align-items:center;height:36px;padding:0 14px;font-size:12px;font-weight:600;font-family:'Lato',sans-serif;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s var(--ease),border-color 0.2s var(--ease);white-space:nowrap}
+/* Tabs stay scrollable on narrow panels, but never paint a scrollbar under the
+   active-tab underline — two stacked lines read as a double rule. */
+.tp-tabs{scrollbar-width:none;-ms-overflow-style:none}
+.tp-tabs::-webkit-scrollbar{display:none}
+.tp-tab{display:inline-flex;align-items:center;height:36px;padding:0 9px;font-size:12px;font-weight:600;font-family:'Lato',sans-serif;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s var(--ease),border-color 0.2s var(--ease);white-space:nowrap}
 .tp-tab.active{color:var(--navy);border-bottom-color:#97bcbd}
 .tp-tab:hover:not(.active){color:var(--navy)}
 .tag-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6eff8;color:#4d6275;transition:background 0.15s}
 .tag-pill:hover{background:#d2e2f0}
 .tag-pill .tag-pill-remove{cursor:pointer;color:#8da2b2;margin-left:2px}
 .tag-pill .tag-pill-remove:hover{color:#991b1b}
+/* ── Task panel: collapsible sections + compact rows ────────── */
+.tp-sec{border-top:1px solid var(--surface-3);margin-top:2px}
+.tp-sec:first-of-type{border-top:none;margin-top:0}
+.tp-sec-hd{display:flex;align-items:center;gap:7px;width:100%;padding:9px 0;background:none;border:none;cursor:pointer;text-align:left;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.07em;transition:color 0.15s}
+.tp-sec-hd:hover{color:var(--navy)}
+.tp-sec-chev{flex-shrink:0;transition:transform 0.18s var(--ease);color:#c8d4e0}
+.tp-sec.open>.tp-sec-hd .tp-sec-chev{transform:rotate(90deg)}
+.tp-sec-count{background:#eef3f8;color:#6b8399;border-radius:9px;padding:0 6px;font-size:10px;font-weight:700;letter-spacing:0}
+.tp-sec-peek{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;font-weight:400;letter-spacing:0;color:#a8b8c8;text-transform:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-sec.open>.tp-sec-hd .tp-sec-peek{display:none}
+.tp-sec-body{padding-bottom:12px}
+.tp-sec:not(.open)>.tp-sec-body{display:none}
+/* compact property rows */
+.tp-prop{display:flex;align-items:center;gap:10px;min-height:30px;padding:2px 0}
+.tp-prop-lbl{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;width:66px;flex-shrink:0}
+.tp-prop-val{flex:1;min-width:0;font-size:13px;color:var(--text-1)}
+.tp-prop-val select,.tp-prop-val input[type=date]{border:none;background:transparent;font-size:13px;color:var(--text-1);cursor:pointer;padding:2px 4px;border-radius:5px;max-width:100%;transition:background 0.12s}
+.tp-prop-val select:hover,.tp-prop-val input[type=date]:hover{background:#f0f4f8}
+/* people stack */
+.tp-people{display:flex;align-items:center;gap:0;cursor:pointer;padding:3px 5px;border-radius:7px;transition:background 0.12s;width:fit-content;max-width:100%}
+.tp-people:hover{background:#f0f4f8}
+.tp-people .av{margin-left:-6px;border:2px solid #fff;border-radius:50%;display:inline-flex}
+.tp-people .av:first-child{margin-left:0}
+.tp-people-more{margin-left:-6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#e2eaf2;color:#5b7080;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.tp-people-empty{font-size:12.5px;color:#94a3b8}
+/* people picker popover */
+#tp-people-pop{position:fixed;z-index:660;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(13,28,51,0.16);width:250px;max-height:320px;overflow:auto;padding:6px;display:none}
+.tp-pp-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--text-1);transition:background 0.1s}
+.tp-pp-row:hover{background:#f4f7ff}
+.tp-pp-lead{margin-left:auto;font-size:9px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border-radius:8px;padding:1px 6px}
+.tp-pp-hint{font-size:10px;color:#a8b8c8;padding:4px 8px 6px;letter-spacing:0.03em}
+/* header overflow menu */
+#tp-more-menu{position:fixed;z-index:660;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(13,28,51,0.16);min-width:168px;padding:5px;display:none}
+.tp-more-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--text-1);transition:background 0.1s}
+.tp-more-item:hover{background:#f4f7ff}
+.tp-more-item.danger{color:#b91c1c}
+.tp-more-item.danger:hover{background:#fef2f2}
+/* Empty dropdown shells still painted their border/shadow over the task panel. */
+#dash-search-dropdown:empty{display:none}
 #ws-bulk-bar{transition:opacity 0.18s,transform 0.18s;position:fixed;top:56px;left:220px;right:0;z-index:45;padding:0 28px;pointer-events:none}
 #ws-bulk-bar:empty{display:none}
 #ws-bulk-bar>*{pointer-events:all}
@@ -2802,8 +2866,9 @@ function renderView(v){
     const _eid=_logAppError({type:'render',message:err.message,stack:err.stack,view:v});
     vc.innerHTML=_renderErrorFallbackHtml(v,err,_eid);
   }
-  // Clamp any long pasted text this view rendered (comments, notes, descriptions).
-  setTimeout(()=>_clampInit(),0);
+  // Clamp any long pasted text this view rendered (comments, notes, descriptions),
+  // and wire up any rich note editors it put on screen.
+  setTimeout(()=>{_clampInit();_initNoteEditors();},0);
 }
 
 function _render404Html(v){
@@ -13023,7 +13088,7 @@ function _fileTypeIcon(type,name,url){const ext=(name||'').split('.').pop().toLo
 function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s)||/&[a-z#][a-z0-9]+;/i.test(s))return _descSanitize(s);return escHtml(s).replace(/\n/g,'<br>');}
 function _descSanitize(html){try{const d=document.createElement('div');d.innerHTML=html;d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta').forEach(e=>e.remove());// Unwrap font/span tags that only carry colour/size (common from Word/Notion)
 d.querySelectorAll('font').forEach(e=>{const f=document.createDocumentFragment();while(e.firstChild)f.appendChild(e.firstChild);e.replaceWith(f);});d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','rel','target']);[...e.attributes].forEach(a=>{if(!keep.has(a.name)||/^(javascript:|data:|vbscript:)/i.test(a.value))e.removeAttribute(a.name);});if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
-function _descEditorHtml(id,content,cls){const html=_descToHtml(content);return`<div class="rich-desc-wrap${cls?' '+cls:''}"><div class="rich-desc-toolbar"><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button><span class="rdt-sep"></span><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">• list</button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="1. list">1. list</button></div><div id="${id}" contenteditable="true" class="rich-desc-editor" data-placeholder="Add a description…">${html}</div><button type="button" class="rich-desc-expand-btn" id="${id}-expand" onclick="_descToggleExpand('${id}')">Show more</button></div>`;}
+function _descEditorHtml(id,content,cls,placeholder){const html=_descToHtml(content);return`<div class="rich-desc-wrap${cls?' '+cls:''}"><div class="rich-desc-toolbar"><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button><span class="rdt-sep"></span><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">• list</button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="1. list">1. list</button></div><div id="${id}" contenteditable="true" class="rich-desc-editor" data-placeholder="${escHtml(placeholder||'Add a description…')}">${html}</div><button type="button" class="rich-desc-expand-btn" id="${id}-expand" onclick="_descToggleExpand('${id}')">Show more</button></div>`;}
 let _pendingPaste=null;
 // Show/hide the "Show more" toggle depending on whether the (collapsed) editor actually overflows.
 // ── Generic collapsible long text ───────────────────────────
@@ -13098,23 +13163,64 @@ function _initDescEditor(id,onSave){
   el.addEventListener('paste',e=>_handleDescPaste(e,id));
   _descInitOverflow(id);
 }
+// Meeting-note bodies use the same rich editor as descriptions, but save on a button
+// rather than on blur — so they only need the paste handling, not the autosave.
+function _noteEditorHtml(id,content,placeholder){
+  return _descEditorHtml(id,content,'rich-note',placeholder||'Notes…');
+}
+function _initNoteEditors(){
+  document.querySelectorAll('.rich-note .rich-desc-editor').forEach(el=>{
+    if(el.dataset.noteReady==='1')return;
+    el.dataset.noteReady='1';
+    el.addEventListener('paste',e=>_handleDescPaste(e,el.id));
+    el.addEventListener('input',()=>_descInitOverflow(el.id));
+    _descInitOverflow(el.id);
+  });
+}
+// Read a rich editor's contents back out, normalised and sanitised.
+function _noteEditorValue(id){
+  const el=document.getElementById(id);
+  if(!el)return'';
+  const v=el.innerHTML.trim();
+  if(v===''||/^(<br\s*\/?>)+$/i.test(v))return'';
+  return _descSanitize(v);
+}
 function _handleDescPaste(e,id){
   const cb=e.clipboardData||window.clipboardData;
   const html=cb.getData('text/html');const plain=cb.getData('text/plain');
   e.preventDefault();
-  if(!html||!/<[a-z]/i.test(html)){document.execCommand('insertText',false,plain);return;}
-  _pendingPaste={html:_descSanitize(html),plain};
+  if(!html||!/<[a-z]/i.test(html)){
+    // No rich flavour on the clipboard. If it's Markdown (an AI summary copied out of a
+    // terminal), render it; otherwise it really is plain text.
+    if(_looksLikeMarkdown(plain)){_pendingPaste={html:_mdToHtml(plain),plain};}
+    else{document.execCommand('insertText',false,plain);return;}
+  }else{
+    _pendingPaste={html:_descSanitize(html),plain};
+  }
   const sel=window.getSelection();const rect=sel?.rangeCount?sel.getRangeAt(0).getBoundingClientRect():null;
   _showPasteChoice(rect,id);
 }
 function _showPasteChoice(rect,id){
   document.getElementById('paste-choice-popup')?.remove();
   const pop=document.createElement('div');pop.id='paste-choice-popup';
-  const top=Math.min((rect?.bottom||0)+window.scrollY+4,window.scrollY+window.innerHeight-60);
-  const left=Math.max((rect?.left||80),8);
-  pop.style.cssText=`position:absolute;top:${top}px;left:${left}px;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;box-shadow:0 4px 18px rgba(13,28,51,0.14);z-index:9999;display:flex;overflow:hidden;font-family:'Jost',sans-serif;font-size:12px`;
+  // Measure hidden first, then place: a caret in an EMPTY contenteditable reports an
+  // all-zero rect, which would otherwise pin the popup to the top-left of the window.
+  pop.style.cssText=`position:fixed;top:0;left:0;visibility:hidden;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;box-shadow:0 4px 18px rgba(13,28,51,0.14);z-index:9999;display:flex;overflow:hidden;font-family:'Jost',sans-serif;font-size:12px`;
   pop.innerHTML=`<div style="padding:7px 10px;font-weight:600;color:#8da2b2;border-right:1px solid #f0f4f8;display:flex;align-items:center;gap:4px;white-space:nowrap">Paste as:</div><button onclick="_applyPaste('${id}','plain');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:600;color:#0d1c33;font-size:12px;font-family:'Jost',sans-serif;border-right:1px solid #f0f4f8" onmouseover="this.style.background='#f0f7f7'" onmouseout="this.style.background='#fff'">Plain text</button><button onclick="_applyPaste('${id}','html');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:700;color:#0d6e4e;font-size:12px;font-family:'Jost',sans-serif" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">Keep formatting</button>`;
   document.body.appendChild(pop);
+  const ed=document.getElementById(id);
+  const edRect=ed?ed.getBoundingClientRect():null;
+  // Prefer the caret, fall back to the editor box when the caret rect is empty.
+  let a=(rect&&(rect.width||rect.height||rect.top||rect.left))?rect:edRect;
+  if(!a)a={top:80,bottom:80,left:80,right:280};
+  // Keep it over the field it belongs to, even if the caret sits outside it.
+  if(edRect&&(a.bottom<edRect.top-4||a.top>edRect.bottom+4||a.left<edRect.left-4||a.left>edRect.right+4))a=edRect;
+  const w=pop.offsetWidth,h=pop.offsetHeight;
+  let top=a.bottom+6,left=a.left;
+  if(top+h>window.innerHeight-8)top=Math.max(8,a.top-h-6);
+  if(left+w>window.innerWidth-8)left=window.innerWidth-w-8;
+  if(left<8)left=8;
+  pop.style.top=top+'px';pop.style.left=left+'px';pop.style.visibility='visible';
   const dismiss=(e)=>{if(!pop.contains(e.target)){pop.remove();_pendingPaste=null;document.removeEventListener('mousedown',dismiss);}};
   setTimeout(()=>document.addEventListener('mousedown',dismiss),0);
 }
@@ -13123,6 +13229,101 @@ function _applyPaste(id,mode){
   const el=document.getElementById(id);if(!el)return;el.focus();
   document.execCommand(mode==='plain'?'insertText':'insertHTML',false,mode==='plain'?_pendingPaste.plain:_pendingPaste.html);
   _pendingPaste=null;
+}
+// ── Markdown → HTML ─────────────────────────────────────────
+// AI summaries (Claude, ChatGPT) copy out of a terminal as plain-text Markdown, so a
+// straight text paste would drop "## " and "**" into the field as literal characters.
+// These convert that back into real formatting.
+function _looksLikeMarkdown(t){
+  if(!t||t.length<3)return false;
+  return /^\s{0,3}#{1,6}\s+\S/m.test(t)          // # heading
+    ||/^\s*[-*+]\s+\S/m.test(t)                   // - bullet
+    ||/^\s*\d+[.)]\s+\S/m.test(t)                 // 1. numbered
+    ||/\*\*[^*\n]+\*\*/.test(t)                   // **bold**
+    ||/^\s*>\s+\S/m.test(t)                       // > quote
+    ||/```/.test(t)                               // fenced code
+    ||/^\s*\|.+\|\s*$/m.test(t)                   // | table |
+    ||/\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)/.test(t); // [link](url)
+}
+// Inline spans. Input is already HTML-escaped, so injected tags are safe.
+function _mdInline(s){
+  return String(s)
+    .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/\*\*\*([^*\n]+)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?![*\w])/g,'$1<em>$2</em>')
+    .replace(/(^|[^_\w])_([^_\n]+)_(?![_\w])/g,'$1<em>$2</em>')
+    .replace(/~~([^~\n]+)~~/g,'<s>$1</s>')
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>');
+}
+const _MD_ITEM=/^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+// Consumes one list (and any deeper nested lists) starting at `start`.
+function _mdList(lines,start){
+  const first=_MD_ITEM.exec(lines[start]);
+  const baseIndent=first[1].length;
+  const ordered=/\d/.test(first[2]);
+  let i=start;const items=[];
+  while(i<lines.length){
+    const m=_MD_ITEM.exec(lines[i]);
+    if(!m)break;
+    const ind=m[1].length;
+    if(ind<baseIndent)break;
+    if(ind>baseIndent){
+      const sub=_mdList(lines,i);
+      if(items.length)items[items.length-1]=items[items.length-1].replace(/<\/li>$/,sub.html+'</li>');
+      i=sub.next;continue;
+    }
+    if(/\d/.test(m[2])!==ordered)break;
+    let text=m[3];i++;
+    // wrapped continuation lines belong to the same bullet
+    while(i<lines.length&&!_MD_ITEM.test(lines[i])&&!/^\s*$/.test(lines[i])
+      &&!/^\s{0,3}#{1,6}\s+/.test(lines[i])&&!/^\s*\|/.test(lines[i])&&!/^\s*&gt;\s/.test(lines[i])){
+      text+=' '+lines[i].trim();i++;
+    }
+    items.push('<li>'+_mdInline(text)+'</li>');
+  }
+  const tag=ordered?'ol':'ul';
+  return{html:'<'+tag+'>'+items.join('')+'</'+tag+'>',next:i};
+}
+function _mdToHtml(md){
+  if(!md)return'';
+  const src=escHtml(String(md).replace(/\r\n?/g,'\n'));
+  // Pull fenced code out first so its contents aren't parsed as markdown.
+  const fences=[];
+  const lines=src.replace(/```[^\n]*\n([\s\S]*?)```/g,(m,code)=>{
+    fences.push(code.replace(/\n$/,''));
+    return ' F'+(fences.length-1)+' ';
+  }).split('\n');
+  const out=[];let para=[],i=0;
+  // Single newlines inside a paragraph become <br>. Strict Markdown would join them, but
+  // AI summaries put one fact per line and expect those breaks to survive.
+  const flush=()=>{if(para.length){out.push('<p>'+_mdInline(para.join('\n')).replace(/\n/g,'<br>')+'</p>');para=[];}};
+  while(i<lines.length){
+    const ln=lines[i];let m;
+    if((m=/^ F(\d+) $/.exec(ln.trim()))){flush();out.push('<pre><code>'+fences[+m[1]]+'</code></pre>');i++;continue;}
+    if(/^\s*$/.test(ln)){flush();i++;continue;}
+    if((m=/^\s{0,3}(#{1,6})\s+(.*)$/.exec(ln))){flush();const lv=Math.min(m[1].length,4);out.push('<h'+lv+'>'+_mdInline(m[2].trim().replace(/\s*#+\s*$/,''))+'</h'+lv+'>');i++;continue;}
+    if(/^\s{0,3}([-*_])\s*(\1\s*){2,}$/.test(ln)){flush();out.push('<hr>');i++;continue;}
+    // | table | — needs a |---|---| separator on the next line
+    if(/^\s*\|.*\|\s*$/.test(ln)&&i+1<lines.length&&/^\s*\|?[\s:|-]*-[\s:|-]*$/.test(lines[i+1])){
+      flush();
+      const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      const head=cells(ln);i+=2;const rows=[];
+      while(i<lines.length&&/^\s*\|.*\|\s*$/.test(lines[i])){rows.push(cells(lines[i]));i++;}
+      out.push('<table><thead><tr>'+head.map(c=>'<th>'+_mdInline(c)+'</th>').join('')+'</tr></thead><tbody>'
+        +rows.map(r=>'<tr>'+r.map(c=>'<td>'+_mdInline(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>');
+      continue;
+    }
+    if(/^\s*&gt;\s?/.test(ln)){
+      flush();const q=[];
+      while(i<lines.length&&/^\s*&gt;\s?/.test(lines[i])){q.push(lines[i].replace(/^\s*&gt;\s?/,''));i++;}
+      out.push('<blockquote>'+_mdInline(q.join(' '))+'</blockquote>');continue;
+    }
+    if(_MD_ITEM.test(ln)){flush();const r=_mdList(lines,i);out.push(r.html);i=r.next;continue;}
+    para.push(ln.trim());i++;
+  }
+  flush();
+  return out.join('');
 }
 
 // ── Inline add ──
@@ -13316,7 +13517,7 @@ function renderMeetingNotesTab(notes){
   const addForm=isNew?`<div style="padding:12px 16px;border-bottom:1px solid #e2eaf2;background:#fafcff">
       <input id="mn-title" class="form-input" placeholder="Meeting title…" style="margin-bottom:8px;font-weight:600"/>
       <input id="mn-date" type="date" class="form-input" value="${toDateStr(new Date())}" style="margin-bottom:8px;width:160px"/>
-      <textarea id="mn-body" class="form-input" rows="4" placeholder="Notes…" style="resize:vertical;margin-bottom:8px"></textarea>
+      <div style="margin-bottom:8px">${_noteEditorHtml('mn-body','','Notes… paste a formatted summary and the formatting is kept')}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="wsMeetingNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
         <button onclick="wsMeetingNoteSave()" class="btn btn-primary btn-sm">Save Note</button>
@@ -13337,7 +13538,7 @@ function renderMeetingNotesTab(notes){
               return`<div class="card" style="padding:12px;margin-bottom:8px">
                 <input id="mn-edit-title-${n.id}" class="form-input" value="${escHtml(n.title)}" style="margin-bottom:8px;font-weight:600"/>
                 <input id="mn-edit-date-${n.id}" type="date" class="form-input" value="${n.date}" style="margin-bottom:8px;width:160px"/>
-                <textarea id="mn-edit-body-${n.id}" class="form-input" rows="4" style="resize:vertical;margin-bottom:8px">${escHtml(n.body)}</textarea>
+                <div style="margin-bottom:8px">${_noteEditorHtml('mn-edit-body-'+n.id,n.body)}</div>
                 <div style="display:flex;gap:8px;justify-content:flex-end">
                   <button onclick="wsMeetingNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
                   <button onclick="wsMeetingNoteSaveEdit('${n.id}')" class="btn btn-primary btn-sm">Save</button>
@@ -13354,7 +13555,7 @@ function renderMeetingNotesTab(notes){
                 <span style="font-size:11px;color:#c8d4e0;flex-shrink:0;transition:transform 0.15s;transform:rotate(${expanded?'180deg':'0deg'})">▾</span>
               </div>
               ${expanded?`<div style="padding:0 14px 14px;border-top:1px solid #f0f4f8">
-                  <div class="clamp-body" style="font-size:12.5px;color:#374151;line-height:1.65;white-space:pre-wrap;word-break:break-word;padding-top:10px">${escHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
+                  <div class="clamp-body rich-text" style="padding-top:10px">${_descToHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
                   ${canEdit?`<div style="display:flex;gap:10px;margin-top:10px">
                     <button onclick="event.stopPropagation();wsMeetingNoteStartEdit('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#6b8399;padding:0;font-weight:600">Edit</button>
                     <button onclick="event.stopPropagation();wsMeetingNoteDelete('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#dc2626;padding:0;font-weight:600">Delete</button>
@@ -13372,7 +13573,7 @@ function wsMeetingNoteSave(){
   const title=(document.getElementById('mn-title')?.value||'').trim();
   if(!title){showAlert('Please enter a meeting title.');return;}
   const date=document.getElementById('mn-date')?.value||toDateStr(new Date());
-  const body=(document.getElementById('mn-body')?.value||'').trim();
+  const body=_noteEditorValue('mn-body');
   const now=new Date().toISOString();
   if(!DB.meetingNotes)DB.meetingNotes=[];
   const note={id:'mn'+uid(),boardId:currentWorkboard.id,title,body,date,authorId:currentUser.id,createdAt:now,updatedAt:now};
@@ -13389,7 +13590,7 @@ function wsMeetingNoteSaveEdit(id){
   if(!title){showAlert('Please enter a meeting title.');return;}
   n.title=title;
   n.date=document.getElementById('mn-edit-date-'+id)?.value||n.date;
-  n.body=(document.getElementById('mn-edit-body-'+id)?.value||'').trim();
+  n.body=_noteEditorValue('mn-edit-body-'+id);
   n.updatedAt=new Date().toISOString();
   saveDB(DB);
   wsMeetingNoteEditingId=null;wsMeetingNoteExpandedId=id;
@@ -14381,6 +14582,7 @@ function renderTaskPanel(task){
     <div style="padding:16px 20px 12px;border-bottom:1px solid #e2eaf2;flex-shrink:0;background:#fff">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
         <textarea id="tp-title" rows="1" style="flex:1;font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;border:none;background:transparent;resize:none;outline:none;line-height:1.3;padding:0;overflow:hidden" onblur="tpSaveField('name',this.value.trim())" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escHtml(task.name)}</textarea>
+        <button onclick="tpOpenMoreMenu(event)" title="More actions" style="width:28px;height:28px;border:none;background:none;cursor:pointer;color:#8da2b2;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg></button>
         <button onclick="closeTaskPanel()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;color:#8da2b2;font-size:20px;line-height:1;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">&#215;</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -14395,7 +14597,7 @@ function renderTaskPanel(task){
         <span id="tp-save-indicator" style="font-size:11px;color:#97bcbd;margin-left:auto;opacity:0;transition:opacity 0.3s">Saved &#10003;</span>
       </div>
     </div>
-    <div style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 20px;overflow-x:auto">
+    <div class="tp-tabs" style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 14px;overflow-x:auto">
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
       <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
@@ -14437,6 +14639,123 @@ function tpToggleAssignee(staffId,checked){
   tpShowSaved();
   renderView(currentView);
 }
+// ── Task panel: collapsible section state ───────────────────
+// Remembered per user so the panel reopens the way they left it.
+let _tpSec={props:true,desc:true,comments:true,client:false};
+try{const _s=JSON.parse(localStorage.getItem('etcher_tp_sec')||'null');if(_s)_tpSec={..._tpSec,..._s};}catch(_){}
+function tpToggleSection(key,el){
+  _tpSec[key]=!_tpSec[key];
+  try{localStorage.setItem('etcher_tp_sec',JSON.stringify(_tpSec));}catch(_){}
+  const sec=el.closest('.tp-sec');
+  if(sec)sec.classList.toggle('open',_tpSec[key]);
+  if(key==='desc'&&_tpSec.desc)setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);
+  if(_tpSec[key])setTimeout(()=>_clampInit(),0);
+}
+// A section: chevron + label + optional count, plus a one-line peek when collapsed so
+// you can tell what's inside without opening it.
+function tpSection(key,label,bodyHtml,opts){
+  opts=opts||{};
+  const open=!!_tpSec[key];
+  const chev=`<svg class="tp-sec-chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const count=(opts.count!=null&&opts.count!=='')?`<span class="tp-sec-count">${opts.count}</span>`:'';
+  const peek=opts.peek?`<span class="tp-sec-peek">${escHtml(opts.peek)}</span>`:'';
+  return`<div class="tp-sec${open?' open':''}">
+    <button type="button" class="tp-sec-hd" onclick="tpToggleSection('${key}',this)">${chev}${label}${count}${peek}</button>
+    <div class="tp-sec-body">${bodyHtml}</div>
+  </div>`;
+}
+// People = lead owner + co-assignees in one overlapping stack, replacing the old
+// Assignee dropdown plus the 5-row scrolling checkbox list.
+function tpPeopleStack(task){
+  const ids=taskAssignees(task);
+  if(!ids.length)return`<div class="tp-people" onclick="tpOpenPeoplePicker(event)"><span class="tp-people-empty">+ Assign someone</span></div>`;
+  const people=ids.map(id=>DB.staff.find(s=>s.id===id)).filter(Boolean);
+  const shown=people.slice(0,4),extra=people.length-shown.length;
+  return`<div class="tp-people" onclick="tpOpenPeoplePicker(event)" title="${escHtml(people.map(p=>p.name).join(', '))}">
+    ${shown.map(p=>`<span class="av">${avatarHtml(p,24)}</span>`).join('')}
+    ${extra>0?`<span class="tp-people-more">+${extra}</span>`:''}
+  </div>`;
+}
+function tpOpenPeoplePicker(e){
+  e.stopPropagation();
+  const task=_tpCurrentTask;if(!task)return;
+  let pop=document.getElementById('tp-people-pop');
+  if(!pop){pop=document.createElement('div');pop.id='tp-people-pop';document.body.appendChild(pop);}
+  const assigned=new Set(taskAssignees(task));
+  pop.innerHTML=`<div class="tp-pp-hint">Click a name to assign · click the lead to change it</div>`
+    +DB.staff.map(s=>{
+      const on=assigned.has(s.id);
+      const isLead=task.ownerId===s.id;
+      return`<div class="tp-pp-row" onclick="tpPickPerson('${s.id}')">
+        <input type="checkbox" ${on?'checked':''} style="accent-color:#0d1c33;pointer-events:none"/>
+        ${avatarHtml(s,20)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.name)}</span>
+        ${isLead?'<span class="tp-pp-lead">Lead</span>':''}
+      </div>`;
+    }).join('');
+  const r=e.currentTarget.getBoundingClientRect();
+  pop.style.display='block';
+  const h=pop.offsetHeight,w=pop.offsetWidth;
+  let top=r.bottom+6,left=r.left;
+  if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-6);
+  if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+  pop.style.top=top+'px';pop.style.left=left+'px';
+  const close=ev=>{if(!pop.contains(ev.target)){pop.style.display='none';document.removeEventListener('click',close,true);}};
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
+// First click assigns; clicking an already-assigned person promotes them to lead;
+// clicking the current lead unassigns them.
+function tpPickPerson(staffId){
+  const task=_tpCurrentTask;if(!task||!canEditTask(currentUser,task))return;
+  const assigned=new Set(taskAssignees(task));
+  if(!assigned.has(staffId)){
+    if(!task.ownerId)tpSaveField('ownerId',staffId);
+    else{setTaskAssignees(task,[...(task.assigneeIds||[]),staffId]);_tpPersistPeople(task,staffId);}
+  }else if(task.ownerId!==staffId){
+    const prevLead=task.ownerId;
+    task.ownerId=staffId;
+    setTaskAssignees(task,[...(task.assigneeIds||[]).filter(i=>i!==staffId),...(prevLead?[prevLead]:[])]);
+    _tpPersistPeople(task);
+  }else{
+    const rest=(task.assigneeIds||[]);
+    task.ownerId=rest[0]||null;
+    setTaskAssignees(task,rest.slice(1));
+    _tpPersistPeople(task);
+  }
+  const box=document.getElementById('tp-people-box');
+  if(box)box.innerHTML=tpPeopleStack(task);
+  const pop=document.getElementById('tp-people-pop');
+  if(pop)pop.style.display='none';
+  renderView(currentView);
+}
+function _tpPersistPeople(task,notifyId){
+  task.updatedAt=new Date().toISOString();
+  const idx=DB.tasks.findIndex(t=>t.id===task.id);
+  if(idx>=0)DB.tasks[idx]=task;
+  if(notifyId&&notifyId!==currentUser?.id)
+    notify(notifyId,task.id,'task_assigned',`You were assigned to: ${taskTitle(task)}`);
+  writeAuditEvent('Task',task.id,'assignees_changed',null,{ownerId:task.ownerId,assigneeIds:task.assigneeIds});
+  saveDB(DB);tpShowSaved();
+}
+// Archive / Delete live in a header overflow menu so they're reachable without
+// scrolling the whole panel, and can't be hit by accident.
+function tpOpenMoreMenu(e){
+  e.stopPropagation();
+  const task=_tpCurrentTask;if(!task)return;
+  let m=document.getElementById('tp-more-menu');
+  if(!m){m=document.createElement('div');m.id='tp-more-menu';document.body.appendChild(m);}
+  m.innerHTML=`
+    <div class="tp-more-item" onclick="document.getElementById('tp-more-menu').style.display='none';tpArchiveTask()">${icon('clipboard',13)} ${task.archived?'Restore task':'Archive task'}</div>
+    <div class="tp-more-item danger" onclick="document.getElementById('tp-more-menu').style.display='none';tpDeleteTask()">${icon('ban',13)} Delete task</div>`;
+  const r=e.currentTarget.getBoundingClientRect();
+  m.style.display='block';
+  const w=m.offsetWidth,h=m.offsetHeight;
+  let top=r.bottom+6,left=r.right-w;
+  if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-6);
+  if(left<8)left=8;
+  m.style.top=top+'px';m.style.left=left+'px';
+  const close=ev=>{if(!m.contains(ev.target)){m.style.display='none';document.removeEventListener('click',close,true);}};
+  setTimeout(()=>document.addEventListener('click',close,true),0);
+}
 function renderTpDetails(task){
   const group=DB.groups.find(g=>g.id===task.groupId);
   const tags=(task.tags||[]);
@@ -14446,91 +14765,84 @@ function renderTpDetails(task){
     ${ca.note?`<div style="font-size:12px;color:#374151;line-height:1.6;font-style:italic">"${escHtml(ca.note)}"</div>`:''}
     <button onclick="cpClearApproval('${task.id}')" style="margin-top:8px;background:none;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;color:#8da2b2;cursor:pointer;padding:2px 8px" title="Clear client approval state">Clear</button>
   </div>`:'' ;
-  return`<div>
-    ${clientFeedback}
-    <div class="tp-field-row">
-      <span class="tp-field-label">Assignee</span>
-      <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('ownerId',this.value)">
-        <option value="">Unassigned</option>
-        ${DB.staff.map(s=>`<option value="${s.id}" ${task.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('')}
-      </select>
+  const stripHtml=s=>String(s||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,' ').replace(/\s+/g,' ').trim();
+  const cmtCount=(DB.comments||[]).filter(c=>c.taskId===task.id).length;
+  const clientMsgCount=(DB.clientComments||[]).filter(c=>c.taskId===task.id).length;
+  const descPeek=stripHtml(task.description).slice(0,60);
+  const dateLabel=(task.startDate||task.endDate)
+    ? (task.startDate?formatDate(task.startDate):'—')+' → '+(task.endDate?formatDate(task.endDate):'—')
+    : '';
+  const peopleNames=taskAssignees(task).map(id=>DB.staff.find(s=>s.id===id)?.name).filter(Boolean).join(', ');
+
+  // Properties: one compact row per field. People collapse into an avatar stack, which
+  // replaces the old Assignee dropdown plus the five-row scrolling checkbox list.
+  const props=`
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">People</span>
+      <div class="tp-prop-val" id="tp-people-box">${tpPeopleStack(task)}</div>
     </div>
-    <div class="tp-field-row" style="align-items:flex-start">
-      <span class="tp-field-label" style="padding-top:2px">Assignees</span>
-      <div id="tp-assignees-box" style="flex:1;max-height:110px;overflow-y:auto">${tpBuildAssigneesHtml(task)}</div>
-    </div>
-    <div class="tp-field-row">
-      <span class="tp-field-label">Client</span>
-      <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveGroupClient(this.value)">
-        <option value="">No Client</option>
-        ${DB.clients.map(c=>`<option value="${c.id}" ${group&&group.clientId===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="tp-field-row">
-      <span class="tp-field-label">Group</span>
-      <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('groupId',this.value)">
-        ${getWbGroups().map(g=>`<option value="${g.id}" ${task.groupId===g.id?'selected':''}>${escHtml(g.name)}</option>`).join('')}
-      </select>
-    </div>
-    ${['ready-approval','approved-client','completed-approved'].includes(task.status)?`<div class="tp-field-row">
-      <span class="tp-field-label">Approval Type</span>
-      <select class="tp-field-val" style="border:none;background:transparent;font-size:13px;color:#1a2940;cursor:pointer;padding:0" onchange="tpSaveField('approvalType',this.value)">
-        <option value="">Not specified</option>
-        <option value="scope" ${task.approvalType==='scope'?'selected':''}>Scope Approval</option>
-        <option value="quote" ${task.approvalType==='quote'?'selected':''}>Quote Approval</option>
-        <option value="proposal" ${task.approvalType==='proposal'?'selected':''}>Proposal Approval</option>
-        <option value="work" ${task.approvalType==='work'?'selected':''}>Work Approval</option>
-        <option value="final" ${task.approvalType==='final'?'selected':''}>Final Delivery Approval</option>
-        <option value="change" ${task.approvalType==='change'?'selected':''}>Change Approval</option>
-        <option value="other" ${task.approvalType==='other'?'selected':''}>Other</option>
-      </select>
-    </div>`:''}
-    <div class="tp-field-row" style="align-items:center">
-      <span class="tp-field-label">Dates</span>
-      <div class="tp-field-val" style="display:flex;align-items:center;gap:6px">
-        <input type="date" style="border:none;background:transparent;font-size:13px;color:${task.startDate?'#1a2940':'#94a3b8'};cursor:pointer;padding:0;min-width:0;flex:1" value="${task.startDate||''}" placeholder="Start" onchange="tpSaveField('startDate',this.value)" title="Start date"/>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-        <input type="date" style="border:none;background:transparent;font-size:13px;color:${task.endDate?'#1a2940':'#94a3b8'};cursor:pointer;padding:0;min-width:0;flex:1" value="${task.endDate||''}" placeholder="Due" onchange="tpSaveField('endDate',this.value)" title="Due date"/>
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Client</span>
+      <div class="tp-prop-val">
+        <select onchange="tpSaveGroupClient(this.value)">
+          <option value="">No client</option>
+          ${DB.clients.map(c=>`<option value="${c.id}" ${group&&group.clientId===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
+        </select>
       </div>
     </div>
-    <div class="tp-field-row" style="align-items:flex-start">
-      <span class="tp-field-label" style="padding-top:3px">Tags</span>
-      <div class="tp-field-val">
-        <div id="tp-tags-container" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Group</span>
+      <div class="tp-prop-val">
+        <select onchange="tpSaveField('groupId',this.value)">
+          ${getWbGroups().map(g=>`<option value="${g.id}" ${task.groupId===g.id?'selected':''}>${escHtml(g.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${['ready-approval','approved-client','completed-approved'].includes(task.status)?`
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Approval</span>
+      <div class="tp-prop-val">
+        <select onchange="tpSaveField('approvalType',this.value)">
+          <option value="">Not specified</option>
+          ${[['scope','Scope'],['quote','Quote'],['proposal','Proposal'],['work','Work'],['final','Final Delivery'],['change','Change'],['other','Other']].map(pair=>`<option value="${pair[0]}" ${task.approvalType===pair[0]?'selected':''}>${pair[1]} Approval</option>`).join('')}
+        </select>
+      </div>
+    </div>`:''}
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Dates</span>
+      <div class="tp-prop-val" style="display:flex;align-items:center;gap:3px">
+        <input type="date" value="${task.startDate||''}" onchange="tpSaveField('startDate',this.value)" title="Start date" style="color:${task.startDate?'#1a2940':'#94a3b8'}"/>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        <input type="date" value="${task.endDate||''}" onchange="tpSaveField('endDate',this.value)" title="Due date" style="color:${task.endDate?'#1a2940':'#94a3b8'}"/>
+      </div>
+    </div>
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Progress</span>
+      <div class="tp-prop-val" style="display:flex;align-items:center;gap:9px">
+        <input type="range" min="0" max="100" step="5" value="${task.percentComplete||0}" style="flex:1;max-width:190px;accent-color:#0d6e4e" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="tpSaveField('percentComplete',+this.value)"/>
+        <span style="font-size:12px;font-weight:700;color:#0d1c33;min-width:30px;text-align:right">${task.percentComplete||0}%</span>
+      </div>
+    </div>
+    <div class="tp-prop" style="align-items:flex-start">
+      <span class="tp-prop-lbl" style="padding-top:7px">Tags</span>
+      <div class="tp-prop-val">
+        <div id="tp-tags-container" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 0">
           ${tags.map(tag=>`<span class="tag-pill">${escHtml(tag)}<span class="tag-pill-remove" onclick="tpRemoveTag(this.parentElement.textContent.replace('×','').trim())" title="Remove">&#215;</span></span>`).join('')}
-          <input id="tp-tag-input" placeholder="+ Add tag" style="border:none;background:transparent;font-size:12px;color:#1a2940;width:80px;outline:none;padding:2px 4px" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();var v=this.value.trim().replace(/,/g,'');if(v)tpAddTag(v);this.value='';}" onblur="var v=this.value.trim().replace(/,/g,'');if(v){tpAddTag(v);this.value='';}"/>
+          <input id="tp-tag-input" placeholder="+ Add" style="border:none;background:transparent;font-size:12px;color:#1a2940;width:64px;outline:none;padding:2px 4px" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();var v=this.value.trim().replace(/,/g,'');if(v)tpAddTag(v);this.value='';}" onblur="var v=this.value.trim().replace(/,/g,'');if(v){tpAddTag(v);this.value='';}"/>
         </div>
       </div>
-    </div>
-    <div class="tp-field-row">
-      <span class="tp-field-label">% Complete</span>
-      <div class="tp-field-val" style="display:flex;align-items:center;gap:8px">
-        <input type="range" min="0" max="100" step="5" value="${task.percentComplete||0}" style="flex:1" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="tpSaveField('percentComplete',+this.value)"/>
-        <span style="font-size:12px;font-weight:700;color:#0d1c33;min-width:32px">${task.percentComplete||0}%</span>
-      </div>
-    </div>
-    <div style="margin-top:10px">
-      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Description</div>
-      ${_descEditorHtml('tp-desc',task.description)}
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
-      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Comments</div>
-      ${renderTpComments(task.id)}
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f8">
-      <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;display:flex;align-items:center;gap:5px">${icon('chat',12)} Client Comms Thread</div>
-      ${renderClientCommsThread(task.id,false)}
-    </div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8">
-      <div style="font-size:10px;color:#a0b4c7">
-        Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
-        Updated ${task.updatedAt?new Date(task.updatedAt).toLocaleDateString():'&mdash;'}
-        ${task.completedAt?' &middot; Completed '+new Date(task.completedAt).toLocaleDateString():''}
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid #f0f4f8;justify-content:flex-end">
-      <button onclick="tpArchiveTask()" class="btn btn-ghost btn-sm" style="font-size:12px">${task.archived?'Restore':'Archive'}</button>
-      <button onclick="tpDeleteTask()" class="btn btn-sm" style="font-size:12px;background:#fee2e2;color:#991b1b;border:none">Delete Task</button>
+    </div>`;
+
+  return`<div>
+    ${clientFeedback}
+    ${tpSection('props','Properties',props,{peek:peopleNames||dateLabel})}
+    ${tpSection('desc','Description',_descEditorHtml('tp-desc',task.description),{peek:descPeek})}
+    ${tpSection('comments','Comments',renderTpComments(task.id),{count:cmtCount||''})}
+    ${tpSection('client','Client Thread',renderClientCommsThread(task.id,false),{count:clientMsgCount||''})}
+    <div style="margin-top:6px;padding-top:12px;border-top:1px solid #f0f4f8;font-size:10px;color:#a0b4c7">
+      Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
+      Updated ${task.updatedAt?new Date(task.updatedAt).toLocaleDateString():'&mdash;'}
+      ${task.completedAt?' &middot; Completed '+new Date(task.completedAt).toLocaleDateString():''}
     </div>
   </div>`;
 }
@@ -14773,7 +15085,7 @@ function tpShowTab(tabName){
   if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
-  else if(tabName==='notes'){body.innerHTML=renderTpMeetingNotes(task);setTimeout(_clampInit,0);}
+  else if(tabName==='notes'){body.innerHTML=renderTpMeetingNotes(task);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
   else if(tabName==='recurrence')body.innerHTML=renderTpRecurrence(task);
 }
@@ -14788,7 +15100,7 @@ function renderTpMeetingNotes(task){
   const addForm=isNew?`<div class="card" style="padding:12px;margin-bottom:10px">
       <input id="tpn-title" class="form-input" placeholder="Meeting title…" style="margin-bottom:8px;font-weight:600"/>
       <input id="tpn-date" type="date" class="form-input" value="${toDateStr(new Date())}" style="margin-bottom:8px;width:170px"/>
-      <textarea id="tpn-body" class="form-input" rows="5" placeholder="Notes from the meeting…" style="resize:vertical;margin-bottom:8px"></textarea>
+      <div style="margin-bottom:8px">${_noteEditorHtml('tpn-body','','Notes from the meeting… paste a formatted summary and the formatting is kept')}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="tpNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
         <button onclick="tpNoteSave('${task.id}')" class="btn btn-teal btn-sm">Save Note</button>
@@ -14807,7 +15119,7 @@ function renderTpMeetingNotes(task){
             return`<div class="card" style="padding:12px;margin-bottom:10px">
               <input id="tpn-e-title-${n.id}" class="form-input" value="${escHtml(n.title)}" style="margin-bottom:8px;font-weight:600"/>
               <input id="tpn-e-date-${n.id}" type="date" class="form-input" value="${n.date}" style="margin-bottom:8px;width:170px"/>
-              <textarea id="tpn-e-body-${n.id}" class="form-input" rows="5" style="resize:vertical;margin-bottom:8px">${escHtml(n.body)}</textarea>
+              <div style="margin-bottom:8px">${_noteEditorHtml('tpn-e-body-'+n.id,n.body)}</div>
               <div style="display:flex;gap:8px;justify-content:flex-end">
                 <button onclick="tpNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
                 <button onclick="tpNoteSaveEdit('${n.id}')" class="btn btn-teal btn-sm">Save</button>
@@ -14824,7 +15136,7 @@ function renderTpMeetingNotes(task){
               <span style="font-size:11px;color:#c8d4e0;flex-shrink:0;transform:rotate(${expanded?'180deg':'0deg'});transition:transform 0.15s">▾</span>
             </div>
             ${expanded?`<div style="padding:0 13px 13px;border-top:1px solid #f0f4f8">
-                <div class="clamp-body" style="font-size:12.5px;color:#374151;line-height:1.65;white-space:pre-wrap;word-break:break-word;padding-top:10px">${escHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
+                <div class="clamp-body rich-text" style="padding-top:10px">${_descToHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
                 ${canEdit?`<div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end">
                   <button onclick="event.stopPropagation();tpNoteStartEdit('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#6b8399;padding:0;font-weight:600">Edit</button>
                   <button onclick="event.stopPropagation();tpNoteDelete('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#dc2626;padding:0;font-weight:600">Delete</button>
@@ -14835,7 +15147,7 @@ function renderTpMeetingNotes(task){
   </div>`;
 }
 let _tpNoteEditingId=null,_tpNoteExpandedId=null;
-function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(_clampInit,0);}}
+function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}}
 function tpNoteStartNew(){_tpNoteEditingId='new';_tpNoteExpandedId=null;_tpNotesRefresh();setTimeout(()=>document.getElementById('tpn-title')?.focus(),40);}
 function tpNoteCancel(){_tpNoteEditingId=null;_tpNotesRefresh();}
 function tpNoteToggle(id){_tpNoteExpandedId=_tpNoteExpandedId===id?null:id;_tpNotesRefresh();}
@@ -14847,7 +15159,7 @@ function tpNoteSave(taskId){
   const now=new Date().toISOString();
   if(!DB.meetingNotes)DB.meetingNotes=[];
   const note={id:'mn'+uid(),taskId,boardId:task?(task.boardId||task.workboardId||null):null,
-    title,body:(document.getElementById('tpn-body')?.value||'').trim(),
+    title,body:_noteEditorValue('tpn-body'),
     date:document.getElementById('tpn-date')?.value||toDateStr(new Date()),
     authorId:currentUser.id,createdAt:now,updatedAt:now};
   DB.meetingNotes.push(note);
@@ -14863,7 +15175,7 @@ function tpNoteSaveEdit(id){
   if(!title){showAlert('Please enter a meeting title.');return;}
   n.title=title;
   n.date=document.getElementById('tpn-e-date-'+id)?.value||n.date;
-  n.body=(document.getElementById('tpn-e-body-'+id)?.value||'').trim();
+  n.body=_noteEditorValue('tpn-e-body-'+id);
   n.updatedAt=new Date().toISOString();
   saveDB(DB);
   _tpNoteEditingId=null;_tpNoteExpandedId=id;_tpNotesRefresh();

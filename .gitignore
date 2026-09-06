@@ -27,6 +27,12 @@ out/
 
 # ── Runtime data ──────────────────────────────────────────────────────────────
 intake-queue.json
+# Real staff/client export: contains plaintext passwords and personal data.
+appdata.json
+
+# ── Agent scratch ─────────────────────────────────────────────────────────────
+.agents/
+skills-lock.json
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
 supabase/.branches
