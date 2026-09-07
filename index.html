@@ -14402,11 +14402,12 @@ function wsSaveInlineTask(){
   const ownerId=document.getElementById('ws-inline-owner')?.value||currentUser.id;
   const cwith=document.getElementById('ws-inline-cwith')?.value||'internal';
   const endDate=document.getElementById('ws-inline-duedate')?.value||'';
+  const startDate=document.getElementById('ws-inline-startdate')?.value||'';
   const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
   const _now=new Date().toISOString();
   const _gid=wsInlineAddGroupId||getWbDefaultGroup();
   const _grp=DB.groups.find(g=>g.id===_gid);
-  const _inlineTask={id:'t'+uid(),groupId:_gid,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+  const _inlineTask={id:'t'+uid(),groupId:_gid,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
   DB.tasks.push(_inlineTask);
   notifyTaskCreated(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
@@ -14421,13 +14422,14 @@ function wsHandlePasteMultiline(e){
   const ownerId=document.getElementById('ws-inline-owner')?.value||currentUser.id;
   const cwith=document.getElementById('ws-inline-cwith')?.value||'internal';
   const endDate=document.getElementById('ws-inline-duedate')?.value||'';
+  const startDate=document.getElementById('ws-inline-startdate')?.value||'';
   const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
   const _gid=wsInlineAddGroupId||getWbDefaultGroup();
   const _grp=DB.groups.find(g=>g.id===_gid);
   const wbId=currentWorkboard?.id||DB.workboards[0]?.id||'';
   lines.forEach(name=>{
     const _now=new Date().toISOString();
-    const _t={id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+    const _t={id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
     DB.tasks.push(_t);
     notifyTaskCreated(_t);
   });
@@ -14932,9 +14934,50 @@ function wsCycleStatus(id){
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
 }
+// The inline "add subitem" row has no task to write to yet, so its timeline lives here
+// until the row is saved. The column is only ~138px wide — too narrow for two date
+// inputs — so it opens the same Start / End popover as every other Timeline cell.
+let _wsInlineSubTL={start:'',end:''};
+function wsInlineSubTLOpen(evt){
+  evt.stopPropagation();
+  const dd=document.getElementById('ws-cell-dd'),body=document.getElementById('ws-cell-dd-body');
+  if(!dd||!body)return;
+  const r=evt.currentTarget.getBoundingClientRect();
+  const fld=(lbl,key)=>`<div style="margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${lbl}</div>
+      <input type="date" value="${_wsInlineSubTL[key]}"
+        style="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none"
+        onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
+        onchange="wsInlineSubTLSet('${key}',this.value)"/>
+    </div>`;
+  body.innerHTML=`<div style="padding:12px 14px;min-width:214px" onclick="event.stopPropagation()">
+    <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Timeline</div>
+    ${fld('Start','start')}${fld('End / Due','end')}
+    <button onclick="wsInlineSubTLSet('start','');wsInlineSubTLSet('end','');wsCellClose()" style="background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>
+  </div>`;
+  // Measure before placing so a row near the bottom flips above the cell.
+  dd.style.visibility='hidden';dd.style.left=r.left+'px';dd.style.top='0px';dd.style.display='block';
+  requestAnimationFrame(()=>{
+    const h=dd.offsetHeight,w=dd.offsetWidth;
+    let top=r.bottom+4,left=r.left;
+    if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-4);
+    if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+    dd.style.top=top+'px';dd.style.left=left+'px';dd.style.visibility='visible';
+  });
+}
+// Repaint the cell in place rather than re-rendering: a full render would blow away
+// the name the user is halfway through typing in the same row.
+function wsInlineSubTLSet(which,val){
+  _wsInlineSubTL[which]=val||'';
+  const cell=document.getElementById('ws-inline-subtask-tl');
+  if(!cell)return;
+  const has=_wsInlineSubTL.start||_wsInlineSubTL.end;
+  cell.textContent=has?_wsCompactRange(_wsInlineSubTL.start,_wsInlineSubTL.end):'+ dates';
+  cell.style.color=has?'#6b8399':'#c8d5e0';
+}
 function wsStartInlineSubitem(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  wsInlineAddSubtaskId=taskId;
+  _wsInlineSubTL={start:'',end:''};wsInlineAddSubtaskId=taskId;
   if(!wsExpanded.has(taskId))wsExpanded.add(taskId);
   renderView('workspace');
   setTimeout(()=>document.getElementById('ws-inline-subtask-input')?.focus(),40);
@@ -14950,7 +14993,8 @@ function wsSaveInlineSubitem(){
   const priority=document.getElementById('ws-inline-subtask-priority')?.value||'med';
   const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
   const cwith=document.getElementById('ws-inline-subtask-cwith')?.value||'internal';
-  const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
+  const startDate=_wsInlineSubTL.start||'';
+  const endDate=_wsInlineSubTL.end||'';
   const pct=parseInt(document.getElementById('ws-inline-subtask-pct')?.value||'0',10)||0;
   const now=new Date().toISOString();
   const _pGrp=DB.groups.find(g=>g.id===parent.groupId);
@@ -14958,7 +15002,7 @@ function wsSaveInlineSubitem(){
     id:'si_'+uid(),parentTaskId:parentId,name:text,status,priority,
     clientId:parent.clientId||_pGrp?.clientId||null,
     ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
-    groupId:parent.groupId,startDate:null,endDate:endDate||null,
+    groupId:parent.groupId,startDate:startDate||null,endDate:endDate||null,
     percentComplete:pct,tags:[],dependencies:[],archived:false,hourBudget:null,
     order:DB.tasks.filter(t=>t.parentTaskId===parentId).length,
     createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
@@ -14970,7 +15014,7 @@ function wsSaveInlineSubitem(){
   wsExpanded.add(parentId);
   renderView('workspace');
 }
-function wsCancelInlineSubitem(){wsInlineAddSubtaskId=null;renderView('workspace');}
+function wsCancelInlineSubitem(){_wsInlineSubTL={start:'',end:''};wsInlineAddSubtaskId=null;renderView('workspace');}
 function wsInlineSubitemPaste(e){
   const text=e.clipboardData?.getData('text')||'';
   const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
@@ -14984,7 +15028,8 @@ function wsInlineSubitemPaste(e){
   const priority=document.getElementById('ws-inline-subtask-priority')?.value||'med';
   const ownerId=document.getElementById('ws-inline-subtask-owner')?.value||'';
   const cwith=document.getElementById('ws-inline-subtask-cwith')?.value||'internal';
-  const endDate=document.getElementById('ws-inline-subtask-date')?.value||'';
+  const startDate=_wsInlineSubTL.start||'';
+  const endDate=_wsInlineSubTL.end||'';
   const now=new Date().toISOString();
   const _pGrp=DB.groups.find(g=>g.id===parent.groupId);
   const baseOrder=DB.tasks.filter(t=>t.parentTaskId===parentId).length;
@@ -14993,7 +15038,7 @@ function wsInlineSubitemPaste(e){
       id:'si_'+uid(),parentTaskId:parentId,name:line,status,priority,
       clientId:parent.clientId||_pGrp?.clientId||null,
       ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
-      groupId:parent.groupId,startDate:null,endDate:endDate||null,
+      groupId:parent.groupId,startDate:startDate||null,endDate:endDate||null,
       percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
       order:baseOrder+i,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
     };
@@ -15604,7 +15649,11 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
             <option value="internal">Internal</option>
             <option value="client">Client</option>
           </select>
-          <input id="ws-inline-duedate" type="date" class="ws-inline-select" style="height:28px;padding:2px 6px;cursor:pointer" title="Due date"/>
+          <span style="display:inline-flex;align-items:center;gap:5px" title="Timeline — start and end">
+            <input id="ws-inline-startdate" type="date" class="ws-inline-select" style="height:28px;padding:2px 6px;cursor:pointer" title="Start date"/>
+            <span style="font-size:12px;color:#8da2b2;line-height:1">→</span>
+            <input id="ws-inline-duedate" type="date" class="ws-inline-select" style="height:28px;padding:2px 6px;cursor:pointer" title="End / due date"/>
+          </span>
           <input id="ws-inline-pct" type="number" min="0" max="100" placeholder="0%" class="ws-inline-select" style="width:54px;text-align:right;height:28px" title="% complete"/>
           <button onclick="wsSaveInlineTask()" class="btn btn-teal btn-sm" style="font-size:12px;padding:4px 14px">↵ Save</button>
           <button onclick="wsCancelInlineAdd()" class="btn btn-ghost btn-sm" style="font-size:12px;padding:4px 10px">Cancel</button>
@@ -15744,7 +15793,7 @@ function renderSubInlineAdd(parent,visSub,subCust,width){
       if(c.key==='status')return`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:26px">${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select></td>`;
       if(c.key==='owner')return`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:26px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name.split(' ')[0])}</option>`).join('')}</select></td>`;
       if(c.key==='cwith')return`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:26px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`;
-      if(c.key==='duedate')return`<td style="padding:0 4px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;width:100%"/></td>`;
+      if(c.key==='duedate')return`<td class="ws-editable" style="text-align:center;cursor:pointer" title="Click to set a start and end date" onclick="event.stopPropagation();wsInlineSubTLOpen(event)"><span id="ws-inline-subtask-tl" style="font-size:11px;color:#c8d5e0">+ dates</span></td>`;
       if(c.key==='progress')return`<td style="padding:0 4px"><input id="ws-inline-subtask-pct" type="number" min="0" max="100" placeholder="0" style="width:44px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;padding:2px 4px"/></td>`;
       return'<td></td>';
     }).join('')}
