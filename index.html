@@ -277,7 +277,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .note-box{position:absolute;min-width:120px;max-width:calc(100% - 40px)}
 .note-box::before{content:'';position:absolute;inset:-5px -7px;border:1px solid transparent;border-radius:3px;pointer-events:none;transition:border-color 0.12s,background 0.12s}
 .note-box:hover::before,.note-box:focus-within::before{border-color:#cdd6e0;background:rgba(13,28,51,0.012)}
-.note-box-grip{position:absolute;left:-7px;right:-7px;top:-16px;height:13px;background:#eef1f5;border:1px solid #cdd6e0;border-bottom:none;border-radius:3px 3px 0 0;cursor:move;opacity:0;transition:opacity 0.12s}
+.note-box-grip{position:absolute;left:-7px;right:-7px;top:-19px;height:16px;background:#eef1f5;border:1px solid #cdd6e0;border-bottom:none;border-radius:3px 3px 0 0;cursor:move;opacity:0.3;transition:opacity 0.12s}
 .note-box:hover .note-box-grip,.note-box:focus-within .note-box-grip{opacity:1}
 .note-box.dragging{opacity:0.75}
 .note-box.dragging .note-box-grip{opacity:1;background:#dbe3ec}
@@ -368,12 +368,11 @@ th.col-resizing .col-resize::after{background:#0d6e4e!important}
 body.ws-dragging #ws-newgroup-zone{display:flex}
 #ws-newgroup-zone.active{border-color:#0d6e4e;color:#0d6e4e;background:#f0fdf4;border-style:solid}
 /* Group reordering: grip appears on hover, drop edge shown as a teal rule. */
-/* Inside a workboard the topbar carries nothing but Report Issue — collapse it. */
-#topbar.topbar-slim{min-height:0;height:34px;padding-top:0;padding-bottom:0;border-bottom:none}
-#topbar.topbar-slim button{height:24px;font-size:10.5px}
-/* The tab strip sticks below the topbar, so its offset has to follow the topbar's height —
-   left at 56px it overlapped and clipped the toolbar underneath. */
-body:has(#topbar.topbar-slim) .ws-tabstrip{top:34px!important}
+/* Inside a workboard the topbar carries the board's client, so it keeps the same 56px height
+   as every other page header (Client Manager, Dashboard) rather than collapsing to a band.
+   Overrides the element's inline title styling (font-size:17px etc.), which would otherwise win. */
+#view-title.vt-client{display:flex!important;align-items:center;gap:10px;font-family:'Lato',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:0.04em!important;text-transform:uppercase;color:#5b7080!important}
+#view-title.vt-client .vt-logo{height:33px;width:auto;max-width:120px;object-fit:contain;display:block;flex-shrink:0}
 /* ── Minimal toolbar ──
    Was nine bordered pills on a bordered white card, stacked under two other chrome bars.
    Now the bar itself is just a hairline rule, and each control is invisible until you
@@ -1040,7 +1039,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
 <!-- TASK PANEL -->
 <div id="task-panel-overlay" onclick="closeTaskPanel()" style="display:none;position:fixed;inset:0;background:rgba(13,28,51,0.3);z-index:298;backdrop-filter:blur(1px)"></div>
-<div id="task-panel" style="display:none;position:fixed;right:0;top:0;width:520px;max-width:100vw;height:100vh;background:#fff;box-shadow:-8px 0 40px rgba(13,28,51,0.15);z-index:299;flex-direction:column;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1)"></div>
+<div id="task-panel" style="display:none;position:fixed;right:0;top:0;width:558px;max-width:100vw;height:100vh;background:#fff;box-shadow:-8px 0 40px rgba(13,28,51,0.15);z-index:299;flex-direction:column;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1)"></div>
 <div id="ws-cell-dd" onclick="event.stopPropagation()"><div id="ws-cell-dd-body"></div></div>
 <div id="dep-warning-toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:900;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:14px 16px;max-width:420px;box-shadow:0 4px 20px rgba(180,83,9,0.15);font-family:'Lato',sans-serif;color:#92400e"></div>
 
@@ -1896,9 +1895,9 @@ function _startRealtimeSync(){
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
       if(currentView)renderView(currentView);
       renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
-      // Re-sync open task panel with merged version — but never while the user is actively
-      // typing a description, or an incoming realtime merge would clobber unsaved keystrokes.
-      if(_tpCurrentTask&&document.activeElement?.id!=='tp-desc'){const t=DB.tasks.find(t=>t.id===_tpCurrentTask.id);if(t){_tpCurrentTask=t;const b=document.getElementById('tp-body');if(b){b.innerHTML=renderTpDetails(t);setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);}}else{closeTaskPanel();}}
+      // Re-sync open task panel with merged version — but never while the user is typing
+      // anywhere inside it, or an incoming merge would clobber unsaved keystrokes.
+      if(_tpCurrentTask&&!_tpUserIsTyping()){const t=DB.tasks.find(t=>t.id===_tpCurrentTask.id);if(t){_tpCurrentTask=t;_tpRepaintBody();}else{closeTaskPanel();}}
     })
     .subscribe();
 }
@@ -2524,6 +2523,18 @@ let schedMonth=new Date().getMonth();
 let schedWeekBase=null;
 // Task panel state
 let _tpCurrentTask=null;
+// Which tab the panel is showing. The header (status, owner, priority) sits above the
+// tab bar and is reachable from every tab, so a save made from there must repaint the
+// tab the user is actually on — not drop them back onto Details.
+let _tpActiveTab='details';
+function _tpRepaintBody(){if(_tpCurrentTask)tpShowTab(_tpActiveTab||'details');}
+// True while focus is in anything editable inside the panel — a description, a meeting
+// note, a title, a comment box. Repainting under those keystrokes loses them.
+function _tpUserIsTyping(){
+  const el=document.activeElement;
+  if(!el||!el.closest||!el.closest('#task-panel'))return false;
+  return el.isContentEditable||el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT';
+}
 // Workspace selection/sort/archive state
 let wsSelected=new Set();
 let wsSort={col:null,dir:'asc'};
@@ -3237,15 +3248,29 @@ function navigate(view){
   // actions menu), so repeating it in the page title is pure duplication.
   const _inWb=workboardViews.has(view)&&currentWorkboard;
   const _vt=document.getElementById('view-title');
-  _vt.textContent=_inWb?currentWorkboard.name:(viewTitles[view]||view);
+  // The board name is already in the tab strip below, so inside a board this slot shows the
+  // board's client instead — one client per board, so it is the board's identity, not a repeat.
+  const _wbCli=_inWb?boardClient(currentWorkboard):null;
+  if(_inWb){
+    // Logo capped well under the 34px slim topbar so showing it costs no header height.
+    const _lg=_wbCli&&_wbCli.logo
+      ?`<img src="${escHtml(_wbCli.logo)}" alt="" class="vt-logo"/>`:'';
+    _vt.innerHTML=_lg+`<span>${escHtml(_wbCli?clientDisplayTitle(_wbCli):'No client set')}</span>`;
+  }else{
+    _vt.textContent=viewTitles[view]||view;
+  }
+  _vt.classList.toggle('vt-client',!!_inWb);
   // Views that render their own page heading would otherwise show the same title twice.
   const _selfTitled=new Set(['quotes']);
-  _vt.style.display=(_inWb||_selfTitled.has(view))?'none':'';
-  // With the title gone the topbar is an empty band, so slim it right down rather than
-  // leaving ~75px of nothing above the tab strip.
-  document.getElementById('topbar')?.classList.toggle('topbar-slim',!!_inWb);
+  _vt.style.display=(_selfTitled.has(view)&&!_inWb)?'none':'';
+  // The topbar used to collapse to a 34px band inside a board because it was empty. It now
+  // carries the client, so it keeps the standard 56px height the other page headers use.
+  document.getElementById('topbar')?.classList.remove('topbar-slim');
   const vc=document.getElementById('view-container');
   vc.style.padding=view==='notes'?'0':'24px';
+  // A deliberate navigation closes an open board-card editor; an in-place renderView
+  // (what every card setting triggers when it saves) deliberately leaves it open.
+  _wbOptsOpenId=null;
   updateSidebarWorkboard();
   renderView(view);
 }
@@ -3256,7 +3281,11 @@ function onMtSearch(el,view){
   clearTimeout(_mtSearchTimer);
   _mtSearchTimer=setTimeout(()=>{
     renderView(view);
-    setTimeout(()=>{const s=document.querySelector('.mt-search');if(s){s.focus();s.setSelectionRange(pos,pos);}},0);
+    // Restore focus in the SAME tick as the render, not in a setTimeout. Between the render
+    // and a deferred restore the input does not exist and focus sits on <body>, so keystrokes
+    // typed in that window were being dropped — at a ~120ms cadence, most of them.
+    const s=document.querySelector('.mt-search');
+    if(s){s.value=wsMtSearch;s.focus();const c=Math.min(pos,s.value.length);s.setSelectionRange(c,c);}
   },120);
 }
 function onDashWbSearch(val){
@@ -3319,7 +3348,7 @@ function renderView(v){
   try{
     switch(v){
       // Cacheable views: read-heavy, rarely edited inline — 8 s TTL, invalidated on saveDB
-      case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
+      case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);_wbOptsApply();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
       case 'my-week':   vc.innerHTML=renderMyWeek();break;
       case 'digest':    vc.innerHTML=renderDigests();break;
       case 'gantt':     _renderCached(vc,'gantt-'+ganttScale+'-'+_filterSig(),renderGantt);break;
@@ -4680,9 +4709,20 @@ function removeBoardShare(boardId,userId){
   openBoardShareModal(boardId);
 }
 
-function toggleWbMenu(id){
+// Which card has its options panel open. Every setting on that panel saves through a full
+// dashboard re-render, which used to rebuild the card with the panel shut again — so picking
+// a client or a folder closed the editor under you.
+// The panel always renders hidden and is opened afterwards, never baked into the markup:
+// the dashboard is served from an 8 s HTML cache, so state written into that string would
+// come back on a later visit long after the user had moved on.
+let _wbOptsOpenId=null;
+function _wbOptsApply(){
   document.querySelectorAll('[id^="wb-opts-"]').forEach(el=>el.classList.add('hidden'));
-  document.getElementById('wb-opts-'+id)?.classList.toggle('hidden');
+  if(_wbOptsOpenId)document.getElementById('wb-opts-'+_wbOptsOpenId)?.classList.remove('hidden');
+}
+function toggleWbMenu(id){
+  _wbOptsOpenId=_wbOptsOpenId===id?null:id;
+  _wbOptsApply();
 }
 function openRenameWb(id){
   const wb=DB.workboards.find(w=>w.id===id);if(!wb)return;
@@ -5948,7 +5988,7 @@ function renderDashboard(){
           <div style="padding:8px 12px;display:flex;flex-direction:column;gap:6px">
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Client</span>
-              <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
+              <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;min-width:0;max-width:100%;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
                 <option value="">— None —</option>
                 ${DB.clients.map(c=>`<option value="${c.id}" ${boardClientId(wb)===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
               </select>
@@ -5963,7 +6003,7 @@ function renderDashboard(){
             </div>
             ${(DB.wbFolders||[]).length?`<div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Folder</span>
-              <select onchange="event.stopPropagation();moveWbToFolder('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
+              <select onchange="event.stopPropagation();moveWbToFolder('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;min-width:0;max-width:100%;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
                 <option value="">— None —</option>
                 ${(DB.wbFolders||[]).map(f=>`<option value="${f.id}"${wb.folderId===f.id?' selected':''}>${escHtml(f.name)}</option>`).join('')}
               </select>
@@ -7565,13 +7605,42 @@ function cmLogoRemove(){
   const sw=document.getElementById('cm-color-swatches');if(sw)sw.innerHTML='';
   const btn=document.getElementById('cm-cycle-btn');if(btn)btn.style.display='none';
 }
+// Suggest a 3-letter code from a client name: initials when there are three or more words,
+// otherwise padded out of the first word. Nudged until it is free, since two clients sharing
+// a code makes pro forma, reports and the board title ambiguous.
+function suggestClientCode(name,excludeId){
+  const clean=String(name||'').toUpperCase().replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  if(!clean)return'';
+  const words=clean.split(' ').filter(Boolean);
+  let base;
+  if(words.length>=3)      base=words.slice(0,3).map(w=>w[0]).join('');
+  else if(words.length===2)base=words[0][0]+words[1].slice(0,2);
+  else                     base=words[0].slice(0,3);
+  base=base.replace(/[^A-Z0-9]/g,'');
+  if(base.length<3)base=(base+words.join('')).slice(0,3);
+  if(!base)return'';
+  const taken=new Set((DB.clients||[]).filter(c=>c.id!==excludeId).map(c=>String(c.shortCode||'').toUpperCase()).filter(Boolean));
+  if(!taken.has(base))return base;
+  const stem=base.slice(0,2);
+  for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){if(!taken.has(stem+ch))return stem+ch;}
+  for(let n=2;n<=9;n++){if(!taken.has(stem+n))return stem+n;}
+  return base;
+}
+// The generated code only ever prefills — once it is typed in, it is the user's to own.
+let _cmCodeTouched=false;
+function _cmAutoCode(name){
+  if(_cmCodeTouched)return;
+  const el=document.getElementById('cm-code');
+  if(el)el.value=suggestClientCode(name,'');
+}
 function openClientModal(id){
   const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
+  _cmCodeTouched=!!id; // editing an existing client never rewrites its code
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
-      <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"/></div>
-      <div><label class="form-label">Short Code</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}"/></div>
+      <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"${id?'':' oninput="_cmAutoCode(this.value)"'}/></div>
+      <div><label class="form-label">Short Code${id?'':' <span style="font-weight:400;color:#94a3b8;font-size:10px">— suggested from the name, edit if you like</span>'}</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}" maxlength="4" style="text-transform:uppercase" oninput="_cmCodeTouched=true"/></div>
       <!-- Logo + Color in one unified row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div>
@@ -7634,7 +7703,7 @@ function openClientModal(id){
 async function saveClient(id){
   const name=document.getElementById('cm-name').value.trim();
   if(!name){showAlert('Client name is required.','Validation');return;}
-  const shortCode=document.getElementById('cm-code').value.trim();
+  const shortCode=document.getElementById('cm-code').value.trim().toUpperCase();
   const color=document.getElementById('cm-color').value;
   if(id){
     const c=DB.clients.find(x=>x.id===id);
@@ -10763,7 +10832,7 @@ function _qccCreate(qId,name){
     contactName:'',contactEmail:'',
     portalEnabled:false,loginEmail:'',loginPassword:'',
     archived:false,color:colors[Math.floor(Math.random()*colors.length)],
-    shortCode:name.trim().substring(0,3).toUpperCase(),
+    shortCode:suggestClientCode(name,''),
     createdAt:now,updatedAt:now
   };
   (DB.clients=DB.clients||[]).push(newClient);
@@ -12856,36 +12925,49 @@ function _notePageHtml(section){
         <div class="note-date">${escHtml(dateLine)}</div>
       </div>
       ${boxes.map(bx=>`<div class="note-box" data-id="${bx.id}" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w||430}px"
-          onclick="event.stopPropagation()">
-        <div class="note-box-grip" title="Drag to move" onmousedown="noteBoxDragStart(event,'${section.id}','${bx.id}')"></div>
+          onclick="event.stopPropagation()" onmousedown="if(event.altKey)noteBoxDragStart(event,'${section.id}','${bx.id}')">
+        <div class="note-box-grip" title="Drag to move (or Alt+drag anywhere on the box)" onmousedown="noteBoxDragStart(event,'${section.id}','${bx.id}')"></div>
         <div class="note-box-body" id="notebox-${bx.id}" contenteditable="true" spellcheck="false"
           data-box="${bx.id}">${_noteSanitize(bx.html||'')}</div>
         <button class="note-box-del" title="Delete this box" onclick="event.stopPropagation();noteBoxDelete('${section.id}','${bx.id}')">&#215;</button>
       </div>`).join('')}
     </div>`;
 }
+// Persist one box. Only an emptied box (which removes itself) needs a re-render — repainting
+// the whole page on every click-out is what made editing feel glitchy. Sanitise on the way
+// in as well as out: a pasted onerror handler would otherwise be stored and fire for anyone
+// who later opens this client's notes.
+function _noteSaveBox(el,section){
+  const sec=section||_noteSection(selectedNoteSectionId);
+  if(!sec)return false;
+  const bx=_noteBoxes(sec).find(b=>b.id===el.dataset.box);
+  if(!bx)return false;
+  _noteAutolink(el);
+  bx.html=_noteSanitize(el.innerHTML);
+  let removed=false;
+  if(!el.textContent.trim()&&!el.querySelector('img')){
+    sec.boxes=_noteBoxes(sec).filter(b=>b.id!==bx.id);
+    removed=true;
+  }
+  sec.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  return removed;
+}
 function _noteBindPage(section){
   document.querySelectorAll('#note-page .note-box-body').forEach(el=>{
     el.addEventListener('blur',()=>{
-      const bx=_noteBoxes(section).find(b=>b.id===el.dataset.box);
-      if(!bx)return;
-      _noteAutolink(el);
-      // Sanitise on the way in as well as out: a pasted onerror handler would
-      // otherwise be stored and fire for anyone who later opens this client's notes.
-      bx.html=_noteSanitize(el.innerHTML);
-      // An emptied box removes itself, so stray clicks do not litter the page.
-      if(!el.textContent.trim()&&!el.querySelector('img')){
-        section.boxes=_noteBoxes(section).filter(b=>b.id!==bx.id);
-      }
-      section.updatedAt=new Date().toISOString();
-      saveDB(DB);
-      setTimeout(renderNotes,0);
+      // A blur caused by the paste popup is not the user leaving the box.
+      if(document.getElementById('paste-choice-popup'))return;
+      if(_noteSaveBox(el,section))renderNotes();
     });
     el.addEventListener('paste',e=>_handleDescPaste(e,el.id));
   });
 }
 // Click bare page → new box exactly where you clicked.
 function notePageClick(e,sectionId){
+  // Finishing a text selection, or clicking just outside a box, should not litter the page.
+  if(window.getSelection()?.toString())return;
+  if(e.target.closest('.note-box'))return;
   const sec=_noteSection(sectionId);
   if(!sec)return;
   const page=document.getElementById('note-page');
@@ -14229,6 +14311,8 @@ function _initDescEditor(id,onSave){
   const _norm=()=>{const v=el.innerHTML.trim();return(v===''||v==='<br>'||v==='<br/>'||v==='<br />')?'':v;};
   el.addEventListener('input',()=>{clearTimeout(_dt);_dt=setTimeout(()=>onSave(_norm()),800);_descInitOverflow(id);});
   el.addEventListener('blur',()=>{
+    // A blur caused by the paste popup is not the user leaving the field.
+    if(document.getElementById('paste-choice-popup'))return;
     clearTimeout(_dt);onSave(_norm());
     // Click-out collapses a long description back to its clamped height so a big paste
     // doesn't keep dominating the panel.
@@ -14272,6 +14356,7 @@ function _handleDescPaste(e,id){
     _pendingPaste={html:_descSanitize(html),plain};
   }
   const sel=window.getSelection();const rect=sel?.rangeCount?sel.getRangeAt(0).getBoundingClientRect():null;
+  if(_pendingPaste&&sel?.rangeCount)_pendingPaste.range=sel.getRangeAt(0).cloneRange();
   _showPasteChoice(rect,id);
 }
 function _showPasteChoice(rect,id){
@@ -14282,6 +14367,9 @@ function _showPasteChoice(rect,id){
   pop.style.cssText=`position:fixed;top:0;left:0;visibility:hidden;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;box-shadow:0 4px 18px rgba(13,28,51,0.14);z-index:9999;display:flex;overflow:hidden;font-family:'Jost',sans-serif;font-size:12px`;
   pop.innerHTML=`<div style="padding:7px 10px;font-weight:600;color:#8da2b2;border-right:1px solid #f0f4f8;display:flex;align-items:center;gap:4px;white-space:nowrap">Paste as:</div><button onclick="_applyPaste('${id}','plain');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:600;color:#0d1c33;font-size:12px;font-family:'Jost',sans-serif;border-right:1px solid #f0f4f8" onmouseover="this.style.background='#f0f7f7'" onmouseout="this.style.background='#fff'">Plain text</button><button onclick="_applyPaste('${id}','html');document.getElementById('paste-choice-popup')?.remove()" style="padding:7px 13px;border:none;background:#fff;cursor:pointer;font-weight:700;color:#0d6e4e;font-size:12px;font-family:'Jost',sans-serif" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">Keep formatting</button>`;
   document.body.appendChild(pop);
+  // Never take focus off the editor: a blur here saves the box's pre-paste HTML and
+  // re-renders the page, so the paste that follows is applied to a doomed element.
+  pop.addEventListener('mousedown',e=>e.preventDefault());
   const ed=document.getElementById(id);
   const edRect=ed?ed.getBoundingClientRect():null;
   // Prefer the caret, fall back to the editor box when the caret rect is empty.
@@ -14299,10 +14387,19 @@ function _showPasteChoice(rect,id){
   setTimeout(()=>document.addEventListener('mousedown',dismiss),0);
 }
 function _applyPaste(id,mode){
-  if(!_pendingPaste)return;
-  const el=document.getElementById(id);if(!el)return;el.focus();
-  document.execCommand(mode==='plain'?'insertText':'insertHTML',false,mode==='plain'?_pendingPaste.plain:_pendingPaste.html);
+  const pend=_pendingPaste;
+  if(!pend)return;
+  const el=document.getElementById(id);if(!el)return;
+  el.focus();
+  // focus() alone drops the caret to the start of the box, which is why pastes were landing
+  // above the text instead of at the cursor.
+  if(pend.range&&el.contains(pend.range.commonAncestorContainer)){
+    const s=window.getSelection();s.removeAllRanges();s.addRange(pend.range);
+  }
+  document.execCommand(mode==='plain'?'insertText':'insertHTML',false,mode==='plain'?pend.plain:pend.html);
   _pendingPaste=null;
+  // Note boxes only persist on blur, so a paste that is never blurred would be lost.
+  if(el.classList.contains('note-box-body'))_noteSaveBox(el);
 }
 // ── Markdown → HTML ─────────────────────────────────────────
 // AI summaries (Claude, ChatGPT) copy out of a terminal as plain-text Markdown, so a
@@ -14580,6 +14677,118 @@ function renderCommsThreadTab(msgs){
     </div>`;
 }
 
+// ── Copy meeting notes out for an AI chat ───────────────────────────────────
+// Meeting notes are the one place the history of a job is written down in prose, so the
+// most useful thing to do with them is hand them to an assistant and ask questions. This
+// flattens them to plain text — no markup, oldest first, with a short preamble telling the
+// assistant what it is looking at — and puts it on the clipboard.
+// 'task' scope = the notes on the open task panel; 'board' scope = the board's own notes.
+let _mnPick=new Set();      // note ids ticked for copying
+let _mnPickMode=false;      // whether the tick boxes are showing
+function _mnNotesForScope(scope){
+  if(scope==='task')return _tpCurrentTask?(DB.meetingNotes||[]).filter(n=>n.taskId===_tpCurrentTask.id):[];
+  return (DB.meetingNotes||[]).filter(n=>!n.taskId&&n.boardId===currentWorkboard?.id);
+}
+function _mnScopeLabel(scope){
+  if(scope==='task'&&_tpCurrentTask){
+    const wb=(DB.workboards||[]).find(w=>w.id===_taskBoardId(_tpCurrentTask));
+    const cli=wb?boardClient(wb):null;
+    return {title:_tpCurrentTask.name||_tpCurrentTask.title||'Task',
+            sub:[wb&&wb.name,cli&&cli.name].filter(Boolean).join(' · ')};
+  }
+  const cli=currentWorkboard?boardClient(currentWorkboard):null;
+  return {title:currentWorkboard?currentWorkboard.name:'Board',sub:cli?cli.name:''};
+}
+// Rich note bodies are HTML. Unwrap them to text that still reads like notes: list items
+// keep a bullet, block elements keep their line breaks.
+function _mnPlain(html){
+  const d=document.createElement('div');
+  d.innerHTML=_noteSanitize(html||'');
+  d.querySelectorAll('li').forEach(li=>li.insertAdjacentText('afterbegin','- '));
+  d.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+  d.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5').forEach(el=>el.insertAdjacentText('beforeend','\n'));
+  return (d.textContent||'').replace(/ /g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function mnBuildAiText(notes,scope){
+  const lab=_mnScopeLabel(scope);
+  const sorted=[...notes].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))
+    ||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  const head=['MEETING NOTES — '+lab.title+(lab.sub?' ('+lab.sub+')':''),
+    sorted.length+' meeting'+(sorted.length===1?'':'s')+', oldest first. Exported '+formatDate(toDateStr(new Date()))+'.',
+    '',
+    'Use these notes as background. They are the running record of what was discussed,',
+    'decided and left outstanding on this work.',''].join('\n');
+  const body=sorted.map((n,i)=>{
+    const a=(DB.staff||[]).find(s=>s.id===n.authorId);
+    return ['='.repeat(60),
+      '['+(i+1)+'] '+(n.title||'Untitled'),
+      'Date: '+formatDate(n.date)+(a?'    Written by: '+a.name:''),
+      '',
+      _mnPlain(n.body)||'(no details recorded)'].join('\n');
+  }).join('\n\n');
+  return head+'\n'+body+'\n';
+}
+function _mnCopyText(text,okMsg){
+  const done=()=>showToast(okMsg,'success',3500);
+  // execCommand fallback for any context where the async clipboard API is unavailable
+  const fallback=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);ta.select();
+    let okd=false;
+    try{okd=document.execCommand('copy');}catch(_){}
+    ta.remove();
+    okd?done():showToast('Could not reach the clipboard — copy blocked by the browser','error',4500);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(fallback);
+  else fallback();
+}
+function mnCopyForAi(scope){
+  const all=_mnNotesForScope(scope);
+  const chosen=(_mnPickMode&&_mnPick.size)?all.filter(n=>_mnPick.has(n.id)):all;
+  if(!chosen.length){showToast('No meeting notes to copy yet','warning',3000);return;}
+  _mnCopyText(mnBuildAiText(chosen,scope),
+    'Copied '+chosen.length+' meeting note'+(chosen.length===1?'':'s')+' — paste into your AI chat');
+}
+function _mnRefresh(scope){scope==='task'?_tpNotesRefresh():renderView('workspace');}
+function mnTogglePickMode(scope){_mnPickMode=!_mnPickMode;if(!_mnPickMode)_mnPick.clear();_mnRefresh(scope);}
+function mnTogglePick(id,scope){_mnPick.has(id)?_mnPick.delete(id):_mnPick.add(id);_mnRefresh(scope);}
+function mnPickAll(scope){
+  const all=_mnNotesForScope(scope);
+  if(_mnPick.size===all.length)_mnPick.clear();else all.forEach(n=>_mnPick.add(n.id));
+  _mnRefresh(scope);
+}
+// The bar above the list: copy, and an optional tick-box mode for choosing which meetings.
+function mnCopyBarHtml(scope,count){
+  if(!count)return'';
+  const picked=_mnPickMode?_mnPick.size:0;
+  const label=picked?`Copy ${picked} for AI`:`Copy ${count===1?'':'all '+count+' '}for AI`;
+  const btn='display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:\'Jost\',sans-serif;font-size:11px;font-weight:700;transition:background 0.12s,border-color 0.12s';
+  return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <button onclick="mnCopyForAi('${scope}')" title="Copy these meeting notes as plain text, ready to paste into an AI chat"
+      style="${btn};border:1px solid #bcdccb;background:#eaf4ee;color:#0d6e4e"
+      onmouseover="this.style.background='#dbeee3'" onmouseout="this.style.background='#eaf4ee'">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      ${label}
+    </button>
+    <button onclick="mnTogglePickMode('${scope}')" title="${_mnPickMode?'Stop choosing':'Choose which meetings to copy'}"
+      style="${btn};border:1px solid ${_mnPickMode?'#97bcbd':'#e2eaf2'};background:${_mnPickMode?'#f0f7f7':'#fff'};color:#5b7080">
+      ${_mnPickMode?'Done':'Select…'}
+    </button>
+    ${_mnPickMode?`<button onclick="mnPickAll('${scope}')" style="${btn};border:none;background:none;color:#6b8399;padding:5px 2px">
+      ${_mnPick.size===count?'Clear all':'Select all'}
+    </button>
+    <span style="font-size:10.5px;color:#8da2b2;margin-left:auto">${_mnPick.size} of ${count} chosen</span>`:''}
+  </div>`;
+}
+// A tick box on a note card, shown only while choosing.
+function mnPickBoxHtml(id,scope){
+  if(!_mnPickMode)return'';
+  return`<input type="checkbox" ${_mnPick.has(id)?'checked':''} onclick="event.stopPropagation();mnTogglePick('${id}','${scope}')"
+    title="Include this meeting in the copy" style="accent-color:#0d6e4e;width:14px;height:14px;flex-shrink:0;cursor:pointer;margin-right:2px"/>`;
+}
+
 // ── Meeting Notes tab — scoped to currentWorkboard.id (unlike Comms, which is global) ──
 function renderMeetingNotesTab(notes){
   const sorted=[...notes].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
@@ -14597,6 +14806,7 @@ function renderMeetingNotesTab(notes){
     <div style="flex:1;overflow-y:auto;padding:8px 16px">
       ${!isNew?`<button onclick="wsMeetingNoteStartNew()" style="display:block;width:100%;box-sizing:border-box;margin:8px 0;cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border:1px dashed #bcdfcb;border-radius:8px;padding:8px 14px;text-align:center;transition:background 0.12s,border-color 0.12s" onmouseover="this.style.background='#dcefe3'" onmouseout="this.style.background='#eaf4ee'">+ New Meeting Note</button>`:''}
       ${addForm}
+      ${mnCopyBarHtml('board',sorted.length)}
       ${sorted.length===0&&!isNew
         ?`<div style="text-align:center;padding:48px 20px;color:#b0bec5;font-size:13px"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',34)}</div>No meeting notes yet for this board.</div>`
         :sorted.map(n=>{
@@ -14616,7 +14826,7 @@ function renderMeetingNotesTab(notes){
               </div>`;
             }
             return`<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">
-              <div onclick="wsMeetingNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+              <div onclick="wsMeetingNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">${mnPickBoxHtml(n.id,'board')}
                 ${avatarHtml(a,24)}
                 <div style="flex:1;min-width:0">
                   <div style="font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.title)}</div>
@@ -15968,7 +16178,7 @@ function openTaskPanel(taskId,tab){
   // renderTaskPanel() already renders the Details tab (with tp-desc) by default when no
   // tab is passed, but never wires up the save/debounce listeners for it — only tpShowTab
   // does that. Without this, typed descriptions silently never save.
-  else setTimeout(()=>{_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);
+  else{_tpActiveTab='details';setTimeout(()=>{_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
   panel.style.display='flex';
   overlay.style.display='block';
   requestAnimationFrame(()=>{
@@ -15989,6 +16199,7 @@ function closeTaskPanel(){
     if(overlay)overlay.style.display='none';
   },280);
   _tpCurrentTask=null;
+  _tpActiveTab='details';
 }
 
 function renderTaskPanel(task){
@@ -16020,9 +16231,9 @@ function renderTaskPanel(task){
     </div>
     <div class="tp-tabs" style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 14px;overflow-x:auto">
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
+      <div class="tp-tab" id="tp-tab-notes" onclick="tpShowTab('notes')">Meeting Notes ${(()=>{const nc=(DB.meetingNotes||[]).filter(n=>n.taskId===task.id).length;return nc?`<span style="font-size:10px;background:#c7e6d1;color:#0d6e4e;border-radius:10px;padding:1px 5px;margin-left:3px">${nc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
       <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
-      <div class="tp-tab" id="tp-tab-notes" onclick="tpShowTab('notes')">Meeting Notes ${(()=>{const nc=(DB.meetingNotes||[]).filter(n=>n.taskId===task.id).length;return nc?`<span style="font-size:10px;background:#c7e6d1;color:#0d6e4e;border-radius:10px;padding:1px 5px;margin-left:3px">${nc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
       <div class="tp-tab" id="tp-tab-recurrence" onclick="tpShowTab('recurrence')" style="display:flex;align-items:center;gap:4px">↻ Recurrence${task.recurrence?.freq?'<span style="width:6px;height:6px;border-radius:50%;background:#0d6e4e;display:inline-block"></span>':''}</div>
     </div>
@@ -16496,6 +16707,7 @@ function tpShowTab(tabName){
   if(!task)return;
   // Comments are now embedded in Details; redirect before looking up tab element
   if(tabName==='comments')tabName='details';
+  _tpActiveTab=tabName;
   document.querySelectorAll('.tp-tab').forEach(t=>t.classList.remove('active'));
   const el=document.getElementById('tp-tab-'+tabName);
   if(el)el.classList.add('active');
@@ -16528,6 +16740,7 @@ function renderTpMeetingNotes(task){
   return`<div>
     ${!isNew?`<button onclick="tpNoteStartNew()" style="display:block;width:100%;box-sizing:border-box;margin-bottom:12px;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border:1px dashed #bcdfcb;border-radius:8px;padding:9px 14px;text-align:center" onmouseover="this.style.background='#dcefe3'" onmouseout="this.style.background='#eaf4ee'">+ New Meeting Note</button>`:''}
     ${addForm}
+    ${mnCopyBarHtml('task',notes.length)}
     ${notes.length===0&&!isNew
       ?`<div style="text-align:center;padding:44px 20px;color:#b0bec5;font-size:13px"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',32)}</div>No meeting notes on this task yet.</div>`
       :notes.map(n=>{
@@ -16546,7 +16759,7 @@ function renderTpMeetingNotes(task){
             </div>`;
           }
           return`<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">
-            <div onclick="tpNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer">
+            <div onclick="tpNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer">${mnPickBoxHtml(n.id,'task')}
               ${avatarHtml(a,24)}
               <div style="flex:1;min-width:0">
                 <div style="font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.title)}</div>
@@ -16656,8 +16869,7 @@ function tpSaveField(field,value){
   // or when the owner changes so the Assignees checkbox list excludes the new lead owner
   const approvalStatuses=['ready-approval','approved-client','completed-approved'];
   if(field==='ownerId'||(field==='status'&&(approvalStatuses.includes(value)||approvalStatuses.includes(prevStatus)))||_pctStatusChanged){
-    const panel=document.getElementById('tp-body');
-    if(panel){panel.innerHTML=renderTpDetails(_tpCurrentTask);setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);}
+    _tpRepaintBody();
   }
   // Description saves don't affect the view table — skip re-render to prevent scroll jumps
   if(field!=='description')renderView(currentView);
@@ -16689,8 +16901,7 @@ function tpRemoveTag(tag){
   if(!_tpCurrentTask)return;
   _tpCurrentTask.tags=(_tpCurrentTask.tags||[]).filter(t=>t!==tag);
   tpSaveField('tags',_tpCurrentTask.tags);
-  const body=document.getElementById('tp-body');
-  if(body){body.innerHTML=renderTpDetails(_tpCurrentTask);setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);}
+  _tpRepaintBody();
 }
 
 function tpAddSubitem(taskId){
@@ -16885,8 +17096,7 @@ function tpAddClientComment(){
   if(clientId){const clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===clientId&&u.active!==false);if(clientUser){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:clientUser.id,taskId:_tpCurrentTask.id,type:'client_comment_reply',read:false,message:currentUser.name+' replied on: '+(_tpCurrentTask.name||_tpCurrentTask.title),createdAt:now});updateNotifBadge();}}
   if(inp)inp.value='';
   saveDB(DB);
-  const panel=document.getElementById('tp-body');
-  if(panel&&_tpCurrentTask){panel.innerHTML=renderTpDetails(_tpCurrentTask);setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);}
+  _tpRepaintBody();
 }
 function cpPostClientComment(taskId){
   if(currentUser?.role!=='client')return;
@@ -16910,8 +17120,7 @@ function deleteClientComment(commentId,taskId){
   if(currentUser?.role!=='admin'&&c.authorId!==currentUser?.id)return;
   DB.clientComments=(DB.clientComments||[]).filter(x=>x.id!==commentId);
   saveDB(DB);
-  const panel=document.getElementById('tp-body');
-  if(panel&&_tpCurrentTask){panel.innerHTML=renderTpDetails(_tpCurrentTask);setTimeout(()=>_initDescEditor('tp-desc',v=>tpSaveField('description',v)),0);}
+  _tpRepaintBody();
 }
 
 let _tpMentionStart=-1;
@@ -17428,6 +17637,19 @@ function boardClientId(wb){
 function boardClient(wb){
   const id=boardClientId(wb);
   return id?((DB.clients||[]).find(c=>c.id===id)||null):null;
+}
+// "General Crane Services - GCS". Some client names already carry their own code
+// ("General Crane Services / GCS"), which is why gluing the short code on the end used to
+// print it twice — strip a trailing repeat before composing.
+function clientDisplayTitle(cli){
+  if(!cli)return'';
+  let nm=String(cli.name||'').trim();
+  const code=String(cli.shortCode||'').trim();
+  if(!code)return nm;
+  const esc=code.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  nm=nm.replace(new RegExp('\\s*[\\/\\-–·(]\\s*'+esc+'\\s*\\)?\\s*$','i'),'').trim();
+  if(nm.toUpperCase()===code.toUpperCase())nm='';
+  return nm?nm+' - '+code:code;
 }
 function saveWbClient(boardId,clientId){
   const wb=(DB.workboards||[]).find(w=>w.id===boardId);
