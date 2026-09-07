@@ -1703,6 +1703,18 @@ function _applyCompatAliases(data){
   data.staff      = data.users;
   data.workboards = data.boards;
   data.groups     = data.groups || [];           // groups is already the canonical key in SEED v3
+  // One client per board. Boards predate having their own client, so adopt whatever
+  // their groups already agree on — most common wins — rather than starting blank.
+  // Groups are left as they are; they only converge when the board client is set.
+  (data.boards||[]).forEach(b=>{
+    if(b.clientId!==undefined&&b.clientId!==null)return;
+    const tally={};
+    (data.groups||[]).forEach(g=>{
+      if((g.boardId||g.workboardId)!==b.id||!g.clientId)return;
+      tally[g.clientId]=(tally[g.clientId]||0)+1;
+    });
+    b.clientId=Object.keys(tally).sort((x,y)=>tally[y]-tally[x])[0]||'';
+  });
   // Ensure every group has workboardId alias
   (data.groups||[]).forEach(g=>{
     if(!g.workboardId&&g.boardId)  g.workboardId=g.boardId;
@@ -4602,7 +4614,7 @@ function submitCreateWb(){
   const clientId=document.getElementById('new-wb-client')?.value||'';
   const excludeFromReports=document.getElementById('new-wb-exclude')?.checked||false;
   const wbId=uid();
-  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,ownerId:currentUser.id,description:'',archived:false,excludeFromReports,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,clientId,ownerId:currentUser.id,description:'',archived:false,excludeFromReports,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
   DB.groups.push({id:uid(),clientId,workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
   saveDB(DB);closeCreateWbForm();renderSidebarWorkboards();renderView('dashboard');
 }
@@ -5938,7 +5950,7 @@ function renderDashboard(){
               <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Client</span>
               <select onchange="saveWbClient('${wb.id}',this.value)" onclick="event.stopPropagation()" style="flex:1;font-size:11px;border:1px solid #e2eaf2;border-radius:6px;padding:3px 7px;background:#fff;color:#1a2940;cursor:pointer;font-family:'Jost',sans-serif">
                 <option value="">— None —</option>
-                ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
+                ${DB.clients.map(c=>`<option value="${c.id}" ${boardClientId(wb)===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
               </select>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
@@ -14446,21 +14458,15 @@ function wsSaveInlineGroup(){
   const wbId=currentWorkboard?.id;
   if(!wbId)return;
   const existing=DB.groups.filter(g=>g.workboardId===wbId||g.boardId===wbId);
-  const clientId=document.getElementById('ws-inline-group-client')?.value||(DB.clients[0]?.id||'');
-  if(!clientId)return;
-  const client=DB.clients.find(c=>c.id===clientId);
-  const color=client?.color||'#97bcbd';
+  // The board owns the client; a board with none yet simply makes groups with none.
+  const clientId=boardClientId(currentWorkboard);
+  const color=boardClient(currentWorkboard)?.color||currentWorkboard?.color||'#97bcbd';
   DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
   saveDB(DB);
   wsAddGroupInline=false;
   renderView('workspace');
 }
 function wsCancelInlineGroup(){wsAddGroupInline=false;renderView('workspace');}
-function wsInlineGroupClientChange(sel){
-  const client=DB.clients.find(c=>c.id===sel.value);
-  const el=document.getElementById('ws-inline-group-border');
-  if(el)el.style.borderLeftColor=client?.color||'#97bcbd';
-}
 
 // ── Comms thread ──
 function wsOpenComms(){wsCommsOpen=true;renderView('workspace');setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);}
@@ -15124,7 +15130,7 @@ function agSyncColor(select){
 }
 
 function saveNewGroup(){
-  const clientId=document.getElementById('ag-client')?.value||'';
+  const clientId=boardClientId(currentWorkboard); // groups follow the board
   const name=(document.getElementById('ag-name')?.value||'').trim();
   const color=document.getElementById('ag-color')?.value||'#97bcbd';
   const errEl=document.getElementById('ag-error');
@@ -15538,37 +15544,21 @@ function renderWorkspace(){
         </tr>
       </thead>
       <tbody>
-        ${wsGroupBy==='group'
-          ? sections.reduce((html,sec,i)=>{
-              const prev=sections[i-1];
-              const clientChanged=!prev||prev.sub!==sec.sub;
-              const sep=clientChanged&&sec.sub?`
-                <tr style="pointer-events:none">
-                  <td colspan="${totalCols}" style="padding:${i===0?'4px':'16px'} 0 0 0;background:#f0f4f8;border:none">
-                    <div style="display:flex;align-items:center;gap:8px;padding:6px 18px;border-top:${i===0?'none':'2px solid #e2eaf2'}">
-                      <div style="width:10px;height:10px;border-radius:50%;background:${sec.color};flex-shrink:0;box-shadow:0 0 0 2px ${sec.color}33"></div>
-                      <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.08em">${escHtml(sec.sub)}</span>
-                      <div style="flex:1;height:1px;background:#e2eaf2"></div>
-                    </div>
-                  </td>
-                </tr>`:'';
-              return html+sep+renderWsSection(sec,cols,visCols,custCols,totalCols);
-            },'')
-          : sections.map(sec=>renderWsSection(sec,cols,visCols,custCols,totalCols)).join('')}
+        ${/* The board has one client, so a client separator band above the first group was
+             just the board name again. Sections render straight through. */
+          sections.map(sec=>renderWsSection(sec,cols,visCols,custCols,totalCols)).join('')}
         ${sections.length===0?`<tr><td colspan="${totalCols}" style="padding:48px;text-align:center;color:#c8d4e0;font-size:14px">
           <div style="margin-bottom:10px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c8d4e0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="8.5" y1="11" x2="13.5" y2="11"/></svg></div>
           No tasks match the current filters.
           ${wsMtSearch?`<div style="margin-top:6px"><button onclick="wsMtSearch='';renderView('workspace')" class="btn btn-ghost btn-sm">Clear search</button></div>`:''}
         </td></tr>`:''}
         ${wsAddGroupInline&&wsGroupBy==='group'?(()=>{
-          const _igClient=DB.clients.find(c=>c.id===activeFilters.clientId)||DB.clients[0];
-          const _igColor=_igClient?.color||'#97bcbd';
-          const _igClientOpts=DB.clients.map((c,i)=>`<option value="${c.id}"${(activeFilters.clientId===c.id||(activeFilters.clientId==='all'&&i===0))?' selected':''}>${escHtml(c.name)}</option>`).join('');
+          // Groups inherit the board's client, so the row only asks for a name.
+          const _igColor=boardClient(currentWorkboard)?.color||currentWorkboard?.color||'#97bcbd';
           return`<tr class="ws-inline-row">
             <td style="width:36px;padding:0 0 0 12px"><input type="checkbox" disabled style="opacity:.3"/></td>
             <td colspan="${totalCols-1}" id="ws-inline-group-border" style="padding:8px 12px 8px 16px;border-left:4px solid ${_igColor}">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <select id="ws-inline-group-client" class="ws-inline-select" onchange="wsInlineGroupClientChange(this)" style="height:28px;font-size:12px;flex-shrink:0">${_igClientOpts}</select>
                 <input id="ws-inline-group-name" type="text" class="ws-inline-input"
                   placeholder="Group name — press Enter to save, Esc to cancel"
                   style="flex:1;min-width:180px"
@@ -15608,12 +15598,10 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
         <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0">${collapsed?'▶':'▼'}</span>
         <div style="width:9px;height:9px;border-radius:2px;background:${sec.color};flex-shrink:0"></div>
         <span id="ws-grp-name-${sec.id}" class="ws-grp-name" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940">${escHtml(sec.label)}</span>
-        ${wsGroupBy==='group'
-          ?`<select class="ws-grp-client" onclick="event.stopPropagation()" onchange="event.stopPropagation();wsSetGroupClient('${sec.id}',this.value)">
-              <option value="">— No client —</option>
-              ${DB.clients.map(c=>`<option value="${c.id}"${sec.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('')}
-            </select>`
-          :`<span class="ws-grp-client" style="font-size:11px;color:#8da2b2;border:none;background:none">${sec.sub?'· '+escHtml(sec.sub):''}</span>`}
+        ${/* One client per board, so the group row does not repeat it. Grouping BY client
+             still labels each section, which is the section identity rather than a repeat. */
+          wsGroupBy==='group'?''
+          :`<span class="ws-grp-client" style="font-size:11px;color:#8da2b2;border:none;background:none">${sec.sub?'\u00b7 '+escHtml(sec.sub):''}</span>`}
 
         ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
         <span class="ws-grp-count">${sec.tasks.length}</span>
@@ -16217,10 +16205,8 @@ function renderTpDetails(task){
     <div class="tp-prop">
       <span class="tp-prop-lbl">Client</span>
       <div class="tp-prop-val">
-        <select onchange="tpSaveGroupClient(this.value)">
-          <option value="">No client</option>
-          ${DB.clients.map(c=>`<option value="${c.id}" ${group&&group.clientId===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
-        </select>
+        <!-- Read-only: one client per board, set on the board itself. -->
+        <span style="font-size:12px;color:#1a2940" title="One client per board \u2014 change it on the board">${escHtml(boardClient((DB.workboards||[]).find(w=>w.id===_taskBoardId(task)))?.name||'\u2014 None \u2014')}</span>
       </div>
     </div>
     <div class="tp-prop">
@@ -17430,10 +17416,32 @@ function saveWbColor(id,color){
   renderSidebarWorkboards();
   renderView('dashboard');
 }
+// The board owns the client. group.clientId is still written on every group because
+// filters, reports, pro forma and the task panel all resolve a client through the
+// group — the board is simply the only place it can be set.
+function boardClientId(wb){
+  if(!wb)return'';
+  if(wb.clientId!==undefined&&wb.clientId!==null)return wb.clientId;
+  const g=(DB.groups||[]).find(x=>(x.boardId||x.workboardId)===wb.id&&x.clientId);
+  return g?g.clientId:'';
+}
+function boardClient(wb){
+  const id=boardClientId(wb);
+  return id?((DB.clients||[]).find(c=>c.id===id)||null):null;
+}
 function saveWbClient(boardId,clientId){
-  DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId).forEach(g=>{g.clientId=clientId;});
+  const wb=(DB.workboards||[]).find(w=>w.id===boardId);
+  if(wb){wb.clientId=clientId||'';wb.updatedAt=new Date().toISOString();}
+  DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId).forEach(g=>{g.clientId=clientId||'';});
+  // getTaskClient prefers a task's own denormalised clientId over its group's, so tasks
+  // have to follow as well — otherwise reports, timesheets and pro forma would keep
+  // billing the previous client. _taskBoardId resolves via the group, so subitems (which
+  // carry no boardId of their own) are caught too.
+  DB.tasks.filter(t=>_taskBoardId(t)===boardId).forEach(t=>{t.clientId=clientId||null;});
+  writeAuditEvent('WorkBoard',boardId,'client_changed',null,{clientId:clientId||''});
   saveDB(DB);
-  renderView('dashboard');
+  renderSidebarWorkboards();
+  renderView(currentView);
 }
 // The prefix is display-only — refNumbers never change, so renaming it is safe and
 // instantly re-labels every task on the board.
