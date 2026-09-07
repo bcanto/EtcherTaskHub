@@ -365,6 +365,9 @@ th.col-resizing .col-resize::after{background:#0d6e4e!important}
 #ws-newgroup-zone{display:none;align-items:center;justify-content:center;gap:7px;margin-top:8px;
   padding:11px;border:1.5px dashed #d8e0ec;border-radius:9px;color:#a8b8c8;
   font-family:'Jost',sans-serif;font-size:12px;font-weight:600;transition:border-color 0.15s,color 0.15s,background 0.15s}
+/* Flash a just-created group so it is obvious which row the scroll landed on. */
+@keyframes wsGrpNew{0%{background:#eaf4ee}60%{background:#eaf4ee}100%{background:transparent}}
+.ws-grp-hdr.ws-grp-new>td{animation:wsGrpNew 1.6s var(--ease)}
 body.ws-dragging #ws-newgroup-zone{display:flex}
 #ws-newgroup-zone.active{border-color:#0d6e4e;color:#0d6e4e;background:#f0fdf4;border-style:solid}
 /* Group reordering: grip appears on hover, drop edge shown as a teal rule. */
@@ -560,6 +563,47 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tp-tabs::-webkit-scrollbar{display:none}
 .tp-tab{display:inline-flex;align-items:center;height:36px;padding:0 9px;font-size:12px;font-weight:600;font-family:'Lato',sans-serif;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s var(--ease),border-color 0.2s var(--ease);white-space:nowrap}
 .tp-tab.active{color:var(--navy);border-bottom-color:#97bcbd}
+/* Tab counts match the section counts: ink means there is something in there. */
+.tp-tab-count{font-size:10px;background:#0d1c33;color:#fff;border-radius:10px;padding:1px 5px;margin-left:3px;font-weight:700}
+
+/* ── Meeting notes list ──
+   A meeting log is read by date, so the date leads each row and the months are labelled.
+   Titles alone said nothing about what was in a note, so each card previews its first line.
+   One toolbar row replaces the full-width dashed block that used to dominate the list. */
+.mn-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mn-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;transition:background 0.14s var(--ease),border-color 0.14s var(--ease),color 0.14s var(--ease),transform 0.1s var(--ease)}
+.mn-btn:active{transform:translateY(1px)}
+.mn-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+.mn-btn--new{border:1px solid #0d6e4e;background:#0d6e4e;color:#fff}
+.mn-btn--new:hover{background:#0a5a40;border-color:#0a5a40}
+.mn-btn--ai{border:1px solid #0d1c33;background:#0d1c33;color:#fff}
+.mn-btn--ai:hover{background:#1a2f4f;border-color:#1a2f4f}
+.mn-btn--ghost{border:1px solid #e2eaf2;background:#fff;color:#5b7080}
+.mn-btn--ghost:hover{background:#f4f8fc;border-color:#cdd9e5}
+.mn-btn--on{border-color:#97bcbd;background:#f0f7f7;color:#0d1c33}
+.mn-btn--link{border:none;background:none;color:#6b8399;padding:6px 2px}
+.mn-btn--link:hover{color:#0d1c33}
+.mn-count{font-size:10.5px;color:#8da2b2;margin-left:auto;white-space:nowrap}
+.mn-card{border:1px solid #e6edf4;border-radius:10px;background:#fff;margin-bottom:7px;overflow:hidden;transition:border-color 0.14s var(--ease),box-shadow 0.14s var(--ease)}
+.mn-card:hover{border-color:#cfdcea;box-shadow:0 2px 10px rgba(13,28,51,0.055)}
+.mn-card.open{border-color:#cfdcea}
+.mn-head{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer}
+.mn-av{flex-shrink:0;display:flex}
+.mn-main{flex:1;min-width:0}
+.mn-title{font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mn-meta{font-size:10.5px;color:#8da2b2;margin-top:1px}
+.mn-chev{flex-shrink:0;display:flex;align-items:center;color:#9fb0c2;transition:transform 0.18s var(--ease),color 0.14s}
+.mn-card:hover .mn-chev{color:#5b7080}
+.mn-card.open .mn-chev{transform:rotate(180deg)}
+.mn-body{padding:0 13px 13px;border-top:1px solid #f0f4f8}
+.mn-acts{display:flex;gap:14px;margin-top:10px;justify-content:flex-end}
+.mn-act{background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;padding:0;font-family:'Jost',sans-serif;transition:color 0.12s}
+.mn-act--edit{color:#6b8399}
+.mn-act--edit:hover{color:#0d1c33}
+.mn-act--del{color:#dc2626}
+.mn-act--del:hover{color:#991b1b}
+.mn-pick{accent-color:#0d6e4e;width:14px;height:14px;cursor:pointer;flex-shrink:0;margin:0}
+.mn-empty{text-align:center;padding:40px 20px;color:#b0bec5;font-size:13px}
 .tp-tab:hover:not(.active){color:var(--navy)}
 .tag-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6eff8;color:#4d6275;transition:background 0.15s}
 .tag-pill:hover{background:#d2e2f0}
@@ -572,17 +616,39 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tp-sec-hd:hover{color:var(--navy)}
 .tp-sec-chev{flex-shrink:0;transition:transform 0.18s var(--ease);color:#c8d4e0}
 .tp-sec.open>.tp-sec-hd .tp-sec-chev{transform:rotate(90deg)}
-.tp-sec-count{background:#eef3f8;color:#6b8399;border-radius:9px;padding:0 6px;font-size:10px;font-weight:700;letter-spacing:0}
+/* A count only appears when there IS something in there, so it should read as a signal.
+   Grey on grey was invisible; green would have claimed the palette’s “done” meaning, so the
+   counter uses brand ink, which carries no status of its own. */
+.tp-sec-count{background:#0d1c33;color:#fff;border-radius:9px;padding:0 6px;font-size:10px;font-weight:700;letter-spacing:0}
 .tp-sec-peek{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;font-weight:400;letter-spacing:0;color:#a8b8c8;text-transform:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tp-sec.open>.tp-sec-hd .tp-sec-peek{display:none}
 .tp-sec-body{padding-bottom:12px}
 .tp-sec:not(.open)>.tp-sec-body{display:none}
-/* compact property rows */
-.tp-prop{display:flex;align-items:center;gap:10px;min-height:30px;padding:2px 0}
-.tp-prop-lbl{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;width:66px;flex-shrink:0}
-.tp-prop-val{flex:1;min-width:0;font-size:13px;color:var(--text-1)}
-.tp-prop-val select,.tp-prop-val input[type=date]{border:none;background:transparent;font-size:13px;color:var(--text-1);cursor:pointer;padding:2px 4px;border-radius:5px;max-width:100%;transition:background 0.12s}
-.tp-prop-val select:hover,.tp-prop-val input[type=date]:hover{background:#f0f4f8}
+/* Property grid — label above value, two fields to a row where the values are short.
+   Every label used to sit in a fixed 66px gutter beside its value, which spent the panel's
+   width on the labels and gave each field a whole line to itself. */
+.tp-props{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px}
+.tp-prop{display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;padding:5px 8px;border-radius:8px;transition:background 0.12s var(--ease)}
+.tp-prop:hover{background:#f6f9fc}
+.tp-prop--wide{grid-column:1/-1}
+.tp-prop-lbl{font-size:9.5px;font-weight:700;color:#a8b8c8;text-transform:uppercase;letter-spacing:0.07em;flex-shrink:0}
+.tp-prop-val{min-width:0;font-size:13px;color:var(--text-1);display:flex;align-items:center;gap:6px;min-height:24px}
+.tp-prop-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Editable controls read as fields on hover rather than carrying a border at rest. */
+.tp-prop-val select,.tp-prop-val input[type=date]{border:none;background:transparent;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);cursor:pointer;padding:3px 4px;border-radius:6px;max-width:100%;transition:background 0.12s}
+.tp-prop-val select{width:100%;margin-left:-4px}
+.tp-prop-val select:hover,.tp-prop-val input[type=date]:hover{background:#e9eff6}
+.tp-prop-val select:focus-visible,.tp-prop-val input:focus-visible{outline:2px solid #97bcbd;outline-offset:1px;background:#fff}
+/* The browser's calendar button is noise until you reach for it. */
+.tp-date{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.tp-date input[type=date]::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer;transition:opacity 0.12s}
+.tp-prop:hover .tp-date input[type=date]::-webkit-calendar-picker-indicator{opacity:0.4}
+.tp-chip{font-size:9.5px;font-weight:700;border-radius:20px;padding:2px 7px;letter-spacing:0.03em;white-space:nowrap}
+/* Progress: the bare slider read as an unstyled form control beside the styled fields. */
+.tp-prog{display:flex;align-items:center;gap:10px;width:100%}
+.tp-prog input[type=range]{flex:1;min-width:0;accent-color:#0d6e4e;height:4px;cursor:pointer}
+.tp-prog-pct{font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;min-width:36px;text-align:right}
+.tp-client-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 /* people stack */
 .tp-people{display:flex;align-items:center;gap:0;cursor:pointer;padding:3px 5px;border-radius:7px;transition:background 0.12s;width:fit-content;max-width:100%}
 .tp-people:hover{background:#f0f4f8}
@@ -3030,9 +3096,11 @@ function launchApp(){
       const _wb=DB.workboards?.find(w=>w.id===_ln.wbId);
       if(_wb&&canViewBoard(currentUser,_wb)){
         currentWorkboard=_wb;
-        const _sc=_wsStateRestore();
+        // Restores which groups were open. The scroll offset is deliberately NOT restored:
+        // it was only ever captured when a group was toggled, so a refresh jumped you to
+        // wherever you happened to be at that moment. A reload starts at the top.
+        _wsStateRestore();
         navigate(_ln.view);
-        if(_sc){setTimeout(()=>{const sc=document.getElementById('ws-table-scroll');if(sc)sc.scrollTop=_sc;},80);}
       } else navigate('dashboard');
     } else if(_ln?.view){
       navigate(_ln.view);
@@ -14558,10 +14626,35 @@ function wsSaveInlineGroup(){
   // The board owns the client; a board with none yet simply makes groups with none.
   const clientId=boardClientId(currentWorkboard);
   const color=boardClient(currentWorkboard)?.color||currentWorkboard?.color||'#97bcbd';
-  DB.groups.push({id:'g_'+uid(),workboardId:wbId,boardId:wbId,clientId,name,color,order:existing.length,createdAt:new Date().toISOString()});
+  const gid='g_'+uid();
+  // Past the END of the existing groups, not at index count: once a board has been
+  // reordered its order values are no longer 0..n-1, and a new group would sort into
+  // the middle instead of the bottom the user is looking at.
+  const order=existing.reduce((m,g)=>Math.max(m,Number(g.order)||0),-1)+1;
+  DB.groups.push({id:gid,workboardId:wbId,boardId:wbId,clientId,name,color,order,createdAt:new Date().toISOString()});
   saveDB(DB);
   wsAddGroupInline=false;
   renderView('workspace');
+  wsScrollToGroup(gid);
+}
+// A new group is appended at the bottom, and the workspace render puts you back at the
+// scroll position you were already at — so it lands out of sight. Bring it into view once
+// the rows have settled, and flash it so it is obvious which one is new.
+function wsScrollToGroup(groupId){
+  const bring=()=>{
+    const row=document.querySelector('.ws-grp-hdr[data-gid="'+groupId+'"]');
+    const sc=document.getElementById('ws-table-scroll');
+    if(!row||!sc)return false;
+    const rr=row.getBoundingClientRect(),sr=sc.getBoundingClientRect();
+    // Leave a little room beneath it so the group does not sit flush against the bottom.
+    const target=sc.scrollTop+(rr.top-sr.top)-Math.max(0,sr.height-rr.height-90);
+    sc.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+    row.classList.add('ws-grp-new');
+    setTimeout(()=>row.classList.remove('ws-grp-new'),1600);
+    return true;
+  };
+  // Two frames for the table layout, then one retry for the height-fitting pass after it.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!bring())setTimeout(bring,120);}));
 }
 function wsCancelInlineGroup(){wsAddGroupInline=false;renderView('workspace');}
 
@@ -14709,15 +14802,44 @@ function _mnPlain(html){
   d.querySelectorAll('p,div,li,tr,h1,h2,h3,h4,h5').forEach(el=>el.insertAdjacentText('beforeend','\n'));
   return (d.textContent||'').replace(/ /g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
 }
+// The handover is only useful if it says what the work IS, not just what was said about it,
+// so the task's own title and description lead — then the meetings underneath them.
+function _mnSubjectBlock(scope){
+  const L=[];
+  if(scope==='task'&&_tpCurrentTask){
+    const t=_tpCurrentTask;
+    const wb=(DB.workboards||[]).find(w=>w.id===_taskBoardId(t));
+    const cli=wb?boardClient(wb):null;
+    const owner=(DB.staff||[]).find(s=>s.id===t.ownerId);
+    L.push('─'.repeat(60),'TASK','');
+    L.push('Title: '+(t.name||t.title||'Untitled'));
+    if(typeof taskRef==='function'&&taskRef(t))L.push('Reference: '+taskRef(t));
+    const meta=[];
+    if(t.status)meta.push('Status: '+(getStatusMeta(t.status).label||t.status));
+    if(t.priority)meta.push('Priority: '+(getPrioMeta(t.priority).label||t.priority));
+    if(owner)meta.push('Owner: '+owner.name);
+    if(meta.length)L.push(meta.join('    '));
+    if(t.startDate||t.endDate)L.push('Timeline: '+(t.startDate?formatDate(t.startDate):'—')+' to '+(t.endDate?formatDate(t.endDate):'—'));
+    if(wb)L.push('Board: '+wb.name+(cli?'    Client: '+cli.name:''));
+    L.push('','Description:',_mnPlain(t.description)||'(no description)');
+  }else if(currentWorkboard){
+    const cli=boardClient(currentWorkboard);
+    L.push('─'.repeat(60),'BOARD','');
+    L.push('Title: '+currentWorkboard.name);
+    if(cli)L.push('Client: '+clientDisplayTitle(cli));
+    L.push('','Description:',_mnPlain(currentWorkboard.description)||'(no description)');
+  }
+  return L.length?L.join('\n')+'\n':'';
+}
 function mnBuildAiText(notes,scope){
   const lab=_mnScopeLabel(scope);
   const sorted=[...notes].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))
     ||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
-  const head=['MEETING NOTES — '+lab.title+(lab.sub?' ('+lab.sub+')':''),
+  const head=['HANDOVER — '+lab.title+(lab.sub?' ('+lab.sub+')':''),
     sorted.length+' meeting'+(sorted.length===1?'':'s')+', oldest first. Exported '+formatDate(toDateStr(new Date()))+'.',
     '',
-    'Use these notes as background. They are the running record of what was discussed,',
-    'decided and left outstanding on this work.',''].join('\n');
+    'Below is the work itself, then the running record of what was discussed, decided',
+    'and left outstanding on it. Use it as background for questions about this job.',''].join('\n');
   const body=sorted.map((n,i)=>{
     const a=(DB.staff||[]).find(s=>s.id===n.authorId);
     return ['='.repeat(60),
@@ -14726,7 +14848,7 @@ function mnBuildAiText(notes,scope){
       '',
       _mnPlain(n.body)||'(no details recorded)'].join('\n');
   }).join('\n\n');
-  return head+'\n'+body+'\n';
+  return head+'\n'+_mnSubjectBlock(scope)+'\n'+'─'.repeat(60)+'\nMEETINGS\n\n'+body+'\n';
 }
 function _mnCopyText(text,okMsg){
   const done=()=>showToast(okMsg,'success',3500);
@@ -14760,33 +14882,58 @@ function mnPickAll(scope){
   _mnRefresh(scope);
 }
 // The bar above the list: copy, and an optional tick-box mode for choosing which meetings.
-function mnCopyBarHtml(scope,count){
-  if(!count)return'';
+// The bar above the list: create, copy, and an optional tick-box mode for choosing which
+// meetings. One row, so the list itself stays the loudest thing on the tab — the old
+// full-width dashed "New Meeting Note" block outshouted every note under it.
+function mnToolbarHtml(scope,count,newFn){
   const picked=_mnPickMode?_mnPick.size:0;
   const label=picked?`Copy ${picked} for AI`:`Copy ${count===1?'':'all '+count+' '}for AI`;
-  const btn='display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:\'Jost\',sans-serif;font-size:11px;font-weight:700;transition:background 0.12s,border-color 0.12s';
-  return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-    <button onclick="mnCopyForAi('${scope}')" title="Copy these meeting notes as plain text, ready to paste into an AI chat"
-      style="${btn};border:1px solid #bcdccb;background:#eaf4ee;color:#0d6e4e"
-      onmouseover="this.style.background='#dbeee3'" onmouseout="this.style.background='#eaf4ee'">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-      ${label}
-    </button>
-    <button onclick="mnTogglePickMode('${scope}')" title="${_mnPickMode?'Stop choosing':'Choose which meetings to copy'}"
-      style="${btn};border:1px solid ${_mnPickMode?'#97bcbd':'#e2eaf2'};background:${_mnPickMode?'#f0f7f7':'#fff'};color:#5b7080">
-      ${_mnPickMode?'Done':'Select…'}
-    </button>
-    ${_mnPickMode?`<button onclick="mnPickAll('${scope}')" style="${btn};border:none;background:none;color:#6b8399;padding:5px 2px">
-      ${_mnPick.size===count?'Clear all':'Select all'}
-    </button>
-    <span style="font-size:10.5px;color:#8da2b2;margin-left:auto">${_mnPick.size} of ${count} chosen</span>`:''}
+  const copyIcon='<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  return`<div class="mn-toolbar">
+    ${newFn?`<button class="mn-btn mn-btn--new" onclick="${newFn}">+ New note</button>`:''}
+    ${count?`<button class="mn-btn mn-btn--ai" onclick="mnCopyForAi('${scope}')" title="Copy these meeting notes as plain text, ready to paste into an AI chat">${copyIcon}${label}</button>
+    <button class="mn-btn mn-btn--ghost${_mnPickMode?' mn-btn--on':''}" onclick="mnTogglePickMode('${scope}')" title="${_mnPickMode?'Stop choosing':'Choose which meetings to copy'}">${_mnPickMode?'Done':'Select…'}</button>
+    ${_mnPickMode?`<button class="mn-btn mn-btn--link" onclick="mnPickAll('${scope}')">${_mnPick.size===count?'Clear all':'Select all'}</button>
+    <span class="mn-count">${_mnPick.size} of ${count} chosen</span>`:''}`:''}
   </div>`;
 }
+// One meeting card, shared by the task panel and the board panel so the list reads the same
+// wherever it is opened. The date leads, because that is how a meeting log is scanned, and
+// the first line of the note previews under the title — a title alone said nothing about
+// what was actually in it.
+function mnCardHtml(n,scope,o){
+  const a=(DB.staff||[]).find(s=>s.id===n.authorId)||{name:'Staff',initials:'?',color:'#ccc'};
+  const chev='<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 6.5L8 10.5L12 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return `<div class="mn-card${o.expanded?' open':''}">
+    <div class="mn-head" onclick="${o.toggle}">
+      ${mnPickBoxHtml(n.id,scope)}
+      <div class="mn-av">${avatarHtml(a,24)}</div>
+      <div class="mn-main">
+        <div class="mn-title">${escHtml(n.title||'Untitled')}</div>
+        <div class="mn-meta">${formatDate(n.date)} · ${escHtml(String(a.name).split(' ')[0])}</div>
+      </div>
+      <span class="mn-chev">${chev}</span>
+    </div>
+    ${o.expanded?`<div class="mn-body">
+      <div class="clamp-body rich-text" style="padding-top:11px">${_descToHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
+      ${o.canEdit?`<div class="mn-acts">
+        <button class="mn-act mn-act--edit" onclick="event.stopPropagation();${o.edit}">Edit</button>
+        <button class="mn-act mn-act--del" onclick="event.stopPropagation();${o.del}">Delete</button>
+      </div>`:''}
+    </div>`:''}
+  </div>`;
+}
+
+// Kept as the single place both note lists build their rows from.
+function mnGroupedHtml(notes,mk){
+  return notes.map(mk).join('');
+}
+
 // A tick box on a note card, shown only while choosing.
 function mnPickBoxHtml(id,scope){
   if(!_mnPickMode)return'';
   return`<input type="checkbox" ${_mnPick.has(id)?'checked':''} onclick="event.stopPropagation();mnTogglePick('${id}','${scope}')"
-    title="Include this meeting in the copy" style="accent-color:#0d6e4e;width:14px;height:14px;flex-shrink:0;cursor:pointer;margin-right:2px"/>`;
+    title="Include this meeting in the copy" class="mn-pick"/>`;
 }
 
 // ── Meeting Notes tab — scoped to currentWorkboard.id (unlike Comms, which is global) ──
@@ -14803,18 +14950,14 @@ function renderMeetingNotesTab(notes){
       </div>
     </div>`:'';
   return`
-    <div style="flex:1;overflow-y:auto;padding:8px 16px">
-      ${!isNew?`<button onclick="wsMeetingNoteStartNew()" style="display:block;width:100%;box-sizing:border-box;margin:8px 0;cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border:1px dashed #bcdfcb;border-radius:8px;padding:8px 14px;text-align:center;transition:background 0.12s,border-color 0.12s" onmouseover="this.style.background='#dcefe3'" onmouseout="this.style.background='#eaf4ee'">+ New Meeting Note</button>`:''}
+    <div style="flex:1;overflow-y:auto;padding:10px 16px">
+      ${mnToolbarHtml('board',sorted.length,isNew?'':'wsMeetingNoteStartNew()')}
       ${addForm}
-      ${mnCopyBarHtml('board',sorted.length)}
       ${sorted.length===0&&!isNew
-        ?`<div style="text-align:center;padding:48px 20px;color:#b0bec5;font-size:13px"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',34)}</div>No meeting notes yet for this board.</div>`
-        :sorted.map(n=>{
-            const a=DB.staff.find(s=>s.id===n.authorId)||{name:'Staff',initials:'?',color:'#ccc'};
+        ?`<div class="mn-empty"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',34)}</div>No meeting notes yet for this board.</div>`
+        :mnGroupedHtml(sorted,n=>{
             const canEdit=n.authorId===currentUser.id||currentUser.role==='admin';
-            const expanded=wsMeetingNoteExpandedId===n.id;
-            const editing=wsMeetingNoteEditingId===n.id;
-            if(editing){
+            if(wsMeetingNoteEditingId===n.id){
               return`<div class="card" style="padding:12px;margin-bottom:8px">
                 <input id="mn-edit-title-${n.id}" class="form-input" value="${escHtml(n.title)}" style="margin-bottom:8px;font-weight:600"/>
                 <input id="mn-edit-date-${n.id}" type="date" class="form-input" value="${n.date}" style="margin-bottom:8px;width:160px"/>
@@ -14825,24 +14968,9 @@ function renderMeetingNotesTab(notes){
                 </div>
               </div>`;
             }
-            return`<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">
-              <div onclick="wsMeetingNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">${mnPickBoxHtml(n.id,'board')}
-                ${avatarHtml(a,24)}
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.title)}</div>
-                  <div style="font-size:10.5px;color:#8da2b2;margin-top:1px">${formatDate(n.date)} · ${escHtml(a.name.split(' ')[0])}</div>
-                </div>
-                <span style="font-size:11px;color:#c8d4e0;flex-shrink:0;transition:transform 0.15s;transform:rotate(${expanded?'180deg':'0deg'})">▾</span>
-              </div>
-              ${expanded?`<div style="padding:0 14px 14px;border-top:1px solid #f0f4f8">
-                  <div class="clamp-body rich-text" style="padding-top:10px">${_descToHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
-                  ${canEdit?`<div style="display:flex;gap:10px;margin-top:10px">
-                    <button onclick="event.stopPropagation();wsMeetingNoteStartEdit('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#6b8399;padding:0;font-weight:600">Edit</button>
-                    <button onclick="event.stopPropagation();wsMeetingNoteDelete('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#dc2626;padding:0;font-weight:600">Delete</button>
-                  </div>`:''}
-                </div>`:''}
-            </div>`;
-          }).join('')}
+            return mnCardHtml(n,'board',{expanded:wsMeetingNoteExpandedId===n.id,canEdit,
+              toggle:`wsMeetingNoteToggle('${n.id}')`,edit:`wsMeetingNoteStartEdit('${n.id}')`,del:`wsMeetingNoteDelete('${n.id}')`});
+          })}
     </div>`;
 }
 function wsMeetingNoteStartNew(){wsMeetingNoteEditingId='new';wsMeetingNoteExpandedId=null;renderView('workspace');setTimeout(()=>document.getElementById('mn-title')?.focus(),40);}
@@ -14924,22 +15052,22 @@ window.addEventListener('resize',()=>{if(currentView==='workspace')_wsFitTableHe
 function _wsStateSave(){
   if(currentView!=='workspace'||!currentWorkboard)return;
   try{
-    // The task table scrolls inside its own bounded container, not #view-container.
-    const sc=document.getElementById('ws-table-scroll');
+    // Which groups are open survives a refresh; the scroll offset does not. It could only
+    // be captured on a group toggle, so restoring it sent you back to a position you had
+    // long since scrolled away from.
     sessionStorage.setItem('etcher_ws_state_'+currentWorkboard.id,JSON.stringify({
-      expanded:[...wsExpanded],collapsed:[...wsCollapsed],scroll:sc?.scrollTop||0
+      expanded:[...wsExpanded],collapsed:[...wsCollapsed]
     }));
   }catch(_){}
 }
 function _wsStateRestore(){
-  if(!currentWorkboard)return 0;
+  if(!currentWorkboard)return;
   try{
     const s=JSON.parse(sessionStorage.getItem('etcher_ws_state_'+currentWorkboard.id)||'null');
-    if(!s)return 0;
+    if(!s)return;
     wsExpanded=new Set(s.expanded||[]);
     wsCollapsed=new Set(s.collapsed||[]);
-    return s.scroll||0;
-  }catch(_){return 0;}
+  }catch(_){}
 }
 function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);_wsStateSave();renderView('workspace');}
 function wsToggleExpand(id){
@@ -15800,7 +15928,7 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
   const pct=sec.tasks.length?Math.round(sec.tasks.reduce((s,t)=>s+getEffectiveTaskPct(t.id),0)/sec.tasks.length):0;
   const mix=statusMixOf(sec.tasks);
   return`
-  <tr class="ws-grp-hdr" onclick="wsToggleGroup('${sec.id}')"
+  <tr class="ws-grp-hdr" data-gid="${sec.id}" onclick="wsToggleGroup('${sec.id}')"
       ondragover="_wsGrpDragOver(event,'${sec.id}')" ondragleave="_wsGrpDragLeave(event)" ondrop="_wsGrpDrop(event,'${sec.id}')">
     <td colspan="${totalCols}">
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px;height:36px;border-left:4px solid ${sec.color}">
@@ -16231,9 +16359,9 @@ function renderTaskPanel(task){
     </div>
     <div class="tp-tabs" style="display:flex;border-bottom:1px solid #e2eaf2;background:#fafcff;flex-shrink:0;padding:0 14px;overflow-x:auto">
       <div class="tp-tab active" id="tp-tab-details" onclick="tpShowTab('details')">Details</div>
-      <div class="tp-tab" id="tp-tab-notes" onclick="tpShowTab('notes')">Meeting Notes ${(()=>{const nc=(DB.meetingNotes||[]).filter(n=>n.taskId===task.id).length;return nc?`<span style="font-size:10px;background:#c7e6d1;color:#0d6e4e;border-radius:10px;padding:1px 5px;margin-left:3px">${nc}</span>`:''})()}</div>
-      <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems <span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${subtaskCount}</span></div>
-      <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span style="font-size:10px;background:#e2eaf2;border-radius:10px;padding:1px 5px;margin-left:3px">${dc}</span>`:''})()}</div>
+      <div class="tp-tab" id="tp-tab-notes" onclick="tpShowTab('notes')">Meeting Notes ${(()=>{const nc=(DB.meetingNotes||[]).filter(n=>n.taskId===task.id).length;return nc?`<span class="tp-tab-count">${nc}</span>`:''})()}</div>
+      <div class="tp-tab" id="tp-tab-subtasks" onclick="tpShowTab('subtasks')">Subitems ${subtaskCount?`<span class="tp-tab-count">${subtaskCount}</span>`:''}</div>
+      <div class="tp-tab" id="tp-tab-dependencies" onclick="tpShowTab('dependencies')">Dependencies ${(()=>{const dc=(DB.dependencies||[]).filter(d=>d.dependentTaskId===task.id).length;return dc?`<span class="tp-tab-count">${dc}</span>`:''})()}</div>
       <div class="tp-tab" id="tp-tab-activity" onclick="tpShowTab('activity')">Activity</div>
       <div class="tp-tab" id="tp-tab-recurrence" onclick="tpShowTab('recurrence')" style="display:flex;align-items:center;gap:4px">↻ Recurrence${task.recurrence?.freq?'<span style="width:6px;height:6px;border-radius:50%;background:#0d6e4e;display:inline-block"></span>':''}</div>
     </div>
@@ -16406,19 +16534,25 @@ function renderTpDetails(task){
     : '';
   const peopleNames=taskAssignees(task).map(id=>DB.staff.find(s=>s.id===id)?.name).filter(Boolean).join(', ');
 
-  // Properties: one compact row per field. People collapse into an avatar stack, which
-  // replaces the old Assignee dropdown plus the five-row scrolling checkbox list.
+  // Properties: label above value in a two-up grid, so short fields pair off instead of
+  // taking a line each. People collapse into an avatar stack, which replaces the old
+  // Assignee dropdown plus the five-row scrolling checkbox list.
+  const _tpCli=boardClient((DB.workboards||[]).find(w=>w.id===_taskBoardId(task)));
+  const _tpDue=_wsDueState(task);
+  const _tpChipTone={over:'background:#fef2f2;color:#b91c1c',stale:'background:#f1f5f9;color:#64748b',
+                     soon:'background:#fffbeb;color:#b45309'}[_tpDue.tone]||'';
+  // How long the task runs, so the two dates mean something at a glance.
+  const _tpSpan=(task.startDate&&task.endDate)?(()=>{
+    const d=Math.round((new Date(task.endDate+'T00:00:00')-new Date(task.startDate+'T00:00:00'))/86400000)+1;
+    if(d<1)return'';
+    return d>=14?Math.round(d/7)+' weeks':d+(d===1?' day':' days');
+  })():'';
+  const _pct=task.percentComplete||0;
   const props=`
+    <div class="tp-props">
     <div class="tp-prop">
       <span class="tp-prop-lbl">People</span>
       <div class="tp-prop-val" id="tp-people-box">${tpPeopleStack(task)}</div>
-    </div>
-    <div class="tp-prop">
-      <span class="tp-prop-lbl">Client</span>
-      <div class="tp-prop-val">
-        <!-- Read-only: one client per board, set on the board itself. -->
-        <span style="font-size:12px;color:#1a2940" title="One client per board \u2014 change it on the board">${escHtml(boardClient((DB.workboards||[]).find(w=>w.id===_taskBoardId(task)))?.name||'\u2014 None \u2014')}</span>
-      </div>
     </div>
     <div class="tp-prop">
       <span class="tp-prop-lbl">Group</span>
@@ -16428,8 +16562,23 @@ function renderTpDetails(task){
         </select>
       </div>
     </div>
-    ${['ready-approval','approved-client','completed-approved'].includes(task.status)?`
     <div class="tp-prop">
+      <span class="tp-prop-lbl">Client</span>
+      <div class="tp-prop-val">
+        <!-- Read-only: one client per board, set on the board itself. -->
+        ${_tpCli?`<span class="tp-client-dot" style="background:${_tpCli.color||'#94a3b8'}"></span>`:''}
+        <span class="tp-prop-txt" title="One client per board \u2014 change it on the board">${escHtml(_tpCli?clientDisplayTitle(_tpCli):'\u2014 None \u2014')}</span>
+      </div>
+    </div>
+    <div class="tp-prop">
+      <span class="tp-prop-lbl">Progress</span>
+      <div class="tp-prop-val tp-prog">
+        <input type="range" min="0" max="100" step="5" value="${_pct}" aria-label="Percent complete" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="tpSaveField('percentComplete',+this.value)"/>
+        <span class="tp-prog-pct">${_pct}%</span>
+      </div>
+    </div>
+    ${['ready-approval','approved-client','completed-approved'].includes(task.status)?`
+    <div class="tp-prop tp-prop--wide">
       <span class="tp-prop-lbl">Approval</span>
       <div class="tp-prop-val">
         <select onchange="tpSaveField('approvalType',this.value)">
@@ -16438,29 +16587,25 @@ function renderTpDetails(task){
         </select>
       </div>
     </div>`:''}
-    <div class="tp-prop">
-      <span class="tp-prop-lbl">Dates</span>
-      <div class="tp-prop-val" style="display:flex;align-items:center;gap:3px">
+    <div class="tp-prop tp-prop--wide">
+      <span class="tp-prop-lbl">Timeline</span>
+      <div class="tp-prop-val tp-date">
         <input type="date" value="${task.startDate||''}" onchange="tpSaveField('startDate',this.value)" title="Start date" style="color:${task.startDate?'#1a2940':'#94a3b8'}"/>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
         <input type="date" value="${task.endDate||''}" onchange="tpSaveField('endDate',this.value)" title="Due date" style="color:${task.endDate?'#1a2940':'#94a3b8'}"/>
+        ${_tpSpan?`<span style="font-size:10.5px;color:#a8b8c8;margin-left:3px;white-space:nowrap">${_tpSpan}</span>`:''}
+        ${_tpDue.chip?`<span class="tp-chip" style="${_tpChipTone}">${_tpDue.chip}</span>`:''}
       </div>
     </div>
-    <div class="tp-prop">
-      <span class="tp-prop-lbl">Progress</span>
-      <div class="tp-prop-val" style="display:flex;align-items:center;gap:9px">
-        <input type="range" min="0" max="100" step="5" value="${task.percentComplete||0}" style="flex:1;max-width:190px;accent-color:#0d6e4e" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="tpSaveField('percentComplete',+this.value)"/>
-        <span style="font-size:12px;font-weight:700;color:#0d1c33;min-width:30px;text-align:right">${task.percentComplete||0}%</span>
-      </div>
-    </div>
-    <div class="tp-prop" style="align-items:flex-start">
-      <span class="tp-prop-lbl" style="padding-top:7px">Tags</span>
-      <div class="tp-prop-val">
-        <div id="tp-tags-container" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 0">
+    <div class="tp-prop tp-prop--wide">
+      <span class="tp-prop-lbl">Tags</span>
+      <div class="tp-prop-val" style="align-items:flex-start">
+        <div id="tp-tags-container" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
           ${tags.map(tag=>`<span class="tag-pill">${escHtml(tag)}<span class="tag-pill-remove" onclick="tpRemoveTag(this.parentElement.textContent.replace('×','').trim())" title="Remove">&#215;</span></span>`).join('')}
           <input id="tp-tag-input" placeholder="+ Add" style="border:none;background:transparent;font-size:12px;color:#1a2940;width:64px;outline:none;padding:2px 4px" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();var v=this.value.trim().replace(/,/g,'');if(v)tpAddTag(v);this.value='';}" onblur="var v=this.value.trim().replace(/,/g,'');if(v){tpAddTag(v);this.value='';}"/>
         </div>
       </div>
+    </div>
     </div>`;
 
   return`<div>
@@ -16738,17 +16883,14 @@ function renderTpMeetingNotes(task){
       </div>
     </div>`:'';
   return`<div>
-    ${!isNew?`<button onclick="tpNoteStartNew()" style="display:block;width:100%;box-sizing:border-box;margin-bottom:12px;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border:1px dashed #bcdfcb;border-radius:8px;padding:9px 14px;text-align:center" onmouseover="this.style.background='#dcefe3'" onmouseout="this.style.background='#eaf4ee'">+ New Meeting Note</button>`:''}
+    ${mnToolbarHtml('task',notes.length,isNew?'':'tpNoteStartNew()')}
     ${addForm}
-    ${mnCopyBarHtml('task',notes.length)}
     ${notes.length===0&&!isNew
-      ?`<div style="text-align:center;padding:44px 20px;color:#b0bec5;font-size:13px"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',32)}</div>No meeting notes on this task yet.</div>`
-      :notes.map(n=>{
-          const a=DB.staff.find(s=>s.id===n.authorId)||{name:'Staff',initials:'?',color:'#ccc'};
+      ?`<div class="mn-empty"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',32)}</div>No meeting notes on this task yet.</div>`
+      :mnGroupedHtml(notes,n=>{
           const canEdit=n.authorId===currentUser.id||currentUser.role==='admin';
-          const expanded=_tpNoteExpandedId===n.id;
           if(_tpNoteEditingId===n.id){
-            return`<div class="card" style="padding:12px;margin-bottom:10px">
+            return`<div class="card" style="padding:12px;margin-bottom:8px">
               <input id="tpn-e-title-${n.id}" class="form-input" value="${escHtml(n.title)}" style="margin-bottom:8px;font-weight:600"/>
               <input id="tpn-e-date-${n.id}" type="date" class="form-input" value="${n.date}" style="margin-bottom:8px;width:170px"/>
               <div style="margin-bottom:8px">${_noteEditorHtml('tpn-e-body-'+n.id,n.body)}</div>
@@ -16758,24 +16900,9 @@ function renderTpMeetingNotes(task){
               </div>
             </div>`;
           }
-          return`<div class="card" style="padding:0;margin-bottom:8px;overflow:hidden">
-            <div onclick="tpNoteToggle('${n.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer">${mnPickBoxHtml(n.id,'task')}
-              ${avatarHtml(a,24)}
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n.title)}</div>
-                <div style="font-size:10.5px;color:#8da2b2;margin-top:1px">${formatDate(n.date)} · ${escHtml(a.name.split(' ')[0])}</div>
-              </div>
-              <span style="font-size:11px;color:#c8d4e0;flex-shrink:0;transform:rotate(${expanded?'180deg':'0deg'});transition:transform 0.15s">▾</span>
-            </div>
-            ${expanded?`<div style="padding:0 13px 13px;border-top:1px solid #f0f4f8">
-                <div class="clamp-body rich-text" style="padding-top:10px">${_descToHtml(n.body)||'<span style="color:#b0bec5">No details added.</span>'}</div>
-                ${canEdit?`<div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end">
-                  <button onclick="event.stopPropagation();tpNoteStartEdit('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#6b8399;padding:0;font-weight:600">Edit</button>
-                  <button onclick="event.stopPropagation();tpNoteDelete('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#dc2626;padding:0;font-weight:600">Delete</button>
-                </div>`:''}
-              </div>`:''}
-          </div>`;
-        }).join('')}
+          return mnCardHtml(n,'task',{expanded:_tpNoteExpandedId===n.id,canEdit,
+            toggle:`tpNoteToggle('${n.id}')`,edit:`tpNoteStartEdit('${n.id}')`,del:`tpNoteDelete('${n.id}')`});
+        })}
   </div>`;
 }
 let _tpNoteEditingId=null,_tpNoteExpandedId=null;
