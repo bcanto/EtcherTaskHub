@@ -259,6 +259,102 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Jost',sans-serif;color:#fff;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.12)}
 #sidebar-avatar{border:2px solid rgba(151,188,189,0.6);box-shadow:0 0 0 1px rgba(151,188,189,0.15),0 2px 8px rgba(0,0,0,0.3)}
 /* ── Progress bar ── */
+/* Due-date age chip. Only imminent and genuinely-recent overdue earn colour; anything
+   long overdue goes muted so it stops competing with what is actually actionable. */
+.ws-due-chip{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:9px;white-space:nowrap;letter-spacing:0.01em;flex-shrink:0}
+.ws-due-soon{background:#fef3c7;color:#92400e}
+.ws-due-over{background:#fef2f2;color:#b91c1c}
+.ws-due-stale{background:#f1f5f9;color:#94a3b8}
+/* Empty attachment slot: keep the affordance, drop the permanent grey clutter. */
+.ws-clip-empty{opacity:0;transition:opacity 0.12s}
+.ws-row:hover .ws-clip-empty,.ws-subrow:hover .ws-clip-empty{opacity:1}
+/* Stacked status-composition bar. Segment colours come from STATUS_META dots. */
+/* ── Resizable + renamable column headers (both grids) ──
+   The handle sits on the column's trailing edge and only shows itself on hover, so the
+   header stays quiet at rest. */
+.ws-table th,.ws-subtable th{position:relative}
+/* Sits fully INSIDE its own header. Overhanging the edge put it under the next sticky
+   <th> (z-index:3), which swallowed the mousedown. */
+.col-resize{position:absolute;top:0;right:0;width:9px;height:100%;cursor:col-resize;z-index:6;
+  display:flex;align-items:center;justify-content:flex-end}
+.col-resize::after{content:'';width:2px;height:60%;background:transparent;border-radius:1px;transition:background 0.12s}
+.ws-table th:hover .col-resize::after,.ws-subtable th:hover .col-resize::after{background:#d8e0ec}
+.col-resize:hover::after{background:#97bcbd!important}
+th.col-resizing{background:#f0f7f7!important}
+th.col-resizing .col-resize::after{background:#0d6e4e!important}
+.col-label{cursor:text;border-radius:4px;padding:1px 3px;margin:-1px -3px;transition:background 0.12s;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+.col-label:hover{background:#e6edf5}
+.col-label.col-editing{background:#fff;outline:2px solid #97bcbd;cursor:text;overflow:visible;text-overflow:clip}
+/* ── Subitem grid ──
+   Its own table inside one full-width cell of the parent grid, so subitems can carry a
+   different column set without disturbing the outer table's column count. */
+.ws-subhost>td{background:#eef2f7;padding:0!important}
+/* Breathing room above and below the nested block so it reads as inset rather than as
+   more rows of the parent table. The host cell's darker ground shows through the gap. */
+.ws-subwrap{margin:9px 0 9px 44px;background:#f7f9fc;border:1px solid #e2eaf2;border-radius:7px;overflow:hidden}
+.ws-subtable{width:100%;border-collapse:collapse;table-layout:fixed}
+.ws-subtable th,.ws-subtable td{overflow:hidden}
+.ws-subtable thead th{border-right:1px solid #e2eaf2}
+.ws-subtable tbody td{border-right:1px solid #edf1f6}
+.ws-subtable thead th:last-child,.ws-subtable tbody td:last-child{border-right:none}
+.ws-subtable th{height:26px;padding:0 8px;text-align:left;background:#eef3f8;border-bottom:1px solid #e2eaf2;
+  font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap}
+.ws-subtable td{height:32px;border-bottom:1px solid #edf1f6;font-size:12px;color:var(--text-1);vertical-align:middle}
+.ws-subtable tr:last-child td{border-bottom:none}
+.ws-subrow2{transition:background 0.1s}
+.ws-subrow2:hover td{background:#eef4ff}
+.ws-subrow2:hover .ws-actions{opacity:1}
+.ws-subrow2:hover .ws-row-grip{opacity:1}
+.ws-subadd{background:none;border:none;cursor:pointer;color:#b0bec5;font-size:11.5px;font-family:'Jost',sans-serif;font-weight:600;
+  padding:3px 4px;display:inline-flex;align-items:center;gap:5px;border-radius:5px;transition:color 0.12s}
+.ws-subadd:hover{color:#0d1c33}
+/* A custom column scoped to one row tier: blank at the other tier, tagged in its header. */
+.ws-col-na{background:repeating-linear-gradient(45deg,transparent,transparent 5px,#f7f9fc 5px,#f7f9fc 10px)}
+/* Custom-column row in the Columns menu: name, optional scope hint, and an explicit
+   delete. Replaces the old "uncheck the box to delete it" checkbox, which was both
+   non-obvious and far too easy to trigger by accident. */
+/* Drag-out target. Hidden until a row is actually being dragged, so it costs nothing
+   visually at rest. */
+#ws-newgroup-zone{display:none;align-items:center;justify-content:center;gap:7px;margin-top:8px;
+  padding:11px;border:1.5px dashed #d8e0ec;border-radius:9px;color:#a8b8c8;
+  font-family:'Jost',sans-serif;font-size:12px;font-weight:600;transition:border-color 0.15s,color 0.15s,background 0.15s}
+body.ws-dragging #ws-newgroup-zone{display:flex}
+#ws-newgroup-zone.active{border-color:#0d6e4e;color:#0d6e4e;background:#f0fdf4;border-style:solid}
+/* Group reordering: grip appears on hover, drop edge shown as a teal rule. */
+/* Inside a workboard the topbar carries nothing but Report Issue — collapse it. */
+#topbar.topbar-slim{min-height:0;height:34px;padding-top:0;padding-bottom:0;border-bottom:none}
+#topbar.topbar-slim button{height:24px;font-size:10.5px}
+/* The tab strip sticks below the topbar, so its offset has to follow the topbar's height —
+   left at 56px it overlapped and clipped the toolbar underneath. */
+body:has(#topbar.topbar-slim) .ws-tabstrip{top:34px!important}
+/* ── Minimal toolbar ──
+   Was nine bordered pills on a bordered white card, stacked under two other chrome bars.
+   Now the bar itself is just a hairline rule, and each control is invisible until you
+   reach for it. */
+.ut-bar{display:flex;align-items:center;gap:2px;margin:6px 0 0;flex-wrap:wrap;padding:5px 2px;
+  background:transparent;border:none;border-bottom:1px solid var(--border)}
+.ut-bar.ut-bar-open{border-bottom-color:transparent}
+.ut-bar select:hover,.ut-bar select:focus{background:#eef3f8!important;border-color:transparent!important;outline:none}
+.ut-bar .btn-ghost{border-color:transparent!important;background:transparent!important;height:30px}
+.ut-bar .btn-ghost:hover{background:#eef3f8!important;border-color:transparent!important;color:var(--navy)!important}
+.ut-bar .mt-search{border-color:transparent;background:#f4f7fb;height:30px;padding-top:0;padding-bottom:0}
+.ut-bar .mt-search:hover{background:#eef3f8}
+.ut-bar .mt-search:focus{background:#fff;border-color:#97bcbd}
+/* The board name already appears in the tab strip; printing it again above is noise. */
+#view-container .ws-dup-title{display:none}
+.ws-grp-grip{cursor:grab;color:#c8d5e0;font-size:11px;line-height:1;flex-shrink:0;opacity:0;transition:opacity 0.12s,color 0.12s;user-select:none}
+.ws-grp-hdr:hover .ws-grp-grip{opacity:1}
+.ws-grp-grip:hover{color:#0d1c33}
+.ws-grp-grip:active{cursor:grabbing}
+.ws-grp-drop-above>td{box-shadow:inset 0 3px 0 0 #0d6e4e}
+.ws-grp-drop-below>td{box-shadow:inset 0 -3px 0 0 #0d6e4e}
+.ws-cc-row{display:flex;align-items:center;gap:7px}
+.ws-cc-del{background:none;border:none;cursor:pointer;color:#c8d5e0;font-size:12px;line-height:1;
+  padding:2px 4px;border-radius:4px;flex-shrink:0;transition:background 0.12s,color 0.12s}
+.ws-cc-row:hover .ws-cc-del{color:#8da2b2}
+.ws-cc-del:hover{background:#fee2e2;color:#b91c1c!important}
+.status-mix{display:flex;height:6px;border-radius:4px;overflow:hidden;background:#e4eaf3;flex-shrink:0}
+.status-mix>span{display:block;height:100%;transition:width 0.35s var(--ease)}
 .progress-bar{background:#e4eaf3;border-radius:4px;height:6px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:width 0.45s var(--ease)}
 /* ── Scrollbar ── */
@@ -315,7 +411,42 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .wb-back-btn{width:calc(100% - 16px);margin:6px 8px;display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#6a8aaa;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:background 0.2s,color 0.2s,border-color 0.2s}
 .wb-back-btn:hover{background:rgba(255,255,255,0.1);color:#c0d4e2;border-color:rgba(255,255,255,0.15)}
 /* ── Workspace table ── */
-.ws-table{width:100%;border-collapse:collapse;min-width:820px}
+/* table-layout:fixed is what stops a resize from shoving its neighbours around: with the
+   default (auto) the browser re-solves every column whenever one width changes. Fixed
+   honours each declared width literally, and the unsized filler column soaks up whatever
+   slack is left so the table still fills its container. */
+.ws-table{width:100%;border-collapse:collapse;min-width:820px;table-layout:fixed}
+.ws-table th,.ws-table td{overflow:hidden}
+/* Monday-style vertical rules — makes column boundaries (and therefore resizing) legible */
+.ws-table>thead th{border-right:1px solid #e8edf4}
+.ws-table>tbody>tr>td{border-right:1px solid #f0f3f8}
+.ws-table>thead th:last-child,.ws-table>tbody>tr>td:last-child{border-right:none}
+.ws-col-filler{border-right:none!important}
+/* Group header: fixed tracks so the client, count, bar and % line up down the page instead
+   of each row starting wherever its group name happens to end. */
+.ws-grp-name{width:290px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-grp-client{width:196px;flex-shrink:0;font-size:11px;border:1px solid #e2eaf2;border-radius:5px;
+  padding:2px 5px;background:#fff;color:#6b8399;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-grp-count{width:34px;flex-shrink:0;text-align:center;font-size:11px;color:#8da2b2;background:#f0f4f8;border-radius:10px;padding:1px 0;margin-left:6px}
+.ws-grp-bar{width:64px;flex-shrink:0;margin-left:10px}
+.ws-grp-pct{width:38px;flex-shrink:0;text-align:right;font-size:10px;color:#8da2b2}
+/* Labels column — the cell fills with the chosen label's colour, Monday-style. */
+.lbl-cell{display:flex;align-items:center;justify-content:center;height:38px;margin:0 -10px;color:#fff;
+  font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:0.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
+.lbl-cell.lbl-empty{background:transparent;color:#d4dde8;font-weight:400}
+.ws-subtable .lbl-cell{height:32px}
+.lbl-pick{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;
+  font-size:12.5px;color:var(--text-1);transition:background 0.1s}
+.lbl-pick:hover{background:#f4f7ff}
+.lbl-dot{width:13px;height:13px;border-radius:4px;flex-shrink:0}
+/* Centre every data column's title and its cells so they line up over each other. The
+   checkbox and the name column stay left — a centred task name reads badly. */
+.ws-table>thead th:nth-child(n+3){text-align:center}
+.ws-table>thead th:nth-child(n+3)>div{justify-content:center}
+.ws-table>tbody>tr>td:nth-child(n+3){text-align:center}
+.ws-subtable thead th:nth-child(n+3){text-align:center}
+.ws-subtable tbody td:nth-child(n+3){text-align:center}
 .ws-table th{background:#fff;position:sticky;top:-1px;z-index:3;padding:0 10px;height:34px;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.07em;text-transform:uppercase;border-bottom:1.5px solid var(--border);white-space:nowrap;text-align:left}
 .ws-grp-hdr{cursor:pointer;user-select:none}
 .ws-grp-hdr td{height:36px;background:#f6f8fb;border-top:1px solid #e8edf4;border-bottom:1px solid #e8edf4;padding:0}
@@ -435,6 +566,12 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 #ws-bulk-bar>*{pointer-events:all}
 .ws-sort-hdr{cursor:pointer;user-select:none}
 .ws-sort-hdr:hover{color:var(--navy)}
+.ws-sort-hint{color:#cbd5e1;margin-left:3px;font-size:9px;opacity:0;transition:opacity 0.12s}
+.ws-sort-hdr:hover .ws-sort-hint{opacity:1}
+.ws-sort-active{color:#0d6e4e;margin-left:3px;font-size:9px;font-weight:700}
+/* Task reference chip — quotable in an email or on a call. */
+.ws-ref{font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:0.04em;color:#6b8399;background:#f1f4f8;border-radius:5px;padding:2px 6px;cursor:pointer;white-space:nowrap;transition:background 0.12s,color 0.12s}
+.ws-ref:hover{background:#e2eaf3;color:#0d1c33}
 .ws-col-draggable{cursor:grab}
 .ws-col-draggable:active{cursor:grabbing}
 .ws-col-grip{color:#c8d4e0;opacity:0;transition:opacity 0.12s;flex-shrink:0;margin-right:1px}
@@ -473,7 +610,7 @@ td.ws-status-cell,td.ws-prio-cell{padding:0!important}
 td.ws-status-cell:hover,td.ws-prio-cell:hover{filter:brightness(0.94)}
 td.ws-status-cell .ws-cell-caret,td.ws-prio-cell .ws-cell-caret{opacity:0;transition:opacity 0.12s}
 td.ws-status-cell:hover .ws-cell-caret,td.ws-prio-cell:hover .ws-cell-caret{opacity:1}
-.mt-search{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:5px 11px;font-family:Lato,sans-serif;font-size:13px;outline:none;color:var(--text-1);width:188px;transition:border-color 0.2s var(--ease),box-shadow 0.2s}
+.mt-search{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:5px 11px;font-family:Lato,sans-serif;font-size:13px;outline:none;color:var(--text-1);width:146px;transition:width 0.15s var(--ease);transition:border-color 0.2s var(--ease),box-shadow 0.2s}
 .mt-search:focus{border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.18)}
 .mt-person-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:border-color 0.2s var(--ease),transform 0.2s var(--ease);flex-shrink:0}
 .mt-person-chip.active{border-color:#97bcbd;transform:scale(1.1)}
@@ -1227,6 +1364,11 @@ function _migrateDB(data){
   // Merge any seed users missing from Supabase app_state.
   // Happens when the DB was first saved with fewer users than the current seed.
   // Also patches email/name so they match the real Supabase login credentials.
+  // Backfill human-readable task refs once, in creation order per board.
+  if(!data.migrationFlags.taskRefsV1){
+    _assignTaskRefs(data);
+    data.migrationFlags.taskRefsV1=true;
+  }
   if(!data.migrationFlags.seedUsersMergeV1){
     const _seedEmailFix={
       'u1':{email:'b.canto@etchersolutions.com',name:'Bruna Canto'},
@@ -1715,7 +1857,69 @@ function _stripPasswords(data){
   (d.clients||[]).forEach(c=>{delete c.loginPassword;});
   return d;
 }
+// ── Human-readable task references (e.g. AN-070) ────────────
+// Tasks are created from half a dozen places, so refs are assigned here at the single
+// save choke point rather than at each creation site — that way no path can miss one.
+function _boardRefPrefix(board){
+  if(!board)return'TSK';
+  if(board.refPrefix)return board.refPrefix;
+  // Derive from the board name: initials for multi-word, first letters otherwise.
+  const words=String(board.name||'').replace(/[^A-Za-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
+  let p=words.length>=2?words.slice(0,3).map(w=>w[0]).join(''):(words[0]||'TSK').slice(0,3);
+  return p.toUpperCase().slice(0,4)||'TSK';
+}
+function taskRef(t){
+  if(!t||!t.refNumber)return'';
+  const b=(DB.workboards||[]).find(w=>w.id===_taskBoardId(t));
+  return `${_boardRefPrefix(b)}-${String(t.refNumber).padStart(3,'0')}`;
+}
+// Assign a ref to every task that lacks one. Counter lives on the board so a deleted task
+// never releases its number back into circulation.
+function _assignTaskRefs(data){
+  const tasks=data.tasks||[];
+  if(!tasks.some(t=>!t.refNumber))return false;
+  const boards=data.workboards||data.boards||[];
+  // Subitems usually carry only groupId/parentTaskId, so resolve their board the same way
+  // _taskBoardId does — otherwise they would never get a reference, and subitems are
+  // exactly what people quote on a call.
+  const groups=data.groups||[];
+  const taskById=new Map(tasks.map(t=>[t.id,t]));
+  const boardOf=t=>{
+    if(!t)return null;
+    if(t.boardId||t.workboardId)return t.boardId||t.workboardId;
+    const g=groups.find(g=>g.id===t.groupId);
+    if(g&&(g.boardId||g.workboardId))return g.boardId||g.workboardId;
+    if(t.parentTaskId){
+      const p=taskById.get(t.parentTaskId);
+      if(p)return p.boardId||p.workboardId||null;
+    }
+    return null;
+  };
+  const byBoard=new Map();
+  // Seed each board's counter above the highest ref already in use.
+  tasks.forEach(t=>{
+    if(!t.refNumber)return;
+    const b=boardOf(t);
+    byBoard.set(b,Math.max(byBoard.get(b)||0,t.refNumber));
+  });
+  boards.forEach(b=>{
+    if(typeof b.nextRef==='number')byBoard.set(b.id,Math.max(byBoard.get(b.id)||0,b.nextRef-1));
+  });
+  // Oldest first, so numbering follows creation order rather than array order.
+  [...tasks].filter(t=>!t.refNumber)
+    .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')))
+    .forEach(t=>{
+      const bid=boardOf(t);
+      if(!bid)return;
+      const n=(byBoard.get(bid)||0)+1;
+      byBoard.set(bid,n);
+      t.refNumber=n;
+    });
+  boards.forEach(b=>{const m=byBoard.get(b.id);if(m)b.nextRef=m+1;});
+  return true;
+}
 function saveDB(data){
+  _assignTaskRefs(data);
   _vcClear(); // invalidate render cache whenever data changes
   data._savedAt=new Date().toISOString(); // timestamp for conflict detection
   clearTimeout(_saveDebounceTimer);
@@ -2084,7 +2288,144 @@ let _wbDragStartedAt=0;
 let wsCollapsed=new Set();
 let wsExpanded=new Set();
 let wsGroupBy='group';
-const _WS_COL_DEFAULTS={status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true,deps:false};
+const _WS_COL_DEFAULTS={ref:false,status:true,priority:true,owner:true,cwith:true,duedate:true,progress:true,hours:false,client:false,tags:false,attachments:true,deps:false};
+// Subitems get their own grid (see .ws-subtable) so they can carry execution-level columns
+// that make no sense on a parent. Parents are outcomes; subitems are the work.
+const _WS_SUB_COL_DEFAULTS={ref:false,status:true,owner:true,cwith:true,duedate:true,progress:true,deps:false};
+let wsSubColumns={..._WS_SUB_COL_DEFAULTS};
+try{const _s=JSON.parse(localStorage.getItem('etcher_ws_subcols')||'null');if(_s)wsSubColumns={..._WS_SUB_COL_DEFAULTS,..._s};}catch(_){}
+function wsToggleSubCol(key){
+  wsSubColumns[key]=!wsSubColumns[key];
+  try{localStorage.setItem('etcher_ws_subcols',JSON.stringify(wsSubColumns));}catch(_){}
+  renderView('workspace');
+}
+// ── Column widths + labels (per board, per grid) ────────────
+// Monday lets you drag a column edge to resize and rename a header in place. Both are
+// stored per board so two boards can present the same underlying field differently.
+// Shape: { [boardId]: { item:{widths:{},labels:{}}, sub:{widths:{},labels:{}} } }
+let _wsColMeta={};
+try{_wsColMeta=JSON.parse(localStorage.getItem('etcher_ws_colmeta')||'{}')||{};}catch(_){_wsColMeta={};}
+function _wsColMetaFor(grid){
+  const bid=currentWorkboard?.id||'_';
+  _wsColMeta[bid]=_wsColMeta[bid]||{};
+  _wsColMeta[bid][grid]=_wsColMeta[bid][grid]||{widths:{},labels:{}};
+  const g=_wsColMeta[bid][grid];
+  g.widths=g.widths||{};g.labels=g.labels||{};
+  return g;
+}
+function _wsColMetaSave(){
+  try{localStorage.setItem('etcher_ws_colmeta',JSON.stringify(_wsColMeta));}catch(_){}
+}
+function wsColLabel(grid,key,fallback){
+  const l=_wsColMetaFor(grid).labels[key];
+  return(l==null||l==='')?fallback:l;
+}
+function wsColWidth(grid,key,fallback){
+  const w=_wsColMetaFor(grid).widths[key];
+  return w?w+'px':fallback;
+}
+// Drag a column edge. Width is committed on mouseup so the table only re-renders once.
+let _wsResize=null;
+function wsStartColResize(e,grid,key){
+  e.preventDefault();e.stopPropagation();
+  const th=e.currentTarget.closest('th');
+  if(!th)return;
+  _wsResize={grid,key,startX:e.clientX,startW:th.getBoundingClientRect().width,th};
+  th.classList.add('col-resizing');
+  document.body.style.cursor='col-resize';
+  document.body.style.userSelect='none';
+  // Snap targets: the column boundaries of the OTHER grid, so a subitem column can be
+  // lined up exactly under an item column (and vice versa). Purely magnetic — drag a
+  // little further and it releases.
+  const otherSel=grid==='sub'?'.ws-table>thead th':'.ws-subtable thead th';
+  _wsResize.snaps=[...document.querySelectorAll(otherSel)]
+    .map(el=>el.getBoundingClientRect().right)
+    .filter(x=>x>0);
+  _wsResize.guide=document.getElementById('ws-snap-guide')||(()=>{
+    const g=document.createElement('div');g.id='ws-snap-guide';document.body.appendChild(g);return g;
+  })();
+  const SNAP=9; // px of magnetism
+  // With table-layout:fixed the header's width IS the column's width, so setting it here
+  // moves the whole column live — no re-render needed, and neighbours stay put.
+  const move=ev=>{
+    if(!_wsResize)return;
+    let w=Math.max(56,Math.round(_wsResize.startW+(ev.clientX-_wsResize.startX)));
+    // Where the column's right edge would land at this width
+    const left=_wsResize.th.getBoundingClientRect().left;
+    let snappedTo=null;
+    for(const sx of _wsResize.snaps){
+      if(Math.abs(left+w-sx)<=SNAP){ w=Math.max(56,Math.round(sx-left)); snappedTo=sx; break; }
+    }
+    _wsResize.th.style.width=w+'px';
+    _wsResize.live=w;
+    const g=_wsResize.guide;
+    if(snappedTo!=null){
+      const r=_wsResize.th.getBoundingClientRect();
+      g.style.cssText=`position:fixed;top:${r.top}px;left:${snappedTo-1}px;width:2px;height:${Math.min(window.innerHeight-r.top,600)}px;background:#0d6e4e;z-index:900;pointer-events:none;opacity:0.75`;
+    }else{
+      g.style.display='none';g.style.cssText='display:none';
+    }
+  };
+  const up=()=>{
+    document.removeEventListener('mousemove',move);
+    document.removeEventListener('mouseup',up);
+    document.body.style.cursor='';document.body.style.userSelect='';
+    if(_wsResize){
+      _wsResize.th.classList.remove('col-resizing');
+      if(_wsResize.guide)_wsResize.guide.style.cssText='display:none';
+      if(_wsResize.live){
+        _wsColMetaFor(_wsResize.grid).widths[_wsResize.key]=_wsResize.live;
+        _wsColMetaSave();
+      }
+      _wsResize=null;
+      // Deliberately NOT re-rendering: the live width is already correct, and a re-render
+      // here made the drag feel like it snapped back.
+    }
+  };
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+}
+// Rename a header in place. Custom columns write through to the column record; built-ins
+// get a per-board label override so the underlying key never changes.
+function wsRenameColInline(el,grid,key,isCustom){
+  el.contentEditable='true';
+  el.classList.add('col-editing');
+  el.focus();
+  const range=document.createRange();range.selectNodeContents(el);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  const original=el.textContent.trim();
+  const commit=save=>{
+    el.contentEditable='false';
+    el.classList.remove('col-editing');
+    el.removeEventListener('keydown',onKey);
+    el.removeEventListener('blur',onBlur);
+    const val=el.textContent.trim();
+    if(!save||val===original){el.textContent=original;return;}
+    if(isCustom){
+      const cc=(DB.customColumns||[]).find(c=>c.id===key);
+      if(cc){cc.name=val||cc.name;saveDB(DB);}
+    }else{
+      const m=_wsColMetaFor(grid);
+      if(val)m.labels[key]=val;else delete m.labels[key];
+      _wsColMetaSave();
+    }
+    renderView('workspace');
+  };
+  const onKey=ev=>{
+    ev.stopPropagation();
+    if(ev.key==='Enter'){ev.preventDefault();commit(true);}
+    if(ev.key==='Escape'){ev.preventDefault();commit(false);}
+  };
+  const onBlur=()=>commit(true);
+  el.addEventListener('keydown',onKey);
+  el.addEventListener('blur',onBlur);
+}
+// Put a column back to its built-in width and label.
+function wsResetCol(grid,key){
+  const m=_wsColMetaFor(grid);
+  delete m.widths[key];delete m.labels[key];
+  _wsColMetaSave();renderView('workspace');
+}
 const _wsBoardColumns={}; // boardId → column visibility map (session-only)
 const _wsColOrderMap={}; // boardId → ordered key array
 let _wsDragCol=null;
@@ -2123,6 +2464,7 @@ function wsHighlightName(name){
 }
 let wsMtPersonFilter='';
 let mtSelectedColType='text';
+let mtSelectedColLevel='both'; // which row tier a new custom column carries data for
 let ganttScale='weeks';
 let ganttColorBy='status';
 let ganttCollapsed=new Set();
@@ -2183,8 +2525,32 @@ let quoteSelectedItems=new Set();
 
 // ── Filter system ──
 function freshFilters(){
+  // labels: { [customColumnId]: [optionId, …] } — one entry per Labels column being filtered
   return{clientId:'all',staffId:'all',cwithId:'all',statuses:[],priorities:[],groupId:'all',
-    dateFrom:'',dateTo:'',awaitingClient:false,overdue:false,hasChecklist:false,hasDeps:false,pctMin:0,pctMax:100};
+    dateFrom:'',dateTo:'',awaitingClient:false,overdue:false,hasChecklist:false,hasDeps:false,pctMin:0,pctMax:100,
+    labels:{}};
+}
+// Toggle one label option in the filter.
+function toggleLabelFilter(colId,optId){
+  const f=_filtersFor(currentView);
+  f.labels=f.labels||{};
+  const cur=new Set(f.labels[colId]||[]);
+  cur.has(optId)?cur.delete(optId):cur.add(optId);
+  if(cur.size)f.labels[colId]=[...cur];else delete f.labels[colId];
+  renderView(currentView);
+}
+function _labelFilterMatches(t,f){
+  const sel=f&&f.labels;
+  if(!sel)return true;
+  const cols=Object.keys(sel);
+  if(!cols.length)return true;
+  // A task must match every Labels column that has a selection (AND across columns,
+  // OR within one column) — the same shape as the status/priority filters.
+  return cols.every(colId=>{
+    const want=sel[colId];
+    if(!want||!want.length)return true;
+    return want.includes(mtGetCustomVal(t.id,colId)||'');
+  });
 }
 // Capacity gets its own filter shape (see mcFilters above) — same base fields, plus
 // exclude-lists that only Capacity's forecasting use case needs.
@@ -2259,7 +2625,8 @@ function countActiveFilters(view){
     s.length+pr.length+exs.length+(f.excludeCompleted?1:0)+(f.groupId!=='all'?1:0)+
     (f.dateFrom||f.dateTo?1:0)+
     (f.awaitingClient?1:0)+(f.overdue?1:0)+(f.hasChecklist?1:0)+(f.hasDeps?1:0)+
-    (pmin>0||pmax<100?1:0);
+    (pmin>0||pmax<100?1:0)+
+    Object.values(f.labels||{}).reduce((n,a)=>n+(a?a.length:0),0);
 }
 function getFilteredTasks(){
   let t=getVisibleTasks().filter(x=>!x.parentTaskId); // top-level only
@@ -2273,6 +2640,7 @@ function getFilteredTasks(){
   }
   if(fs.length)t=t.filter(x=>fs.includes(x.status));
   if(fp.length)t=t.filter(x=>fp.includes(x.priority));
+  if(f.labels&&Object.keys(f.labels).length)t=t.filter(x=>_labelFilterMatches(x,f));
   if(f.groupId!=='all')t=t.filter(x=>x.groupId===f.groupId);
   if(f.dateFrom)t=t.filter(x=>!x.endDate||x.endDate>=f.dateFrom);
   if(f.dateTo)t=t.filter(x=>!x.startDate||x.startDate<=f.dateTo);
@@ -2283,7 +2651,7 @@ function getFilteredTasks(){
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
   if(pmin>0||pmax<100)t=t.filter(x=>{const p=typeof x.percentComplete==='number'?x.percentComplete:0;return p>=pmin&&p<=pmax;});
-  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _sh=s=>s?s.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/gi,' '):'';const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||_sh(x.description||'').toLowerCase().includes(q)||_sh(x.notes||'').toLowerCase().includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(getWbGroups().map(g=>g.id));const existingIds=new Set(t.map(x=>x.id));const sub=(DB.tasks||[]).filter(x=>(!x.archived||wsShowArchived)&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId)&&canViewTask(currentUser,x)&&!existingIds.has(x.id));if(sub.length)t=[...t,...sub];}
+  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _sh=s=>s?s.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/gi,' '):'';const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||_sh(x.description||'').toLowerCase().includes(q)||_sh(x.notes||'').toLowerCase().includes(q)||taskRef(x).toLowerCase().includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(getWbGroups().map(g=>g.id));const existingIds=new Set(t.map(x=>x.id));const sub=(DB.tasks||[]).filter(x=>(!x.archived||wsShowArchived)&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId)&&canViewTask(currentUser,x)&&!existingIds.has(x.id));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>isAssignedTo(x,wsMtPersonFilter)||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
   return t;
 }
@@ -2370,23 +2738,25 @@ function renderUniversalToolbar(view,opts){
   const viewControls=(opts.viewControlsHtml!=null?opts.viewControlsHtml:_utViewControls(view));
   const personChipsHtml=view==='workspace'?_utPersonChips():'';
   const exportBtn=view==='workspace'?`<button class="btn btn-ghost btn-sm" onclick="wsMtExport()" title="Export CSV" style="gap:4px;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M1 10v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Export</button>`:'';
-  const sel=`height:32px;padding:0 10px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#1a2940;background:#fff;border:1.5px solid #e2eaf2;border-radius:7px;cursor:pointer`;
+  // Borderless by default — the controls earn their outline on hover, not at rest.
+  const sel=`height:30px;padding:0 6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#1a2940;background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer`;
   const borderR=utFilterOpen?'10px 10px 0 0':'10px';
-  return`<div style="display:flex;align-items:center;gap:6px;margin:10px 0 0;flex-wrap:wrap;padding:7px 10px;background:#fff;border:1.5px solid #e2eaf2;border-radius:${borderR}">
+  return`<div class="ut-bar${utFilterOpen?' ut-bar-open':''}" style="border-radius:${borderR}">
     <div style="position:relative;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input class="mt-search" type="text" placeholder="Search tasks…" value="${escHtml(search)}"
+      <input class="mt-search" type="text" placeholder="Filter rows…" value="${escHtml(search)}"
+        title="Filter the rows below, keeping this view's grouping and columns"
         oninput="onMtSearch(this,'${view}')" onclick="event.stopPropagation()"
         style="padding-left:28px"/>
       ${search?`<button onclick="wsMtSearch='';renderView('${view}')" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:14px;line-height:1;padding:0">\xd7</button>`:''}
     </div>
-    <select style="${sel};min-width:90px" onchange="setFilter('clientId',this.value)">
+    <select style="${sel};min-width:90px;max-width:130px" onchange="setFilter('clientId',this.value)">
       <option value="all"${f.clientId==='all'?' selected':''}>All Clients</option>${clientOpts}
     </select>
-    <select style="${sel};min-width:85px" onchange="setFilter('staffId',this.value)">
+    <select style="${sel};min-width:85px;max-width:115px" onchange="setFilter('staffId',this.value)">
       <option value="all"${f.staffId==='all'?' selected':''}>All Owners</option>${staffOpts}
     </select>
-    <select style="${sel};min-width:95px" onchange="setFilter('groupId',this.value)">
+    <select style="${sel};min-width:95px;max-width:130px" onchange="setFilter('groupId',this.value)">
       <option value="all"${f.groupId==='all'?' selected':''}>All Groups</option>${groupOpts}
     </select>
     <div style="width:1px;height:22px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
@@ -2415,7 +2785,7 @@ function renderAdvancedFilterPanel(view){
   // Capacity's status chip is a 3-state cycle (neutral → include → exclude) so "forecast
   // everything except Blocked" is one click; other views keep the simple include-only toggle.
   const statusChip=s=>{
-    const sm=STATUS_META[s]||STATUS_META['todo'];
+    const sm=getStatusMeta(s);
     if(!isCapacity)return chip(sm.label,`toggleStatusFilter('${s}')`,(f.statuses||[]).includes(s),sm.color,sm.bg,sm.color);
     const excluded=(f.excludeStatuses||[]).includes(s);
     const included=(f.statuses||[]).includes(s);
@@ -2438,6 +2808,30 @@ function renderAdvancedFilterPanel(view){
         ${['low','med','high','crit'].map(p=>{const m=PRIO_META[p];const on=(f.priorities||[]).includes(p);const[bc,bg,c]=PCOLS[p];return chip(`${m.icon} ${m.label}`,`togglePriorityFilter('${p}')`,on,bc,bg,c);}).join('')}
       </div>
     </div>
+    ${(()=>{
+      // One chip row per Labels column on this board, using each option's own colour so the
+      // filter reads the same way the cells do.
+      const labelCols=(typeof mtGetBoardCustomCols==='function'?mtGetBoardCustomCols():[]).filter(c=>c.type==='labels');
+      if(!labelCols.length)return'';
+      return labelCols.map(cc=>{
+        const opts=mtLabelOptions(cc);
+        const sel=(f.labels||{})[cc.id]||[];
+        return`<div style="margin-bottom:12px">
+          <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            ${escHtml(cc.name)}
+            ${sel.length?`<button onclick="(function(){const ff=_filtersFor(currentView);delete (ff.labels||{})['${cc.id}'];renderView(currentView);})()" style="background:none;border:none;cursor:pointer;font-size:9.5px;color:#8da2b2;font-family:'Jost',sans-serif;font-weight:600;text-transform:none;letter-spacing:0">clear</button>`:''}
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            ${opts.map(o=>{
+              const on=sel.includes(o.id);
+              return`<button onclick="toggleLabelFilter('${cc.id}','${o.id}')" style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.12s;border:1.5px solid ${on?o.color:'#e2eaf2'};background:${on?o.color:'transparent'};color:${on?'#fff':'#8da2b2'}">${escHtml(o.label)}</button>`;
+            }).join('')}
+            ${(()=>{const on=sel.includes('');
+              return`<button onclick="toggleLabelFilter('${cc.id}','')" title="Tasks with no ${escHtml(cc.name)} set" style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Jost',sans-serif;transition:all 0.12s;border:1.5px dashed ${on?'#8da2b2':'#e2eaf2'};background:${on?'#eef3f8':'transparent'};color:#8da2b2">None</button>`;})()}
+          </div>
+        </div>`;
+      }).join('');
+    })()}
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
       <div>
         <label class="form-label">Currently With</label>
@@ -2761,9 +3155,19 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
+  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
-  document.getElementById('view-title').textContent=(workboardViews.has(view)&&currentWorkboard)?currentWorkboard.name:(viewTitles[view]||view);
+  // Inside a workboard the tab strip already shows the board name (with its colour dot and
+  // actions menu), so repeating it in the page title is pure duplication.
+  const _inWb=workboardViews.has(view)&&currentWorkboard;
+  const _vt=document.getElementById('view-title');
+  _vt.textContent=_inWb?currentWorkboard.name:(viewTitles[view]||view);
+  // Views that render their own page heading would otherwise show the same title twice.
+  const _selfTitled=new Set(['quotes']);
+  _vt.style.display=(_inWb||_selfTitled.has(view))?'none':'';
+  // With the title gone the topbar is an empty band, so slim it right down rather than
+  // leaving ~75px of nothing above the tab strip.
+  document.getElementById('topbar')?.classList.toggle('topbar-slim',!!_inWb);
   const vc=document.getElementById('view-container');
   vc.style.padding=view==='notes'?'0':'24px';
   updateSidebarWorkboard();
@@ -2822,7 +3226,9 @@ function onGlobalSearch(){
   const _accessibleIds=new Set((DB.workboards||[]).filter(wb=>canViewBoard(currentUser,wb)).map(wb=>wb.id));
   let pool=DB.tasks.filter(t=>canViewTask(currentUser,t)&&_accessibleIds.has(_taskBoardId(t)));
   if(currentWorkboard)pool=pool.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
-  const tasks=pool.filter(t=>(t.name||t.title||'').toLowerCase().includes(q)||(t.description||'').toLowerCase().includes(q));
+  const tasks=pool.filter(t=>(t.name||t.title||'').toLowerCase().includes(q)
+    ||(t.description||'').toLowerCase().includes(q)
+    ||taskRef(t).toLowerCase().includes(q));
   if(currentView!=='list')navigate('list');
   renderListView(tasks);
   // restore input value+focus — input lives inside the re-rendered view
@@ -2845,7 +3251,10 @@ function renderView(v){
       case 'schedule':  _renderCached(vc,'schedule-'+schedCalView+'-'+schedYear+'-'+schedMonth+'-'+(schedWeekBase||''),renderSchedule);break;
       case 'staff':     _renderCached(vc,'staff',renderStaff);break;
       // Live views: always fresh (mutations happen inline)
-      case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;setTimeout(_wsFitTableHeight,0);break;
+      // Two passes: the first runs before the topbar/toolbar heights have settled, which
+      // left Add Group a few px out of line with Sign Out.
+      case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;
+        requestAnimationFrame(()=>{_wsFitTableHeight();requestAnimationFrame(_wsFitTableHeight);});break;
       case 'board':     vc.innerHTML=renderBoard();break;
       case 'list':      renderListView(getFilteredTasks());break;
       case 'clients':   vc.innerHTML=renderClients();break;
@@ -2956,7 +3365,53 @@ function getVisibleTasks(){
 }
 function getWbGroups(){
   if(!currentWorkboard) return DB.groups;
-  return DB.groups.filter(g=>(g.boardId||g.workboardId)===currentWorkboard.id);
+  // Sorted by explicit order so drag-reordering the group headers sticks. Groups created
+  // before ordering existed have no `order`, so they fall back to their array position.
+  return DB.groups.filter(g=>(g.boardId||g.workboardId)===currentWorkboard.id)
+    .map((g,i)=>({g,i}))
+    .sort((a,b)=>(a.g.order??a.i)-(b.g.order??b.i)||a.i-b.i)
+    .map(x=>x.g);
+}
+// ── Drag-reorder the groups themselves ──────────────────────
+let _wsGrpDragId=null;
+function _wsGrpDragStart(e,gid){
+  e.stopPropagation();
+  _wsGrpDragId=gid;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain','grp:'+gid);
+}
+function _wsGrpDragOver(e,gid){
+  if(!_wsGrpDragId||_wsGrpDragId===gid)return;
+  e.preventDefault();e.stopPropagation();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.ws-grp-drop-above,.ws-grp-drop-below').forEach(el=>el.classList.remove('ws-grp-drop-above','ws-grp-drop-below'));
+  const row=e.currentTarget,r=row.getBoundingClientRect();
+  row.classList.add((e.clientY-r.top)<r.height/2?'ws-grp-drop-above':'ws-grp-drop-below');
+}
+function _wsGrpDragLeave(e){
+  const row=e.currentTarget;
+  if(!row.contains(e.relatedTarget))row.classList.remove('ws-grp-drop-above','ws-grp-drop-below');
+}
+function _wsGrpDrop(e,targetGid){
+  e.preventDefault();e.stopPropagation();
+  const before=e.currentTarget.classList.contains('ws-grp-drop-above');
+  document.querySelectorAll('.ws-grp-drop-above,.ws-grp-drop-below').forEach(el=>el.classList.remove('ws-grp-drop-above','ws-grp-drop-below'));
+  const gid=_wsGrpDragId;_wsGrpDragId=null;
+  if(!gid||gid===targetGid)return;
+  const ordered=getWbGroups().filter(g=>g.id!==gid);
+  const dragged=DB.groups.find(g=>g.id===gid);
+  if(!dragged)return;
+  let idx=ordered.findIndex(g=>g.id===targetGid);
+  if(idx===-1)idx=ordered.length;
+  ordered.splice(before?idx:idx+1,0,dragged);
+  const now=new Date().toISOString();
+  ordered.forEach((g,i)=>{g.order=i;g.updatedAt=now;});
+  writeAuditEvent('Group',gid,'reordered',null,{order:dragged.order});
+  saveDB(DB);renderView('workspace');
+}
+function _wsGrpDragEnd(){
+  document.querySelectorAll('.ws-grp-drop-above,.ws-grp-drop-below').forEach(el=>el.classList.remove('ws-grp-drop-above','ws-grp-drop-below'));
+  _wsGrpDragId=null;
 }
 function getWbDefaultGroup(){
   const groups=getWbGroups();
@@ -2971,6 +3426,59 @@ function getEffectiveTaskPct(taskId){
   const children=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
   if(!children.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
   return Math.round(children.reduce((s,t)=>s+(t.percentComplete||0),0)/children.length);
+}
+// ── Status distribution ─────────────────────────────────────
+// A single averaged % hides the shape of the work: "0%" reads the same whether nothing has
+// started or everything is blocked. This returns the composition so it can be drawn as a
+// stacked bar — "all red" says more than "0%".
+function statusMixOf(tasks){
+  const list=(tasks||[]).filter(t=>t&&!t.archived);
+  if(!list.length)return{total:0,segments:[]};
+  const counts=new Map();
+  list.forEach(t=>{
+    const key=t.status||'todo';
+    counts.set(key,(counts.get(key)||0)+1);
+  });
+  // Order segments so the bar reads left-to-right as progress toward done.
+  const ORDER=['todo','not-started','ready-to-start','in-progress','waiting-client','review',
+    'waiting-review','needs-changes','change-requested','blocked','ready-approval',
+    'approved-client','completed-approved','done','completed','cancelled'];
+  const segments=[...counts.entries()]
+    .sort((a,b)=>{const ai=ORDER.indexOf(a[0]),bi=ORDER.indexOf(b[0]);return(ai===-1?99:ai)-(bi===-1?99:bi);})
+    .map(([status,count])=>{
+      const m=getStatusMeta(status);
+      return{status,count,label:m.label,color:m.dot||m.color,pct:(count/list.length)*100};
+    });
+  return{total:list.length,segments};
+}
+// A parent with subitems spans its children: earliest start to latest end. Its own dates
+// are kept as a fallback for when the children carry none.
+function getTaskDateSpan(taskId){
+  const kids=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
+  if(!kids.length)return null;
+  let start=null,end=null;
+  kids.forEach(k=>{
+    if(k.startDate&&(!start||k.startDate<start))start=k.startDate;
+    // a child with only an end date still extends the span
+    const s2=k.startDate||k.endDate;
+    if(s2&&(!start||s2<start))start=s2;
+    if(k.endDate&&(!end||k.endDate>end))end=k.endDate;
+    const e2=k.endDate||k.startDate;
+    if(e2&&(!end||e2>end))end=e2;
+  });
+  return(start||end)?{startDate:start||"",endDate:end||"",rolled:true}:null;
+}
+function getTaskStatusMix(taskId){
+  const children=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId));
+  return statusMixOf(children);
+}
+// Stacked proportion bar. Falls back to nothing when there is no composition to show.
+function statusMixBar(mix,width){
+  if(!mix||!mix.total)return'';
+  const title=mix.segments.map(s=>`${s.count} ${s.label}`).join(' · ');
+  return`<div class="status-mix" style="width:${width||44}px" title="${escHtml(title)}">
+    ${mix.segments.map(s=>`<span style="width:${s.pct}%;background:${s.color}"></span>`).join('')}
+  </div>`;
 }
 // ── Board access control ──
 function canViewBoard(user,board){
@@ -3018,6 +3526,86 @@ function hexToRgba(hex,a){if(!hex||hex.length<7)return`rgba(150,188,189,${a})`;c
 function getStatusMeta(key){const ov=(DB?.labelConfig?.statuses||{})[key]||{};return{...(STATUS_META[key]||{label:key,color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'}),...ov};}
 function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
 function statusBadge(s){const sm=getStatusMeta(s);return`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`;}
+// ── Bright preset palette for statuses, priorities and labels ──
+// One cohesive family: each entry pairs a saturated ink with a tinted ground and a dot, so
+// a chip stays legible whether it's rendered as text-on-tint or as a solid fill.
+const BRIGHT_PRESETS=[
+  {name:'Slate',     color:'#475569', bg:'#f1f5f9', dot:'#94a3b8', solid:'#64748b'},
+  {name:'Sky',       color:'#0369a1', bg:'#e0f2fe', dot:'#38bdf8', solid:'#0284c7'},
+  {name:'Indigo',    color:'#4338ca', bg:'#e0e7ff', dot:'#818cf8', solid:'#4f46e5'},
+  {name:'Violet',    color:'#6d28d9', bg:'#ede9fe', dot:'#a78bfa', solid:'#7c3aed'},
+  {name:'Magenta',   color:'#a21caf', bg:'#fae8ff', dot:'#e879f9', solid:'#c026d3'},
+  {name:'Rose',      color:'#be123c', bg:'#ffe4e6', dot:'#fb7185', solid:'#e11d48'},
+  {name:'Red',       color:'#b91c1c', bg:'#fef2f2', dot:'#f87171', solid:'#dc2626'},
+  {name:'Orange',    color:'#c2410c', bg:'#fff7ed', dot:'#fb923c', solid:'#ea580c'},
+  {name:'Amber',     color:'#b45309', bg:'#fffbeb', dot:'#fbbf24', solid:'#d97706'},
+  {name:'Lime',      color:'#4d7c0f', bg:'#f7fee7', dot:'#a3e635', solid:'#65a30d'},
+  {name:'Green',     color:'#15803d', bg:'#dcfce7', dot:'#4ade80', solid:'#16a34a'},
+  {name:'Emerald',   color:'#0d6e4e', bg:'#d1fae5', dot:'#34d399', solid:'#059669'},
+  {name:'Teal',      color:'#0f766e', bg:'#ccfbf1', dot:'#2dd4bf', solid:'#0d9488'},
+  {name:'Cyan',      color:'#0e7490', bg:'#cffafe', dot:'#22d3ee', solid:'#0891b2'},
+  {name:'Stone',     color:'#78716c', bg:'#f5f5f4', dot:'#a8a29e', solid:'#57534e'},
+];
+function _lcSet(kind,key,preset){
+  DB.labelConfig=DB.labelConfig||{statuses:{},priorities:{}};
+  DB.labelConfig[kind]=DB.labelConfig[kind]||{};
+  DB.labelConfig[kind][key]={...(DB.labelConfig[kind][key]||{}),color:preset.color,bg:preset.bg,dot:preset.dot};
+  saveDB(DB);
+  _lcRefresh();
+}
+function _lcReset(kind,key){
+  if(DB.labelConfig?.[kind])delete DB.labelConfig[kind][key];
+  saveDB(DB);_lcRefresh();
+}
+function _lcRefresh(){
+  const el=document.getElementById('lc-body');
+  if(el)el.innerHTML=_lcBodyHtml();
+}
+function _lcRow(kind,key,meta){
+  const swatches=BRIGHT_PRESETS.map(p=>{
+    const on=meta.color===p.color&&meta.bg===p.bg;
+    return`<span onclick="_lcSet('${kind}','${key}',${escHtml(JSON.stringify(p)).replace(/"/g,'&quot;')})"
+      title="${p.name}" style="width:17px;height:17px;border-radius:5px;background:${p.solid};cursor:pointer;flex-shrink:0;
+      box-shadow:${on?'0 0 0 2px #fff,0 0 0 4px '+p.solid:'none'};transition:transform 0.1s"
+      onmouseover="this.style.transform='scale(1.18)'" onmouseout="this.style.transform='none'"></span>`;
+  }).join('');
+  const overridden=!!(DB.labelConfig?.[kind]||{})[key];
+  return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f4f8">
+    <span style="min-width:132px;flex-shrink:0"><span class="badge" style="background:${meta.bg};color:${meta.color};font-size:11px">${escHtml(meta.label||key)}</span></span>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;flex:1">${swatches}</div>
+    <button onclick="_lcReset('${kind}','${key}')" title="Back to default" style="background:none;border:none;cursor:pointer;font-size:10px;color:${overridden?'#6b8399':'#d4dde8'};font-family:'Jost',sans-serif;font-weight:600;padding:2px 4px">reset</button>
+  </div>`;
+}
+function _lcBodyHtml(){
+  const statuses=(typeof getAllStatuses==='function'?getAllStatuses():Object.keys(STATUS_META))
+    .filter((k,i,a)=>a.indexOf(k)===i&&!['not-started','waiting-review','completed'].includes(k));
+  const prios=(typeof getAllPriorities==='function'?getAllPriorities():Object.keys(PRIO_META));
+  return`<div style="font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;margin:2px 0 4px">Statuses</div>
+    ${statuses.map(k=>_lcRow('statuses',k,getStatusMeta(k))).join('')}
+    <div style="font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;margin:16px 0 4px">Priorities</div>
+    ${prios.map(k=>_lcRow('priorities',k,getPrioMeta(k))).join('')}`;
+}
+function openLabelColourEditor(){
+  document.getElementById('lc-overlay')?.remove();
+  const div=document.createElement('div');
+  div.id='lc-overlay';
+  div.style.cssText='position:fixed;inset:0;background:rgba(13,28,51,0.4);z-index:650;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  div.onclick=e=>{if(e.target===div)div.remove();};
+  div.innerHTML=`<div style="background:#fff;border-radius:12px;width:560px;max-width:95vw;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(13,28,51,0.25)" onclick="event.stopPropagation()">
+    <div style="padding:16px 22px 12px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="font-family:Jost,sans-serif;font-size:16px;font-weight:700;color:#0d1c33">Status &amp; Priority Colours</h3>
+        <div style="font-size:11.5px;color:#8da2b2;margin-top:2px">Pick from the preset palette — applies everywhere these appear.</div>
+      </div>
+      <button onclick="document.getElementById('lc-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:21px;color:#8da2b2;line-height:1">×</button>
+    </div>
+    <div id="lc-body" style="padding:12px 22px;overflow:auto;flex:1">${_lcBodyHtml()}</div>
+    <div style="padding:12px 22px 16px;border-top:1px solid #e2eaf2;display:flex;justify-content:flex-end">
+      <button onclick="document.getElementById('lc-overlay').remove();renderView(currentView)" class="btn btn-teal btn-sm">Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
 const PRIO_META={
   low: {icon:'▼',label:'Low',cls:'prio-low',color:'#475569',bg:'#f1f5f9'},
   med: {icon:'●',label:'Medium',cls:'prio-med',color:'#b45309',bg:'#fffbeb'},
@@ -3029,7 +3617,7 @@ function getAllPriorities(){const builtin=['low','med','high','crit'];const cust
 function prioBadge(p,short=false){const m=getPrioMeta(p);return`<span class="prio-badge ${m.cls||'prio-med'}">${m.icon||'●'} ${short?m.label.slice(0,4):m.label}</span>`;}
 // Compact flag for kanban cards (no text, just icon+colour)
 function prioFlag(p){
-  const m=PRIO_META[p]||PRIO_META.med;
+  const m=getPrioMeta(p);
   const bg={low:'#f1f5f9',med:'#fffbeb',high:'#fff7ed',crit:'#fef2f2'}[p]||'#f1f5f9';
   const color={low:'#475569',med:'#b45309',high:'#c2410c',crit:'#b91c1c'}[p]||'#475569';
   return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800;background:${bg};color:${color};letter-spacing:0.04em">${m.icon} ${m.label}</span>`;
@@ -3038,6 +3626,39 @@ function avatarHtml(s,size=26){
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${s.color};font-size:${Math.floor(size*0.4)}px">${s.initials}</div>`;
 }
 function formatDate(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+// ── Compact date range for dense tables ─────────────────────
+// "26/06/2026 → 07/07/2026" is 178px of mostly repeated digits. Drop what the reader can
+// infer: the current year, and a month repeated on both ends of the range.
+const _MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _wsCompactRange(start,end){
+  const thisYear=new Date().getFullYear();
+  const parse=d=>{const[y,m,dd]=(d||'').split('-');return d?{y:+y,m:+m,d:+dd}:null;};
+  const one=(p,withYear)=>`${p.d} ${_MON[p.m-1]}${withYear?" '"+String(p.y).slice(2):''}`;
+  const s=parse(start),e=parse(end);
+  if(!s&&!e)return'—';
+  if(!s)return one(e,e.y!==thisYear);
+  if(!e)return one(s,s.y!==thisYear);
+  const sameYear=s.y===e.y, showYear=e.y!==thisYear;
+  if(sameYear&&s.m===e.m)return`${s.d} – ${e.d} ${_MON[e.m-1]}${showYear?" '"+String(e.y).slice(2):''}`;
+  if(sameYear)return`${one(s,false)} – ${one(e,showYear)}`;
+  return`${one(s,true)} – ${one(e,true)}`;
+}
+// How a due date should read. Blanket red on everything overdue means red says nothing,
+// so age it: imminent = amber, recently overdue = red, long overdue = muted with a chip.
+function _wsDueState(t){
+  const done=t.status==='done'||t.status==='completed'||t.status==='completed-approved'||t.status==='cancelled'||t.archived;
+  if(!t.endDate||done)return{tone:'none'};
+  const today=new Date(toDateStr(new Date())+'T00:00:00');
+  const due=new Date(t.endDate+'T00:00:00');
+  const days=Math.round((due-today)/86400000);
+  if(days<-14){
+    const wks=Math.round(-days/7);
+    return{tone:'stale',days,chip:wks>=52?`${Math.round(wks/52)}y overdue`:`${wks}w overdue`};
+  }
+  if(days<0)return{tone:'over',days,chip:days===-1?'1d overdue':`${-days}d overdue`};
+  if(days<=3)return{tone:'soon',days,chip:days===0?'due today':days===1?'due tomorrow':`in ${days}d`};
+  return{tone:'none',days};
+}
 function hoursForTask(taskId){
   if(_wsCache)return _wsCache.hoursMap.get(taskId)||0;
   return DB.timeEntries.filter(e=>e.taskId===taskId).reduce((a,e)=>a+e.hours,0);
@@ -4726,7 +5347,7 @@ function renderDashStatPanel(){
       <div style="max-height:360px;overflow-y:auto">
       ${items.length===0?'<div style="padding:18px 16px;color:#8da2b2;font-size:13px">None.</div>':items.map(t=>{
         const wb=DB.workboards.find(w=>w.id===t.workboardId);
-        const sm=STATUS_META[t.status]||STATUS_META['todo'];
+        const sm=getStatusMeta(t.status);
         const owner=DB.staff.find(s=>s.id===t.ownerId);
         const overdue=t.endDate&&t.status!=='done'&&new Date(t.endDate)<today;
         return`<div onclick="openTaskPanel('${t.id}')" style="display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid #f0f4f8;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
@@ -5239,6 +5860,14 @@ function renderDashboard(){
                 <option value="">— None —</option>
                 ${DB.clients.map(c=>`<option value="${c.id}" ${(DB.groups.find(g=>(g.boardId||g.workboardId)===wb.id)?.clientId||'')===c.id?'selected':''}>${escHtml(c.name)}</option>`).join('')}
               </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0" title="Prefix for this board's task references, e.g. ${_boardRefPrefix(wb)}-001">ID</span>
+              <input type="text" value="${escHtml(wb.refPrefix||_boardRefPrefix(wb))}" maxlength="4"
+                onclick="event.stopPropagation()" onchange="event.stopPropagation();saveWbRefPrefix('${wb.id}',this.value)"
+                title="Task reference prefix — 1 to 4 letters or digits"
+                style="width:56px;font-size:11px;font-family:'Jost',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border:1px solid #e2eaf2;border-radius:5px;padding:3px 6px;color:#1a2940"/>
+              <span style="font-size:10px;color:#b0bec5">${escHtml(_boardRefPrefix(wb))}-001</span>
             </div>
             ${(DB.wbFolders||[]).length?`<div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:10px;font-weight:600;color:#8da2b2;width:42px;flex-shrink:0">Folder</span>
@@ -11109,7 +11738,7 @@ function renderSharePage(link){
           <div style="height:6px;background:#f0f4f8;border-radius:6px;overflow:hidden;margin-bottom:10px">
             <div style="height:100%;background:${group.color||'#97bcbd'};width:${gpct}%;border-radius:6px"></div>
           </div>
-          ${gt.map(t=>{const sm=STATUS_META[t.status]||STATUS_META['todo'];const due=t.endDate?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f4f7fb">
+          ${gt.map(t=>{const sm=getStatusMeta(t.status);const due=t.endDate?new Date(t.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f4f7fb">
             <span style="font-size:11px;background:${sm.bg};color:${sm.color};padding:2px 8px;border-radius:8px;font-weight:600;flex-shrink:0">${sm.label}</span>
             <span style="font-size:12px;color:#1a2940;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name||t.title||'')}</span>
             ${due?`<span style="font-size:11px;color:#8da2b2;flex-shrink:0">${due}</span>`:''}
@@ -11120,7 +11749,7 @@ function renderSharePage(link){
   } else if(link.type==='task'){
     const task=(DB.tasks||[]).find(t=>t.id===link.targetId);
     if(!task)return`<div style="text-align:center;padding:80px 20px;color:#8da2b2">Task not found.</div>`;
-    const sm=STATUS_META[task.status]||STATUS_META['todo'];
+    const sm=getStatusMeta(task.status);
     const owner=allStaff().find(u=>u.id===task.ownerId);
     html=`
       <div style="margin-bottom:28px">
@@ -11226,7 +11855,7 @@ function _dgGetAutoItems(clientId){
     .filter(t=>!t.archived&&(t.updatedAt>sinceStr||t.completedAt>sinceStr)&&(!clientId||t.clientId===clientId))
     .slice(0,12)
     .map(t=>{
-      const sm=STATUS_META[t.status]||STATUS_META['todo'];
+      const sm=getStatusMeta(t.status);
       const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
       return`${t.name||t.title||''}${wb?' ('+wb.name+')':''} — ${sm.label}`;
     });
@@ -11540,7 +12169,7 @@ function renderMyWeek(){
   const _mwTaskStatuses=[...new Set(myTasks.map(t=>t.status||'todo'))].filter(s=>STATUS_META[s]);
   const _anyMwFilter=!!(_mwSearch||_mwStatusFilter.length>0);
   const _mwChips=_mwTaskStatuses.map(s=>{
-    const sm=STATUS_META[s]||STATUS_META['todo'];
+    const sm=getStatusMeta(s);
     const active=_mwStatusFilter.includes(s);
     return '<button onclick="_mwSetStatusFilter(\''+s+'\')" style="padding:3px 10px;border-radius:20px;border:1.5px solid '+(active?sm.color:'#e2eaf2')+';background:'+(active?sm.bg:'transparent')+';color:'+(active?sm.color:'#8da2b2')+';font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:border-color 0.12s,background 0.12s,color 0.12s">'+escHtml(sm.label)+'</button>';
   }).join('');
@@ -11610,7 +12239,7 @@ function renderMyWeek(){
     const rowPy2=dense2?'6px':'10px';const rowFs2=dense2?'12.5px':'13px';const tagFs2=dense2?'10px':'11px';const rowGap2=dense2?'1px':'3px';
     // reuse _row inline with local vars since closures aren't accessible yet — re-declare inline
     const _rowN7=(t,accent)=>{
-      const sm=STATUS_META[t.status]||STATUS_META['todo'];
+      const sm=getStatusMeta(t.status);
       const grp=DB.groups.find(g=>g.id===t.groupId);
       const cl=DB.clients.find(c=>c.id===grp?.clientId);
       const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
@@ -11692,7 +12321,7 @@ function renderMyWeek(){
 
   // ── Compact task row ─────────────────────────────────────────────────
   const _row=(t,accentColor)=>{
-    const sm=STATUS_META[t.status]||STATUS_META['todo'];
+    const sm=getStatusMeta(t.status);
     const grp=DB.groups.find(g=>g.id===t.groupId);
     const client=DB.clients.find(c=>c.id===grp?.clientId);
     const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
@@ -12529,7 +13158,7 @@ function openTaskModal(id, defaultGroupId){
         </div>
         <div id="tm-checklist" style="max-height:160px;overflow-y:auto">
           ${checklistItems.length===0?'<div style="font-size:12px;color:#8da2b2;padding:4px 0">No subitems yet.</div>':
-            checklistItems.map(si=>{const sm=STATUS_META[si.status]||STATUS_META['todo'];const isDone=si.status==='done';return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
+            checklistItems.map(si=>{const sm=getStatusMeta(si.status);const isDone=si.status==='done';return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
             <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${sm.bg};color:${sm.color};white-space:nowrap">${sm.label}</span>
             <span style="flex:1;font-size:13px;text-decoration:${isDone?'line-through':'none'};color:${isDone?'#8da2b2':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(si.name)}">${escHtml(si.name)}</span>
             ${canEdit?`<button onclick="tmDeleteSubitem('${si.id}')" title="Delete subitem" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>`:''}
@@ -12583,7 +13212,7 @@ function openTaskModal(id, defaultGroupId){
               if(!pre)return'';
               const g=DB.groups.find(g=>g.id===pre.groupId);
               const c=DB.clients.find(cl=>cl.id===g?.clientId);
-              const sm=STATUS_META[pre.status]||STATUS_META['todo'];
+              const sm=getStatusMeta(pre.status);
               return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1.5px solid #e2eaf2;border-radius:7px;margin-bottom:5px;background:#fafcff">
                 <div style="flex:1;min-width:0">
                   <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pre.name)}</div>
@@ -13105,7 +13734,7 @@ function renderWbTabs(activeView){
     {v:'capacity', icon:'◫',label:'Capacity'},
   ];
   return`
-  <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:-24px -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6">
+  <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:-24px -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6" class="ws-tabstrip">
     <button onclick="exitWorkboard()" style="display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 16px;border:none;border-right:1px solid #e2eaf2;background:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;color:#8da2b2;white-space:nowrap;flex-shrink:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'">
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Boards
@@ -13118,7 +13747,7 @@ function renderWbTabs(activeView){
     </div>
     ${tabs.map(t=>`<div class="ws-tab${activeView===t.v?' active':''}" onclick="navigate('${t.v}')">${t.icon} ${t.label}</div>`).join('')}
     <div style="margin-left:auto;padding:0 12px;display:flex;gap:7px;align-items:center;flex-shrink:0">
-      <input id="global-search" class="form-input" placeholder="Search tasks…" style="width:180px;padding:4px 12px;font-size:12px;height:28px" oninput="onGlobalSearch()"/>
+      <input id="global-search" class="form-input" placeholder="Search…" title="Search tasks and show the results as a flat list" style="width:150px;padding:4px 12px;font-size:12px;height:28px" oninput="onGlobalSearch()"/>
       ${(currentUser.role==='admin'||wb.ownerId===currentUser.id)?`<button onclick="openBoardShareModal('${wb.id}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Manage board access">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 8l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Shared with
@@ -13679,13 +14308,23 @@ function _wsFitTableHeight(){
   let after=0;
   for(let el=sc.nextElementSibling;el;el=el.nextElementSibling){
     const cs=getComputedStyle(el);
+    // A hidden element still reports its margins, which silently stole 8px from the fit
+    // once the drag-out drop zone was added below the table.
+    if(cs.display==='none'||cs.visibility==='hidden')continue;
     after+=el.getBoundingClientRect().height+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
   }
   // Align the bottom of the board (Add Group) with the sidebar's Sign Out button, so the
   // table always fills the window instead of shrinking to content and leaving dead space.
   const signOut=[...document.querySelectorAll('#sidebar button')].find(b=>/sign\s*out/i.test(b.textContent));
   const target=signOut?signOut.getBoundingClientRect().bottom:(window.innerHeight-14);
-  sc.style.height=Math.max(240,target-top-after)+'px';
+  const avail=Math.max(240,target-top-after);
+  // Cap at the available space, but hug the content when there is less of it — a fixed
+  // height left a large empty pane (and a scrollbar track) on short boards.
+  sc.style.height='auto';
+  sc.style.maxHeight=avail+'px';
+  const natural=sc.scrollHeight;
+  sc.style.height=(natural>avail?avail:natural)+'px';
+  sc.style.overflowY=natural>avail?'auto':'hidden';
 }
 window.addEventListener('resize',()=>{if(currentView==='workspace')_wsFitTableHeight();});
 
@@ -13713,8 +14352,43 @@ function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapse
 function wsToggleExpand(id){
   const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
   if(!hasChildren&&!wsExpanded.has(id)){wsStartInlineSubitem(id);return;}
-  wsExpanded.has(id)?wsExpanded.delete(id):wsExpanded.add(id);
+  const expanding=!wsExpanded.has(id);
+  expanding?wsExpanded.add(id):wsExpanded.delete(id);
+  // Rebuilding every row to show three subitems costs ~90ms on a big board. Insert or
+  // remove the one host row instead and fall back to a full render only if the surgical
+  // path can't find what it needs.
+  if(_wsToggleExpandInPlace(id,expanding)){_wsStateSave();return;}
   renderView('workspace');_wsStateSave();
+}
+function _wsToggleExpandInPlace(id,expanding){
+  try{
+    const row=document.querySelector(`.ws-table>tbody>tr.ws-row[data-tid="${id}"]`);
+    if(!row)return false;
+    const next=row.nextElementSibling;
+    if(!expanding){
+      if(next&&next.classList.contains('ws-subhost'))next.remove();
+    }else{
+      if(next&&next.classList.contains('ws-subhost'))return true; // already open
+      const t=DB.tasks.find(x=>x.id===id);if(!t)return false;
+      const kids=DB.tasks.filter(x=>x.parentTaskId===id&&!x.archived)
+        .sort((a,b)=>(a.order||0)-(b.order||0));
+      const colCount=document.querySelectorAll('.ws-table>thead th').length;
+      const rail=getComputedStyle(row.querySelector('td:nth-child(2)>div')||row).borderLeftColor||'#97bcbd';
+      const host=document.createElement('tr');
+      host.className='ws-subhost';
+      host.innerHTML=`<td colspan="${colCount}" style="padding:0">
+        <div class="ws-subwrap" style="border-left:3px solid ${rail}">
+          ${renderSubitemGrid(t,kids,mtGetBoardCustomCols(),rail)}
+        </div></td>`;
+      row.after(host);
+    }
+    // keep the parent's own chevron in sync without touching the rest of the table
+    row.querySelectorAll('button').forEach(b=>{
+      if(b.textContent==='▶'||b.textContent==='▼')b.textContent=expanding?'▼':'▶';
+    });
+    if(currentView==='workspace')_wsFitTableHeight();
+    return true;
+  }catch(_){return false;}
 }
 function wsToggleDone(id,checked){
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
@@ -13722,6 +14396,21 @@ function wsToggleDone(id,checked){
   if(checked){t.percentComplete=100;t.completedAt=new Date().toISOString();}
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
+}
+// Select or clear every subitem under one parent, from the subitem grid header.
+function wsSelectAllSubitems(parentId,checked){
+  const kids=DB.tasks.filter(t=>t.parentTaskId===parentId&&!t.archived);
+  kids.forEach(k=>{checked?wsSelected.add(k.id):wsSelected.delete(k.id);});
+  // Reflect the change on the rows without rebuilding the whole table.
+  const host=document.querySelector(`.ws-row[data-tid="${parentId}"]`)?.nextElementSibling;
+  if(host&&host.classList.contains("ws-subhost")){
+    host.querySelectorAll(".ws-subrow2").forEach(r=>{
+      const cb=r.querySelector('input[type=checkbox]');
+      if(cb)cb.checked=checked;
+      r.classList.toggle("ws-row-selected",checked);
+    });
+  }
+  updateBulkBar();
 }
 function wsToggleSelect(id,checked){
   if(checked)wsSelected.add(id);else wsSelected.delete(id);
@@ -13820,8 +14509,44 @@ function wsSortBy(col){
   renderView('workspace');
 }
 function sortIcon(col){
-  if(wsSort.col!==col)return`<span style="color:#cbd5e1;margin-left:3px;font-size:9px">⇅</span>`;
-  return`<span style="color:#97bcbd;margin-left:3px;font-size:9px">${wsSort.dir==='asc'?'↑':'↓'}</span>`;
+  // Eleven permanent ⇅ glyphs read as noise. Show the affordance on header hover, and
+  // keep only the actively-sorted column's arrow visible at rest.
+  if(wsSort.col!==col)return`<span class="ws-sort-hint">⇅</span>`;
+  return`<span class="ws-sort-active">${wsSort.dir==='asc'?'↑':'↓'}</span>`;
+}
+// Clear the active sort and fall back to the board's manual ordering.
+function wsClearSort(){wsSort={col:null,dir:'asc'};renderView('workspace');}
+// Toolbar dropdowns are mutually exclusive: opening one closes the rest, and clicking
+// anywhere outside closes them all. Previously each just toggled its own `hidden`, so
+// Group and Sort could sit open on top of each other.
+function wsCloseDropdowns(except){
+  document.querySelectorAll('.ws-dropdown').forEach(d=>{if(d!==except)d.classList.add('hidden');});
+}
+function wsToggleDropdown(id){
+  const d=document.getElementById(id);
+  if(!d)return;
+  const willOpen=d.classList.contains('hidden');
+  wsCloseDropdowns(d);
+  d.classList.toggle('hidden',!willOpen);
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('.ws-dropdown'))return;      // clicks inside a menu are its own business
+  if(e.target.closest('[data-dd-toggle]'))return;  // the toggle button handles itself
+  wsCloseDropdowns();
+},true);
+// A reference is only useful if you can get it into an email or a phone call.
+function wsCopyRef(taskId,el){
+  const t=DB.tasks.find(x=>x.id===taskId);
+  const ref=taskRef(t);
+  if(!ref)return;
+  const done=()=>{
+    if(!el)return;
+    const prev=el.textContent;
+    el.textContent='copied';
+    setTimeout(()=>{el.textContent=prev;},900);
+  };
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(ref).then(done).catch(done);
+  else done();
 }
 function wsCycleStatus(id){
   const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','change-requested','completed-approved','done','blocked','cancelled'];
@@ -14061,6 +14786,9 @@ let _wsRowDragId=null;
 function _wsRowDragStart(e,taskId){
   e.stopPropagation();
   _wsRowDragId=taskId;
+  // Only top-level items can form a new group, so only reveal the zone for those.
+  const _dt=DB.tasks.find(x=>x.id===taskId);
+  if(_dt&&!_dt.parentTaskId)document.body.classList.add('ws-dragging');
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',taskId);
 }
@@ -14090,6 +14818,23 @@ function _wsRowDrop(e,targetTaskId){
   if(!!dragged.parentTaskId!==!!target.parentTaskId)return; // never mix subitems with top-level tasks
   if(dragged.parentTaskId&&dragged.parentTaskId!==target.parentTaskId)return; // subitems only reorder under the same parent
   const groupChanged=!dragged.parentTaskId&&dragged.groupId!==target.groupId;
+  // Reordering inside a group is cheap and obvious, so it just happens. Moving an item to a
+  // DIFFERENT group changes what it belongs to — confirm that one before committing.
+  if(groupChanged){
+    const from=DB.groups.find(g=>g.id===dragged.groupId);
+    const to=DB.groups.find(g=>g.id===target.groupId);
+    openConfirm('Move item to another group',
+      `Move “${dragged.name}” from “${from?from.name:'—'}” to “${to?to.name:'—'}”?`,
+      'Move',()=>{_wsApplyRowDrop(draggedId,targetTaskId,before);closeConfirm();},false);
+    return;
+  }
+  _wsApplyRowDrop(draggedId,targetTaskId,before);
+}
+function _wsApplyRowDrop(draggedId,targetTaskId,before){
+  const dragged=DB.tasks.find(t=>t.id===draggedId);
+  const target=DB.tasks.find(t=>t.id===targetTaskId);
+  if(!dragged||!target)return;
+  const groupChanged=!dragged.parentTaskId&&dragged.groupId!==target.groupId;
   const siblings=dragged.parentTaskId
     ?DB.tasks.filter(t=>t.parentTaskId===dragged.parentTaskId&&!t.archived)
     :DB.tasks.filter(t=>t.groupId===target.groupId&&!t.parentTaskId&&!t.archived);
@@ -14104,8 +14849,48 @@ function _wsRowDrop(e,targetTaskId){
   renderView('workspace');
 }
 function _wsRowDragEnd(e){
+  document.body.classList.remove('ws-dragging');
   document.querySelectorAll('.ws-row-drop-above,.ws-row-drop-below').forEach(el=>el.classList.remove('ws-row-drop-above','ws-row-drop-below'));
+  document.getElementById('ws-newgroup-zone')?.classList.remove('active','visible');
   _wsRowDragId=null;
+}
+// ── Drag an item out of every group to start a new one ──────
+function _wsNewGroupOver(e){
+  if(!_wsRowDragId)return;
+  const t=DB.tasks.find(x=>x.id===_wsRowDragId);
+  if(!t||t.parentTaskId)return; // subitems belong to a parent, not a group
+  e.preventDefault();e.stopPropagation();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('active');
+}
+function _wsNewGroupLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('active');
+}
+function _wsNewGroupDrop(e){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.classList.remove('active');
+  const id=_wsRowDragId;_wsRowDragId=null;
+  const t=DB.tasks.find(x=>x.id===id);
+  if(!t||t.parentTaskId)return;
+  const from=DB.groups.find(g=>g.id===t.groupId);
+  openConfirm('Create a new group',
+    `Move “${t.name}” out of “${from?from.name:'—'}” into a new group?`,
+    'Create group',()=>{
+      const now=new Date().toISOString();
+      const g={id:'g'+uid(),name:'New group',
+        boardId:currentWorkboard?.id||null,workboardId:currentWorkboard?.id||null,
+        clientId:from?from.clientId:(DB.clients[0]?.id||null),
+        color:from?.color||'#97bcbd',order:(getWbGroups()||[]).length,createdAt:now,updatedAt:now};
+      DB.groups.push(g);
+      t.groupId=g.id;t.order=0;t.updatedAt=now;
+      writeAuditEvent('Task',t.id,'moved_to_new_group',null,{groupId:g.id});
+      saveDB(DB);closeConfirm();renderView('workspace');
+      // drop straight into renaming the new group
+      setTimeout(()=>{
+        const el=document.getElementById('ws-grp-name-'+g.id);
+        if(el&&typeof wsRenameGroupInline==='function')wsRenameGroupInline(g.id,el);
+      },60);
+    },false);
 }
 function wsDeleteTask(id){
   confirmCallback=()=>{
@@ -14156,7 +14941,7 @@ function renderWorkspace(){
     });
   } else if(wsGroupBy==='status'){
     ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'].forEach(s=>{
-      const sm=STATUS_META[s]||STATUS_META['todo'];
+      const sm=getStatusMeta(s);
       sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
     });
   } else if(wsGroupBy==='owner'){
@@ -14199,23 +14984,25 @@ function renderWorkspace(){
 
   // Fixed column definitions
   const COL_DEFS=[
+    {key:'ref',         label:'ID',        w:'78px'},
     {key:'status',      label:'Status',    w:'108px'},
-    {key:'priority',    label:'Priority',  w:'96px'},
-    {key:'owner',       label:'Owner',     w:'46px'},
+    {key:'priority',    label:'Priority',  w:'112px'},
+    {key:'owner',       label:'Owner',     w:'104px'},
     {key:'cwith',       label:'With',      w:'108px'},
-    {key:'duedate',     label:'Timeline',  w:'136px'},
-    {key:'progress',    label:'Progress',  w:'82px'},
-    {key:'hours',       label:'Hours',     w:'66px'},
-    {key:'client',      label:'Client',    w:'70px'},
+    {key:'duedate',     label:'Timeline',  w:'142px'},
+    {key:'progress',    label:'Progress',  w:'132px'},
+    {key:'hours',       label:'Hours',     w:'84px'},
+    {key:'client',      label:'Client',    w:'86px'},
     {key:'tags',        label:'Tags',      w:'110px'},
-    {key:'attachments', label:'Files',     w:'56px'},
+    {key:'attachments', label:'Files',     w:'88px'},
     {key:'deps',        label:'Deps',      w:'110px'},
   ];
   const _colOrder=_wsGetColOrder()||_WS_DEFAULT_COL_ORDER;
   const sortedDefs=[...COL_DEFS].sort((a,b)=>{const ai=_colOrder.indexOf(a.key),bi=_colOrder.indexOf(b.key);return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const visCols=sortedDefs.filter(c=>cols[c.key]);
   const custCols=mtGetBoardCustomCols();
-  const totalCols=2+visCols.length+custCols.length+1+1; // checkbox + name + vis fixed + custom + actions + add-col
+  // checkbox + name + visible fixed + custom + add-col + filler + actions
+  const totalCols=2+visCols.length+custCols.length+1+1+1;
   const curLabel=GB_OPTIONS.find(x=>x.val===wsGroupBy)?.label||'Group';
   const active=countActiveFilters();
 
@@ -14234,9 +15021,9 @@ function renderWorkspace(){
     viewControlsHtml:`
     <div style="width:1px;height:20px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
     <div style="position:relative">
-      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();document.getElementById('ws-gb-menu').classList.toggle('hidden')" style="gap:4px">
+      <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('ws-gb-menu')" style="gap:4px">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="2.5" rx="1" fill="currentColor" opacity=".5"/><rect x="1" y="5.75" width="8" height="2.5" rx="1" fill="currentColor"/><rect x="1" y="9.5" width="5" height="2.5" rx="1" fill="currentColor" opacity=".7"/></svg>
-        Group: <strong>${curLabel}</strong> <span style="font-size:9px">▾</span>
+        <strong>${curLabel}</strong> <span style="font-size:9px">▾</span>
       </button>
       <div id="ws-gb-menu" class="ws-dropdown hidden">
         ${GB_OPTIONS.map(o=>`<div class="ws-dropdown-item ${wsGroupBy===o.val?'active':''}" onclick="wsSetGroupBy('${o.val}')">
@@ -14244,22 +15031,50 @@ function renderWorkspace(){
         </div>`).join('')}
       </div>
     </div>
+    <div style="position:relative">
+      <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('ws-sort-menu')" style="gap:4px;${wsSort.col?'border-color:#97bcbd;color:#0d1c33;':''}" title="Sort the table">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M4 2v10M4 12l-2.2-2.2M4 2l2.2 2.2M10 12V2M10 2l-2.2 2.2M10 12l2.2-2.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sort${wsSort.col?`: <strong>${escHtml((COL_DEFS.find(c=>c.key===wsSort.col)||{label:wsSort.col==='name'?'Task Name':wsSort.col}).label)}</strong> ${wsSort.dir==='asc'?'↑':'↓'}`:''} <span style="font-size:9px">▾</span>
+      </button>
+      <div id="ws-sort-menu" class="ws-dropdown hidden" style="min-width:170px">
+        <div class="ws-dropdown-item ${!wsSort.col?'active':''}" onclick="wsClearSort()">Manual order (drag)</div>
+        ${[{key:'name',label:'Task Name'},...COL_DEFS].map(c=>`<div class="ws-dropdown-item ${wsSort.col===c.key?'active':''}" onclick="wsSortBy('${c.key}')">${escHtml(c.label)}${wsSort.col===c.key?` <span style="margin-left:auto;color:#0d6e4e;font-weight:700">${wsSort.dir==='asc'?'↑':'↓'}</span>`:''}</div>`).join('')}
+      </div>
+    </div>
     <button class="btn btn-ghost btn-sm" onclick="wsShowArchived=!wsShowArchived;renderView('workspace')" style="gap:4px;${wsShowArchived?'background:#fef3c7;color:#92400e;':''}" title="Show / hide archived tasks">
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h12" stroke="currentColor" stroke-width="1.3"/><path d="M5 3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3"/></svg>
       ${wsShowArchived?'Hide Archived':'Archived'}
     </button>
     <div style="position:relative">
-      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();document.getElementById('ws-col-menu').classList.toggle('hidden')" style="gap:4px">
+      <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('ws-col-menu')" style="gap:4px">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="1" x2="5" y2="13" stroke="currentColor" stroke-width="1.4"/><line x1="9" y1="1" x2="9" y2="13" stroke="currentColor" stroke-width="1.4"/></svg>
         Columns <span style="font-size:9px">▾</span>
       </button>
-      <div id="ws-col-menu" class="ws-dropdown hidden" style="min-width:155px">
+      <div id="ws-col-menu" class="ws-dropdown hidden" style="min-width:175px">
+        <div style="padding:5px 12px 3px;font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Item columns</div>
         ${COL_DEFS.map(c=>`<label class="ws-dropdown-item" style="cursor:pointer;font-weight:400">
           <input type="checkbox" ${cols[c.key]?'checked':''} onchange="wsToggleCol('${c.key}')" style="accent-color:#97bcbd"/> ${c.label}
         </label>`).join('')}
-        ${custCols.length?`<div class="ws-dd-sep"></div>${custCols.map(cc=>`<label class="ws-dropdown-item" style="cursor:pointer;font-weight:400">
-          <input type="checkbox" checked onchange="mtDeleteCustomCol('${cc.id}')" style="accent-color:#97bcbd" title="Uncheck to delete"/> ${escHtml(cc.name)}
-        </label>`).join('')}`:''}
+        <div class="ws-dd-sep"></div>
+        <div class="ws-dropdown-item" style="cursor:pointer;font-weight:600;color:#0d1c33" onclick="document.getElementById('ws-col-menu').classList.add('hidden');openLabelColourEditor()">
+          <span style="display:inline-flex;gap:2px;margin-right:6px">
+            <span style="width:9px;height:9px;border-radius:3px;background:#0284c7;display:inline-block"></span>
+            <span style="width:9px;height:9px;border-radius:3px;background:#d97706;display:inline-block"></span>
+            <span style="width:9px;height:9px;border-radius:3px;background:#16a34a;display:inline-block"></span>
+          </span>Status &amp; priority colours…
+        </div>
+        <div class="ws-dd-sep"></div>
+        <div style="padding:5px 12px 3px;font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Subitem columns</div>
+        ${SUB_COL_DEFS.map(c=>`<label class="ws-dropdown-item" style="cursor:pointer;font-weight:400">
+          <input type="checkbox" ${wsSubColumns[c.key]?'checked':''} onchange="wsToggleSubCol('${c.key}')" style="accent-color:#97bcbd"/> ${c.label}
+        </label>`).join('')}
+        ${custCols.length?`<div class="ws-dd-sep"></div>
+        <div style="padding:5px 12px 3px;font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Custom columns</div>
+        ${custCols.map(cc=>`<div class="ws-dropdown-item ws-cc-row" style="font-weight:400">
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(cc.name)}</span>
+          ${(cc.level&&cc.level!=='both')?`<span style="font-size:9px;color:#a8b8c8;flex-shrink:0">${cc.level==='subitem'?'subitems':'items'}</span>`:''}
+          <button class="ws-cc-del" onclick="event.stopPropagation();mtDeleteCustomCol('${cc.id}')" title="Delete “${escHtml(cc.name)}” and all its data">✕</button>
+        </div>`).join('')}`:''}
       </div>
     </div>`
   })}
@@ -14272,28 +15087,33 @@ function renderWorkspace(){
       <thead>
         <tr>
           <th style="width:36px;text-align:center"><input type="checkbox" id="ws-select-all-cb" onchange="wsSelectAll(this.checked)" style="cursor:pointer;accent-color:#97bcbd" title="Select all"/></th>
-          <th class="ws-sort-hdr" onclick="wsSortBy('name')" style="min-width:240px">Task Name${sortIcon('name')}</th>
+          <th class="ws-sort-hdr" onclick="wsSortBy('name')" style="width:${wsColWidth('item','name','320px')}">
+            <span class="col-label" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','name',false)" title="Double-click to rename">${escHtml(wsColLabel('item','name','Task Name'))}</span>${sortIcon('name')}
+            <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'item','name')" title="Drag to resize"></span>
+          </th>
           ${visCols.map(c=>`<th class="ws-sort-hdr ws-col-draggable" draggable="true"
             ondragstart="_wsColDragStart(event,'${c.key}')"
             ondragover="_wsColDragOver(event,'${c.key}')"
             ondragleave="_wsColDragLeave(event)"
             ondrop="_wsColDrop(event,'${c.key}')"
             ondragend="_wsColDragEnd(event)"
-            onclick="wsSortBy('${c.key}')" style="width:${c.w}">
+            onclick="wsSortBy('${c.key}')" style="width:${wsColWidth('item',c.key,c.w)}">
             <div style="display:flex;align-items:center;gap:3px">
               <svg class="ws-col-grip" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><circle cx="2" cy="1.5" r="1.1"/><circle cx="6" cy="1.5" r="1.1"/><circle cx="2" cy="5" r="1.1"/><circle cx="6" cy="5" r="1.1"/><circle cx="2" cy="8.5" r="1.1"/><circle cx="6" cy="8.5" r="1.1"/></svg>
-              ${c.label}${sortIcon(c.key)}
+              <span class="col-label" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','${c.key}',false)" title="Double-click to rename">${escHtml(wsColLabel('item',c.key,c.label))}</span>${sortIcon(c.key)}
             </div>
+            <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'item','${c.key}')" title="Drag to resize"></span>
           </th>`).join('')}
-          ${custCols.map(cc=>`<th style="width:120px;min-width:100px">
+          ${custCols.map(cc=>`<th style="width:${wsColWidth('item',cc.id,'120px')};min-width:70px">
             <div style="display:flex;align-items:center;gap:3px">
-              <span style="flex:1;overflow:hidden;text-overflow:ellipsis" title="${escHtml(cc.name)}">${escHtml(cc.name)}</span>
+              <span class="col-label" style="flex:1" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','${cc.id}',true)" title="${escHtml(cc.name)}${(cc.level&&cc.level!=='both')?' — '+(cc.level==='subitem'?'subitems only':'items only'):''} · double-click to rename">${escHtml(cc.name)}</span>
               <button class="mt-col-menu-btn" onclick="event.stopPropagation();mtColMenu('${cc.id}',event)" title="Column options">▾</button>
             </div>
           </th>`).join('')}
           <th style="width:36px;padding:0;text-align:center">
-            <button class="mt-addcol-btn" onclick="event.stopPropagation();mtOpenAddColModal()" title="Add column">+</button>
+            <button class="mt-addcol-btn" onclick="event.stopPropagation();mtOpenAddColModal('parent')" title="Add an item column">+</button>
           </th>
+          <th class="ws-col-filler"></th>
           <th style="width:60px"></th>
         </tr>
       </thead>
@@ -14343,6 +15163,10 @@ function renderWorkspace(){
       </tbody>
     </table>
   </div>
+  ${wsGroupBy==='group'?`<div id="ws-newgroup-zone" ondragover="_wsNewGroupOver(event)" ondragleave="_wsNewGroupLeave(event)" ondrop="_wsNewGroupDrop(event)">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.3" stroke="currentColor" stroke-width="1.4"/><line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    Drop an item here to start a new group
+  </div>`:''}
   ${wsGroupBy==='group'&&!wsAddGroupInline?`<div style="margin-top:10px">
     <button onclick="wsAddGroup()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:1.5px dashed #c8d4e0;border-radius:7px;background:transparent;cursor:pointer;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#8da2b2;transition:all 0.15s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#c8d4e0';this.style.color='#8da2b2'">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.3" stroke="currentColor" stroke-width="1.4"/><line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -14354,26 +15178,27 @@ function renderWorkspace(){
 function renderWsSection(sec,cols,visCols,custCols,totalCols){
   const collapsed=wsCollapsed.has(sec.id);
   const pct=sec.tasks.length?Math.round(sec.tasks.reduce((s,t)=>s+getEffectiveTaskPct(t.id),0)/sec.tasks.length):0;
+  const mix=statusMixOf(sec.tasks);
   return`
-  <tr class="ws-grp-hdr" onclick="wsToggleGroup('${sec.id}')">
+  <tr class="ws-grp-hdr" onclick="wsToggleGroup('${sec.id}')"
+      ondragover="_wsGrpDragOver(event,'${sec.id}')" ondragleave="_wsGrpDragLeave(event)" ondrop="_wsGrpDrop(event,'${sec.id}')">
     <td colspan="${totalCols}">
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px;height:36px;border-left:4px solid ${sec.color}">
+        ${wsGroupBy==='group'&&currentUser?.role!=='client'&&!wsSort.col?`<span class="ws-grp-grip" draggable="true" onclick="event.stopPropagation()" ondragstart="_wsGrpDragStart(event,'${sec.id}')" ondragend="_wsGrpDragEnd()" title="Drag to reorder this group">⠿</span>`:''}
         <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0">${collapsed?'▶':'▼'}</span>
         <div style="width:9px;height:9px;border-radius:2px;background:${sec.color};flex-shrink:0"></div>
-        <span id="ws-grp-name-${sec.id}" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940">${escHtml(sec.label)}</span>
+        <span id="ws-grp-name-${sec.id}" class="ws-grp-name" style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#1a2940">${escHtml(sec.label)}</span>
         ${wsGroupBy==='group'
-          ?`<select onclick="event.stopPropagation()" onchange="event.stopPropagation();wsSetGroupClient('${sec.id}',this.value)" style="font-size:11px;border:1px solid #e2eaf2;border-radius:5px;padding:1px 4px;background:#fff;color:#6b8399;cursor:pointer;max-width:160px">
+          ?`<select class="ws-grp-client" onclick="event.stopPropagation()" onchange="event.stopPropagation();wsSetGroupClient('${sec.id}',this.value)">
               <option value="">— No client —</option>
               ${DB.clients.map(c=>`<option value="${c.id}"${sec.clientId===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('')}
             </select>`
-          :(sec.sub?`<span style="font-size:11px;color:#8da2b2">· ${sec.sub}</span>`:'')}
+          :`<span class="ws-grp-client" style="font-size:11px;color:#8da2b2;border:none;background:none">${sec.sub?'· '+escHtml(sec.sub):''}</span>`}
 
         ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
-        <span style="font-size:11px;color:#8da2b2;background:#f0f4f8;border-radius:10px;padding:1px 8px;margin-left:4px">${sec.tasks.length}</span>
-        <div style="flex:1;max-width:64px;margin-left:8px">
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>
-        </div>
-        <span style="font-size:10px;color:#8da2b2">${pct}%</span>
+        <span class="ws-grp-count">${sec.tasks.length}</span>
+        <div class="ws-grp-bar">${statusMixBar(mix,64)||`<div class="progress-bar" style="width:64px"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>`}</div>
+        <span class="ws-grp-pct">${pct}%</span>
         <button onclick="event.stopPropagation();openTaskModal(null,'${sec.defGrp||''}')" style="margin-left:auto;background:none;border:1px solid #e2eaf2;cursor:pointer;font-size:11px;color:#6b8399;padding:3px 10px;border-radius:4px;font-family:'Jost',sans-serif;font-weight:600" onmouseover="this.style.background='#fff'" onmouseout="this.style.background='none'">+ Add</button>
       </div>
     </td>
@@ -14418,6 +15243,144 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
   `}`;
 }
 
+// ── Subitem grid ────────────────────────────────────────────
+// Subitems render in their OWN table nested inside a single full-width cell of the parent
+// grid. That is what lets them carry a different column set: an HTML table forces every
+// row in a grid to share the same columns, so the only way to diverge is a new grid.
+// Because the whole thing sits inside one <td colspan="${totalCols}">, the outer table's
+// column count — and every colspan that depends on it — is untouched.
+const SUB_COL_DEFS=[
+  {key:'ref',      label:'ID',       w:'74px'},
+  {key:'status',   label:'Status',   w:'104px'},
+  {key:'owner',    label:'Owner',    w:'86px'},
+  {key:'cwith',    label:'With',     w:'110px'},
+  {key:'duedate',  label:'Timeline', w:'138px'},
+  {key:'progress', label:'Progress', w:'118px'},
+  {key:'deps',     label:'Deps',     w:'74px'},
+];
+function renderSubitemGrid(parent,childTasks,custCols,groupColor){
+  const sc=wsSubColumns;
+  const visSub=SUB_COL_DEFS.filter(c=>sc[c.key]);
+  // Only columns that actually carry subitem data appear in this grid — no hatched
+  // placeholders here, because this grid is not shared with the parent tier.
+  const subCust=(custCols||[]).filter(cc=>mtColAppliesTo(cc,true));
+  const canAdd=currentUser?.role!=='client';
+  const adding=wsInlineAddSubtaskId===parent.id;
+  const width=2+visSub.length+subCust.length+3; // +addcol +filler +actions
+  return`<table class="ws-subtable">
+    <thead><tr>
+      <th style="width:30px;text-align:center">
+        <input type="checkbox" title="Select all subitems"
+          ${childTasks.length&&childTasks.every(c=>wsSelected.has(c.id))?"checked":""}
+          onclick="event.stopPropagation()" onchange="wsSelectAllSubitems('${parent.id}',this.checked)"
+          style="cursor:pointer;accent-color:#97bcbd"/>
+      </th>
+      <th style="width:${wsColWidth('sub','name','260px')}">
+        <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','name',false)" title="Double-click to rename">${escHtml(wsColLabel('sub','name','Subitem'))}</span>
+        <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','name')" title="Drag to resize"></span>
+      </th>
+      ${visSub.map(c=>`<th style="width:${wsColWidth('sub',c.key,c.w)}">
+        <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','${c.key}',false)" title="Double-click to rename">${escHtml(wsColLabel('sub',c.key,c.label))}</span>
+        <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','${c.key}')" title="Drag to resize"></span>
+      </th>`).join('')}
+      ${subCust.map(cc=>`<th style="width:${wsColWidth('sub',cc.id,'110px')};min-width:70px">
+        <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+          <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','${cc.id}',true)" title="${escHtml(cc.name)} · double-click to rename">${escHtml(cc.name)}</span>
+          <button class="mt-col-menu-btn" onclick="event.stopPropagation();mtColMenu('${cc.id}',event)" title="Column options">▾</button>
+        </div>
+        <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','${cc.id}')" title="Drag to resize"></span>
+      </th>`).join('')}
+      <th style="width:34px;padding:0;text-align:center">
+        <button class="mt-addcol-btn" onclick="event.stopPropagation();mtOpenAddColModal('subitem')" title="Add a subitem column">+</button>
+      </th>
+      <th class="ws-col-filler"></th>
+      <th style="width:52px"></th>
+    </tr></thead>
+    <tbody>
+      ${childTasks.map(c=>renderSubRow(c,visSub,subCust)).join('')}
+      ${!childTasks.length&&!adding?`<tr><td colspan="${width}" style="padding:8px 12px;color:#b0bec5;font-size:12px">No subitems yet.</td></tr>`:''}
+      ${canAdd?(adding?renderSubInlineAdd(parent,visSub,subCust,width):`
+      <tr><td colspan="${width}" style="padding:3px 10px">
+        <button onclick="event.stopPropagation();wsStartInlineSubitem('${parent.id}')" class="ws-subadd">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.3" stroke="currentColor" stroke-width="1.4"/><line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Add subitem
+        </button>
+      </td></tr>`):''}
+    </tbody>
+  </table>`;
+}
+function renderSubRow(t,visSub,subCust){
+  const owner=getStaff(t.ownerId);
+  const sm=getStatusMeta(t.status);
+  const isSelected=wsSelected.has(t.id);
+  const isDone=t.status==='done';
+  const pct=t.percentComplete||0;
+  const due=_wsDueState(t);
+  const tlText=_wsCompactRange(t.startDate,t.endDate);
+  const cw=t.currentlyWith==='client'?{name:'Client',initials:'CL',color:'#7c3aed'}
+    :t.currentlyWith==='approver'?{name:'Approver',initials:'AP',color:'#b45309'}
+    :getStaff(t.currentlyWith||t.currentlyWithUserId);
+  // Drag-reorder still works: the handlers key off task ids, not table position.
+  const canDrag=!t.archived&&currentUser?.role!=='client'&&!wsSort.col;
+  const dnd=canDrag?` ondragover="_wsRowDragOver(event,'${t.id}')" ondragleave="_wsRowDragLeave(event)" ondrop="_wsRowDrop(event,'${t.id}')"`:'';
+  const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id);
+  return`<tr class="ws-subrow2${isSelected?' ws-row-selected':''}"${dnd}>
+    <td style="text-align:center;width:30px" onclick="event.stopPropagation()">
+      <input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>
+    </td>
+    <td onclick="openTaskPanel('${t.id}')" style="cursor:pointer">
+      <div style="display:flex;align-items:center;gap:5px;padding:0 8px">
+        ${canDrag?`<span class="ws-row-grip" draggable="true" ondragstart="_wsRowDragStart(event,'${t.id}')" ondragend="_wsRowDragEnd(event)" onclick="event.stopPropagation()" title="Drag to reorder">⠿</span>`:''}
+        <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
+          style="font-size:12px;cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
+          title="${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
+      </div>
+    </td>
+    ${visSub.map(c=>{
+      if(c.key==='ref')return`<td style="text-align:center"><span class="ws-ref" title="Click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`;
+      if(c.key==='status')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" style="background:${sm.bg};text-align:center"><span style="font-size:11px;font-weight:700;color:${sm.color}">${sm.label}</span></td>`;
+      if(c.key==='owner')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="text-align:center">${owner?avatarHtml(owner,22):'<span style="color:#d4dde8">○</span>'}</td>`;
+      if(c.key==='cwith')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px">${cw?avatarHtml(cw,20):'<span style="color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399">${cw?.name?.split(' ')[0]||''}</span></div></td>`;
+      if(c.key==='duedate')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><span style="font-size:11px;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}</div></td>`;
+      if(c.key==='progress')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">${isDone?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`:pct===0?`<span style="font-size:12px;color:#d4dde8">—</span>`:`<div class="progress-bar" style="width:32px"><div class="progress-fill" style="width:${pct}%;background:#97bcbd"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span>`}</div></td>`;
+      if(c.key==='deps')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','deps',event)" style="text-align:center">${myDeps.length?`<span style="background:#f0f4ff;border:1px solid #c7d4f8;color:#4361c2;border-radius:12px;padding:1px 7px;font-size:11px;font-weight:700">⛓ ${myDeps.length}</span>`:'<span style="color:#c8d5e0;font-size:11px">+ add</span>'}</td>`;
+      return'<td></td>';
+    }).join('')}
+    ${subCust.map(cc=>`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">${renderCustomColCell(t.id,cc)}</td>`).join('')}
+    <td></td><td class="ws-col-filler"></td>
+    <td onclick="event.stopPropagation()" style="width:52px">
+      <div class="ws-actions">
+        <button onclick="openTaskPanel('${t.id}')" title="Open" style="font-size:12px">✎</button>
+        <button onclick="wsDeleteSubitem('${t.id}')" title="Delete subitem" style="color:#dc2626">✕</button>
+      </div>
+    </td>
+  </tr>`;
+}
+function renderSubInlineAdd(parent,visSub,subCust,width){
+  return`<tr class="ws-inline-row">
+    <td style="width:30px"></td>
+    <td style="padding:4px 8px">
+      <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
+        placeholder="Subitem name… (Enter to save)" style="width:100%"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"
+        onpaste="wsInlineSubitemPaste(event)"/>
+    </td>
+    ${visSub.map(c=>{
+      if(c.key==='status')return`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:26px">${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select></td>`;
+      if(c.key==='owner')return`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:26px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name.split(' ')[0])}</option>`).join('')}</select></td>`;
+      if(c.key==='cwith')return`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:26px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`;
+      if(c.key==='duedate')return`<td style="padding:0 4px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;width:100%"/></td>`;
+      if(c.key==='progress')return`<td style="padding:0 4px"><input id="ws-inline-subtask-pct" type="number" min="0" max="100" placeholder="0" style="width:44px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;padding:2px 4px"/></td>`;
+      return'<td></td>';
+    }).join('')}
+    ${subCust.map(()=>'<td></td>').join('')}
+    <td></td><td class="ws-col-filler"></td>
+    <td style="padding:0 4px;white-space:nowrap">
+      <button onclick="wsSaveInlineSubitem()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 8px">↵</button>
+      <button onclick="wsCancelInlineSubitem()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 5px;margin-left:2px">✕</button>
+    </td>
+  </tr>`;
+}
 function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   depth=depth||0;
   isLast=isLast!==false;
@@ -14443,9 +15406,15 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const isOverdue=t.endDate&&t.endDate<toDateStr(new Date())&&t.status!=='done'&&t.status!=='completed'&&!t.archived;
   const commentCount=_wsCache?.commentCountMap.get(t.id)||( (DB.comments||[]).filter(c=>c.taskId===t.id).length );
   const attachCount=_wsCache?.fileCountMap.get(t.id)||( (DB.taskFiles||[]).filter(f=>f.taskId===t.id).length );
-  const tlStart=t.startDate?formatDate(t.startDate):'';
-  const tlEnd=t.endDate?formatDate(t.endDate):'';
-  const tlText=tlStart&&tlEnd?`${tlStart} → ${tlEnd}`:tlEnd||tlStart||'—';
+  // A parent with subitems shows the span of its children rather than its own dates -
+  // the item runs from the first subitem starting to the last one finishing.
+  const _span=(hasChildren&&!isSubitem)?getTaskDateSpan(t.id):null;
+  const _tl=_span||t;
+  const tlText=_wsCompactRange(_tl.startDate,_tl.endDate);
+  const tlFull=(_tl.startDate||_tl.endDate)
+    ?`${_tl.startDate?formatDate(_tl.startDate):'—'} → ${_tl.endDate?formatDate(_tl.endDate):'—'}`+(_span?` · rolled up from ${childTasks.length} subitem${childTasks.length!==1?'s':''}`:'')
+    :'No dates set';
+  const due=_wsDueState(_span?{...t,startDate:_span.startDate,endDate:_span.endDate}:t);
   const effectivePct=getEffectiveTaskPct(t.id);
   const indent=10;
   // Drag-reorder: subitems always reorder within their parent; top-level tasks only in the
@@ -14455,7 +15424,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const grip=canDrag?`<span class="ws-row-grip" draggable="true" ondragstart="_wsRowDragStart(event,'${t.id}')" ondragend="_wsRowDragEnd(event)" onclick="event.stopPropagation()" title="Drag to reorder">⠿</span>`:'';
 
   return`
-  <tr class="${isSubitem?`ws-subrow${isSelected?' ws-row-selected':''}`:`ws-row${isSelected?' ws-row-selected':''}`}"${isSubitem&&!isSelected?' style="background:#f5f7fc"':t.archived&&!isSubitem?' style="opacity:0.45"':''}${dragHandlers}>
+  <tr data-tid="${t.id}" class="${isSubitem?`ws-subrow${isSelected?' ws-row-selected':''}`:`ws-row${isSelected?' ws-row-selected':''}`}"${isSubitem&&!isSelected?' style="background:#f5f7fc"':t.archived&&!isSubitem?' style="opacity:0.45"':''}${dragHandlers}>
     <td style="text-align:center;width:36px" onclick="event.stopPropagation()">
       ${isSubitem?'':`<input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>`}
     </td>
@@ -14480,6 +15449,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         ${deps?`<span style="font-size:10px;color:#97bcbd;flex-shrink:0" title="${deps} dependenc${deps===1?'y':'ies'}">⛓${deps}</span>`:''}
       </div>
     </td>
+    ${cols.ref?`<td style="text-align:center"><span class="ws-ref" title="Task reference — click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`:''}
     ${cols.status?`<td class="ws-editable ws-status-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" title="Change status" style="background:${sm.bg}">
       <div style="display:flex;align-items:center;justify-content:center;height:38px;gap:3px;padding:0 8px">
         <span style="font-size:11px;font-weight:700;color:${sm.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sm.label}</span>
@@ -14501,16 +15471,28 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
     ${cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px">${cw?avatarHtml(cw,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cw?.name?.split(' ')[0]||''}</span><span class="ws-cell-caret">▾</span></div>
     </td>`:''}
-    ${cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="Set timeline" style="text-align:center">
-      <div style="display:flex;align-items:center;justify-content:center;gap:3px">
-        <span style="font-size:11px;white-space:nowrap;${isOverdue?'color:#dc2626;font-weight:700':'color:#6b8399'}">${isOverdue?'⚠ ':''}${tlText}</span>
+    ${cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="${escHtml(tlFull)}${due.chip?' · '+due.chip:''} — click to change" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <span style="font-size:11px;white-space:nowrap;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>
+        ${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''}
     ${cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px">
-        <div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${effectivePct}%;background:${effectivePct===100?'#22c55e':'#97bcbd'}"></div></div>
-        <span style="font-size:11px;color:${effectivePct===100?'#16a34a':'#6b8399'}">${effectivePct}%</span>
+        ${hasChildren&&!isSubitem
+          // A parent's progress is really the shape of its children — show the composition
+          // rather than an average that flattens "blocked" and "not started" into one 0%.
+          ?`${statusMixBar(getTaskStatusMix(t.id),40)}<span style="font-size:11px;color:#6b8399">${effectivePct}%</span>`
+          :isDone
+          // The green "Completed" status chip already says this; a green bar and "100%"
+          // beside it is the same fact three times.
+          ?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`
+          :effectivePct===0
+            // An empty bar reading 0% is noise on every not-started row.
+            ?`<span style="font-size:12px;color:#d4dde8" title="Not started">—</span>`
+            :`<div class="progress-bar" style="width:36px;flex-shrink:0"><div class="progress-fill" style="width:${effectivePct}%;background:${effectivePct===100?'#22c55e':'#97bcbd'}"></div></div>
+        <span style="font-size:11px;color:${effectivePct===100?'#16a34a':'#6b8399'}">${effectivePct}%</span>`}
         ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">${cr.done}/${cr.total}</span>`:''}
         ${hasChildren&&!isSubitem?'':'<span class="ws-cell-caret">▾</span>'}
       </div>
@@ -14520,7 +15502,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
     ${cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''}
     ${cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
       <div style="display:inline-flex;align-items:center;gap:3px">
-        ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${attachCount}</span>`:`<span style="color:#d4dde8;display:inline-flex;align-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>`}
+        ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${attachCount}</span>`:`<span class="ws-clip-empty" style="color:#c8d5e0;display:inline-flex;align-items:center" title="Add attachment"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>`}
       </div>
     </td>`:''}
     ${cols.deps?(()=>{
@@ -14534,10 +15516,15 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         </div>
       </td>`;
     })():''}
-    ${custCols.map(cc=>`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
+    ${custCols.map(cc=>mtColAppliesTo(cc,isSubitem)
+      ?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
       ${renderCustomColCell(t.id,cc)}
-    </td>`).join('')}
+    </td>`
+      // Column exists in the shared grid but carries no data at this tier — leave the cell
+      // blank rather than inviting an edit that would never be shown.
+      :`<td class="ws-col-na" title="${escHtml(cc.name)} applies to ${cc.level==='subitem'?'subitems':'items'} only"></td>`).join('')}
     <td style="width:36px"></td>
+    <td class="ws-col-filler"></td>
     <td onclick="event.stopPropagation()">
       <div class="ws-actions">
         <button onclick="openTaskPanel('${t.id}')" title="Open" style="font-size:13px">✎</button>
@@ -14546,53 +15533,11 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
     </td>
   </tr>
   ${!isSubitem&&expanded?(
-    `<tr style="height:5px;pointer-events:none"><td colspan="50" style="padding:0;background:#ebeff5"></td></tr>`
-    +childTasks.map((child,ci)=>renderWsRow(child,cols,visCols,custCols,groupColor,1,ci===childTasks.length-1&&wsInlineAddSubtaskId!==t.id)).join('')
-    +(currentUser?.role!=='client'
-      ?(wsInlineAddSubtaskId===t.id
-        ?`<tr class="ws-inline-row" style="background:#f5f7fc">
-    <td style="width:36px"></td>
-    <td style="padding:4px 8px 4px 8px">
-      <div style="display:flex;align-items:center;gap:5px">
-        <svg width="22" height="32" viewBox="0 0 22 32" fill="none" style="flex-shrink:0;margin-left:2px"><line x1="8" y1="0" x2="8" y2="16" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="16" x2="22" y2="16" stroke="#cdd6e0" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
-          placeholder="Subitem name… (Enter to save)"
-          style="flex:1;min-width:100px"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"
-          onpaste="wsInlineSubitemPaste(event)"/>
+    `<tr class="ws-subhost"><td colspan="${2+visCols.length+custCols.length+2}" style="padding:0">
+      <div class="ws-subwrap" style="border-left:3px solid ${groupColor}">
+        ${renderSubitemGrid(t,childTasks,custCols,groupColor)}
       </div>
-    </td>
-    ${cols.status?`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:28px">
-        ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
-      </select></td>`:''}
-    ${cols.priority?`<td style="padding:0 4px"><select id="ws-inline-subtask-priority" class="ws-inline-select" style="height:28px">
-        <option value="low">▼ Low</option><option value="med" selected>● Med</option><option value="high">▲ High</option><option value="crit">!! Crit</option>
-      </select></td>`:''}
-    ${cols.owner?`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:28px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('')}</select></td>`:''}
-    ${cols.cwith?`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:28px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`:''}
-    ${cols.duedate?`<td style="padding:0 4px"><input id="ws-inline-subtask-date" type="date" style="border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 6px;height:28px;background:#fff;cursor:pointer" title="Due date"/></td>`:''}
-    ${cols.progress?`<td style="padding:0 4px"><input id="ws-inline-subtask-pct" type="number" min="0" max="100" placeholder="0" style="width:48px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#6b8399;padding:2px 4px;height:28px;background:#fff;text-align:right" title="% complete"/></td>`:''}
-    ${cols.hours?`<td></td>`:''}${cols.client?`<td></td>`:''}${cols.tags?`<td></td>`:''}${cols.attachments?`<td></td>`:''}${cols.deps?`<td></td>`:''}
-    ${custCols.map(()=>`<td></td>`).join('')}
-    <td></td>
-    <td style="padding:0 6px;white-space:nowrap">
-      <button onclick="wsSaveInlineSubitem()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 10px">↵</button>
-      <button onclick="wsCancelInlineSubitem()" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 6px;margin-left:2px">✕</button>
-    </td>
-  </tr>`
-        :`<tr class="ws-subrow" style="background:#f5f7fc">
-    <td style="width:36px"></td>
-    <td colspan="${visCols.length+custCols.length+2}" style="padding:2px 10px 4px 30px">
-      <button onclick="event.stopPropagation();wsStartInlineSubitem('${t.id}')"
-        style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;font-family:'Jost',sans-serif;padding:2px 0;display:inline-flex;align-items:center;gap:4px;line-height:1"
-        onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">
-        <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.3" stroke="currentColor" stroke-width="1.4"/><line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="4" y1="7" x2="10" y2="7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-        + Add subitem
-      </button>
-    </td>
-  </tr>`)
-      :'')
-    +`<tr style="height:5px;pointer-events:none"><td colspan="50" style="padding:0;background:#ebeff5"></td></tr>`
+    </td></tr>`
   ):''}`;
 }
 
@@ -14636,7 +15581,7 @@ function closeTaskPanel(){
 
 function renderTaskPanel(task){
   const isOverdue=task.endDate&&task.endDate<toDateStr(new Date())&&task.status!=='done'&&task.status!=='completed'&&!task.archived;
-  const sm=STATUS_META[task.status]||STATUS_META['todo'];
+  const sm=getStatusMeta(task.status);
   const subtaskCount=(DB.tasks||[]).filter(t=>t.parentTaskId===task.id&&!t.archived).length;
   const commentCount=(DB.comments||[]).filter(c=>c.taskId===task.id).length;
   const prioBg={'low':'#f1f5f9','med':'#fffbeb','high':'#fff7ed','crit':'#fef2f2'}[task.priority]||'#f1f5f9';
@@ -14649,7 +15594,8 @@ function renderTaskPanel(task){
         <button onclick="closeTaskPanel()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;color:#8da2b2;font-size:20px;line-height:1;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">&#215;</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <select id="tp-status-pill" onchange="tpSaveField('status',this.value);var _sm=STATUS_META[this.value]||STATUS_META['todo'];this.style.background=_sm.bg;this.style.color=_sm.color" style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:${sm.bg};color:${sm.color}">
+        ${taskRef(task)?`<span class="ws-ref" title="Task reference — click to copy" onclick="wsCopyRef('${task.id}',this)">${escHtml(taskRef(task))}</span>`:''}
+        <select id="tp-status-pill" onchange="tpSaveField('status',this.value);var _sm=getStatusMeta(this.value);this.style.background=_sm.bg;this.style.color=_sm.color" style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:${sm.bg};color:${sm.color}">
           ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}" ${task.status===k?'selected':''}>${v.label}</option>`).join('')}
         </select>
         <select onchange="tpSaveField('priority',this.value)" style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:${prioBg};color:${prioColor}">
@@ -14939,7 +15885,7 @@ function renderTpSubtasks(taskId){
         <span style="font-size:11px;color:#8da2b2;margin-left:8px">${pct}%</span>
       </div>
       ${items.map(si=>{
-        const sm=STATUS_META[si.status]||STATUS_META['todo'];
+        const sm=getStatusMeta(si.status);
         const pm=PRIO_META[si.priority]||PRIO_META['med'];
         const owner=DB.staff.find(s=>s.id===si.ownerId);
         const isDone=si.status==='done'||si.status==='completed';
@@ -15038,7 +15984,7 @@ function renderTpDependencies(task){
     if(!pre)return'';
     const g=DB.groups.find(g=>g.id===pre.groupId);
     const c=DB.clients.find(cl=>cl.id===g?.clientId);
-    const sm=STATUS_META[pre.status]||STATUS_META['todo'];
+    const sm=getStatusMeta(pre.status);
     return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(pre.name)}</div>
@@ -16065,6 +17011,19 @@ function saveWbClient(boardId,clientId){
   saveDB(DB);
   renderView('dashboard');
 }
+// The prefix is display-only — refNumbers never change, so renaming it is safe and
+// instantly re-labels every task on the board.
+function saveWbRefPrefix(boardId,val){
+  if(currentUser?.role==='client')return;
+  const wb=DB.workboards.find(w=>w.id===boardId);
+  if(!wb)return;
+  const clean=String(val||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  if(!clean){showToast('Reference prefix needs at least one letter or digit','error');renderView(currentView);return;}
+  wb.refPrefix=clean;
+  wb.updatedAt=new Date().toISOString();
+  writeAuditEvent('WorkBoard',boardId,'ref_prefix_changed',null,{refPrefix:clean});
+  saveDB(DB);renderView(currentView);
+}
 function saveWbExclude(boardId,val){
   if(currentUser?.role==='client')return;
   const wb=DB.workboards.find(w=>w.id===boardId);
@@ -16709,11 +17668,25 @@ function mtSetCustomVal(taskId,colId,value){
   wsCellClose();
   renderView('workspace');
 }
-function mtAddCustomCol(type,name){
+function mtAddCustomCol(type,name,level){
   if(!DB.customColumns)DB.customColumns=[];
   const boardId=currentWorkboard?.id;if(!boardId)return;
   const existing=mtGetBoardCustomCols();
-  DB.customColumns.push({id:'cc'+uid(),boardId,name,type,order:existing.length});
+  // level: which row tier the column carries data for. Parents are outcomes, subitems are
+  // execution, so a column is rarely meaningful for both. Defaults to 'both' so columns
+  // created before this existed keep behaving exactly as they did.
+  DB.customColumns.push({id:'cc'+uid(),boardId,name,type,level:level||'both',order:existing.length});
+  saveDB(DB);renderView('workspace');
+}
+// Does this column carry data for this row?
+function mtColAppliesTo(cc,isSubitem){
+  const lv=cc.level||'both';
+  return lv==='both'||(isSubitem?lv==='subitem':lv==='parent');
+}
+function mtSetCustomColLevel(colId,level){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);
+  if(!cc)return;
+  cc.level=level;
   saveDB(DB);renderView('workspace');
 }
 function mtDeleteCustomCol(colId){
@@ -16738,6 +17711,10 @@ function mtColMenu(colId,evt){
   dd.innerHTML=`
     <div class="ws-cell-dd-item" onclick="mtRenameCustomCol('${colId}');document.getElementById('mt-col-dd')?.remove()">✎ Rename</div>
     <div class="ws-dd-sep"></div>
+    <div style="padding:4px 12px 3px;font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">Applies to</div>
+    ${[['both','Items and subitems'],['parent','Items only'],['subitem','Subitems only']].map(([v,l])=>
+      `<div class="ws-cell-dd-item" onclick="mtSetCustomColLevel('${colId}','${v}');document.getElementById('mt-col-dd')?.remove()">${(col.level||'both')===v?'✓ ':'&nbsp;&nbsp;&nbsp;'}${l}</div>`).join('')}
+    <div class="ws-dd-sep"></div>
     <div class="ws-cell-dd-item" style="color:#dc2626" onclick="mtDeleteCustomCol('${colId}');document.getElementById('mt-col-dd')?.remove()">✕ Delete column</div>`;
   document.body.appendChild(dd);
   requestAnimationFrame(()=>{
@@ -16752,8 +17729,111 @@ function mtColMenu(colId,evt){
 }
 
 // Render a custom column cell value
+// ── Labels column ───────────────────────────────────────────
+// Monday's signature column: you define your own set of labels, each with a title and a
+// colour, and the cell fills with the chosen one. Options live on the column; the cell
+// value is just an option id.
+const LABEL_SWATCHES=['#0d6e4e','#1d6fb8','#6d28d9','#b45309','#b91c1c','#0f766e','#be185d','#4d7c0f','#7c2d12','#475569'];
+function mtLabelOptions(cc){
+  if(!cc.options||!cc.options.length){
+    // Sensible starting set so a new column is usable immediately.
+    cc.options=[{id:'l'+uid(),label:'To do',color:'#475569'},
+                {id:'l'+uid(),label:'Working on it',color:'#b45309'},
+                {id:'l'+uid(),label:'Done',color:'#0d6e4e'}];
+  }
+  return cc.options;
+}
+function mtLabelFor(cc,val){
+  return(cc.options||[]).find(o=>o.id===val)||null;
+}
+function mtLabelCellHtml(cc,val){
+  const o=mtLabelFor(cc,val);
+  if(!o)return`<div class="lbl-cell lbl-empty">—</div>`;
+  return`<div class="lbl-cell" style="background:${o.color}">${escHtml(o.label)}</div>`;
+}
+function mtLabelPickerHtml(taskId,cc,val){
+  const opts=mtLabelOptions(cc);
+  return`<div style="padding:4px">
+    ${opts.map(o=>`<div class="lbl-pick" onclick="mtSetCustomVal('${taskId}','${cc.id}','${o.id}')">
+      <span class="lbl-dot" style="background:${o.color}"></span>${escHtml(o.label)}
+      ${val===o.id?'<span style="margin-left:auto;color:#0d6e4e;font-weight:700">✓</span>':''}
+    </div>`).join('')}
+    <div class="lbl-pick" onclick="mtSetCustomVal('${taskId}','${cc.id}','')" style="color:#8da2b2">
+      <span class="lbl-dot" style="background:#e2eaf2"></span>Clear
+    </div>
+    <div class="ws-dd-sep"></div>
+    <div class="lbl-pick" style="font-weight:600;color:#0d1c33" onclick="wsCellClose();mtOpenLabelEditor('${cc.id}')">
+      ${icon('doc',12)} Edit labels…
+    </div>
+  </div>`;
+}
+// Manage the option set: rename, recolour, reorder by add/remove.
+function mtOpenLabelEditor(colId){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  mtLabelOptions(cc);
+  document.getElementById('mt-lbl-overlay')?.remove();
+  const div=document.createElement('div');
+  div.id='mt-lbl-overlay';
+  div.style.cssText='position:fixed;inset:0;background:rgba(13,28,51,0.4);z-index:640;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  div.onclick=e=>{if(e.target===div)div.remove();};
+  div.innerHTML=`<div style="background:#fff;border-radius:12px;width:420px;max-width:95vw;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(13,28,51,0.25)" onclick="event.stopPropagation()">
+    <div style="padding:16px 20px 12px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-family:Jost,sans-serif;font-size:15px;font-weight:700;color:#0d1c33">Labels — ${escHtml(cc.name)}</h3>
+      <button onclick="document.getElementById('mt-lbl-overlay').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#8da2b2;line-height:1">×</button>
+    </div>
+    <div id="mt-lbl-list" style="padding:12px 20px">${mtLabelEditorRows(cc)}</div>
+    <div style="padding:0 20px 18px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+      <button onclick="mtAddLabelOption('${colId}')" class="btn btn-ghost btn-sm">+ Add label</button>
+      <button onclick="document.getElementById('mt-lbl-overlay').remove();renderView('workspace')" class="btn btn-teal btn-sm">Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
+function mtLabelEditorRows(cc){
+  return(cc.options||[]).map(o=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div style="position:relative;width:26px;height:26px;border-radius:6px;background:${o.color};flex-shrink:0;cursor:pointer" title="Change colour">
+      <input type="color" value="${o.color}" onchange="mtSetLabelColor('${cc.id}','${o.id}',this.value)" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer"/>
+    </div>
+    <input type="text" value="${escHtml(o.label)}" onchange="mtSetLabelText('${cc.id}','${o.id}',this.value)"
+      style="flex:1;padding:6px 9px;border:1.5px solid #e2eaf2;border-radius:6px;font-family:Lato,sans-serif;font-size:13px;outline:none"
+      onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
+    <div style="display:flex;gap:3px">${LABEL_SWATCHES.slice(0,5).map(c=>`<span onclick="mtSetLabelColor('${cc.id}','${o.id}','${c}')" style="width:14px;height:14px;border-radius:4px;background:${c};cursor:pointer" title="${c}"></span>`).join('')}</div>
+    <button onclick="mtDeleteLabelOption('${cc.id}','${o.id}')" title="Delete label" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:14px;padding:2px 4px">✕</button>
+  </div>`).join('')||`<div style="color:#8da2b2;font-size:12px;padding:6px 0">No labels yet.</div>`;
+}
+function _mtLabelRefresh(cc){
+  const l=document.getElementById('mt-lbl-list');
+  if(l)l.innerHTML=mtLabelEditorRows(cc);
+}
+function mtSetLabelText(colId,optId,text){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  const o=(cc.options||[]).find(x=>x.id===optId);if(!o)return;
+  o.label=String(text||'').trim()||o.label;
+  saveDB(DB);_mtLabelRefresh(cc);
+}
+function mtSetLabelColor(colId,optId,color){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  const o=(cc.options||[]).find(x=>x.id===optId);if(!o)return;
+  o.color=color;
+  saveDB(DB);_mtLabelRefresh(cc);
+}
+function mtAddLabelOption(colId){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  cc.options=cc.options||[];
+  cc.options.push({id:'l'+uid(),label:'New label',color:LABEL_SWATCHES[cc.options.length%LABEL_SWATCHES.length]});
+  saveDB(DB);_mtLabelRefresh(cc);
+}
+function mtDeleteLabelOption(colId,optId){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  cc.options=(cc.options||[]).filter(o=>o.id!==optId);
+  // Any cell still pointing at the deleted option falls back to empty rather than
+  // rendering a dangling id.
+  (DB.customColumnValues||[]).forEach(v=>{if(v.columnId===colId&&v.value===optId)v.value='';});
+  saveDB(DB);_mtLabelRefresh(cc);
+}
 function renderCustomColCell(taskId,cc){
   const val=mtGetCustomVal(taskId,cc.id);
+  if(cc.type==='labels')return mtLabelCellHtml(cc,val);
   switch(cc.type){
     case 'checkbox':
       return`<div style="display:flex;justify-content:center"><input type="checkbox" ${val==='true'?'checked':''} onclick="event.stopPropagation();mtSetCustomVal('${taskId}','${cc.id}',String(!${val==='true'}))" style="width:15px;height:15px;accent-color:#97bcbd;cursor:pointer"/></div>`;
@@ -16805,7 +17885,7 @@ function mtOpenCellEdit(taskId,colId,evt){
   dd.style.left=left+'px';dd.style.top=top+'px';
   dd.style.display='block';
   _wsCellTask=taskId;_wsCellField='cc_'+colId;
-  body.innerHTML=mtBuildCustomCellHtml(taskId,cc,val);
+  body.innerHTML=cc.type==='labels'?mtLabelPickerHtml(taskId,cc,val):mtBuildCustomCellHtml(taskId,cc,val);
 }
 
 function mtBuildCustomCellHtml(taskId,cc,val){
@@ -16897,9 +17977,10 @@ function mtBuildCustomCellHtml(taskId,cc,val){
 }
 
 // Add column modal
-function mtOpenAddColModal(){
+function mtOpenAddColModal(level){
   document.getElementById('mt-addcol-overlay')?.remove();
-  mtSelectedColType='text';
+  // Opened from the item header → default to items; from the subitem header → subitems.
+  mtSelectedColType='text';mtSelectedColLevel=level||'both';
   // Line icons in the same visual language as the rest of the app (1.5 stroke, currentColor,
   // rounded caps) so they inherit the button's hover/selected colour — replaces the old
   // mix of letters, glyphs and colour emoji.
@@ -16909,6 +17990,7 @@ function mtOpenAddColModal(){
     {t:'text',     label:'Text',      icon:_ic(`<path d="M3 4.25V3h10v1.25M8 3v10M6 13h4" ${S}/>`)},
     {t:'longtext', label:'Long Text', icon:_ic(`<path d="M2.5 4h11M2.5 7h11M2.5 10h8M2.5 13h5" ${S}/>`)},
     {t:'number',   label:'Number',    icon:_ic(`<path d="M6.25 2.5 4.75 13.5M11.5 2.5 10 13.5M2.5 6h11M2 10h11" ${S}/>`)},
+    {t:'labels',   label:'Labels',    icon:_ic(`<rect x="2" y="3.4" width="12" height="3.3" rx="1.65" ${S}/><rect x="2" y="9.3" width="8.5" height="3.3" rx="1.65" ${S}/>`)},
     {t:'status',   label:'Status',    icon:_ic(`<circle cx="8" cy="8" r="5.75" ${S}/><circle cx="8" cy="8" r="2.1" fill="currentColor"/>`)},
     {t:'priority', label:'Priority',  icon:_ic(`<path d="M8 3.25 13 10H3l5-6.75Z" ${S}/><path d="M8 12.75v-1" ${S}/>`)},
     {t:'date',     label:'Date',      icon:_ic(`<rect x="2.25" y="3.25" width="11.5" height="10.5" rx="2" ${S}/><path d="M2.25 6.5h11.5M5.5 2v2.5M10.5 2v2.5" ${S}/>`)},
@@ -16943,6 +18025,17 @@ function mtOpenAddColModal(){
           <div style="font-size:11px">${tp.label}</div>
         </button>`).join('')}
       </div>
+      <label style="font-family:Jost,sans-serif;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;display:block;margin:18px 0 8px">Applies To</label>
+      <div id="mt-level-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+        ${[{v:'both',l:'Both',d:'Items and subitems'},
+           {v:'parent',l:'Items only',d:'Outcome-level'},
+           {v:'subitem',l:'Subitems only',d:'Execution-level'}]
+          .map(o=>`<button class="mt-type-btn ${o.v===mtSelectedColLevel?'selected':''}" data-level="${o.v}"
+          onclick="document.querySelectorAll('#mt-level-grid .mt-type-btn').forEach(b=>b.classList.remove('selected'));this.classList.add('selected');mtSelectedColLevel='${o.v}'">
+          <div style="font-size:11px;font-weight:700">${o.l}</div>
+          <div style="font-size:9.5px;color:#8da2b2;margin-top:2px">${o.d}</div>
+        </button>`).join('')}
+      </div>
       <div style="margin-top:20px;display:flex;gap:8px;justify-content:flex-end">
         <button onclick="document.getElementById('mt-addcol-overlay').remove()" class="btn btn-ghost">Cancel</button>
         <button onclick="mtConfirmAddCol()" class="btn btn-teal">Add Column</button>
@@ -16955,9 +18048,9 @@ function mtOpenAddColModal(){
 function mtConfirmAddCol(){
   const name=(document.getElementById('mt-newcol-name')?.value||'').trim();
   if(!name){document.getElementById('mt-newcol-name')?.focus();return;}
-  mtAddCustomCol(mtSelectedColType||'text',name);
+  mtAddCustomCol(mtSelectedColType||'text',name,mtSelectedColLevel||'both');
   document.getElementById('mt-addcol-overlay')?.remove();
-  mtSelectedColType='text';
+  mtSelectedColType='text';mtSelectedColLevel='both';
 }
 
 // ═══════════════════════════════════════════════════════════
