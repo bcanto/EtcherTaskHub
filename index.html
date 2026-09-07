@@ -3317,8 +3317,24 @@ function renderView(v){
       // Live views: always fresh (mutations happen inline)
       // Two passes: the first runs before the topbar/toolbar heights have settled, which
       // left Add Group a few px out of line with Sign Out.
-      case 'workspace': vc.innerHTML=renderWorkspace();_wsCache=null;
-        requestAnimationFrame(()=>{_wsFitTableHeight();requestAnimationFrame(_wsFitTableHeight);});break;
+      // Re-rendering replaces the scroll container, so anything that rebuilds the table
+      // (collapsing a group, editing a cell) used to jump you back to the top. Capture
+      // the offset first and put it back once the new rows are laid out.
+      case 'workspace': {
+        const _keepScroll=document.getElementById('ws-table-scroll')?.scrollTop||0;
+        vc.innerHTML=renderWorkspace();_wsCache=null;
+        requestAnimationFrame(()=>{
+          _wsFitTableHeight();
+          const _sc=document.getElementById('ws-table-scroll');
+          if(_sc&&_keepScroll)_sc.scrollTop=_keepScroll;
+          requestAnimationFrame(()=>{
+            _wsFitTableHeight();
+            const _sc2=document.getElementById('ws-table-scroll');
+            if(_sc2&&_keepScroll&&_sc2.scrollTop!==_keepScroll)_sc2.scrollTop=_keepScroll;
+          });
+        });
+        break;
+      }
       case 'board':     vc.innerHTML=renderBoard();break;
       case 'list':      renderListView(getFilteredTasks());break;
       case 'clients':   vc.innerHTML=renderClients();break;
@@ -14707,7 +14723,7 @@ function _wsStateRestore(){
     return s.scroll||0;
   }catch(_){return 0;}
 }
-function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);renderView('workspace');_wsStateSave();}
+function wsToggleGroup(id){wsCollapsed.has(id)?wsCollapsed.delete(id):wsCollapsed.add(id);_wsStateSave();renderView('workspace');}
 function wsToggleExpand(id){
   const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
   if(!hasChildren&&!wsExpanded.has(id)){wsStartInlineSubitem(id);return;}
