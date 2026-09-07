@@ -36,6 +36,9 @@
 }
 /* ── Reset ── */
 *{box-sizing:border-box;margin:0;padding:0}
+/* Form controls do not inherit font-family, so any control without an explicit font fell
+   back to the browser default (Arial on Windows) instead of the Lato/Jost pairing. */
+input,button,select,textarea{font-family:inherit}
 body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text-1);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .hidden{display:none!important}
@@ -251,10 +254,54 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 #notes-pane{display:flex;height:calc(100vh - 56px)}
 .notes-clients{width:180px;border-right:1px solid var(--border);background:#f7f9fc;overflow-y:auto}
 .notes-sections{width:200px;border-right:1px solid var(--border);background:#fff;overflow-y:auto}
-.notes-editor{flex:1;padding:24px;overflow-y:auto}
+.notes-editor{flex:1;display:flex;flex-direction:column;min-width:0;background:#eef1f6}
+.notes-col-hd{padding:12px 14px 6px;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8da2b2}
 .notes-list-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--surface-3);transition:background 0.15s}
 .notes-list-item:hover{background:var(--surface-3)}
 .notes-list-item.active{background:var(--navy);color:#fff}
+.note-warn{display:flex;align-items:center;gap:7px;padding:6px 16px;background:#fff8f0;border-bottom:1px solid #fcd9a8;font-size:11px;font-weight:600;color:#92400e;flex-shrink:0}
+.note-toolbar{display:flex;align-items:center;gap:2px;padding:5px 14px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
+.note-hint{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;color:#c8d4e0;font-style:italic}
+/* The page itself: a plain white surface you drop text boxes onto, wherever you click. */
+.note-page{position:relative;flex:1;overflow:auto;background:#fff;cursor:text;padding:26px 30px 200px}
+.note-page-hd{margin-bottom:22px;pointer-events:none}
+.note-page-hd>*{pointer-events:auto}
+/* Title styled after the OneNote page header: large and light, a thin rule beneath it,
+   then the date in small grey. */
+.note-title{display:block;font-family:'Jost',sans-serif;font-size:30px;font-weight:400;color:#1a1a1a;
+  letter-spacing:-0.01em;border:none;background:transparent;outline:none;padding:0 0 6px;width:min(560px,100%)}
+.note-title::placeholder{color:#d4dde8}
+.note-page-hd::after{content:'';display:block;width:min(430px,60%);height:1px;background:#d9dee6;margin-top:-2px}
+.note-date{font-family:'Lato',sans-serif;font-size:12px;color:#9aa7b4;margin-top:7px;white-space:pre}
+/* A text box. Invisible at rest like OneNote; its frame and move-grip appear on hover. */
+.note-box{position:absolute;min-width:120px;max-width:calc(100% - 40px)}
+.note-box::before{content:'';position:absolute;inset:-5px -7px;border:1px solid transparent;border-radius:3px;pointer-events:none;transition:border-color 0.12s,background 0.12s}
+.note-box:hover::before,.note-box:focus-within::before{border-color:#cdd6e0;background:rgba(13,28,51,0.012)}
+.note-box-grip{position:absolute;left:-7px;right:-7px;top:-16px;height:13px;background:#eef1f5;border:1px solid #cdd6e0;border-bottom:none;border-radius:3px 3px 0 0;cursor:move;opacity:0;transition:opacity 0.12s}
+.note-box:hover .note-box-grip,.note-box:focus-within .note-box-grip{opacity:1}
+.note-box.dragging{opacity:0.75}
+.note-box.dragging .note-box-grip{opacity:1;background:#dbe3ec}
+.note-box-body{font-family:'Lato',sans-serif;font-size:13.5px;line-height:1.6;color:#1a2940;outline:none;min-height:20px;word-break:break-word;white-space:pre-wrap}
+.note-box-body:empty::before{content:'Type here';color:#c8d4e0}
+.note-box-body ul,.note-box-body ol{padding-left:20px;margin:3px 0}
+.note-box-body li{margin:1px 0}
+.note-box-body a{color:#0d6e4e;text-decoration:underline;text-underline-offset:2px}
+.note-box-body a:hover{color:#065f46;background:#e7f6ee}
+.note-box-del{position:absolute;top:-16px;right:-7px;width:14px;height:13px;padding:0;border:1px solid #cdd6e0;border-bottom:none;border-radius:0 3px 0 0;background:#eef1f5;color:#8da2b2;font-size:11px;line-height:1;cursor:pointer;opacity:0;transition:opacity 0.12s,background 0.12s,color 0.12s}
+.note-box:hover .note-box-del,.note-box:focus-within .note-box-del{opacity:1}
+.note-box-del:hover{background:#fee2e2;color:#b91c1c}
+/* Highlighter menu */
+.note-hilite-wrap{position:relative;display:inline-flex}
+.note-hilite-swatch{display:inline-block;width:11px;height:11px;border-radius:3px;background:#fff3a3;border:1px solid #e2d383;margin-right:5px;vertical-align:-1px}
+.note-hilite-menu{position:absolute;top:calc(100% + 5px);left:0;z-index:60;display:flex;gap:5px;align-items:center;padding:6px;background:#fff;border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 22px rgba(13,28,51,0.13)}
+.note-hilite-menu.hidden{display:none}
+.note-hilite-menu>button{width:20px;height:20px;border-radius:5px;border:1px solid rgba(13,28,51,0.12);cursor:pointer;padding:0;transition:transform 0.1s}
+.note-hilite-menu>button:hover{transform:scale(1.15)}
+.note-hilite-none{width:auto!important;padding:0 7px!important;background:#f4f7fb!important;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#8da2b2}
+/* Alignment guides shown while dragging a box onto another box's edge */
+.note-guide{position:absolute;background:#0d6e4e;opacity:0.7;pointer-events:none;z-index:40;display:none}
+.note-guide-x{top:0;bottom:0;width:1px}
+.note-guide-y{left:0;right:0;height:1px}
 /* ── Avatar ── */
 .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Jost',sans-serif;color:#fff;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,0.12)}
 #sidebar-avatar{border:2px solid rgba(151,188,189,0.6);box-shadow:0 0 0 1px rgba(151,188,189,0.15),0 2px 8px rgba(0,0,0,0.3)}
@@ -1984,6 +2031,20 @@ function showToast(msg,type,duration){
 // available. The localStorage fallback (_SESSION_KEY) is kept for the
 // period before Supabase credentials are configured.
 const _SESSION_KEY='etcher_session_v1';
+// Stay signed in for 30 days of inactivity. Signing out still clears immediately.
+const _SESSION_MAX_IDLE=30*24*60*60*1000;
+let _sessionTouchedAt=0;
+// Push the expiry forward while someone is actually using the app. Throttled to once a
+// minute so ordinary clicking does not hammer localStorage.
+function _touchSession(){
+  if(!currentUser||window._supabase)return;
+  const now=Date.now();
+  if(now-_sessionTouchedAt<60000)return;
+  _sessionTouchedAt=now;
+  _saveSession();
+}
+['click','keydown'].forEach(ev=>document.addEventListener(ev,_touchSession,true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')_touchSession();});
 function _saveSession(){
   if(!currentUser)return;
   // Supabase Auth handles its own persistence — only write localStorage when
@@ -2001,8 +2062,11 @@ function _restoreSession(){
     if(!raw)return false;
     const sess=JSON.parse(raw);
     if(!sess||!sess.id)return false;
-    // Expire sessions older than 8 hours
-    if(sess.savedAt&&Date.now()-sess.savedAt>28800000){_clearSession();return false;}
+    // Rolling window: the stamp is refreshed while the app is in use (see _touchSession),
+    // so this only expires someone who genuinely has not opened it for _SESSION_MAX_IDLE.
+    // It was a hard 8h from login with no refresh, which logged active users out
+    // mid-afternoon and made them retype their password.
+    if(sess.savedAt&&Date.now()-sess.savedAt>_SESSION_MAX_IDLE){_clearSession();return false;}
     if(sess.type==='client'){
       const client=DB.clients.find(c=>c.id===sess.id);
       if(!client){_clearSession();return false;}
@@ -5917,15 +5981,15 @@ function renderDashboard(){
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
-      <div class="stat-card dash-stat-btn" data-stat="in-progress" onclick="toggleDashStat('in-progress')" style="cursor:pointer;border-top-color:#1d4ed8">
-        <div class="stat-val" style="color:#1d4ed8">${allTasks.filter(t=>t.status==='in-progress'&&!t.archived).length}</div>
-        <div class="stat-label" style="color:#1d4ed8">In Progress</div>
+      <div class="stat-card dash-stat-btn" data-stat="in-progress" onclick="toggleDashStat('in-progress')" style="cursor:pointer;border-top-color:${getStatusMeta('in-progress').color}">
+        <div class="stat-val" style="color:${getStatusMeta('in-progress').color}">${allTasks.filter(t=>t.status==='in-progress'&&!t.archived).length}</div>
+        <div class="stat-label" style="color:${getStatusMeta('in-progress').color}">In Progress</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
-      <div class="stat-card dash-stat-btn" data-stat="done" onclick="toggleDashStat('done')" style="cursor:pointer;border-top-color:#166534">
-        <div class="stat-val" style="color:#166534">${(()=>{const approvedTaskIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));return allTasks.filter(t=>t.status==='done'&&!t.archived&&!approvedTaskIds.has(t.id)).length;})()}</div>
-        <div class="stat-label" style="color:#166534">Done — Needs TS</div>
+      <div class="stat-card dash-stat-btn" data-stat="done" onclick="toggleDashStat('done')" style="cursor:pointer;border-top-color:${getStatusMeta('done').color}">
+        <div class="stat-val" style="color:${getStatusMeta('done').color}">${(()=>{const approvedTaskIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));return allTasks.filter(t=>t.status==='done'&&!t.archived&&!approvedTaskIds.has(t.id)).length;})()}</div>
+        <div class="stat-label" style="color:${getStatusMeta('done').color}">Done — Needs TS</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
@@ -6037,16 +6101,10 @@ function renderClientGantt(){
 // ═══════════════════════════════════════════════════════════
 function renderBoard(){
   const tasks=getFilteredTasks();
-  const cols=[
-    {key:'todo',label:'Not Started',color:'#64748b'},
-    {key:'in-progress',label:'In Progress',color:'#1d6fb8'},
-    {key:'waiting-client',label:'Waiting Client',color:'#b45309'},
-    {key:'review',label:'In Review',color:'#6d28d9'},
-    {key:'blocked',label:'Blocked',color:'#b91c1c'},
-    {key:'ready-approval',label:'Ready Approval',color:'#0d6e4e'},
-    {key:'done',label:'Completed',color:'#15803d'},
-    {key:'cancelled',label:'Cancelled',color:'#78716c'},
-  ];
+  // Colours come from getStatusMeta so a status recoloured in Columns > Status &
+  // priority colours shows through here too; these were hardcoded and ignored it.
+  const cols=['todo','in-progress','waiting-client','review','blocked','ready-approval','done','cancelled']
+    .map(k=>{const m=getStatusMeta(k);return{key:k,label:m.label,color:m.color};});
   return renderWbTabs('board')+renderUniversalToolbar('board')+`<div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;margin-top:12px;min-height:calc(100vh - 200px)">
   ${cols.map(col=>{
     const colTasks=tasks.filter(t=>t.status===col.key);
@@ -12642,52 +12700,353 @@ function renderNotes(){
   const section=noteObj?noteObj.sections.find(s=>s.id===selectedNoteSectionId):null;
 
   vc.innerHTML=`<div id="notes-pane">
-    <!-- Client list -->
     <div class="notes-clients">
-      <div style="padding:12px 14px 6px;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8da2b2">Clients</div>
-      ${DB.clients.map(c=>{
-        const hasNotes=DB.clientNotes.some(n=>n.clientId===c.id);
-        return`<div class="notes-list-item ${selectedNoteClientId===c.id?'active':''}" onclick="selectNoteClient('${c.id}')">
+      <div class="notes-col-hd">Clients</div>
+      ${DB.clients.map(c=>`<div class="notes-list-item ${selectedNoteClientId===c.id?'active':''}" onclick="selectNoteClient('${c.id}')">
           <div style="display:flex;align-items:center;gap:6px">
             <div class="client-dot" style="background:${c.color}"></div>
             <span>${escHtml(c.name)}</span>
           </div>
-        </div>`;
-      }).join('')}
+        </div>`).join('')}
     </div>
-    <!-- Sections list -->
     <div class="notes-sections">
-      <div style="padding:12px 14px 6px;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8da2b2;display:flex;justify-content:space-between;align-items:center">
+      <div class="notes-col-hd" style="display:flex;justify-content:space-between;align-items:center">
         <span>Sections</span>
         <button onclick="addNoteSection()" style="background:none;border:none;color:#97bcbd;cursor:pointer;font-size:18px;line-height:1" title="Add section">+</button>
       </div>
       ${noteObj?noteObj.sections.map(s=>`<div class="notes-list-item ${selectedNoteSectionId===s.id?'active':''}" onclick="selectNoteSection('${s.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span>${escHtml(s.title)}</span>
-          <button onclick="event.stopPropagation();deleteNoteSection('${s.id}')" style="background:none;border:none;color:${selectedNoteSectionId===s.id?'#fff':'#dc2626'};cursor:pointer;font-size:12px;opacity:0.7">✕</button>
+          <button onclick="event.stopPropagation();deleteNoteSection('${s.id}')" style="background:none;border:none;color:${selectedNoteSectionId===s.id?'#fff':'#dc2626'};cursor:pointer;font-size:12px;opacity:0.7">&#10005;</button>
         </div>
       </div>`).join(''):`<div style="padding:12px 14px;font-size:12px;color:#8da2b2">No notes yet.</div>`}
     </div>
-    <!-- Editor -->
     <div class="notes-editor">
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff8f0;border:1px solid #f97316;border-radius:7px;margin-bottom:14px;font-size:11px;font-weight:600;color:#92400e">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        SENSITIVE — Confidential client credentials and access information. Do not copy, export or share outside authorised channels.
-      </div>
-      ${section?`
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-          <input id="note-title-input" class="form-input" value="${escHtml(section.title)}" onchange="saveNoteTitle('${section.id}')" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600;border:none;border-bottom:2px solid #e2eaf2;border-radius:0;padding:4px 0"/>
-          <span style="font-size:11px;color:#b0bec5">Last saved: ${section.updatedAt?new Date(section.updatedAt).toLocaleString():''}</span>
-        </div>
-        <textarea id="note-content-input" class="form-textarea" style="width:100%;min-height:calc(100vh - 260px);border:1.5px solid #e2eaf2;border-radius:8px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;line-height:1.7;color:#1a2940" onblur="saveNoteContent('${section.id}')" oninput="notesDirty()"></textarea>
-        <div style="margin-top:8px;font-size:11px;color:#b0bec5;display:flex;align-items:center;gap:8px">Supports plain text or Markdown. <span id="notes-save-status" style="color:#97bcbd;font-weight:600;opacity:0;transition:opacity 0.4s">✓ Saved</span></div>
-      `:`<div style="color:#8da2b2;font-size:14px;padding-top:40px;text-align:center">Select or create a section to begin.</div>`}
+      ${section?_notePageHtml(section):`<div style="color:#8da2b2;font-size:14px;padding-top:40px;text-align:center">Select or create a section to begin.</div>`}
     </div>
   </div>`;
-  // Set textarea value via DOM property — prevents </textarea> breakout via innerHTML
-  const noteTA=document.getElementById('note-content-input');
-  if(noteTA&&section) noteTA.value=section.content||'';
+  if(section)_noteBindPage(section);
 }
+// ── Page model ──────────────────────────────────────────────
+// Text lives in free-floating boxes placed wherever you click, the way a OneNote page
+// works. Legacy notes stored a single string, so the first time one is opened it becomes
+// one box at the top-left and nothing is lost.
+// Height reserved for the page title, rule and date.
+const _NOTE_HEADER_H=130;
+// Sanitiser for note boxes. Same threat model as _descSanitize — drop scripting, event
+// handlers and dangerous URLs — but notes need the highlighter, whose colour lives in an
+// inline style. _descSanitize strips every attribute, which silently ate highlights, so
+// this keeps `style` and filters it down to a small set of harmless text properties.
+const _NOTE_STYLE_OK=new Set(['background-color','background','color','font-weight','font-style','text-decoration','text-decoration-line']);
+function _noteSanitize(html){
+  try{
+    const d=document.createElement('div');
+    d.innerHTML=String(html||'');
+    d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta,svg,math').forEach(e=>e.remove());
+    // <font> only ever carries presentation; unwrap it rather than keep a legacy tag.
+    d.querySelectorAll('font').forEach(e=>{
+      const f=document.createDocumentFragment();
+      while(e.firstChild)f.appendChild(e.firstChild);
+      e.replaceWith(f);
+    });
+    d.querySelectorAll('*').forEach(e=>{
+      [...e.attributes].forEach(a=>{
+        const n=a.name.toLowerCase();
+        if(n==='style'){
+          const safe=a.value.split(';').map(part=>{
+            const idx=part.indexOf(':');
+            if(idx<0)return'';
+            const prop=part.slice(0,idx).trim().toLowerCase();
+            const val=part.slice(idx+1).trim();
+            if(!_NOTE_STYLE_OK.has(prop))return'';
+            // no url(), no expression(), no scheme tricks inside a value
+            if(/url\s*\(|expression\s*\(|javascript:|vbscript:|data:/i.test(val))return'';
+            return prop+':'+val;
+          }).filter(Boolean).join(';');
+          if(safe)e.setAttribute('style',safe);else e.removeAttribute('style');
+          return;
+        }
+        if(n==='href'||n==='rel'||n==='target'){
+          if(/^(javascript:|data:|vbscript:)/i.test(a.value.trim()))e.removeAttribute(a.name);
+          return;
+        }
+        // everything else, including every on* handler, goes
+        e.removeAttribute(a.name);
+      });
+      if(e.tagName==='A'){
+        e.setAttribute('rel','noopener noreferrer');
+        e.setAttribute('target','_blank');
+      }
+    });
+    return d.innerHTML;
+  }catch(_){return'';}
+}
+function _noteBoxes(section){
+  if(!Array.isArray(section.boxes)){
+    const legacy=String(section.content||'').trim();
+    // Placed clear of the page header rather than at 0,0, where it overlapped the date.
+    section.boxes=legacy?[{id:'nb'+uid(),x:4,y:_NOTE_HEADER_H,w:430,html:_descToHtml(section.content)}]:[];
+  }
+  return section.boxes;
+}
+function _notePageHtml(section){
+  const boxes=_noteBoxes(section);
+  const when=section.updatedAt?new Date(section.updatedAt):new Date();
+  // Matches the OneNote page header exactly: "Tuesday, 14 April 2026    9:20 AM".
+  const dateLine=when.toLocaleDateString('en-AU',{weekday:'long'})+', '
+    +when.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})
+    +'    '+when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toUpperCase();
+  return`
+    <div class="note-warn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Confidential client credentials and access information &mdash; do not share outside authorised channels.
+    </div>
+    <div class="note-toolbar" id="note-toolbar">
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button>
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button>
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button>
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button>
+      <span class="rdt-sep"></span>
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">&bull; list</button>
+      <button class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="Numbered list">1. list</button>
+      <span class="rdt-sep"></span>
+      <span class="note-hilite-wrap">
+        <button class="rdt-btn note-hilite-btn" onmousedown="noteHiliteMenu(event)" title="Highlight"><span class="note-hilite-swatch"></span>Highlight</button>
+        <div id="note-hilite-menu" class="note-hilite-menu hidden">
+          ${NOTE_HILITE.map(h=>`<button onmousedown="event.preventDefault();noteHilite('${h.c}')" title="${h.name}" style="background:${h.c}"></button>`).join('')}
+          <button class="note-hilite-none" onmousedown="event.preventDefault();noteHilite('transparent')" title="Remove highlight">none</button>
+        </div>
+      </span>
+      <span class="rdt-sep"></span>
+      <button class="rdt-btn" onmousedown="event.preventDefault();noteAutoAlign('${section.id}')" title="Tidy every box into even columns">Align</button>
+      <span class="note-hint">Click anywhere on the page to start a new text box</span>
+    </div>
+    <div class="note-page" id="note-page" onclick="notePageClick(event,'${section.id}')">
+      <div class="note-page-hd">
+        <input id="note-title-input" class="note-title" value="${escHtml(section.title)}"
+          onclick="event.stopPropagation()" onchange="saveNoteTitle('${section.id}')" placeholder="Untitled"/>
+        <div class="note-date">${escHtml(dateLine)}</div>
+      </div>
+      ${boxes.map(bx=>`<div class="note-box" data-id="${bx.id}" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w||430}px"
+          onclick="event.stopPropagation()">
+        <div class="note-box-grip" title="Drag to move" onmousedown="noteBoxDragStart(event,'${section.id}','${bx.id}')"></div>
+        <div class="note-box-body" id="notebox-${bx.id}" contenteditable="true" spellcheck="false"
+          data-box="${bx.id}">${_noteSanitize(bx.html||'')}</div>
+        <button class="note-box-del" title="Delete this box" onclick="event.stopPropagation();noteBoxDelete('${section.id}','${bx.id}')">&#215;</button>
+      </div>`).join('')}
+    </div>`;
+}
+function _noteBindPage(section){
+  document.querySelectorAll('#note-page .note-box-body').forEach(el=>{
+    el.addEventListener('blur',()=>{
+      const bx=_noteBoxes(section).find(b=>b.id===el.dataset.box);
+      if(!bx)return;
+      _noteAutolink(el);
+      // Sanitise on the way in as well as out: a pasted onerror handler would
+      // otherwise be stored and fire for anyone who later opens this client's notes.
+      bx.html=_noteSanitize(el.innerHTML);
+      // An emptied box removes itself, so stray clicks do not litter the page.
+      if(!el.textContent.trim()&&!el.querySelector('img')){
+        section.boxes=_noteBoxes(section).filter(b=>b.id!==bx.id);
+      }
+      section.updatedAt=new Date().toISOString();
+      saveDB(DB);
+      setTimeout(renderNotes,0);
+    });
+    el.addEventListener('paste',e=>_handleDescPaste(e,el.id));
+  });
+}
+// Click bare page → new box exactly where you clicked.
+function notePageClick(e,sectionId){
+  const sec=_noteSection(sectionId);
+  if(!sec)return;
+  const page=document.getElementById('note-page');
+  if(!page)return;
+  const r=page.getBoundingClientRect();
+  const x=Math.max(0,Math.round(e.clientX-r.left+page.scrollLeft));
+  // Never let a box sit on top of the title block.
+  const y=Math.max(_NOTE_HEADER_H,Math.round(e.clientY-r.top+page.scrollTop));
+  const id='nb'+uid();
+  _noteBoxes(sec).push({id,x,y,w:430,html:''});
+  sec.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  renderNotes();
+  setTimeout(()=>{
+    const el=document.querySelector('#note-page .note-box-body[data-box="'+id+'"]');
+    if(el)el.focus();
+  },0);
+}
+function noteBoxDelete(sectionId,boxId){
+  const sec=_noteSection(sectionId);
+  if(!sec)return;
+  sec.boxes=_noteBoxes(sec).filter(b=>b.id!==boxId);
+  sec.updatedAt=new Date().toISOString();
+  saveDB(DB);renderNotes();
+}
+// ── Highlighter ─────────────────────────────────────────────
+// OneNote-style text highlight. styleWithCSS keeps the output as inline background-color
+// rather than deprecated <font> tags, so the sanitiser preserves it.
+const NOTE_HILITE=[
+  {name:'Yellow', c:'#fff3a3'},
+  {name:'Green',  c:'#c8f2d4'},
+  {name:'Blue',   c:'#cfe6ff'},
+  {name:'Pink',   c:'#ffd6e7'},
+  {name:'Orange', c:'#ffe0b8'},
+];
+function noteHilite(color){
+  try{document.execCommand('styleWithCSS',false,true);}catch(_){}
+  document.execCommand('hiliteColor',false,color||'transparent');
+  document.getElementById('note-hilite-menu')?.classList.add('hidden');
+  const el=document.activeElement;
+  if(el&&el.classList&&el.classList.contains('note-box-body'))el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function noteHiliteMenu(e){
+  e.preventDefault();e.stopPropagation();
+  document.getElementById('note-hilite-menu')?.classList.toggle('hidden');
+}
+// ── Alignment ───────────────────────────────────────────────
+// While dragging, a box snaps to the left/top edge of any other box within SNAP px, so
+// columns line up without fiddling. Guides show which edge it caught.
+const NOTE_SNAP=8;
+function _noteSnapTargets(exceptId){
+  return [...document.querySelectorAll('#note-page .note-box')]
+    .filter(n=>n.dataset.id!==exceptId)
+    .map(n=>({x:parseFloat(n.style.left)||0,y:parseFloat(n.style.top)||0}));
+}
+function _noteShowGuide(axis,pos){
+  let g=document.getElementById('note-guide-'+axis);
+  if(!g){
+    g=document.createElement('div');
+    g.id='note-guide-'+axis;
+    g.className='note-guide note-guide-'+axis;
+    document.getElementById('note-page')?.appendChild(g);
+  }
+  g.style.display='block';
+  if(axis==='x')g.style.left=pos+'px';else g.style.top=pos+'px';
+}
+function _noteHideGuides(){
+  ['x','y'].forEach(a=>{const g=document.getElementById('note-guide-'+a);if(g)g.style.display='none';});
+}
+// Tidy every box into even columns, keeping reading order (top-to-bottom, left-to-right).
+function noteAutoAlign(sectionId){
+  const sec=_noteSection(sectionId);
+  if(!sec)return;
+  const boxes=_noteBoxes(sec);
+  if(!boxes.length)return;
+  const page=document.getElementById('note-page');
+  const avail=page?page.clientWidth-60:900;
+  const gap=34;
+  // Narrow the columns rather than letting them run past the right edge.
+  const colW=Math.max(220,Math.min(430,avail));
+  const cols=Math.max(1,Math.floor((avail+gap)/(colW+gap)));
+  // Sort by current position so the tidy-up preserves how it already reads.
+  const ordered=[...boxes].sort((a,b)=>(a.y-b.y)||(a.x-b.x));
+  const colY=new Array(cols).fill(_NOTE_HEADER_H);
+  ordered.forEach((bx,i)=>{
+    // Drop each box into whichever column is currently shortest.
+    let c=0;for(let k=1;k<cols;k++)if(colY[k]<colY[c])c=k;
+    bx.x=4+c*(colW+gap);
+    bx.y=colY[c];
+    bx.w=colW;
+    const node=document.querySelector('#note-page .note-box[data-id="'+bx.id+'"]');
+    const h=node?node.getBoundingClientRect().height:60;
+    colY[c]=bx.y+Math.max(40,Math.round(h))+26;
+  });
+  sec.updatedAt=new Date().toISOString();
+  saveDB(DB);renderNotes();
+  showToast('Boxes aligned into '+cols+' column'+(cols!==1?'s':''),'success');
+}
+// Drag a box around the page by its grip.
+let _noteDrag=null;
+function noteBoxDragStart(e,sectionId,boxId){
+  e.preventDefault();e.stopPropagation();
+  const sec=_noteSection(sectionId);
+  const bx=sec?_noteBoxes(sec).find(b=>b.id===boxId):null;
+  if(!bx)return;
+  const node=e.currentTarget.closest('.note-box');
+  _noteDrag={sec,bx,node,startX:e.clientX,startY:e.clientY,origX:bx.x,origY:bx.y,targets:_noteSnapTargets(boxId)};
+  node.classList.add('dragging');
+  const move=ev=>{
+    if(!_noteDrag)return;
+    // Magnetic alignment: catch the left/top edge of any nearby box so columns line up.
+    let nx=Math.max(0,_noteDrag.origX+(ev.clientX-_noteDrag.startX));
+    let ny=Math.max(_NOTE_HEADER_H,_noteDrag.origY+(ev.clientY-_noteDrag.startY));
+    let gx=null,gy=null;
+    for(const t of _noteDrag.targets){
+      if(gx===null&&Math.abs(nx-t.x)<=NOTE_SNAP){nx=t.x;gx=t.x;}
+      if(gy===null&&Math.abs(ny-t.y)<=NOTE_SNAP){ny=t.y;gy=t.y;}
+    }
+    if(gx!==null)_noteShowGuide("x",gx);else{const g=document.getElementById("note-guide-x");if(g)g.style.display="none";}
+    if(gy!==null)_noteShowGuide("y",gy);else{const g=document.getElementById("note-guide-y");if(g)g.style.display="none";}
+    _noteDrag.nx=Math.round(nx);_noteDrag.ny=Math.round(ny);
+    node.style.left=_noteDrag.nx+'px';
+    node.style.top=_noteDrag.ny+'px';
+  };
+  const up=()=>{
+    document.removeEventListener('mousemove',move);
+    document.removeEventListener('mouseup',up);
+    if(_noteDrag){
+      node.classList.remove('dragging');
+      _noteHideGuides();
+      if(_noteDrag.nx!=null){
+        _noteDrag.bx.x=Math.round(_noteDrag.nx);
+        _noteDrag.bx.y=Math.round(_noteDrag.ny);
+        _noteDrag.sec.updatedAt=new Date().toISOString();
+        saveDB(DB);
+      }
+      _noteDrag=null;
+    }
+  };
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+}
+// Turn a typed URL or email into a real link so it opens in the browser. Text nodes only,
+// so existing anchors are left alone.
+function _noteAutolink(root){
+  if(!root)return;
+  const rx=/((?:https?:\/\/|www\.)[^\s<>"]+[^\s<>".,;:!?)\]])|([\w.+-]+@[\w-]+\.[\w.-]+)/;
+  const walk=node=>{
+    for(const child of [...node.childNodes]){
+      if(child.nodeType===3){
+        const m=rx.exec(child.nodeValue||'');
+        if(!m)continue;
+        const match=m[0];
+        const before=child.nodeValue.slice(0,m.index);
+        const after=child.nodeValue.slice(m.index+match.length);
+        const a=document.createElement('a');
+        a.href=m[2]?('mailto:'+match):(/^www\./i.test(match)?'https://'+match:match);
+        if(!m[2]){a.target='_blank';a.rel='noopener noreferrer';}
+        a.textContent=match;
+        const frag=document.createDocumentFragment();
+        if(before)frag.appendChild(document.createTextNode(before));
+        frag.appendChild(a);
+        if(after)frag.appendChild(document.createTextNode(after));
+        child.replaceWith(frag);
+      }else if(child.nodeType===1&&child.tagName!=='A'){
+        walk(child);
+      }
+    }
+  };
+  walk(root);
+}
+function _notesLinkify(text){
+  let h=escHtml(String(text||''));
+  h=h.replace(/\b((?:https?:\/\/|www\.)[^\s<>"]+[^\s<>".,;:!?)\]])/gi,m=>{
+    const href=/^www\./i.test(m)?'https://'+m:m;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="nb-link">${m}</a>`;
+  });
+  h=h.replace(/\b([\w.+-]+@[\w-]+\.[\w.-]+)\b/g,m=>`<a href="mailto:${m}" onclick="event.stopPropagation()" class="nb-link">${m}</a>`);
+  // Paired ** on a single line becomes bold. Deliberately the ONLY inline format: a lone
+  // * or _ stays literal, so a password like a*b_c#1 is never mangled.
+  h=h.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+  return h.replace(/\n/g,'<br>');
+}
+function _noteSection(sectionId){
+  const o=DB.clientNotes.find(n=>n.clientId===selectedNoteClientId);
+  return o?o.sections.find(s=>s.id===sectionId):null;
+}
+// Click the body to edit it in place; blur commits. Clicking a link does not open the
+// editor, so a stored URL stays one click away from the browser.
 function selectNoteClient(clientId){
   selectedNoteClientId=clientId;
   selectedNoteSectionId=null;
