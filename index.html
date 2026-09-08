@@ -2447,30 +2447,10 @@ function _showSetPasswordForm(session){
   };
 }
 
-// ── B1: Session inactivity timeout (30 minutes) ───────────────────────
-let _lastActivity=Date.now();
-const _INACTIVITY_MS=30*60*1000;
-function _resetActivity(){_lastActivity=Date.now();}
-['mousedown','keydown','touchstart','wheel','click','scroll'].forEach(ev=>
-  document.addEventListener(ev,_resetActivity,{passive:true,capture:true})
-);
-setInterval(()=>{
-  if(!currentUser)return;
-  if(Date.now()-_lastActivity>=_INACTIVITY_MS){
-    // Soft logout: clear in-memory state but keep stored session so the user
-    // is auto-logged back in on next page refresh instead of losing their spot.
-    try{
-      currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
-      const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
-      if(ctx){ctx.style.display='none';ctx.innerHTML='';}if(mn)mn.style.display='';
-      document.getElementById('app-shell').classList.add('hidden');
-      document.getElementById('client-portal')?.classList.add('hidden');
-      document.getElementById('login-screen').classList.remove('hidden');
-      document.getElementById('login-password').value='';
-    }catch(_){}
-    showToast('You were signed out after 30 minutes of inactivity.','warning',10000);
-  }
-},60000); // check every 60 s — fast enough, quiet enough
+// The 30-minute inactivity soft-logout was removed: it dropped people to the login screen
+// after any pause, which is not what a task tracker wants. Sessions now end only on an
+// explicit Sign Out, or when the stored session passes _SESSION_MAX_IDLE (30 days offline)
+// / the Supabase refresh token expires (live).
 
 // ── Comment / form draft auto-save to sessionStorage ──────────────────
 document.addEventListener('input',function(e){
