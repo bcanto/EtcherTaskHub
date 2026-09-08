@@ -45,7 +45,11 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── Sidebar ── */
 #sidebar{width:215px;height:100vh;background:#0d1c33;display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.05);overflow:hidden}
 #app-shell{display:flex;min-height:100vh}
-#main-content{margin-left:215px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+/* min-width:0 stops a wide view (the Gantt at day scale) from stretching the whole shell:
+   a flex item defaults to min-width:auto, so main-content grew to its content's width, the
+   page scrolled sideways instead of the view's own scroller, and anything pinned inside —
+   the Gantt's task-name column — slid off screen with it. */
+#main-content{margin-left:215px;flex:1;min-width:0;min-height:100vh;display:flex;flex-direction:column}
 .nav-item{position:relative;display:flex;align-items:center;gap:8px;padding:6px 11px;margin:1px 8px;color:#3e5c75;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;border-radius:8px;transition:background 0.18s,color 0.18s;letter-spacing:0.015em;user-select:none}
 .nav-item:hover{background:rgba(151,188,189,0.1);color:#97bcbd}
 .nav-item.active{background:linear-gradient(90deg,rgba(151,188,189,0.2) 0%,rgba(151,188,189,0.05) 100%);color:#e2eef6;font-weight:600;box-shadow:inset 3px 0 0 #97bcbd}
@@ -570,20 +574,13 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
    A meeting log is read by date, so the date leads each row and the months are labelled.
    Titles alone said nothing about what was in a note, so each card previews its first line.
    One toolbar row replaces the full-width dashed block that used to dominate the list. */
-.mn-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.mn-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;transition:background 0.14s var(--ease),border-color 0.14s var(--ease),color 0.14s var(--ease),transform 0.1s var(--ease)}
-.mn-btn:active{transform:translateY(1px)}
-.mn-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
-.mn-btn--new{border:1px solid #0d6e4e;background:#0d6e4e;color:#fff}
-.mn-btn--new:hover{background:#0a5a40;border-color:#0a5a40}
-.mn-btn--ai{border:1px solid #0d1c33;background:#0d1c33;color:#fff}
-.mn-btn--ai:hover{background:#1a2f4f;border-color:#1a2f4f}
-.mn-btn--ghost{border:1px solid #e2eaf2;background:#fff;color:#5b7080}
-.mn-btn--ghost:hover{background:#f4f8fc;border-color:#cdd9e5}
-.mn-btn--on{border-color:#97bcbd;background:#f0f7f7;color:#0d1c33}
-.mn-btn--link{border:none;background:none;color:#6b8399;padding:6px 2px}
-.mn-btn--link:hover{color:#0d1c33}
-.mn-count{font-size:10.5px;color:#8da2b2;margin-left:auto;white-space:nowrap}
+/* The toolbar uses the app’s own button system (.btn/.btn-teal/.btn-sm), the same as
+   “+ Add” on the Dependencies tab, rather than a parallel set of one-off styles.
+   Actions sit to the right; the chosen-count holds the left edge while choosing. */
+.mn-toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:10px}
+.mn-link{background:none;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#6b8399;padding:5px 3px;transition:color 0.12s}
+.mn-link:hover{color:#0d1c33}
+.mn-count{font-size:11px;color:#8da2b2;margin-right:auto;white-space:nowrap}
 .mn-card{border:1px solid #e6edf4;border-radius:10px;background:#fff;margin-bottom:7px;overflow:hidden;transition:border-color 0.14s var(--ease),box-shadow 0.14s var(--ease)}
 .mn-card:hover{border-color:#cfdcea;box-shadow:0 2px 10px rgba(13,28,51,0.055)}
 .mn-card.open{border-color:#cfdcea}
@@ -604,6 +601,106 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .mn-act--del:hover{color:#991b1b}
 .mn-pick{accent-color:#0d6e4e;width:14px;height:14px;cursor:pointer;flex-shrink:0;margin:0}
 .mn-empty{text-align:center;padding:40px 20px;color:#b0bec5;font-size:13px}
+/* ── Structured meetings (Meeting Notes tab) ──
+   Deliberately reuses the panel's existing type, colours and card shape; nothing here
+   changes the other tabs. */
+.mn-menu{position:fixed;z-index:1000;background:#fff;border:1.5px solid #e2eaf2;border-radius:9px;box-shadow:0 10px 30px rgba(13,28,51,0.16);padding:5px;min-width:190px}
+.mn-menu-item{display:block;width:100%;text-align:left;padding:7px 10px;border:none;background:none;cursor:pointer;font-family:'Lato',sans-serif;font-size:12.5px;color:#1a2940;border-radius:6px}
+.mn-menu-item:hover{background:#f2f7fb}
+.mn-menu-item--danger{color:#dc2626}
+.mn-menu-sep{height:1px;background:#eef2f7;margin:4px 2px}
+.mn-toolbar--bulk{background:#f4f9fc;border:1px solid #dbe7f0;border-radius:9px;padding:6px 8px;justify-content:flex-start}
+.mn-selcount{font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#0d1c33;margin-right:auto;padding-left:4px}
+
+.mtg-card .mn-head{align-items:flex-start;padding:10px 12px}
+.mtg-ico{flex-shrink:0;width:24px;height:24px;border-radius:7px;background:#eef4fa;display:flex;align-items:center;justify-content:center;font-size:12px}
+.mtg-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.mtg-chip{font-size:9.5px;font-weight:700;font-family:'Jost',sans-serif;background:#f0f4f8;color:#6b8399;border-radius:20px;padding:2px 7px;white-space:nowrap}
+.mtg-chip--kind{background:#e5edf7;color:#33507a}
+.mtg-chip--int{background:#e6f2ea;color:#0d6e4e}
+.mtg-chip--ext{background:#fdf0e6;color:#b45309}
+.mtg-chip--prim{background:#0d1c33;color:#fff}
+.mtg-chip--link{background:#eef2f7;color:#5b7080}
+.mtg-chip--alloc{background:#e9f0fb;color:#33507a}
+.mtg-chip--st{background:#f4f7fa;color:#8da2b2;margin-left:auto}
+.mtg-chip--ts{background:#eef2f7;color:#5b7080}
+.mtg-ts--draft{background:#fff4e0;color:#b45309}
+.mtg-ts--submitted{background:#e5edf7;color:#33507a}
+.mtg-ts--approved,.mtg-ts--invoiced{background:#e6f2ea;color:#0d6e4e}
+.mtg-ts--partial{background:#fff4e0;color:#b45309}
+.mtg-linkfrom{font-size:10.5px;color:#8da2b2;margin-top:4px}
+
+.mtg-body{padding:0 14px 14px 14px}
+.mtg-when{font-size:12.5px;color:#1a2940;font-weight:600;padding-top:11px}
+.mtg-meta2{font-size:11.5px;color:#8da2b2;margin-top:2px}
+.mtg-bsec{font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a8b8c8;margin:12px 0 4px}
+.mtg-ul{margin:0;padding-left:16px;font-size:12.5px;color:#1a2940;line-height:1.65}
+.mtg-text{font-size:12.5px;color:#33414f;line-height:1.6;white-space:pre-wrap}
+.mtg-none{font-size:12px;color:#b0bec5;padding:4px 0}
+.mtg-ref{font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;color:#5b7080;background:#f0f4f8;border-radius:5px;padding:1px 5px;margin-right:4px}
+.mtg-acts{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;justify-content:flex-end}
+.mtg-tsbreak{margin-top:10px;border:1px solid #e6edf4;border-radius:8px;overflow:hidden}
+.mtg-tsrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 10px;font-size:11.5px;color:#33414f;border-bottom:1px solid #f2f6fa}
+.mtg-tsrow:last-child{border-bottom:none}
+
+.mtg-form{padding:2px 0 4px}
+.mtg-form-hd{font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;margin-bottom:10px}
+.mtg-sec{border:1px solid #e6edf4;border-radius:10px;padding:11px 12px;margin-bottom:9px;background:#fff}
+.mtg-sec-hd{font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#a8b8c8;margin-bottom:7px}
+.mtg-hint{font-size:11px;color:#8da2b2;line-height:1.5;margin-bottom:8px}
+.mtg-lbl{display:block;font-size:10px;font-weight:700;font-family:'Jost',sans-serif;letter-spacing:0.05em;text-transform:uppercase;color:#8da2b2;margin:8px 0 3px}
+.mtg-req{color:#ef4444}
+.mtg-in{font-size:12.5px;padding:6px 9px;height:auto;min-height:32px}
+.mtg-in--sm{min-height:28px;padding:4px 7px;font-size:12px}
+.mtg-row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mtg-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.mtg-calc{min-height:32px;display:flex;align-items:center;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;background:#f6f9fc;border-radius:8px;padding:0 10px}
+.mtg-addrow{display:flex;gap:7px;align-items:center;margin-bottom:8px}
+.mtg-addbtn{margin-top:8px}
+.mtg-att{border:1px solid #eef2f7;border-radius:9px;padding:8px 10px;margin-bottom:6px;background:#fbfdff}
+.mtg-att-top{display:flex;align-items:center;gap:6px}
+.mtg-att-name{font-size:12.5px;font-weight:700;color:#0d1c33;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-att-times{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mtg-to{font-size:11px;color:#a8b8c8}
+.mtg-att-dur{font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#5b7080;margin-left:auto}
+.mtg-inc{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#4a5568;cursor:pointer;margin-top:7px}
+.mtg-inc input{accent-color:#0d6e4e;width:13px;height:13px}
+.mtg-inc--off{color:#b0bec5;cursor:not-allowed}
+.mtg-x{background:none;border:none;cursor:pointer;color:#c4d0db;font-size:15px;line-height:1;padding:2px 5px;border-radius:5px;flex-shrink:0}
+.mtg-x:hover{color:#dc2626;background:#fef2f2}
+.mtg-link{display:flex;align-items:center;gap:7px;border:1px solid #eef2f7;border-radius:9px;padding:8px 10px;margin-bottom:6px;background:#fbfdff}
+.mtg-link-main{flex:1;min-width:0}
+.mtg-link-t{font-size:12.5px;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-link-sub{font-size:10.5px;color:#8da2b2;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-allocrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f4f7fa}
+.mtg-allocname{flex:1;min-width:0;font-size:12px;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-allocin{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.mtg-allocin input{width:66px;text-align:right}
+.mtg-min{font-size:10.5px;color:#a8b8c8}
+.mtg-tot{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:#5b7080;margin-top:9px;padding-top:8px;border-top:1px solid #eef2f7}
+.mtg-ok{color:#0d6e4e}.mtg-under{color:#b45309}.mtg-over{color:#dc2626}
+.mtg-warn{font-size:11.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px;margin-top:8px;line-height:1.5}
+.mtg-warn--bad{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
+.mtg-inline-btn{background:none;border:none;color:#0d6e4e;font-weight:700;font-size:11.5px;cursor:pointer;padding:0 0 0 4px;font-family:'Jost',sans-serif;text-decoration:underline}
+.mtg-form-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+
+.mtg-pick-ov{position:fixed;inset:0;background:rgba(13,28,51,0.34);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px}
+.mtg-pick{background:#fff;border-radius:13px;box-shadow:0 20px 60px rgba(13,28,51,0.3);width:min(640px,94vw);max-height:82vh;display:flex;flex-direction:column;padding:14px}
+.mtg-pick-hd{display:flex;align-items:center;font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:10px}
+.mtg-pick-hd .mtg-x{margin-left:auto;font-size:18px}
+.mtg-pick-filters{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:8px 0}
+.mtg-pick-list{flex:1;overflow:auto;border:1px solid #eef2f7;border-radius:9px}
+.mtg-pick-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #f4f7fa;cursor:pointer;font-size:12.5px}
+.mtg-pick-row:last-child{border-bottom:none}
+.mtg-pick-row:hover{background:#f8fbfe}
+.mtg-pick-row.on{background:#f0f7f7}
+.mtg-pick-row input{accent-color:#0d6e4e;width:14px;height:14px;flex-shrink:0}
+.mtg-pick-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1a2940}
+.mtg-pick-meta{font-size:10.5px;color:#8da2b2;flex-shrink:0;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-pick-foot{display:flex;align-items:center;gap:7px;justify-content:flex-end;margin-top:10px}
+.mtg-pick-count{margin-right:auto;font-size:11.5px;color:#8da2b2}
+.mtg-pick-board{font-family:'Lato',sans-serif;font-size:11.5px;font-weight:400;color:#8da2b2;margin-left:6px}
+
 .tp-tab:hover:not(.active){color:var(--navy)}
 .tag-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:#e6eff8;color:#4d6275;transition:background 0.15s}
 .tag-pill:hover{background:#d2e2f0}
@@ -1814,6 +1911,14 @@ function _renderCached(el,key,fn){
   const h=_vcGet(key);if(h){el.innerHTML=h;return;}
   const html=fn();el.innerHTML=html;_vcSet(key,html);
 }
+// Everything about the Gantt's own toolbar state that changes what it draws. The cache key
+// carried only the scale, so collapsing a group, recolouring the bars, toggling the baseline
+// or opening a task's subitems all re-served the cached HTML and appeared to do nothing.
+function _ganttSig(){
+  return[ganttScale,ganttColorBy,ganttShowBaseline?1:0,ganttLeftCollapsed?1:0,
+    [...ganttCollapsed].sort().join('|'),
+    [...ganttExpanded].sort().join('|')].join('~');
+}
 // Signature of every activeFilters field that changes what a cached view renders.
 // Cache keys for gantt/capacity/schedule must include this — see _renderCached above.
 function _filterSig(filters){
@@ -2485,6 +2590,26 @@ function wsStartColResize(e,grid,key){
   _wsResize.guide=document.getElementById('ws-snap-guide')||(()=>{
     const g=document.createElement('div');g.id='ws-snap-guide';document.body.appendChild(g);return g;
   })();
+  // Equal-width targets: every other column in the SAME grid. Making a set of columns match
+  // each other by eye is fiddly, so the drag latches onto a width one of them already has
+  // and says which. Same magnetism as the edge snap — keep dragging and it lets go.
+  _wsResize.widths=[];
+  {
+    const ownSel=grid==='sub'?'.ws-subtable thead th':'.ws-table>thead th';
+    const seen=new Map();
+    document.querySelectorAll(ownSel).forEach(el=>{
+      if(el===th)return;
+      const w=Math.round(el.getBoundingClientRect().width);
+      if(w<56||seen.has(w))return;
+      // Header text carries the sort arrow and menu glyphs; keep just the name.
+      const label=el.textContent.replace(/[^A-Za-z0-9 &/()%-]/g,'').replace(/\s+/g,' ').trim().slice(0,18);
+      seen.set(w,label||'another column');
+    });
+    _wsResize.widths=[...seen].map(([w,label])=>({w,label}));
+  }
+  _wsResize.tag=document.getElementById('ws-size-tag')||(()=>{
+    const t=document.createElement('div');t.id='ws-size-tag';document.body.appendChild(t);return t;
+  })();
   const SNAP=9; // px of magnetism
   // With table-layout:fixed the header's width IS the column's width, so setting it here
   // moves the whole column live — no re-render needed, and neighbours stay put.
@@ -2497,6 +2622,13 @@ function wsStartColResize(e,grid,key){
     for(const sx of _wsResize.snaps){
       if(Math.abs(left+w-sx)<=SNAP){ w=Math.max(56,Math.round(sx-left)); snappedTo=sx; break; }
     }
+    // Equal-width latch, only when the edge snap has not already claimed this drag.
+    let sameAs=null;
+    if(snappedTo==null){
+      for(const t of _wsResize.widths){
+        if(Math.abs(w-t.w)<=SNAP){w=t.w;sameAs=t;break;}
+      }
+    }
     _wsResize.th.style.width=w+'px';
     _wsResize.live=w;
     const g=_wsResize.guide;
@@ -2506,6 +2638,13 @@ function wsStartColResize(e,grid,key){
     }else{
       g.style.display='none';g.style.cssText='display:none';
     }
+    // The width read-out follows the cursor; it goes teal and names the column it matches.
+    const tag=_wsResize.tag;
+    tag.textContent=sameAs?`${w}px · same as ${sameAs.label}`:`${w}px`;
+    tag.style.cssText=`position:fixed;left:${ev.clientX+14}px;top:${ev.clientY-30}px;z-index:901;pointer-events:none;`
+      +`font-family:'Jost',sans-serif;font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;white-space:nowrap;`
+      +`box-shadow:0 2px 8px rgba(13,28,51,0.16);`
+      +(sameAs?'background:#0d6e4e;color:#fff':'background:#0d1c33;color:#fff;opacity:0.88');
   };
   const up=()=>{
     document.removeEventListener('mousemove',move);
@@ -2514,6 +2653,7 @@ function wsStartColResize(e,grid,key){
     if(_wsResize){
       _wsResize.th.classList.remove('col-resizing');
       if(_wsResize.guide)_wsResize.guide.style.cssText='display:none';
+      if(_wsResize.tag)_wsResize.tag.style.cssText='display:none';
       if(_wsResize.live){
         _wsColMetaFor(_wsResize.grid).widths[_wsResize.key]=_wsResize.live;
         _wsColMetaSave();
@@ -2621,6 +2761,13 @@ let mtSelectedColLevel='both'; // which row tier a new custom column carries dat
 let ganttScale='weeks';
 let ganttColorBy='status';
 let ganttCollapsed=new Set();
+// The statuses that mean "finished". Progress goes to 100% on any of them.
+const _TASK_DONE_STATUSES=['done','completed','completed-approved'];
+// Parents whose subitems are showing on the Gantt. Collapsed by default: a board with
+// subitems on every task would otherwise open as hundreds of rows.
+let ganttExpanded=new Set();
+// Fold the task list away to give the calendar the full width.
+let ganttLeftCollapsed=false;
 let ganttShowBaseline=false;
 let _ganttViewStart=null;
 let _ganttDrag=null;
@@ -3419,7 +3566,7 @@ function renderView(v){
       case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);_wbOptsApply();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
       case 'my-week':   vc.innerHTML=renderMyWeek();break;
       case 'digest':    vc.innerHTML=renderDigests();break;
-      case 'gantt':     _renderCached(vc,'gantt-'+ganttScale+'-'+_filterSig(),renderGantt);break;
+      case 'gantt':     _renderCached(vc,'gantt-'+_ganttSig()+'-'+_filterSig(),renderGantt);break;
       case 'capacity':  _renderCached(vc,'capacity-'+mcScale+'-'+mcThreshold+'-'+mcView+'-'+mcDateFrom+'-'+mcDateTo+'-'+_filterSig(mcFilters),renderCapacity);break;
       case 'schedule':  _renderCached(vc,'schedule-'+schedCalView+'-'+schedYear+'-'+schedMonth+'-'+(schedWeekBase||''),renderSchedule);break;
       case 'staff':     _renderCached(vc,'staff',renderStaff);break;
@@ -6509,6 +6656,16 @@ function renderGantt(){
   const _gExcl=_excludedBoardIds();
   const allTasks=getFilteredTasks().filter(t=>!_gExcl.has(t.workboardId||t.boardId));
   const tasks=allTasks.filter(t=>t.startDate||t.endDate);
+  // Subitems only appear under an expanded parent, and only when they carry a date of
+  // their own — an undated subitem has nothing to draw.
+  const _gSubsOf=t=>(DB.tasks||[]).filter(c=>c.parentTaskId===t.id&&!c.archived
+    &&(c.startDate||c.endDate)&&canViewTask(currentUser,c));
+  const _gSubCount=new Map(), _gShownSubs=new Map();
+  tasks.forEach(t=>{
+    const subs=_gSubsOf(t);
+    if(subs.length)_gSubCount.set(t.id,subs.length);
+    if(subs.length&&ganttExpanded.has(t.id))_gShownSubs.set(t.id,subs);
+  });
 
   if(!tasks.length)return _wbTabs+renderUniversalToolbar('gantt',{itemCount:0})+`<div class="card" style="margin-top:12px"><p style="color:#8da2b2;text-align:center;padding:40px">No tasks with dates to display. Add start/end dates to tasks to see them here.</p></div>`;
 
@@ -6527,7 +6684,8 @@ function renderGantt(){
   const DW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
 
   // View range
-  const allDates=tasks.flatMap(t=>[t.startDate,t.endDate].filter(Boolean).map(ds=>new Date(ds)));
+  const _gDated=[...tasks,...[..._gShownSubs.values()].flat()];
+  const allDates=_gDated.flatMap(t=>[t.startDate,t.endDate].filter(Boolean).map(ds=>new Date(ds)));
   const rawMin=new Date(Math.min(...allDates));
   const rawMax=new Date(Math.max(...allDates));
   const pad={days:3,weeks:7,months:14,quarters:30}[ganttScale]||7;
@@ -6551,7 +6709,12 @@ function renderGantt(){
   for(const sec of sections){
     rowList.push({type:'group',id:sec.id,sec,y:totalH,h:36});totalH+=36;
     if(!ganttCollapsed.has(sec.id)){
-      for(const t of sec.tasks){rowList.push({type:'task',id:t.id,task:t,y:totalH,h:40});totalH+=40;}
+      for(const t of sec.tasks){
+        rowList.push({type:'task',id:t.id,task:t,y:totalH,h:40,depth:0});totalH+=40;
+        for(const c of (_gShownSubs.get(t.id)||[])){
+          rowList.push({type:'task',id:c.id,task:c,y:totalH,h:32,depth:1});totalH+=32;
+        }
+      }
     }
   }
 
@@ -6581,13 +6744,23 @@ function renderGantt(){
       const hasOne=t.startDate||t.endDate;
       const dateLabel=hasBoth?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:t.startDate?`From ${formatDate(t.startDate)}`:'—';
       const isOverdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&!t.archived;
+      // A subitem row is shorter and indented, and never carries an expander of its own.
+      const _sub=row.depth===1;
+      const _rowH=_sub?32:40;
+      const _nSubs=_sub?0:(_gSubCount.get(t.id)||0);
+      const _open=ganttExpanded.has(t.id);
 
-      leftRows+=`<div style="height:40px;display:flex;align-items:center;padding:0 6px 0 20px;gap:5px;border-bottom:1px solid #f4f6fa;overflow:hidden;cursor:pointer" onclick="openTaskPanel('${t.id}')">
+      leftRows+=`<div style="height:${_rowH}px;display:flex;align-items:center;padding:0 6px 0 ${_sub?34:8}px;gap:5px;border-bottom:1px solid #f4f6fa;overflow:hidden;cursor:pointer;${_sub?'background:#fcfdfe':''}" onclick="openTaskPanel('${t.id}')">
+        ${_sub
+          ?`<span style="width:12px;flex-shrink:0;border-left:1.5px solid #dbe4ee;border-bottom:1.5px solid #dbe4ee;height:9px;margin-top:-7px;border-radius:0 0 0 3px"></span>`
+          :`<span onclick="event.stopPropagation();ganttToggleTask('${t.id}')" title="${_nSubs?(_open?'Hide subitems':'Show '+_nSubs+' subitem'+(_nSubs===1?'':'s')):''}"
+              style="width:12px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#8da2b2;
+              ${_nSubs?'cursor:pointer':'visibility:hidden'};transform:${_open?'rotate(0)':'rotate(-90deg)'};transition:transform 0.15s">▾</span>`}
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:500;color:${t.status==='done'?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${t.status==='done'?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
+          <div style="font-size:${_sub?11.5:12}px;font-weight:${_sub?400:500};color:${t.status==='done'?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${t.status==='done'?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
             <span style="font-size:10px;color:${isOverdue?'#dc2626':'#8da2b2'};font-weight:${isOverdue?700:400}">${isOverdue?'⚠ ':''}${dateLabel}</span>
-            ${cr?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
+            ${(!_sub&&cr)?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
           </div>
         </div>
         ${owner?`<div title="${escHtml(assigneeTitleAttr(t))}">${assigneeStackHtml(t,18)}</div>`:''}
@@ -6605,7 +6778,7 @@ function renderGantt(){
         const dAttr=canEdit?`onmousedown="ganttBarMouseDown(event,'${t.id}','move')"`:locked?`title="Dates locked"`:'';
         const rsAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-start')"`:''
         const reAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-end')"`:''
-        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
           <div class="g2-rh g2-rh-l" ${rsAttr}></div>
           <div class="g2-bar-label">${escHtml(t.name||t.title||'')}</div>
           ${locked?`<span style="padding-right:4px;flex-shrink:0;display:inline-flex">${icon('lock',9)}</span>`:''}
@@ -6619,7 +6792,7 @@ function renderGantt(){
         barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(t.name||'')}"></div>`;
       }
 
-      rightRows+=`<div style="height:40px;width:${trackW}px;position:relative;border-bottom:1px solid #f4f6fa">${barHTML}</div>`;
+      rightRows+=`<div style="height:${_rowH}px;width:${trackW}px;position:relative;border-bottom:1px solid #f4f6fa;${_sub?'background:#fcfdfe':''}">${barHTML}</div>`;
     }
   }
 
@@ -6634,15 +6807,21 @@ function renderGantt(){
   return _wbTabs+renderUniversalToolbar('gantt',{itemCount:tasks.length})+`
   <div class="g2-container" style="margin-top:12px">
     <!-- Left panel -->
-    <div style="width:300px;flex-shrink:0;border-right:2px solid #e8edf4;display:flex;flex-direction:column;z-index:2;background:#fff">
-      <div style="height:66px;flex-shrink:0;border-bottom:2px solid #e2eaf2;background:#f8fbff;display:flex;align-items:center;padding:0 12px 0 16px;gap:8px">
-        <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em">Task</span>
-        <span style="margin-left:auto;font-size:10px;color:#b0bec5">Due · Owner</span>
+    <div style="width:${ganttLeftCollapsed?30:300}px;flex-shrink:0;border-right:2px solid #e8edf4;display:flex;flex-direction:column;z-index:2;background:#fff;transition:width 0.16s var(--ease)">
+      <div style="height:66px;flex-shrink:0;border-bottom:2px solid #e2eaf2;background:#f8fbff;display:flex;align-items:center;padding:0 ${ganttLeftCollapsed?0:12}px 0 ${ganttLeftCollapsed?0:16}px;gap:8px;${ganttLeftCollapsed?'justify-content:center':''}">
+        ${ganttLeftCollapsed?'':`<span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em">Task</span><span style="margin-left:auto;font-size:10px;color:#b0bec5">Due · Owner</span>`}
+        <button onclick="ganttToggleLeft()" title="${ganttLeftCollapsed?'Show the task list':'Hide the task list to widen the calendar'}"
+          style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:1px solid #dbe4ee;border-radius:5px;background:#fff;color:#8da2b2;cursor:pointer;transition:color 0.12s,border-color 0.12s,transform 0.16s;${ganttLeftCollapsed?'transform:rotate(180deg)':''}"
+          onmouseover="this.style.color='#0d1c33';this.style.borderColor='#97bcbd'" onmouseout="this.style.color='#8da2b2';this.style.borderColor='#dbe4ee'"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div id="g2-left-body" style="overflow:hidden;flex:1">${leftRows}</div>
+      <div id="g2-left-body" style="overflow:hidden;flex:1;${ganttLeftCollapsed?'display:none':''}">${leftRows}</div>
     </div>
     <!-- Right panel -->
-    <div id="g2-right" style="flex:1;overflow:auto"
+    <!-- min-width:0 is load-bearing: a flex item defaults to min-width:auto, so this panel
+         refused to shrink below the width of the timeline inside it. The container grew to
+         match, the PAGE scrolled instead of the panel, and the task-name column on the left
+         slid off screen with it. -->
+    <div id="g2-right" style="flex:1;min-width:0;overflow:auto"
          onscroll="(function(s){var lb=document.getElementById('g2-left-body');if(lb)lb.scrollTop=s.scrollTop;})(this)">
       <!-- Sticky double-row header -->
       <div style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:2px solid #e2eaf2">
@@ -6664,6 +6843,11 @@ function renderGantt(){
 function ganttSetScale(s){ganttScale=s;renderView('gantt');}
 function ganttSetColorBy(c){ganttColorBy=c;renderView('gantt');}
 function ganttToggleGroup(id){if(ganttCollapsed.has(id))ganttCollapsed.delete(id);else ganttCollapsed.add(id);renderView('gantt');}
+// Show or hide one task’s subitems. Kept separate from ganttCollapsed, which is groups.
+function ganttToggleTask(id){if(ganttExpanded.has(id))ganttExpanded.delete(id);else ganttExpanded.add(id);renderView('gantt');}
+// Fold the whole task list away. The calendar keeps its own scroll, so nothing is lost —
+// the bars still carry their labels.
+function ganttToggleLeft(){ganttLeftCollapsed=!ganttLeftCollapsed;renderView('gantt');}
 function ganttAutoFit(){
   const ts=getFilteredTasks().filter(t=>t.startDate&&t.endDate);
   if(!ts.length)return;
@@ -8060,8 +8244,8 @@ function renderTime(){
         </div></div>
       <div><label class="form-label">Date <span style="color:#ef4444">*</span></label>
         <input id="te-date" type="date" class="form-input" value="${_teSelectedDay||todayStr}"/></div>
-      <div><label class="form-label">Note</label>
-        <textarea id="te-note" class="form-input" placeholder="What did you work on?" rows="1" style="resize:none;overflow:hidden;min-height:36px;line-height:1.4" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></div>
+      <div><label class="form-label">Note${mode==='client'?' <span style="color:#ef4444">*</span>':''}</label>
+        <textarea id="te-note" class="form-input" placeholder="${mode==='client'?'What did you work on? (required)':'What did you work on?'}" rows="1" style="resize:none;overflow:hidden;min-height:36px;line-height:1.4" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></div>
       <div><label class="form-label">Location</label>
         <select id="te-location" class="form-input">
           <option value="remote">Remote</option>
@@ -8310,6 +8494,12 @@ function saveEditTimeEntry(id){
   const taskId=document.getElementById('ete-task')?.value||'';
   const clientId=document.getElementById('ete-client')?.value||'';
   const note=(document.getElementById('ete-note')?.value||'').trim();
+  // Same rule as logging: without a task, the note is the only record of what was done.
+  if(!taskId&&!note){
+    showAlert('Add a note describing the work — it is only optional when the entry is against a specific task.','Note Required');
+    document.getElementById('ete-note')?.focus();
+    return;
+  }
   const location=document.getElementById('ete-location')?.value||'remote';
   const earningsRateId=document.getElementById('ete-rate')?.value||e.earningsRateId||'er1';
   const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||e.earningsRateName||'Ordinary Hours';
@@ -8600,6 +8790,13 @@ function logTime(){
   // Validation
   if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
+  // A task already says what the work was, so the note is optional there. Logged straight
+  // against a client there is nothing else on the entry to explain it, so it is required.
+  if(mode==='client'&&!note){
+    showAlert('Add a note describing the work — it is only optional when the time is logged against a specific task.','Note Required');
+    document.getElementById('te-note')?.focus();
+    return;
+  }
   if(!staffId){showAlert('Staff member is required.','Validation');return;}
   if(!date){showAlert('Date is required.','Validation');return;}
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
@@ -14831,25 +15028,6 @@ function _mnSubjectBlock(scope){
   }
   return L.length?L.join('\n')+'\n':'';
 }
-function mnBuildAiText(notes,scope){
-  const lab=_mnScopeLabel(scope);
-  const sorted=[...notes].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))
-    ||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
-  const head=['HANDOVER — '+lab.title+(lab.sub?' ('+lab.sub+')':''),
-    sorted.length+' meeting'+(sorted.length===1?'':'s')+', oldest first. Exported '+formatDate(toDateStr(new Date()))+'.',
-    '',
-    'Below is the work itself, then the running record of what was discussed, decided',
-    'and left outstanding on it. Use it as background for questions about this job.',''].join('\n');
-  const body=sorted.map((n,i)=>{
-    const a=(DB.staff||[]).find(s=>s.id===n.authorId);
-    return ['='.repeat(60),
-      '['+(i+1)+'] '+(n.title||'Untitled'),
-      'Date: '+formatDate(n.date)+(a?'    Written by: '+a.name:''),
-      '',
-      _mnPlain(n.body)||'(no details recorded)'].join('\n');
-  }).join('\n\n');
-  return head+'\n'+_mnSubjectBlock(scope)+'\n'+'─'.repeat(60)+'\nMEETINGS\n\n'+body+'\n';
-}
 function _mnCopyText(text,okMsg){
   const done=()=>showToast(okMsg,'success',3500);
   // execCommand fallback for any context where the async clipboard API is unavailable
@@ -14882,21 +15060,146 @@ function mnPickAll(scope){
   _mnRefresh(scope);
 }
 // The bar above the list: copy, and an optional tick-box mode for choosing which meetings.
-// The bar above the list: create, copy, and an optional tick-box mode for choosing which
-// meetings. One row, so the list itself stays the loudest thing on the tab — the old
-// full-width dashed "New Meeting Note" block outshouted every note under it.
+// ── dropdown menus for the Meeting Notes toolbar ─────────────
+function _mnMenu(ev,items){
+  ev.stopPropagation();
+  document.getElementById('mn-menu')?.remove();
+  const el=document.createElement('div');
+  el.id='mn-menu';el.className='mn-menu';
+  el.innerHTML=items.map(it=>it==='-'?'<div class="mn-menu-sep"></div>'
+    :`<button class="mn-menu-item${it[2]?' mn-menu-item--danger':''}" onclick="document.getElementById('mn-menu')?.remove();${it[1]}">${escHtml(it[0])}</button>`).join('');
+  document.body.appendChild(el);
+  const r=ev.currentTarget.getBoundingClientRect();
+  const w=el.offsetWidth,h=el.offsetHeight;
+  let top=r.bottom+5,left=r.left;
+  if(top+h>innerHeight-8)top=Math.max(8,r.top-h-5);
+  if(left+w>innerWidth-8)left=Math.max(8,innerWidth-w-8);
+  el.style.top=top+'px';el.style.left=left+'px';
+  const away=e=>{if(!el.contains(e.target)){el.remove();document.removeEventListener('mousedown',away);}};
+  setTimeout(()=>document.addEventListener('mousedown',away),0);
+}
+function _mnScopeNotes(scope){return _mnNotesForScope(scope);}
+function mnSelectMenu(ev,scope){
+  _mnMenu(ev,[
+    ['Select all',`mnSelectSet('${scope}','all')`],
+    ['Select meeting notes',`mnSelectSet('${scope}','meeting')`],
+    ['Select general notes',`mnSelectSet('${scope}','general')`],
+    '-',
+    ['Clear selection',`mnSelectSet('${scope}','none')`]]);
+}
+function mnSelectSet(scope,what){
+  const all=_mnScopeNotes(scope);
+  _mnPickMode=what!=='none';
+  _mnPick.clear();
+  if(what==='all')all.forEach(n=>_mnPick.add(n.id));
+  else if(what==='meeting')all.filter(mtgIs).forEach(n=>_mnPick.add(n.id));
+  else if(what==='general')all.filter(n=>!mtgIs(n)).forEach(n=>_mnPick.add(n.id));
+  if(what==='none')_mnPickMode=false;
+  _mnRefresh(scope);
+}
+function mnCopyMenu(ev,scope){
+  _mnMenu(ev,[
+    ['Copy all notes',`mnCopyScope('${scope}','all')`],
+    ['Copy selected notes',`mnCopyScope('${scope}','selected')`],
+    ['Copy expanded note',`mnCopyScope('${scope}','expanded')`],
+    ['Copy meeting summaries only',`mnCopyScope('${scope}','summaries')`]]);
+}
+function mnNewMenu(ev,scope){
+  _mnMenu(ev,[
+    ['General note',scope==='task'?'tpNoteStartNew()':'wsMeetingNoteStartNew()'],
+    ['Meeting note',scope==='task'?'mtgStartNew()':'wsMeetingNoteStartNew()']]);
+}
+function mnCopyOne(id){
+  const n=(DB.meetingNotes||[]).find(x=>x.id===id);
+  if(!n)return;
+  _mnCopyText(mnBuildAiText([n],'task'),'Copied 1 note — paste into your AI chat');
+}
+function mnCopyScope(scope,which){
+  const all=_mnScopeNotes(scope);
+  let picked=all;
+  if(which==='selected'){
+    picked=all.filter(n=>_mnPick.has(n.id));
+    if(!picked.length){showAlert('Tick the notes you want first, or choose “Copy all notes”.','Nothing selected');return;}
+  }else if(which==='expanded'){
+    picked=all.filter(n=>n.id===_tpNoteExpandedId);
+    if(!picked.length){showAlert('Open a note first, then choose “Copy expanded note”.','No note open');return;}
+  }else if(which==='summaries'){
+    picked=all.filter(mtgIs);
+    if(!picked.length){showAlert('There are no structured meetings on this task yet.','No meetings');return;}
+  }
+  if(!picked.length){showToast('No meeting notes to copy yet','warning',3000);return;}
+  _mnCopyText(mnBuildAiText(picked,scope,which==='summaries'),
+    `Copied ${picked.length} note${picked.length===1?'':'s'} — paste into your AI chat`);
+}
+
+// ── bulk actions ─────────────────────────────────────────────
+function mnBulkLinkTasks(scope){
+  const ids=[..._mnPick];
+  const meetings=ids.map(id=>(DB.meetingNotes||[]).find(n=>n.id===id)).filter(mtgIs);
+  if(!meetings.length){showAlert('Linking tasks only applies to structured meeting notes.','No meetings selected');return;}
+  if(meetings.length>1){showAlert('Open one meeting at a time to manage its task links.','One at a time');return;}
+  mtgEdit(meetings[0].id);
+  setTimeout(()=>mtgOpenPicker(),120);
+}
+function mnBulkAddTimesheet(scope){
+  const ids=[..._mnPick];
+  const meetings=ids.map(id=>(DB.meetingNotes||[]).find(n=>n.id===id)).filter(mtgIs);
+  if(!meetings.length){showAlert('Timesheet entries can only be created from structured meeting notes.','No meetings selected');return;}
+  let made=0,skipped=0;
+  meetings.forEach(m=>{
+    const lines=mtgAllocLines(m);
+    mtgEligible(m).forEach(a=>{
+      if(mtgEntryFor(m,a.staffId)){skipped++;return;}   // meetingId + staffId already used
+      const mins=mtgAttMinutes(m,a);
+      const primary=m.primaryTaskId||((mtgLinks(m)[0]||{}).taskId)||null;
+      const task=primary?(DB.tasks||[]).find(t=>t.id===primary):null;
+      (DB.timeEntries=DB.timeEntries||[]).push({
+        id:'te'+uid(),meetingId:m.id,taskId:primary||null,staffId:a.staffId,
+        clientId:task?(task.clientId||(getTaskClient(task)||{}).id||''):'',
+        date:m.date,hours:+(mins/60).toFixed(2),
+        note:(m.title||'Meeting'),billable:m.billing==='billable',location:'office',
+        earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
+        status:'draft',meetingAllocations:lines,createdAt:new Date().toISOString()});
+      made++;
+    });
+  });
+  saveDB(DB);_mnPick.clear();_mnPickMode=false;_mnRefresh(scope);
+  showToast(made?`Added ${made} draft entr${made===1?'y':'ies'}${skipped?`; ${skipped} already existed`:''}`
+    :'A timesheet entry already exists for every eligible attendee.','success',3500);
+}
+function mnBulkMore(ev,scope){
+  _mnMenu(ev,[
+    ['Archive selected',`mnBulkArchive('${scope}')`],
+    ['Clear selection',`mnSelectSet('${scope}','none')`]]);
+}
+function mnBulkArchive(scope){
+  let n=0;
+  [..._mnPick].forEach(id=>{const m=(DB.meetingNotes||[]).find(x=>x.id===id);
+    if(m){m.archived=true;m.updatedAt=new Date().toISOString();n++;}});
+  saveDB(DB);_mnPick.clear();_mnPickMode=false;_mnRefresh(scope);
+  showToast(`Archived ${n} note${n===1?'':'s'}`,'success',2500);
+}
+
+// ── the toolbar ──────────────────────────────────────────────
 function mnToolbarHtml(scope,count,newFn){
-  const picked=_mnPickMode?_mnPick.size:0;
-  const label=picked?`Copy ${picked} for AI`:`Copy ${count===1?'':'all '+count+' '}for AI`;
-  const copyIcon='<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 10.5V3.5a1 1 0 0 1 1-1h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  const sel=_mnPickMode?_mnPick.size:0;
+  if(sel>0){
+    return`<div class="mn-toolbar mn-toolbar--bulk">
+      <span class="mn-selcount">${sel} selected</span>
+      <button class="btn btn-ghost btn-sm" onclick="mnCopyScope('${scope}','selected')">Copy for AI</button>
+      <button class="btn btn-ghost btn-sm" onclick="mnBulkLinkTasks('${scope}')">Link to tasks</button>
+      <button class="btn btn-ghost btn-sm" onclick="mnBulkAddTimesheet('${scope}')">Add to timesheet</button>
+      <button class="btn btn-ghost btn-sm" onclick="mnBulkMore(event,'${scope}')">More ▾</button>
+    </div>`;
+  }
   return`<div class="mn-toolbar">
-    ${newFn?`<button class="mn-btn mn-btn--new" onclick="${newFn}">+ New note</button>`:''}
-    ${count?`<button class="mn-btn mn-btn--ai" onclick="mnCopyForAi('${scope}')" title="Copy these meeting notes as plain text, ready to paste into an AI chat">${copyIcon}${label}</button>
-    <button class="mn-btn mn-btn--ghost${_mnPickMode?' mn-btn--on':''}" onclick="mnTogglePickMode('${scope}')" title="${_mnPickMode?'Stop choosing':'Choose which meetings to copy'}">${_mnPickMode?'Done':'Select…'}</button>
-    ${_mnPickMode?`<button class="mn-btn mn-btn--link" onclick="mnPickAll('${scope}')">${_mnPick.size===count?'Clear all':'Select all'}</button>
-    <span class="mn-count">${_mnPick.size} of ${count} chosen</span>`:''}`:''}
+    <button class="btn btn-ghost btn-sm" onclick="mnSelectMenu(event,'${scope}')">Select ▾</button>
+    <button class="btn btn-primary btn-sm" onclick="mnCopyMenu(event,'${scope}')">Copy for AI ▾</button>
+    ${newFn?`<button class="btn btn-teal btn-sm" onclick="mnNewMenu(event,'${scope}')">+ New note ▾</button>`:''}
   </div>`;
 }
+
+
 // One meeting card, shared by the task panel and the board panel so the list reads the same
 // wherever it is opened. The date leads, because that is how a meeting log is scanned, and
 // the first line of the note previews under the title — a title alone said nothing about
@@ -15178,6 +15481,10 @@ function updateBulkBar(){
       <option value="" style="background:#1a2940;color:#fff">Assign To…</option>
       ${DB.staff.map(s=>`<option value="${s.id}" style="background:#1a2940;color:#fff">${escHtml(s.name)}</option>`).join('')}
     </select>
+    <select onchange="wsBulkMoveToGroup(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
+      <option value="" style="background:#1a2940;color:#fff">Move to group…</option>
+      ${getWbGroups().map(g=>`<option value="${g.id}" style="background:#1a2940;color:#fff">${escHtml(g.name)}</option>`).join('')}
+    </select>
     <button onclick="wsBulkArchiveTasks()" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.8);font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Archive</button>
     <button onclick="wsBulkDeleteTasks()" style="padding:5px 12px;border-radius:6px;border:none;background:#fef2f2;color:#991b1b;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Delete</button>
     <button onclick="wsSelected.clear();updateBulkBar();renderView('workspace')" style="margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.55);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Lato',sans-serif">✕ Clear</button>
@@ -15193,6 +15500,25 @@ function wsBulkSetStatus(status){
     if(status==='done'||status==='completed'){t.completedAt=new Date().toISOString();t.percentComplete=100;}
   });
   saveDB(DB);renderView('workspace');
+}
+// Move the selected tasks into another group. Subitems follow their parent, the same way
+// tpSaveField('groupId') cascades them — otherwise they orphan in the client portal.
+function wsBulkMoveToGroup(groupId){
+  if(!groupId)return;
+  const g=(DB.groups||[]).find(x=>x.id===groupId);
+  if(!g)return;
+  const now=new Date().toISOString();
+  let n=0;
+  [...wsSelected].forEach(id=>{
+    const t=DB.tasks.find(x=>x.id===id);
+    if(!t||t.groupId===groupId)return;
+    t.groupId=groupId;t.updatedAt=now;n++;
+    DB.tasks.filter(s=>s.parentTaskId===t.id).forEach(s=>{s.groupId=groupId;s.updatedAt=now;});
+  });
+  saveDB(DB);
+  wsSelected.clear();updateBulkBar();
+  renderView('workspace');
+  showToast(n?`Moved ${n} task${n===1?'':'s'} to “${g.name}”`:'Nothing to move — already in that group','success',3000);
 }
 function wsBulkAssignTo(staffId){
   if(!staffId)return;
@@ -16869,26 +17195,845 @@ function tpShowTab(tabName){
 // ── Meeting Notes tab (task panel) — multiple notes per task, titles in a list,
 // each expanding to show the full note. Shares DB.meetingNotes with the board-level
 // panel; task notes carry a taskId, board-level notes don't.
+// ═══════════════════════════════════════════════════════════
+// STRUCTURED MEETINGS  (Meeting Notes tab only)
+// One master meeting record lives in DB.meetingNotes with kind:'meeting'. Tasks point at it
+// through m.links — a meeting is never copied per task, so editing it updates every task that
+// shows it. Links give visibility; allocations divide the meeting's existing duration and can
+// never add to it. Notes without kind:'meeting' stay general notes and behave exactly as before.
+// ═══════════════════════════════════════════════════════════
+const MTG_TYPES=[['internal','Internal meeting'],['client','Client meeting'],['project','Project meeting'],
+  ['supplier','Supplier meeting'],['contractor','Contractor meeting'],['site','Site meeting'],
+  ['online','Online meeting'],['other','Other']];
+const MTG_BILLING=[['billable','Billable'],['non-billable','Non-billable'],['tbc','To be confirmed']];
+const MTG_GENERAL='__general';
+
+function mtgIs(n){return !!n&&n.kind==='meeting';}
+function _mtgMins(a,b){
+  if(!a||!b)return 0;
+  const [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);
+  let d=(bh*60+bm)-(ah*60+am);
+  if(d<0)d+=24*60; // finished after midnight
+  return d;
+}
+function mtgDuration(m){
+  if(!m)return 0;
+  return m.timeMethod==='duration'?(+m.durationMin||0):_mtgMins(m.startTime,m.endTime);
+}
+function mtgFmtMins(v){
+  const n=Math.max(0,Math.round(+v||0));
+  if(!n)return'0 min';
+  const h=Math.floor(n/60),mm=n%60;
+  if(!h)return mm+' min';
+  if(!mm)return h+(h===1?' hour':' hours');
+  return h+'h '+mm+'m';
+}
+function mtgFmtTime(t){
+  if(!t)return'';
+  const [h,m]=t.split(':').map(Number);
+  const ap=h>=12?'PM':'AM';const hh=h%12||12;
+  return hh+':'+String(m).padStart(2,'0')+' '+ap;
+}
+function mtgLinks(m){return Array.isArray(m&&m.links)?m.links:[];}
+function mtgLinkedTasks(m){
+  return mtgLinks(m).map(l=>({link:l,task:(DB.tasks||[]).find(t=>t.id===l.taskId)})).filter(x=>x.task);
+}
+function mtgAllocFor(m,taskId){return Math.max(0,Math.round(+((m&&m.allocations)||{})[taskId]||0));}
+function mtgAllocTotal(m){
+  const a=(m&&m.allocations)||{};
+  return Object.keys(a).reduce((s,k)=>s+Math.max(0,Math.round(+a[k]||0)),0);
+}
+function mtgRemaining(m){return mtgDuration(m)-mtgAllocTotal(m);}
+// Meetings this task should show: the ones it owns, plus every meeting linked to it.
+function mtgForTask(taskId){
+  return (DB.meetingNotes||[]).filter(n=>!n.archived&&mtgIs(n)
+    &&(n.taskId===taskId||mtgLinks(n).some(l=>l.taskId===taskId)));
+}
+function mtgOriginTask(m){
+  const prim=mtgLinks(m).find(l=>l.primary);
+  return (DB.tasks||[]).find(t=>t.id===(prim?prim.taskId:m.taskId))||null;
+}
+
+// ── timesheet side ────────────────────────────────────────────
+// One entry per meeting per staff member. meetingId + staffId is the whole dedup rule.
+function mtgEntries(m){return (DB.timeEntries||[]).filter(e=>e.meetingId===(m&&m.id));}
+function mtgEntryFor(m,staffId){return mtgEntries(m).find(e=>e.staffId===staffId)||null;}
+function mtgEligible(m){
+  return ((m&&m.attendees)||[]).filter(a=>!a.external&&a.includeTs&&a.staffId);
+}
+const MTG_TS_RANK=['not-added','draft','submitted','approved','invoiced'];
+function _mtgEntryState(e){
+  const s=String(e.status||'draft').toLowerCase();
+  if(/invoic/.test(s))return'invoiced';
+  if(/approv/.test(s))return'approved';
+  if(/submit/.test(s))return'submitted';
+  return'draft';
+}
+// One label for the whole meeting, "Partially …" when the attendees disagree.
+function mtgTsStatus(m){
+  const el=mtgEligible(m);
+  if(!el.length)return{key:'not-added',label:'Not added',rows:[]};
+  const rows=el.map(a=>{
+    const e=mtgEntryFor(m,a.staffId);
+    return{att:a,entry:e,state:e?_mtgEntryState(e):'not-added',
+      mins:e?Math.round((+e.hours||0)*60):mtgAttMinutes(m,a)};
+  });
+  const states=[...new Set(rows.map(r=>r.state))];
+  if(states.length===1){
+    const k=states[0];
+    return{key:k,label:{'not-added':'Not added',draft:'Draft',submitted:'Submitted',
+      approved:'Approved',invoiced:'Invoiced'}[k]||k,rows};
+  }
+  // mixed: name it after the furthest-along state that some attendee has reached
+  const top=MTG_TS_RANK.slice().reverse().find(k=>states.includes(k)&&k!=='not-added')||'draft';
+  return{key:'partial-'+top,label:'Partially '+{draft:'added',submitted:'submitted',
+    approved:'approved',invoiced:'invoiced'}[top],rows};
+}
+function mtgAttMinutes(m,a){
+  if(a&&a.start&&a.end)return _mtgMins(a.start,a.end);
+  if(a&&a.minutes!=null)return Math.max(0,Math.round(+a.minutes||0));
+  return mtgDuration(m);
+}
+// Entries already past draft must not be silently rewritten.
+function mtgLockedEntries(m){return mtgEntries(m).filter(e=>_mtgEntryState(e)!=='draft');}
+
+// ── draft state for the form ──────────────────────────────────
+let _mtgDraft=null;      // the meeting being written or edited
+let _mtgEditingId=null;  // id when editing an existing one
+let _mtgPicker=null;     // {sel:Set, q:'', filters:{}}
+let _mtgStatusOpen=null; // meeting id whose timesheet breakdown is open
+
+function mtgBlank(task){
+  const now=new Date();
+  const hh=String(now.getHours()).padStart(2,'0');
+  return{
+    id:null,kind:'meeting',
+    title:(task&&(task.name||task.title))||'',
+    date:toDateStr(now),
+    meetingType:'project',
+    timeMethod:'range',
+    startTime:hh+':00',endTime:String((now.getHours()+1)%24).padStart(2,'0')+':00',
+    durationMin:60,
+    body:'',actions:'',
+    attendees:currentUser&&currentUser.id?[{staffId:currentUser.id,name:currentUser.name,
+      external:false,start:hh+':00',end:String((now.getHours()+1)%24).padStart(2,'0')+':00',minutes:null,includeTs:true}]:[],
+    links:task?[{taskId:task.id,primary:true}]:[],
+    allocMode:'single',primaryTaskId:task?task.id:'',
+    allocations:{},
+    createTs:true,tsCategory:'Meeting Attended',billing:'billable',
+    archived:false
+  };
+}
+function mtgStartNew(){
+  _tpNoteEditingId=null;_mtgEditingId=null;
+  _mtgDraft=mtgBlank(_tpCurrentTask);
+  _tpNotesRefresh();
+  setTimeout(()=>document.getElementById('mtg-title')?.focus(),50);
+}
+function mtgEdit(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
+  if(!m)return;
+  _mtgEditingId=id;
+  _mtgDraft=JSON.parse(JSON.stringify(m));
+  _mtgDraft.allocations=Object.assign({},m.allocations||{});
+  _tpNoteExpandedId=null;
+  _tpNotesRefresh();
+}
+function mtgCancel(){_mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesRefresh();}
+
+// Pull the plain fields out of the DOM so a structural re-render never loses typing.
+function mtgSync(){
+  const d=_mtgDraft;if(!d)return;
+  const v=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
+  const c=id=>{const el=document.getElementById(id);return el?el.checked:undefined;};
+  const set=(k,val)=>{if(val!==undefined)d[k]=val;};
+  set('title',v('mtg-title'));set('date',v('mtg-date'));
+  set('meetingType',v('mtg-type'));set('timeMethod',v('mtg-method'));
+  set('startTime',v('mtg-start'));set('endTime',v('mtg-end'));
+  set('body',v('mtg-summary'));set('actions',v('mtg-actions'));
+  set('tsCategory',v('mtg-cat'));set('billing',v('mtg-billing'));
+  const ch=c('mtg-createts');if(ch!==undefined)d.createTs=ch;
+  const hrs=v('mtg-dur-h'),min=v('mtg-dur-m');
+  if(hrs!==undefined||min!==undefined)d.durationMin=(+(hrs||0))*60+(+(min||0));
+  set('primaryTaskId',v('mtg-primary'));
+  (d.attendees||[]).forEach((a,i)=>{
+    const s=v('mtg-att-s-'+i),e=v('mtg-att-e-'+i),inc=c('mtg-att-ts-'+i);
+    if(s!==undefined)a.start=s;if(e!==undefined)a.end=e;
+    if(inc!==undefined&&!a.external)a.includeTs=inc;
+  });
+  mtgLinks(d).forEach(l=>{
+    const al=v('mtg-alloc-'+l.taskId);
+    if(al!==undefined){
+      const n=Math.max(0,Math.round(+al||0));
+      if(n)d.allocations[l.taskId]=n;else delete d.allocations[l.taskId];
+    }
+  });
+  const gen=v('mtg-alloc-general');
+  if(gen!==undefined){const n=Math.max(0,Math.round(+gen||0));if(n)d.allocations[MTG_GENERAL]=n;else delete d.allocations[MTG_GENERAL];}
+}
+function mtgField(){mtgSync();}                       // cheap: no re-render
+function mtgStruct(){mtgSync();_tpNotesRefresh();}    // structure changed: redraw
+
+// Moving the meeting drags along every attendee who was still sitting on the old times.
+// Anyone given their own start or finish is left exactly where they are.
+function mtgTimeChanged(){
+  const d=_mtgDraft;if(!d)return;
+  const oldS=d.startTime,oldE=d.endTime;
+  mtgSync();
+  (d.attendees||[]).forEach(a=>{
+    const untouched=(!a.start&&!a.end)||(a.start===oldS&&a.end===oldE);
+    if(untouched){a.start=d.startTime||'';a.end=d.endTime||'';}
+  });
+  _tpNotesRefresh();
+}
+function mtgSetMethod(v){mtgSync();_mtgDraft.timeMethod=v;_tpNotesRefresh();}
+function mtgSetAllocMode(v){mtgSync();_mtgDraft.allocMode=v;_tpNotesRefresh();}
+function mtgAllocToGeneral(){
+  mtgSync();
+  const rem=mtgRemaining(_mtgDraft);
+  if(rem>0)_mtgDraft.allocations[MTG_GENERAL]=mtgAllocFor(_mtgDraft,MTG_GENERAL)+rem;
+  _tpNotesRefresh();
+}
+
+// ── attendees ────────────────────────────────────────────────
+// Internal staff only. New attendees start on the meeting’s own times, which is right
+// far more often than blank — change them when someone joined late or left early.
+function mtgAddAttendee(){
+  mtgSync();
+  const sel=document.getElementById('mtg-att-pick');
+  const id=sel?sel.value:'';
+  if(!id)return;
+  const d=_mtgDraft;
+  if((d.attendees||[]).some(a=>a.staffId===id))return;
+  const s=(DB.staff||[]).find(x=>x.id===id);
+  d.attendees.push({staffId:id,name:s?s.name:'Staff',external:false,
+    start:d.timeMethod==='range'?(d.startTime||''):'',
+    end:d.timeMethod==='range'?(d.endTime||''):'',
+    minutes:null,includeTs:true});
+  if(sel)sel.value='';
+  _tpNotesRefresh();
+}
+function mtgRemoveAttendee(i){mtgSync();_mtgDraft.attendees.splice(i,1);_tpNotesRefresh();}
+
+// ── task links ───────────────────────────────────────────────
+function mtgOpenPicker(){
+  mtgSync();
+  _mtgPicker={sel:new Set(mtgLinks(_mtgDraft).map(l=>l.taskId)),q:'',board:'',group:'',client:'',status:''};
+  _tpNotesRefresh();
+}
+function mtgPickerClose(){_mtgPicker=null;_tpNotesRefresh();}
+function mtgPickerSet(k,v){if(!_mtgPicker)return;_mtgPicker[k]=v;_tpNotesRefresh();
+  setTimeout(()=>{const el=document.getElementById('mtg-pick-q');if(el&&k==='q'){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},0);}
+function mtgPickerToggle(id){if(!_mtgPicker)return;_mtgPicker.sel.has(id)?_mtgPicker.sel.delete(id):_mtgPicker.sel.add(id);_tpNotesRefresh();}
+function mtgPickerApply(){
+  if(!_mtgPicker||!_mtgDraft)return;
+  const keepPrimary=mtgLinks(_mtgDraft).find(l=>l.primary);
+  const sel=[..._mtgPicker.sel];
+  // dropping a link that holds time needs a decision, so refuse it here
+  const losing=mtgLinks(_mtgDraft).filter(l=>!_mtgPicker.sel.has(l.taskId)&&mtgAllocFor(_mtgDraft,l.taskId)>0);
+  if(losing.length){
+    showAlert('Some of the tasks you removed still have meeting time allocated to them. Use Remove on the task row instead, so you can say where that time should go.','Time still allocated');
+    return;
+  }
+  mtgLinks(_mtgDraft).forEach(l=>{if(!_mtgPicker.sel.has(l.taskId))delete _mtgDraft.allocations[l.taskId];});
+  _mtgDraft.links=sel.map(id=>({taskId:id,primary:!!(keepPrimary&&keepPrimary.taskId===id)}));
+  if(!_mtgDraft.links.some(l=>l.primary)&&_mtgDraft.links[0])_mtgDraft.links[0].primary=true;
+  if(!_mtgDraft.links.some(l=>l.taskId===_mtgDraft.primaryTaskId))_mtgDraft.primaryTaskId=(_mtgDraft.links[0]||{}).taskId||'';
+  _mtgPicker=null;
+  _tpNotesRefresh();
+}
+// Removing a link that holds time: the time has to go somewhere the user chooses.
+function mtgUnlink(taskId){
+  mtgSync();
+  const d=_mtgDraft;if(!d)return;
+  const mins=mtgAllocFor(d,taskId);
+  const drop=()=>{
+    d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
+    delete d.allocations[taskId];
+    if(!d.links.some(l=>l.primary)&&d.links[0])d.links[0].primary=true;
+    if(d.primaryTaskId===taskId)d.primaryTaskId=(d.links[0]||{}).taskId||'';
+    _tpNotesRefresh();
+  };
+  if(!mins){drop();return;}
+  const others=mtgLinks(d).filter(l=>l.taskId!==taskId);
+  const opts=[`<option value="${MTG_GENERAL}">General Meeting</option>`]
+    .concat(others.map(l=>{const t=(DB.tasks||[]).find(x=>x.id===l.taskId);
+      return`<option value="${l.taskId}">${escHtml(taskRef(t)+' – '+(t.name||t.title||''))}</option>`;})).join('');
+  openGenericModal('Move the allocated time',`
+    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 12px">
+      This task has ${mtgFmtMins(mins)} allocated to it. Choose where to move the time before removing the task.</p>
+    <select id="mtg-move-to" class="form-input" style="margin-bottom:14px">${opts}</select>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
+      <button class="btn btn-teal btn-sm" onclick="mtgMoveTimeAndUnlink('${taskId}')">Move time and remove</button>
+    </div>`);
+}
+function mtgMoveTimeAndUnlink(taskId){
+  const d=_mtgDraft;if(!d)return;
+  const to=document.getElementById('mtg-move-to')?.value||MTG_GENERAL;
+  const mins=mtgAllocFor(d,taskId);
+  d.allocations[to]=mtgAllocFor(d,to)+mins;
+  delete d.allocations[taskId];
+  d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
+  if(!d.links.some(l=>l.primary)&&d.links[0])d.links[0].primary=true;
+  if(d.primaryTaskId===taskId)d.primaryTaskId=(d.links[0]||{}).taskId||'';
+  closeGenericModal();
+  _tpNotesRefresh();
+}
+
+// ── saving ───────────────────────────────────────────────────
+function mtgValidate(d){
+  if(!String(d.title||'').trim())return'Give the meeting a title.';
+  if(!d.date)return'Pick the meeting date.';
+  const dur=mtgDuration(d);
+  if(dur<=0)return'The meeting needs a duration — set a start and finish time, or enter the total.';
+  if(d.allocMode==='split'){
+    const over=mtgAllocTotal(d)-dur;
+    if(over>0)return'The allocated time exceeds the meeting duration by '+mtgFmtMins(over)+'. Reduce the allocations before saving.';
+  }
+  if(d.allocMode==='single'&&!d.primaryTaskId&&mtgLinks(d).length)return'Choose which linked task the meeting time is recorded against.';
+  return null;
+}
+function mtgSave(alsoTimesheets){
+  mtgSync();
+  const d=_mtgDraft;if(!d)return;
+  const err=mtgValidate(d);
+  if(err){showAlert(err,'Check the meeting');return;}
+  const now=new Date().toISOString();
+  const dur=mtgDuration(d);
+  if(d.allocMode==='single'){
+    d.allocations={};
+    if(d.primaryTaskId)d.allocations[d.primaryTaskId]=dur;
+  }
+  let rec;
+  if(_mtgEditingId){
+    rec=(DB.meetingNotes||[]).find(n=>n.id===_mtgEditingId);
+    if(!rec)return;
+    const before=mtgDuration(rec);
+    Object.assign(rec,d,{id:rec.id,updatedAt:now});
+    // Drafts can follow the meeting; anything submitted or beyond must not be rewritten.
+    if(before!==dur){
+      const locked=mtgLockedEntries(rec);
+      if(locked.length)showAlert('One or more related timesheet entries have already been submitted, approved or invoiced. The meeting note can be updated, but recorded time requires a separate adjustment.','Recorded time unchanged');
+      const drafts=mtgEntries(rec).filter(e=>_mtgEntryState(e)==='draft');
+      if(drafts.length){
+        openGenericModal('Update the draft timesheets?',`
+          <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 14px">
+            The meeting duration has changed from ${mtgFmtMins(before)} to ${mtgFmtMins(dur)}. Update the linked draft timesheet entries?</p>
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
+            <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">No, keep the existing entries</button>
+            <button class="btn btn-teal btn-sm" onclick="mtgSyncDrafts('${rec.id}')">Yes, update draft entries</button>
+          </div>`);
+      }
+    }
+  }else{
+    rec=Object.assign({},d,{id:'mn'+uid(),authorId:currentUser.id,createdAt:now,updatedAt:now,
+      taskId:(_tpCurrentTask||{}).id||null,
+      boardId:_tpCurrentTask?_taskBoardId(_tpCurrentTask):null});
+    (DB.meetingNotes=DB.meetingNotes||[]).push(rec);
+  }
+  saveDB(DB);
+  _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;
+  if(alsoTimesheets)mtgAddToTimesheets(rec.id,true);
+  else{_tpNoteExpandedId=rec.id;_tpNotesRefresh();showToast('Meeting saved','success',2500);}
+}
+function mtgSyncDrafts(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
+  if(!m){closeGenericModal();return;}
+  mtgEntries(m).filter(e=>_mtgEntryState(e)==='draft').forEach(e=>{
+    const att=(m.attendees||[]).find(a=>a.staffId===e.staffId);
+    e.hours=+(mtgAttMinutes(m,att||{})/60).toFixed(2);
+    e.date=m.date;e.meetingAllocations=mtgAllocLines(m);
+  });
+  saveDB(DB);closeGenericModal();_tpNotesRefresh();
+  showToast('Draft timesheet entries updated','success',2500);
+}
+function mtgAllocLines(m){
+  return Object.keys(m.allocations||{}).filter(k=>mtgAllocFor(m,k)>0)
+    .map(k=>({taskId:k===MTG_GENERAL?null:k,minutes:mtgAllocFor(m,k)}));
+}
+// One entry per eligible internal attendee. meetingId+staffId is the dedup key, so running
+// this twice adds nothing the second time.
+function mtgAddToTimesheets(id,quiet){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
+  if(!m)return;
+  const el=mtgEligible(m);
+  if(!el.length){showAlert('No internal attendees are marked for a timesheet entry.','Nothing to add');return;}
+  const lines=mtgAllocLines(m);
+  let made=0,skipped=0;
+  el.forEach(a=>{
+    if(mtgEntryFor(m,a.staffId)){skipped++;return;}
+    const mins=mtgAttMinutes(m,a);
+    const primary=m.primaryTaskId||((mtgLinks(m)[0]||{}).taskId)||null;
+    const task=primary?(DB.tasks||[]).find(t=>t.id===primary):null;
+    (DB.timeEntries=DB.timeEntries||[]).push({
+      id:'te'+uid(),meetingId:m.id,taskId:primary||null,
+      staffId:a.staffId,clientId:task?(task.clientId||(getTaskClient(task)||{}).id||''):'',
+      date:m.date,hours:+(mins/60).toFixed(2),
+      note:(m.title||'Meeting')+(m.body?' — '+_mnPlain(m.body).slice(0,140):''),
+      billable:m.billing==='billable',location:'office',
+      earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
+      status:'draft',meetingAllocations:lines,createdAt:new Date().toISOString()});
+    made++;
+  });
+  saveDB(DB);
+  _tpNoteExpandedId=m.id;_mtgDraft=null;_mtgEditingId=null;
+  _tpNotesRefresh();
+  if(made&&skipped)showToast(`Added ${made} draft entr${made===1?'y':'ies'}; ${skipped} already existed`,'success',3500);
+  else if(made)showToast(`Added ${made} draft timesheet entr${made===1?'y':'ies'}`,'success',3000);
+  else showAlert('A timesheet entry already exists for this attendee.','Already added');
+}
+function mtgToggleStatus(id){_mtgStatusOpen=_mtgStatusOpen===id?null:id;_tpNotesRefresh();}
+function mtgArchive(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  m.archived=true;m.updatedAt=new Date().toISOString();
+  saveDB(DB);_tpNotesRefresh();showToast('Meeting archived','success',2500);
+}
+function mtgDelete(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const nEntries=mtgEntries(m).length,nLinks=mtgLinks(m).length;
+  const warn=(nEntries||nLinks>1)
+    ?`<p style="font-size:12.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 11px;margin:0 0 12px">
+       This meeting is linked to ${nLinks} task${nLinks===1?'':'s'}${nEntries?` and has ${nEntries} timesheet entr${nEntries===1?'y':'ies'}`:''}. Archiving keeps the record and the history; deleting does not.</p>`:'';
+  openGenericModal('Delete this meeting?',warn+`
+    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 14px">
+      “${escHtml(m.title||'Untitled')}” will be removed from every linked task. This cannot be undone.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
+      ${(nEntries||nLinks>1)?`<button class="btn btn-teal btn-sm" onclick="closeGenericModal();mtgArchive('${id}')">Archive instead</button>`:''}
+      <button class="btn btn-sm" style="background:#dc2626;color:#fff" onclick="mtgDeleteConfirm('${id}')">Delete meeting</button>
+    </div>`);
+}
+function mtgDeleteConfirm(id){
+  DB.meetingNotes=(DB.meetingNotes||[]).filter(n=>n.id!==id);
+  (DB.timeEntries||[]).forEach(e=>{if(e.meetingId===id)e.meetingId=null;});
+  saveDB(DB);closeGenericModal();
+  if(_tpNoteExpandedId===id)_tpNoteExpandedId=null;
+  _tpNotesRefresh();showToast('Meeting deleted','success',2500);
+}
+function mtgCopyLink(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const t=mtgOriginTask(m);
+  _mnCopyText(`${m.title||'Meeting'} — ${formatDate(m.date)}${t?'\nTask: '+taskRef(t)+' '+(t.name||t.title||''):''}\nMeeting ID: ${m.id}`,
+    'Meeting link copied');
+}
+// Time this meeting put against ONE task — what a linked task shows.
+function mtgAllocForTaskLabel(m,taskId){
+  const mins=mtgAllocFor(m,taskId);
+  return mins?('Time allocated to this task: '+mtgFmtMins(mins)):'Discussed in meeting · No time allocated';
+}
+
+
+// ── Meeting form, cards and toolbar (Meeting Notes tab) ──────────────────────
+function _mtgSec(title,inner,hint){
+  return`<div class="mtg-sec"><div class="mtg-sec-hd">${escHtml(title)}</div>
+    ${hint?`<div class="mtg-hint">${hint}</div>`:''}${inner}</div>`;
+}
+function _mtgOpts(list,val){
+  return list.map(([k,l])=>`<option value="${k}"${String(val)===k?' selected':''}>${escHtml(l)}</option>`).join('');
+}
+function mtgFormHtml(){
+  const d=_mtgDraft;if(!d)return'';
+  const dur=mtgDuration(d);
+  const links=mtgLinkedTasks(d);
+  const staffOpts=(DB.staff||[]).filter(s=>!(d.attendees||[]).some(a=>a.staffId===s.id))
+    .map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('');
+
+  const details=_mtgSec('Meeting details',`
+    <label class="mtg-lbl">Meeting title <span class="mtg-req">*</span></label>
+    <input id="mtg-title" class="form-input mtg-in" value="${escHtml(d.title||'')}" oninput="mtgField()" placeholder="What was the meeting about?"/>
+    <div class="mtg-row2">
+      <div><label class="mtg-lbl">Date <span class="mtg-req">*</span></label>
+        <input id="mtg-date" type="date" class="form-input mtg-in" value="${d.date||''}" onchange="mtgField()"/></div>
+      <div><label class="mtg-lbl">Meeting type</label>
+        <select id="mtg-type" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_TYPES,d.meetingType)}</select></div>
+    </div>
+    <label class="mtg-lbl">Time entry method <span class="mtg-req">*</span></label>
+    <select id="mtg-method" class="form-input mtg-in" onchange="mtgSetMethod(this.value)">
+      <option value="range"${d.timeMethod==='range'?' selected':''}>Start and finish time</option>
+      <option value="duration"${d.timeMethod==='duration'?' selected':''}>Total duration</option>
+    </select>
+    ${d.timeMethod==='range'?`
+      <div class="mtg-row3">
+        <div><label class="mtg-lbl">Start time</label>
+          <input id="mtg-start" type="time" class="form-input mtg-in" value="${d.startTime||''}" onchange="mtgTimeChanged()"/></div>
+        <div><label class="mtg-lbl">Finish time</label>
+          <input id="mtg-end" type="time" class="form-input mtg-in" value="${d.endTime||''}" onchange="mtgTimeChanged()"/></div>
+        <div><label class="mtg-lbl">Duration</label>
+          <div class="mtg-calc">${mtgFmtMins(dur)}</div></div>
+      </div>`:`
+      <div class="mtg-row3">
+        <div><label class="mtg-lbl">Hours</label>
+          <input id="mtg-dur-h" type="number" min="0" max="24" class="form-input mtg-in" value="${Math.floor((+d.durationMin||0)/60)}" oninput="mtgField()" onchange="mtgStruct()"/></div>
+        <div><label class="mtg-lbl">Minutes</label>
+          <input id="mtg-dur-m" type="number" min="0" max="59" step="5" class="form-input mtg-in" value="${(+d.durationMin||0)%60}" oninput="mtgField()" onchange="mtgStruct()"/></div>
+        <div><label class="mtg-lbl">Total</label><div class="mtg-calc">${mtgFmtMins(dur)}</div></div>
+      </div>`}
+    <label class="mtg-lbl">Meeting summary</label>
+    <textarea id="mtg-summary" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was discussed?">${escHtml(d.body||'')}</textarea>
+    <label class="mtg-lbl">Actions and outcomes</label>
+    <textarea id="mtg-actions" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was decided, and who is doing what?">${escHtml(d.actions||'')}</textarea>`);
+
+  const attendees=_mtgSec('Attendees',`
+    <div class="mtg-addrow">
+      <select id="mtg-att-pick" class="form-input mtg-in" style="flex:1">
+        <option value="">Search staff…</option>
+        ${staffOpts}
+      </select>
+      <button class="btn btn-teal btn-sm" onclick="mtgAddAttendee()">+ Add attendee</button>
+    </div>
+    ${(d.attendees||[]).length?(d.attendees||[]).map((a,i)=>{
+      const mins=mtgAttMinutes(d,a);
+      return`<div class="mtg-att">
+        <div class="mtg-att-top">
+          <span class="mtg-att-name">${escHtml(a.name||'Attendee')}</span>
+          <span class="mtg-chip ${a.external?'mtg-chip--ext':'mtg-chip--int'}">${a.external?'External contact':'Internal staff'}</span>
+          <button class="mtg-x" title="Remove attendee" onclick="mtgRemoveAttendee(${i})">&#215;</button>
+        </div>
+        <div class="mtg-att-times">
+          <input id="mtg-att-s-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.start||''}" onchange="mtgStruct()" title="Attendance start"/>
+          <span class="mtg-to">to</span>
+          <input id="mtg-att-e-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.end||''}" onchange="mtgStruct()" title="Attendance finish"/>
+          <span class="mtg-att-dur">${mtgFmtMins(mins)}</span>
+        </div>
+        <label class="mtg-inc${a.external?' mtg-inc--off':''}" title="${a.external?'External contacts cannot have timesheet entries':'Create a draft timesheet entry for this person'}">
+          <input id="mtg-att-ts-${i}" type="checkbox" ${a.includeTs&&!a.external?'checked':''} ${a.external?'disabled':''} onchange="mtgField()"/>
+          Include in timesheet
+        </label>
+      </div>`;}).join(''):`<div class="mtg-none">No attendees yet.</div>`}`,
+    'Attendance times can differ from the meeting — set them when someone joined late or left early.');
+
+  const linkRows=links.length?links.map(({link,task})=>{
+    const wb=(DB.workboards||[]).find(w=>w.id===_taskBoardId(task));
+    const g=(DB.groups||[]).find(x=>x.id===task.groupId);
+    return`<div class="mtg-link">
+      <div class="mtg-link-main">
+        <div class="mtg-link-t"><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</div>
+        <div class="mtg-link-sub">${escHtml((wb?wb.name:'—')+' › '+(g?g.name:'—'))}</div>
+      </div>
+      <span class="mtg-chip ${link.primary?'mtg-chip--prim':'mtg-chip--link'}">${link.primary?'Primary':'Linked'}</span>
+      ${d.allocMode==='split'?`<span class="mtg-chip mtg-chip--alloc">${mtgFmtMins(mtgAllocFor(d,task.id))}</span>`:''}
+      <button class="mtg-x" title="Remove this link" onclick="mtgUnlink('${task.id}')">&#215;</button>
+    </div>`;}).join(''):`<div class="mtg-none">No tasks linked yet.</div>`;
+
+  const tasksSec=_mtgSec('Tasks and groups discussed',
+    linkRows+`<button class="btn btn-ghost btn-sm mtg-addbtn" onclick="mtgOpenPicker()">+ Link ${links.length?'another task':'task or group'}</button>`,
+    'Select all tasks discussed during this meeting. The meeting will appear in the Meeting Notes tab of each linked task without creating duplicate meeting notes or timesheet hours.');
+
+  const alloc=mtgAllocTotal(d),rem=dur-alloc;
+  const allocSec=_mtgSec('Meeting time allocation',`
+    <label class="mtg-lbl">How should the meeting time be recorded?</label>
+    <select id="mtg-allocmode" class="form-input mtg-in" onchange="mtgSetAllocMode(this.value)">
+      <option value="single"${d.allocMode==='single'?' selected':''}>Record as one general meeting</option>
+      <option value="split"${d.allocMode==='split'?' selected':''}>Split time across linked tasks</option>
+    </select>
+    ${d.allocMode==='single'?`
+      <label class="mtg-lbl">Primary task <span class="mtg-req">*</span></label>
+      <select id="mtg-primary" class="form-input mtg-in" onchange="mtgField()">
+        <option value="">Select linked task…</option>
+        ${links.map(({task})=>`<option value="${task.id}"${d.primaryTaskId===task.id?' selected':''}>${escHtml(taskRef(task)+' – '+(task.name||task.title||''))}</option>`).join('')}
+      </select>
+      <div class="mtg-hint" style="margin-top:8px">The meeting will appear against every linked task, but the meeting duration will only be counted once.</div>`
+    :`
+      ${links.map(({task})=>`<div class="mtg-allocrow">
+        <span class="mtg-allocname"><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</span>
+        <span class="mtg-allocin"><input id="mtg-alloc-${task.id}" type="number" min="0" step="5" class="form-input mtg-in mtg-in--sm" value="${mtgAllocFor(d,task.id)||''}" placeholder="0" oninput="mtgField()" onchange="mtgStruct()"/><span class="mtg-min">min</span></span>
+      </div>`).join('')}
+      ${mtgAllocFor(d,MTG_GENERAL)?`<div class="mtg-allocrow">
+        <span class="mtg-allocname">General Meeting</span>
+        <span class="mtg-allocin"><input id="mtg-alloc-general" type="number" min="0" step="5" class="form-input mtg-in mtg-in--sm" value="${mtgAllocFor(d,MTG_GENERAL)}" oninput="mtgField()" onchange="mtgStruct()"/><span class="mtg-min">min</span></span>
+      </div>`:''}
+      <div class="mtg-tot">
+        <span>Meeting duration: <b>${mtgFmtMins(dur)}</b></span>
+        <span>Allocated: <b>${mtgFmtMins(alloc)}</b></span>
+        <span class="${rem<0?'mtg-over':rem>0?'mtg-under':'mtg-ok'}">Remaining: <b>${mtgFmtMins(Math.abs(rem))}</b>${rem<0?' over':''}</span>
+      </div>
+      ${rem<0?`<div class="mtg-warn mtg-warn--bad">The allocated time exceeds the meeting duration by ${mtgFmtMins(-rem)}. Reduce the allocations before saving.</div>`
+        :rem>0?`<div class="mtg-warn">${mtgFmtMins(rem)} remain unallocated.
+          <button class="mtg-inline-btn" onclick="mtgAllocToGeneral()">Allocate to General Meeting</button></div>`:''}
+      <div class="mtg-hint" style="margin-top:8px">Allocations divide the meeting's existing duration — they are never added on top of it.</div>`}`);
+
+  const tsSec=_mtgSec('Timesheet option',`
+    <label class="mtg-inc">
+      <input id="mtg-createts" type="checkbox" ${d.createTs?'checked':''} onchange="mtgStruct()"/>
+      Create draft timesheet entries for internal attendees
+    </label>
+    ${d.createTs?`<div class="mtg-row2" style="margin-top:10px">
+      <div><label class="mtg-lbl">Timesheet category</label>
+        <select id="mtg-cat" class="form-input mtg-in" onchange="mtgField()">
+          ${['Meeting Attended','Project Work','Consulting','Administration'].map(c=>`<option${d.tsCategory===c?' selected':''}>${c}</option>`).join('')}
+        </select></div>
+      <div><label class="mtg-lbl">Billing</label>
+        <select id="mtg-billing" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_BILLING,d.billing)}</select></div>
+    </div>`:''}`);
+
+  return`<div class="mtg-form">
+    <div class="mtg-form-hd">${_mtgEditingId?'Edit meeting':'New meeting note'}</div>
+    ${details}${tasksSec}${attendees}${allocSec}${tsSec}
+    <div class="mtg-form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="mtgCancel()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick="mtgSave(false)">Save meeting</button>
+      <button class="btn btn-teal btn-sm" onclick="mtgSave(true)">Save &amp; add to timesheets</button>
+    </div>
+    ${_mtgPicker?mtgPickerHtml():''}
+  </div>`;
+}
+
+// ── task picker ──────────────────────────────────────────────
+function mtgPickerHtml(){
+  const P=_mtgPicker;if(!P)return'';
+  const q=(P.q||'').toLowerCase();
+  const boards=DB.workboards||[],groups=DB.groups||[],clients=DB.clients||[];
+  // Meetings are linked within one board — a task from another board would not belong
+  // to the same client or group structure, so the picker never leaves this workboard.
+  const _pickBoard=_tpCurrentTask?_taskBoardId(_tpCurrentTask):null;
+  let rows=(DB.tasks||[]).filter(t=>!t.parentTaskId&&!t.archived&&canViewTask(currentUser,t)
+    &&(!_pickBoard||_taskBoardId(t)===_pickBoard));
+  if(P.board)rows=rows.filter(t=>_taskBoardId(t)===P.board);
+  if(P.group)rows=rows.filter(t=>t.groupId===P.group);
+  if(P.client)rows=rows.filter(t=>{const wb=boards.find(w=>w.id===_taskBoardId(t));return wb&&boardClientId(wb)===P.client;});
+  if(P.status)rows=rows.filter(t=>t.status===P.status);
+  if(q)rows=rows.filter(t=>((t.name||t.title||'')+' '+taskRef(t)).toLowerCase().includes(q));
+  rows=rows.slice(0,120);
+  const opt=(v,l,cur)=>`<option value="${v}"${cur===v?' selected':''}>${escHtml(l)}</option>`;
+  return`<div class="mtg-pick-ov" onclick="if(event.target===this)mtgPickerClose()">
+    <div class="mtg-pick">
+      <div class="mtg-pick-hd">Link tasks discussed${_pickBoard?` <span class="mtg-pick-board">in ${escHtml((((DB.workboards||[]).find(w=>w.id===_pickBoard))||{}).name||'this board')}</span>`:''}<button class="mtg-x" onclick="mtgPickerClose()">&#215;</button></div>
+      <input id="mtg-pick-q" class="form-input mtg-in" placeholder="Search task name or ID…" value="${escHtml(P.q||'')}" oninput="mtgPickerSet('q',this.value)"/>
+      <div class="mtg-pick-filters">
+        <select class="form-input mtg-in mtg-in--sm" onchange="mtgPickerSet('group',this.value)">${opt('','All groups',P.group)}${groups.filter(x=>!_pickBoard||(x.boardId||x.workboardId)===_pickBoard).map(g=>opt(g.id,g.name,P.group)).join('')}</select>
+        <select class="form-input mtg-in mtg-in--sm" onchange="mtgPickerSet('status',this.value)">${opt('','Any status',P.status)}${getAllStatuses().map(s=>opt(s,getStatusMeta(s).label||s,P.status)).join('')}</select>
+      </div>
+      <div class="mtg-pick-list">
+        ${rows.length?rows.map(t=>{
+          const wb=boards.find(w=>w.id===_taskBoardId(t));
+          const g=groups.find(x=>x.id===t.groupId);
+          const cli=wb?boardClient(wb):null;
+          const on=P.sel.has(t.id);
+          return`<label class="mtg-pick-row${on?' on':''}">
+            <input type="checkbox" ${on?'checked':''} onchange="mtgPickerToggle('${t.id}')"/>
+            <span class="mtg-ref">${escHtml(taskRef(t))}</span>
+            <span class="mtg-pick-name">${escHtml(t.name||t.title||'')}</span>
+            <span class="mtg-pick-meta">${escHtml((wb?wb.name:'—')+' › '+(g?g.name:'—')+(cli?' · '+cli.name:''))}</span>
+            <span class="mtg-chip mtg-chip--st">${escHtml(getStatusMeta(t.status).label||t.status||'')}</span>
+          </label>`;}).join(''):`<div class="mtg-none">Nothing matches those filters.</div>`}
+      </div>
+      <div class="mtg-pick-foot">
+        <span class="mtg-pick-count">${P.sel.size} selected</span>
+        <button class="btn btn-ghost btn-sm" onclick="mtgPickerClose()">Cancel</button>
+        <button class="btn btn-teal btn-sm" onclick="mtgPickerApply()">Link selected</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── meeting card ─────────────────────────────────────────────
+function mtgCardHtml(m,viewTaskId,expanded){
+  const dur=mtgDuration(m);
+  const atts=(m.attendees||[]).length;
+  const links=mtgLinkedTasks(m);
+  const ts=mtgTsStatus(m);
+  const isOrigin=!viewTaskId||m.taskId===viewTaskId||(mtgLinks(m).find(l=>l.primary)||{}).taskId===viewTaskId;
+  const originTask=mtgOriginTask(m);
+  const canEdit=m.authorId===currentUser.id||currentUser.role==='admin';
+  const chev='<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 6.5L8 10.5L12 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const head=`<div class="mn-head" onclick="tpNoteToggle('${m.id}')">
+      ${mnPickBoxHtml(m.id,'task')}
+      <div class="mtg-ico" title="${isOrigin?'Meeting':'Linked meeting'}">${isOrigin?'🗓':'🔗'}</div>
+      <div class="mn-main">
+        <div class="mn-title">${escHtml(m.title||'Untitled meeting')}</div>
+        <div class="mtg-chips">
+          <span class="mtg-chip mtg-chip--kind">${isOrigin?'Meeting':'Linked meeting'}</span>
+          <span class="mtg-chip">${formatDate(m.date)}</span>
+          <span class="mtg-chip">${mtgFmtMins(dur)}</span>
+          <span class="mtg-chip">${atts} attendee${atts===1?'':'s'}</span>
+          <span class="mtg-chip">${links.length} task${links.length===1?'':'s'}</span>
+          <span class="mtg-chip mtg-chip--ts mtg-ts--${ts.key.split('-')[0]}">Timesheet: ${escHtml(ts.label)}</span>
+        </div>
+        ${!isOrigin?`<div class="mtg-linkfrom">Linked from ${escHtml(originTask?taskRef(originTask):'another task')} · ${escHtml(mtgAllocForTaskLabel(m,viewTaskId))}</div>`:''}
+      </div>
+      <span class="mn-chev">${chev}</span>
+    </div>`;
+  if(!expanded)return`<div class="mn-card mtg-card">${head}</div>`;
+
+  const rows=ts.rows;
+  const needTs=mtgEligible(m).some(a=>!mtgEntryFor(m,a.staffId));
+  const body=`<div class="mn-body mtg-body">
+    <div class="mtg-when">${escHtml(formatDate(m.date))}${m.timeMethod==='range'&&m.startTime?` · ${mtgFmtTime(m.startTime)} to ${mtgFmtTime(m.endTime)}`:''}</div>
+    <div class="mtg-meta2">Duration: ${mtgFmtMins(dur)} · Type: ${escHtml((MTG_TYPES.find(t=>t[0]===m.meetingType)||['','—'])[1])}</div>
+
+    <div class="mtg-bsec">Attendees</div>
+    ${atts?`<ul class="mtg-ul">${(m.attendees||[]).map(a=>`<li>${escHtml(a.name||'Attendee')} · ${mtgFmtMins(mtgAttMinutes(m,a))}${a.external?' · Not included in timesheet':''}</li>`).join('')}</ul>`:`<div class="mtg-none">None recorded.</div>`}
+
+    ${m.body?`<div class="mtg-bsec">Summary</div><div class="mtg-text">${escHtml(m.body)}</div>`:''}
+    ${m.actions?`<div class="mtg-bsec">Actions and outcomes</div><div class="mtg-text">${escHtml(m.actions)}</div>`:''}
+
+    <div class="mtg-bsec">Tasks discussed</div>
+    ${links.length?`<ul class="mtg-ul">${links.map(({task})=>`<li><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</li>`).join('')}</ul>`:`<div class="mtg-none">None linked.</div>`}
+
+    ${mtgAllocTotal(m)?`<div class="mtg-bsec">Time allocation</div>
+      <ul class="mtg-ul">${Object.keys(m.allocations||{}).filter(k=>mtgAllocFor(m,k)>0).map(k=>{
+        const t=(DB.tasks||[]).find(x=>x.id===k);
+        return`<li>${k===MTG_GENERAL?'General Meeting':escHtml(taskRef(t)+' – '+((t&&(t.name||t.title))||''))} – ${mtgFmtMins(mtgAllocFor(m,k))}</li>`;}).join('')}</ul>`:''}
+
+    <div class="mtg-bsec">Timesheet status</div>
+    ${rows.length?`<ul class="mtg-ul">${rows.map(r=>`<li>${escHtml(r.att.name||'Staff')} · ${escHtml({'not-added':'Not added',draft:'Draft',submitted:'Submitted',approved:'Approved',invoiced:'Invoiced'}[r.state]||r.state)} · ${mtgFmtMins(r.mins)}</li>`).join('')}</ul>`
+      :`<div class="mtg-none">No internal attendees marked for a timesheet.</div>`}
+
+    <div class="mtg-acts">
+      ${isOrigin?`
+        ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgEdit('${m.id}')">Edit</button>`:''}
+        ${needTs?`<button class="btn btn-teal btn-sm" onclick="event.stopPropagation();mtgAddToTimesheets('${m.id}')">Add to timesheets</button>`
+          :`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgToggleStatus('${m.id}')">Timesheets added</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgEdit('${m.id}')">Manage links</button>`
+      :`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgOpenOrigin('${m.id}')">Open meeting</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgManageLink('${m.id}','${viewTaskId}')">Manage link</button>`}
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();mtgMore(event,'${m.id}')">More ▾</button>
+    </div>
+    ${_mtgStatusOpen===m.id&&rows.length?`<div class="mtg-tsbreak">
+      ${rows.map(r=>`<div class="mtg-tsrow"><span>${escHtml(r.att.name||'Staff')}</span><span>${mtgFmtMins(r.mins)}</span><span>${escHtml({'not-added':'Not added',draft:'Draft',submitted:'Submitted',approved:'Approved',invoiced:'Invoiced'}[r.state]||r.state)}</span></div>`).join('')}
+    </div>`:''}
+  </div>`;
+  return`<div class="mn-card mtg-card open">${head}${body}</div>`;
+}
+function mtgOpenOrigin(id){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const t=mtgOriginTask(m);
+  if(t&&t.id!==(_tpCurrentTask||{}).id){openTaskPanel(t.id,'notes');setTimeout(()=>{_tpNoteExpandedId=id;_tpNotesRefresh();},400);}
+  else{_tpNoteExpandedId=id;_tpNotesRefresh();}
+}
+function mtgManageLink(id,taskId){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const mins=mtgAllocFor(m,taskId);
+  openGenericModal('Manage this link',`
+    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 10px">
+      This task is linked because it was discussed in “${escHtml(m.title||'the meeting')}”.
+      ${mins?`It currently carries ${mtgFmtMins(mins)} of the meeting's time.`:'No meeting time is allocated to it.'}</p>
+    <label class="mtg-lbl">Allocate time to this task</label>
+    <input id="mtg-ml-min" type="number" min="0" step="5" class="form-input" value="${mins||''}" placeholder="0" style="margin-bottom:14px"/>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" style="color:#dc2626" onclick="mtgRemoveLinkFromTask('${id}','${taskId}')">Remove this task</button>
+      <button class="btn btn-teal btn-sm" onclick="mtgSaveLinkAlloc('${id}','${taskId}')">Save</button>
+    </div>`);
+}
+function mtgSaveLinkAlloc(id,taskId){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const val=Math.max(0,Math.round(+(document.getElementById('mtg-ml-min')?.value||0)));
+  const others=mtgAllocTotal(m)-mtgAllocFor(m,taskId);
+  if(others+val>mtgDuration(m)){
+    showAlert('The allocated time exceeds the meeting duration by '+mtgFmtMins(others+val-mtgDuration(m))+'. Reduce the allocations before saving.','Over-allocated');
+    return;
+  }
+  m.allocations=m.allocations||{};
+  if(val)m.allocations[taskId]=val;else delete m.allocations[taskId];
+  m.updatedAt=new Date().toISOString();
+  saveDB(DB);closeGenericModal();_tpNotesRefresh();
+}
+function mtgRemoveLinkFromTask(id,taskId){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  // Removing this task never touches the meeting itself or its other links.
+  m.links=mtgLinks(m).filter(l=>l.taskId!==taskId);
+  const mins=mtgAllocFor(m,taskId);
+  if(mins){m.allocations[MTG_GENERAL]=mtgAllocFor(m,MTG_GENERAL)+mins;delete m.allocations[taskId];}
+  m.updatedAt=new Date().toISOString();
+  saveDB(DB);closeGenericModal();_tpNotesRefresh();
+  showToast('Task unlinked from the meeting'+(mins?' — its time moved to General Meeting':''),'success',3200);
+}
+function mtgMore(ev,id){
+  ev.stopPropagation();
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);if(!m)return;
+  const items=[
+    ['Manage attendees',`mtgEdit('${id}')`],
+    ['Allocate time',`mtgEdit('${id}')`],
+    ['Copy for AI',`mnCopyOne('${id}')`],
+    ['Copy meeting link',`mtgCopyLink('${id}')`],
+    ['Archive meeting',`mtgArchive('${id}')`],
+    ['Delete meeting',`mtgDelete('${id}')`]];
+  _mnMenu(ev,items);
+}
+
+
+// Plain-text export. A meeting is written once no matter how many tasks it is linked to —
+// the linked tasks are listed underneath it instead of the meeting repeating per task.
+function mnBuildAiText(notes,scope,summariesOnly){
+  const lab=_mnScopeLabel(scope);
+  const seen=new Set();
+  const list=notes.filter(n=>{if(seen.has(n.id))return false;seen.add(n.id);return true;})
+    .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))
+      ||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  const head=['HANDOVER — '+lab.title+(lab.sub?' ('+lab.sub+')':''),
+    list.length+(summariesOnly?' meeting summar':' note')+(list.length===1?(summariesOnly?'y':''):(summariesOnly?'ies':'s'))
+      +', oldest first. Exported '+formatDate(toDateStr(new Date()))+'.',
+    '',
+    'Below is the work itself, then the running record of what was discussed, decided',
+    'and left outstanding on it. Use it as background for questions about this job.',''].join('\n');
+  const body=list.map((n,i)=>{
+    const a=(DB.staff||[]).find(s=>s.id===n.authorId);
+    const L=['='.repeat(60),'['+(i+1)+'] '+(n.title||'Untitled')];
+    if(mtgIs(n)){
+      const dur=mtgDuration(n);
+      L.push('Meeting · '+formatDate(n.date)
+        +(n.timeMethod==='range'&&n.startTime?' · '+mtgFmtTime(n.startTime)+' to '+mtgFmtTime(n.endTime):'')
+        +' · '+mtgFmtMins(dur));
+      const ty=(MTG_TYPES.find(t=>t[0]===n.meetingType)||[])[1];
+      if(ty)L.push('Type: '+ty);
+      const att=(n.attendees||[]);
+      if(att.length)L.push('Attendees: '+att.map(x=>x.name+(x.external?' (external)':'')).join(', '));
+      L.push('');
+      if(n.body)L.push('Summary:',_mnPlain(n.body));
+      if(n.actions)L.push('',(summariesOnly?'':'Actions and outcomes:'),summariesOnly?'':_mnPlain(n.actions));
+      if(!summariesOnly){
+        const links=mtgLinkedTasks(n);
+        if(links.length){
+          L.push('','Tasks discussed:');
+          links.forEach(({task})=>{
+            const mins=mtgAllocFor(n,task.id);
+            L.push('- '+taskRef(task)+' '+(task.name||task.title||'')+(mins?'  ('+mtgFmtMins(mins)+' allocated)':''));
+          });
+        }
+      }
+      if(!n.body&&!n.actions&&!att.length)L.push('(no details recorded)');
+    }else{
+      L.push('Date: '+formatDate(n.date)+(a?'    Written by: '+a.name:''),'');
+      L.push(_mnPlain(n.body)||'(no details recorded)');
+    }
+    return L.join('\n');
+  }).join('\n\n');
+  return head+'\n'+_mnSubjectBlock(scope)+'\n'+'─'.repeat(60)+'\nMEETINGS\n\n'+body+'\n';
+}
+
+// ── the tab ──────────────────────────────────────────────────
 function renderTpMeetingNotes(task){
-  const notes=(DB.meetingNotes||[]).filter(n=>n.taskId===task.id)
-    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.createdAt.localeCompare(a.createdAt));
+  // The structured form takes over the tab while it is open.
+  if(_mtgDraft)return mtgFormHtml();
+  const seen=new Set();
+  const notes=(DB.meetingNotes||[]).filter(n=>{
+      if(n.archived)return false;
+      const mine=n.taskId===task.id||(mtgIs(n)&&mtgLinks(n).some(l=>l.taskId===task.id));
+      if(!mine||seen.has(n.id))return false;
+      seen.add(n.id);return true;
+    })
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
   const isNew=_tpNoteEditingId==='new';
-  const addForm=isNew?`<div class="card" style="padding:12px;margin-bottom:10px">
-      <input id="tpn-title" class="form-input" placeholder="Meeting title…" style="margin-bottom:8px;font-weight:600"/>
+  const addForm=isNew?`<div class="card" style="padding:12px;margin-bottom:8px">
+      <input id="tpn-title" class="form-input" placeholder="Note title…" style="margin-bottom:8px;font-weight:600"/>
       <input id="tpn-date" type="date" class="form-input" value="${toDateStr(new Date())}" style="margin-bottom:8px;width:170px"/>
-      <div style="margin-bottom:8px">${_noteEditorHtml('tpn-body','','Notes from the meeting… paste a formatted summary and the formatting is kept')}</div>
+      <div style="margin-bottom:8px">${_noteEditorHtml('tpn-body','','Notes… paste a formatted summary and the formatting is kept')}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="tpNoteCancel()" class="btn btn-ghost btn-sm">Cancel</button>
         <button onclick="tpNoteSave('${task.id}')" class="btn btn-teal btn-sm">Save Note</button>
       </div>
     </div>`:'';
   return`<div>
-    ${mnToolbarHtml('task',notes.length,isNew?'':'tpNoteStartNew()')}
+    ${mnToolbarHtml('task',notes.length,isNew?'':'x')}
     ${addForm}
     ${notes.length===0&&!isNew
-      ?`<div class="mn-empty"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',32)}</div>No meeting notes on this task yet.</div>`
-      :mnGroupedHtml(notes,n=>{
+      ?`<div class="mn-empty"><div style="margin-bottom:10px;color:#c8d4e0">${icon('note',32)}</div>No notes on this task yet.</div>`
+      :notes.map(n=>{
           const canEdit=n.authorId===currentUser.id||currentUser.role==='admin';
+          if(mtgIs(n))return mtgCardHtml(n,task.id,_tpNoteExpandedId===n.id);
           if(_tpNoteEditingId===n.id){
             return`<div class="card" style="padding:12px;margin-bottom:8px">
               <input id="tpn-e-title-${n.id}" class="form-input" value="${escHtml(n.title)}" style="margin-bottom:8px;font-weight:600"/>
@@ -16902,9 +18047,10 @@ function renderTpMeetingNotes(task){
           }
           return mnCardHtml(n,'task',{expanded:_tpNoteExpandedId===n.id,canEdit,
             toggle:`tpNoteToggle('${n.id}')`,edit:`tpNoteStartEdit('${n.id}')`,del:`tpNoteDelete('${n.id}')`});
-        })}
+        }).join('')}
   </div>`;
 }
+
 let _tpNoteEditingId=null,_tpNoteExpandedId=null;
 function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}}
 function tpNoteStartNew(){_tpNoteEditingId='new';_tpNoteExpandedId=null;_tpNotesRefresh();setTimeout(()=>document.getElementById('tpn-title')?.focus(),40);}
@@ -16958,7 +18104,13 @@ function tpSaveField(field,value){
   _tpCurrentTask.updatedAt=new Date().toISOString();
   const prevStatus=field==='status'?(_tpCurrentTask.status):null;
   if(field==='status'){
-    if(value==='done'||value==='completed'){if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();}
+    // Marking a task complete takes progress with it. The reverse (100% → done) was already
+    // wired below; from the header dropdown it was not, so a finished task sat on 11%.
+    // Every other route to "done" — the bulk bar, the row checkbox, My Week — already did this.
+    if(_TASK_DONE_STATUSES.includes(value)){
+      if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();
+      _tpCurrentTask.percentComplete=100;
+    }
     else _tpCurrentTask.completedAt=null;
   }
   let _pctStatusChanged=false;
@@ -17745,6 +18897,7 @@ function renderTpRecurrence(task){
 // WORKBOARD ARCHIVE / DUPLICATE / RESTORE
 // ═══════════════════════════════════════════════════════════
 function saveWbColor(id,color){
+  if(currentUser?.role==='client')return; // same guard as every other board setting
   const wb=DB.workboards.find(w=>w.id===id);
   if(!wb)return;
   wb.color=color;
@@ -17779,6 +18932,7 @@ function clientDisplayTitle(cli){
   return nm?nm+' - '+code:code;
 }
 function saveWbClient(boardId,clientId){
+  if(currentUser?.role==='client')return; // same guard as every other board setting
   const wb=(DB.workboards||[]).find(w=>w.id===boardId);
   if(wb){wb.clientId=clientId||'';wb.updatedAt=new Date().toISOString();}
   DB.groups.filter(g=>(g.boardId||g.workboardId)===boardId).forEach(g=>{g.clientId=clientId||'';});
