@@ -6503,7 +6503,8 @@ function renderListView(tasks){
   const sorted=[...tasks].sort((a,b)=>new Date(a.endDate||'2099')-new Date(b.endDate||'2099'));
   vc.innerHTML=renderWbTabs('list')+renderUniversalToolbar('list',{itemCount:sorted.length})+`
   <div class="card" style="padding:0;overflow:hidden;margin-top:12px">
-    <table class="data-table">
+    <div style="overflow-x:auto">
+    <table class="data-table" style="min-width:760px">
       <thead><tr>
         <th>Task</th><th>Client</th><th>Status</th><th>Priority</th>
         <th>Owner</th><th>Currently With</th><th>% Done</th>
@@ -6535,6 +6536,7 @@ function renderListView(tasks){
       ${sorted.length===0?`<tr><td colspan="10" style="text-align:center;padding:32px;color:#8da2b2">No tasks found.</td></tr>`:''}
       </tbody>
     </table>
+  </div>
   </div>`;
 }
 
@@ -8851,7 +8853,7 @@ function renderReports(){
 
   const body=rptTab==='timesheet'?_rptTimesheetHtml():_rptInvoiceHtml();
 
-  return`<div style="display:grid;gap:18px">
+  return`<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:18px">
     <div class="card" style="padding:14px 20px">
       <div style="display:flex;gap:8px;margin-bottom:16px;background:#f4f7fa;border-radius:9px;padding:4px">
         <button style="${tabStyle('timesheet')}" onclick="rptTab='timesheet';renderView('reports')">Timesheet</button>
