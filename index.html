@@ -683,6 +683,34 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .mtg-warn--bad{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
 .mtg-inline-btn{background:none;border:none;color:#0d6e4e;font-weight:700;font-size:11.5px;cursor:pointer;padding:0 0 0 4px;font-family:'Jost',sans-serif;text-decoration:underline}
 .mtg-form-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+/* Simplified meeting form: compact rows, disclosure buttons and a sticky footer. */
+.mtg-f{margin-bottom:2px}
+.mtg-endwrap{display:flex;align-items:center;gap:6px}
+.mtg-endwrap .mtg-in{flex:1;min-width:0}
+.mtg-durchip{flex-shrink:0;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border-radius:20px;padding:3px 9px;white-space:nowrap}
+.mtg-disc{display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:6px 0;margin:2px 0 4px;cursor:pointer;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;color:#0d6e4e}
+.mtg-disc:hover{color:#0a5a40;text-decoration:underline}
+.mtg-disc:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:5px}
+.mtg-grow{transition:height 0.12s var(--ease);overflow:hidden}
+.mtg-tcard{display:flex;align-items:center;gap:7px;border:1px solid #eef2f7;border-radius:9px;padding:8px 10px;margin-bottom:6px;background:#fbfdff}
+.mtg-tcard-main{flex:1;min-width:0}
+.mtg-tcard-t{font-size:12.5px;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-tcard-p{font-size:10.5px;color:#8da2b2;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtg-oneline{font-size:11.5px;color:#5b7080;background:#f6f9fc;border-radius:8px;padding:7px 10px;margin-top:8px}
+.mtg-radio{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#1a2940;cursor:pointer;padding:5px 0}
+.mtg-radio input{accent-color:#0d6e4e;width:14px;height:14px;flex-shrink:0}
+.mtg-mini{background:none;border:1px solid #dbe4ee;border-radius:6px;padding:3px 8px;cursor:pointer;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;color:#5b7080;white-space:nowrap;transition:background 0.12s,border-color 0.12s,color 0.12s}
+.mtg-mini:hover{background:#f2f7fb;border-color:#97bcbd;color:#0d1c33}
+.mtg-mini--del{color:#b0808a;border-color:#eedde0}
+.mtg-mini--del:hover{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.mtg-att-sum{font-size:11.5px;color:#6b8399;margin-top:3px}
+.mtg-att-acts{display:flex;gap:6px;margin-top:7px}
+.mtg-att--open{background:#f7fbff;border-color:#dbe7f0}
+.mtg-tsblock{margin-top:10px;padding-top:9px;border-top:1px solid #eef2f7}
+.mtg-footer{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;background:#fff;border-top:1px solid #e6edf4;padding:10px 0 4px;margin-top:12px;z-index:5}
+.mtg-blocked{margin-right:auto;font-size:11px;color:#b91c1c;line-height:1.35;max-width:210px}
+.mtg-form{padding-bottom:8px}
+.mtg-scroll{padding-bottom:54px}
 
 .mtg-pick-ov{position:fixed;inset:0;background:rgba(13,28,51,0.34);z-index:700;display:flex;align-items:center;justify-content:center;padding:20px}
 .mtg-pick{background:#fff;border-radius:13px;box-shadow:0 20px 60px rgba(13,28,51,0.3);width:min(640px,94vw);max-height:82vh;display:flex;flex-direction:column;padding:14px}
@@ -8046,6 +8074,7 @@ function logTimeFromModal(taskId){
   if(!date){showAlert('Date is required.','Validation');return;}
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
   if(!staffId){showAlert('Staff member is required.','Validation');return;}
+  if(!note){showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');document.getElementById('tte-note')?.focus();return;}
   const clientId=task.clientId||(getTaskClient(task)?.id)||'';
   const mEntry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   DB.timeEntries.push(mEntry);
@@ -8244,8 +8273,8 @@ function renderTime(){
         </div></div>
       <div><label class="form-label">Date <span style="color:#ef4444">*</span></label>
         <input id="te-date" type="date" class="form-input" value="${_teSelectedDay||todayStr}"/></div>
-      <div><label class="form-label">Note${mode==='client'?' <span style="color:#ef4444">*</span>':''}</label>
-        <textarea id="te-note" class="form-input" placeholder="${mode==='client'?'What did you work on? (required)':'What did you work on?'}" rows="1" style="resize:none;overflow:hidden;min-height:36px;line-height:1.4" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></div>
+      <div><label class="form-label">Note <span style="color:#ef4444">*</span></label>
+        <textarea id="te-note" class="form-input" placeholder="What did you work on?" rows="1" style="resize:none;overflow:hidden;min-height:36px;line-height:1.4" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea></div>
       <div><label class="form-label">Location</label>
         <select id="te-location" class="form-input">
           <option value="remote">Remote</option>
@@ -8460,7 +8489,7 @@ function openEditTimeEntry(id){
       </div>
       <div><label class="form-label">Client</label>
         <select id="ete-client" class="form-input">${clientOpts}</select></div>
-      <div><label class="form-label">Note</label>
+      <div><label class="form-label">Note <span style="color:#ef4444">*</span></label>
         <textarea id="ete-note" class="form-input" rows="3" style="resize:vertical;min-height:72px;line-height:1.5">${escHtml(e.note||'')}</textarea></div>
       <div><label class="form-label">Location</label>
         <select id="ete-location" class="form-input">
@@ -8494,9 +8523,9 @@ function saveEditTimeEntry(id){
   const taskId=document.getElementById('ete-task')?.value||'';
   const clientId=document.getElementById('ete-client')?.value||'';
   const note=(document.getElementById('ete-note')?.value||'').trim();
-  // Same rule as logging: without a task, the note is the only record of what was done.
-  if(!taskId&&!note){
-    showAlert('Add a note describing the work — it is only optional when the entry is against a specific task.','Note Required');
+  // Same rule as logging: an entry without a note cannot be read back later.
+  if(!note){
+    showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');
     document.getElementById('ete-note')?.focus();
     return;
   }
@@ -8790,10 +8819,10 @@ function logTime(){
   // Validation
   if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
-  // A task already says what the work was, so the note is optional there. Logged straight
-  // against a client there is nothing else on the entry to explain it, so it is required.
-  if(mode==='client'&&!note){
-    showAlert('Add a note describing the work — it is only optional when the time is logged against a specific task.','Note Required');
+  // Every entry carries a note. A task name says what the work was attached to, not what
+  // was actually done, and that is what a timesheet is read for later.
+  if(!note){
+    showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');
     document.getElementById('te-note')?.focus();
     return;
   }
@@ -13928,7 +13957,7 @@ function openTaskModal(id, defaultGroupId){
           <div><label class="form-label">Date</label><input id="tte-date" type="date" class="form-input" value="${new Date().toISOString().slice(0,10)}"/></div>
           <div><label class="form-label">Hours</label><input id="tte-hours" type="number" step="0.25" min="0.25" class="form-input" value="1"/></div>
           ${currentUser.role==='admin'?`<div><label class="form-label">Staff</label><select id="tte-staff" class="form-input">${DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('')}</select></div>`:''}
-          <div><label class="form-label">Note</label><textarea id="tte-note" class="form-input" placeholder="What did you work on?" rows="2" style="resize:vertical;min-height:56px;line-height:1.4"></textarea></div>
+          <div><label class="form-label">Note <span style="color:#ef4444">*</span></label><textarea id="tte-note" class="form-input" placeholder="What did you work on?" rows="2" style="resize:vertical;min-height:56px;line-height:1.4"></textarea></div>
           <div style="padding-bottom:2px"><label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="tte-billable" checked style="accent-color:#97bcbd"/> Billable</label></div>
           <div><button onclick="logTimeFromModal('${id}')" class="btn btn-teal btn-sm" style="white-space:nowrap">+ Log</button></div>
         </div>`:''}
@@ -15859,13 +15888,28 @@ function wsToggleCol(key){
   if(currentWorkboard)_wsBoardColumns[currentWorkboard.id]={...wsColumns};
   renderView('workspace');
 }
-function _wsGetColOrder(){const bid=currentWorkboard?.id||'_default';return _wsColOrderMap[bid]||null;}
-function _wsSetColOrder(order){const bid=currentWorkboard?.id||'_default';_wsColOrderMap[bid]=order;try{localStorage.setItem('etcher_ws_col_order',JSON.stringify(_wsColOrderMap));}catch(e){}}
-function _wsColDragStart(e,key){_wsDragCol=key;e.dataTransfer.effectAllowed='move';e.target.closest('th').style.opacity='0.5';}
-function _wsColDragOver(e,key){if(!_wsDragCol||_wsDragCol===key)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));e.target.closest('th')?.classList.add('ws-col-drop-target');}
+function _wsGetColOrder(grid){
+  const bid=currentWorkboard?.id||'_default';
+  const v=_wsColOrderMap[bid];
+  if(!v)return null;
+  // legacy shape: a bare array was the item order
+  if(Array.isArray(v))return (grid||'item')==='item'?v:null;
+  return v[grid||'item']||null;
+}
+function _wsSetColOrder(grid,order){
+  const bid=currentWorkboard?.id||'_default';
+  const cur=_wsColOrderMap[bid];
+  const next=Array.isArray(cur)?{item:cur}:Object.assign({},cur||{});
+  next[grid||'item']=order;
+  _wsColOrderMap[bid]=next;
+  try{localStorage.setItem('etcher_ws_col_order',JSON.stringify(_wsColOrderMap));}catch(e){}
+}
+function _wsColDragStart(e,grid,key){_wsDragCol={grid,key};e.dataTransfer.effectAllowed='move';e.target.closest('th').style.opacity='0.5';}
+function _wsColDragOver(e,grid,key){if(!_wsDragCol||_wsDragCol.grid!==grid||_wsDragCol.key===key)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));e.target.closest('th')?.classList.add('ws-col-drop-target');}
 function _wsColDragLeave(e){const th=e.target.closest('th');if(th&&!th.contains(e.relatedTarget))th.classList.remove('ws-col-drop-target');}
 const _WS_DEFAULT_COL_ORDER=['status','priority','owner','cwith','duedate','progress','hours','client','tags','attachments','deps'];
-function _wsColDrop(e,targetKey){e.preventDefault();document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));if(!_wsDragCol||_wsDragCol===targetKey){_wsDragCol=null;return;}const order=[...(_wsGetColOrder()||_WS_DEFAULT_COL_ORDER)];const fi=order.indexOf(_wsDragCol),ti=order.indexOf(targetKey);if(fi===-1||ti===-1){_wsDragCol=null;return;}order.splice(fi,1);order.splice(ti,0,_wsDragCol);_wsSetColOrder(order);_wsDragCol=null;renderView('workspace');}
+const _WS_DEFAULT_SUB_COL_ORDER=['ref','status','owner','cwith','duedate','progress','deps'];
+function _wsColDrop(e,grid,targetKey){e.preventDefault();document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));if(!_wsDragCol||_wsDragCol.grid!==grid||_wsDragCol.key===targetKey){_wsDragCol=null;return;}const base=grid==='sub'?_WS_DEFAULT_SUB_COL_ORDER:_WS_DEFAULT_COL_ORDER;const order=[...(_wsGetColOrder(grid)||base)];const fi=order.indexOf(_wsDragCol.key),ti=order.indexOf(targetKey);if(fi===-1||ti===-1){_wsDragCol=null;return;}order.splice(fi,1);order.splice(ti,0,_wsDragCol.key);_wsSetColOrder(grid,order);_wsDragCol=null;renderView('workspace');}
 function _wsColDragEnd(e){document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));e.target.closest('th').style.opacity='';_wsDragCol=null;}
 
 // ── Task row drag-and-drop reordering ──────────────────────────
@@ -16087,7 +16131,7 @@ function renderWorkspace(){
     {key:'attachments', label:'Files',     w:'88px'},
     {key:'deps',        label:'Deps',      w:'110px'},
   ];
-  const _colOrder=_wsGetColOrder()||_WS_DEFAULT_COL_ORDER;
+  const _colOrder=_wsGetColOrder('item')||_WS_DEFAULT_COL_ORDER;
   const sortedDefs=[...COL_DEFS].sort((a,b)=>{const ai=_colOrder.indexOf(a.key),bi=_colOrder.indexOf(b.key);return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const visCols=sortedDefs.filter(c=>cols[c.key]);
   const custCols=mtGetBoardCustomCols();
@@ -16182,10 +16226,10 @@ function renderWorkspace(){
             <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'item','name')" title="Drag to resize"></span>
           </th>
           ${visCols.map(c=>`<th class="ws-sort-hdr ws-col-draggable" draggable="true"
-            ondragstart="_wsColDragStart(event,'${c.key}')"
-            ondragover="_wsColDragOver(event,'${c.key}')"
+            ondragstart="_wsColDragStart(event,'item','${c.key}')"
+            ondragover="_wsColDragOver(event,'item','${c.key}')"
             ondragleave="_wsColDragLeave(event)"
-            ondrop="_wsColDrop(event,'${c.key}')"
+            ondrop="_wsColDrop(event,'item','${c.key}')"
             ondragend="_wsColDragEnd(event)"
             onclick="wsSortBy('${c.key}')" style="width:${wsColWidth('item',c.key,c.w)}">
             <div style="display:flex;align-items:center;gap:3px">
@@ -16336,7 +16380,11 @@ const SUB_COL_DEFS=[
 ];
 function renderSubitemGrid(parent,childTasks,custCols,groupColor){
   const sc=wsSubColumns;
-  const visSub=SUB_COL_DEFS.filter(c=>sc[c.key]);
+  // Same drag-to-reorder as the item tier, kept under its own key so the two grids
+  // can be arranged independently.
+  const _subOrder=_wsGetColOrder('sub')||_WS_DEFAULT_SUB_COL_ORDER;
+  const _sortedSub=[...SUB_COL_DEFS].sort((a,b)=>{const ai=_subOrder.indexOf(a.key),bi=_subOrder.indexOf(b.key);return(ai===-1?999:ai)-(bi===-1?999:bi);});
+  const visSub=_sortedSub.filter(c=>sc[c.key]);
   // Only columns that actually carry subitem data appear in this grid — no hatched
   // placeholders here, because this grid is not shared with the parent tier.
   const subCust=(custCols||[]).filter(cc=>mtColAppliesTo(cc,true));
@@ -16355,7 +16403,13 @@ function renderSubitemGrid(parent,childTasks,custCols,groupColor){
         <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','name',false)" title="Double-click to rename">${escHtml(wsColLabel('sub','name','Subitem'))}</span>
         <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','name')" title="Drag to resize"></span>
       </th>
-      ${visSub.map(c=>`<th style="width:${wsColWidth('sub',c.key,c.w)}">
+      ${visSub.map(c=>`<th class="ws-col-draggable" draggable="true"
+        ondragstart="_wsColDragStart(event,'sub','${c.key}')"
+        ondragover="_wsColDragOver(event,'sub','${c.key}')"
+        ondragleave="_wsColDragLeave(event)"
+        ondrop="_wsColDrop(event,'sub','${c.key}')"
+        ondragend="_wsColDragEnd(event)"
+        style="width:${wsColWidth('sub',c.key,c.w)}">
         <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','${c.key}',false)" title="Double-click to rename">${escHtml(wsColLabel('sub',c.key,c.label))}</span>
         <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','${c.key}')" title="Drag to resize"></span>
       </th>`).join('')}
@@ -17220,14 +17274,6 @@ function mtgDuration(m){
   if(!m)return 0;
   return m.timeMethod==='duration'?(+m.durationMin||0):_mtgMins(m.startTime,m.endTime);
 }
-function mtgFmtMins(v){
-  const n=Math.max(0,Math.round(+v||0));
-  if(!n)return'0 min';
-  const h=Math.floor(n/60),mm=n%60;
-  if(!h)return mm+' min';
-  if(!mm)return h+(h===1?' hour':' hours');
-  return h+'h '+mm+'m';
-}
 function mtgFmtTime(t){
   if(!t)return'';
   const [h,m]=t.split(':').map(Number);
@@ -17303,27 +17349,6 @@ let _mtgEditingId=null;  // id when editing an existing one
 let _mtgPicker=null;     // {sel:Set, q:'', filters:{}}
 let _mtgStatusOpen=null; // meeting id whose timesheet breakdown is open
 
-function mtgBlank(task){
-  const now=new Date();
-  const hh=String(now.getHours()).padStart(2,'0');
-  return{
-    id:null,kind:'meeting',
-    title:(task&&(task.name||task.title))||'',
-    date:toDateStr(now),
-    meetingType:'project',
-    timeMethod:'range',
-    startTime:hh+':00',endTime:String((now.getHours()+1)%24).padStart(2,'0')+':00',
-    durationMin:60,
-    body:'',actions:'',
-    attendees:currentUser&&currentUser.id?[{staffId:currentUser.id,name:currentUser.name,
-      external:false,start:hh+':00',end:String((now.getHours()+1)%24).padStart(2,'0')+':00',minutes:null,includeTs:true}]:[],
-    links:task?[{taskId:task.id,primary:true}]:[],
-    allocMode:'single',primaryTaskId:task?task.id:'',
-    allocations:{},
-    createTs:true,tsCategory:'Meeting Attended',billing:'billable',
-    archived:false
-  };
-}
 function mtgStartNew(){
   _tpNoteEditingId=null;_mtgEditingId=null;
   _mtgDraft=mtgBlank(_tpCurrentTask);
@@ -17341,36 +17366,6 @@ function mtgEdit(id){
 }
 function mtgCancel(){_mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesRefresh();}
 
-// Pull the plain fields out of the DOM so a structural re-render never loses typing.
-function mtgSync(){
-  const d=_mtgDraft;if(!d)return;
-  const v=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
-  const c=id=>{const el=document.getElementById(id);return el?el.checked:undefined;};
-  const set=(k,val)=>{if(val!==undefined)d[k]=val;};
-  set('title',v('mtg-title'));set('date',v('mtg-date'));
-  set('meetingType',v('mtg-type'));set('timeMethod',v('mtg-method'));
-  set('startTime',v('mtg-start'));set('endTime',v('mtg-end'));
-  set('body',v('mtg-summary'));set('actions',v('mtg-actions'));
-  set('tsCategory',v('mtg-cat'));set('billing',v('mtg-billing'));
-  const ch=c('mtg-createts');if(ch!==undefined)d.createTs=ch;
-  const hrs=v('mtg-dur-h'),min=v('mtg-dur-m');
-  if(hrs!==undefined||min!==undefined)d.durationMin=(+(hrs||0))*60+(+(min||0));
-  set('primaryTaskId',v('mtg-primary'));
-  (d.attendees||[]).forEach((a,i)=>{
-    const s=v('mtg-att-s-'+i),e=v('mtg-att-e-'+i),inc=c('mtg-att-ts-'+i);
-    if(s!==undefined)a.start=s;if(e!==undefined)a.end=e;
-    if(inc!==undefined&&!a.external)a.includeTs=inc;
-  });
-  mtgLinks(d).forEach(l=>{
-    const al=v('mtg-alloc-'+l.taskId);
-    if(al!==undefined){
-      const n=Math.max(0,Math.round(+al||0));
-      if(n)d.allocations[l.taskId]=n;else delete d.allocations[l.taskId];
-    }
-  });
-  const gen=v('mtg-alloc-general');
-  if(gen!==undefined){const n=Math.max(0,Math.round(+gen||0));if(n)d.allocations[MTG_GENERAL]=n;else delete d.allocations[MTG_GENERAL];}
-}
 function mtgField(){mtgSync();}                       // cheap: no re-render
 function mtgStruct(){mtgSync();_tpNotesRefresh();}    // structure changed: redraw
 
@@ -17387,32 +17382,7 @@ function mtgTimeChanged(){
   _tpNotesRefresh();
 }
 function mtgSetMethod(v){mtgSync();_mtgDraft.timeMethod=v;_tpNotesRefresh();}
-function mtgSetAllocMode(v){mtgSync();_mtgDraft.allocMode=v;_tpNotesRefresh();}
-function mtgAllocToGeneral(){
-  mtgSync();
-  const rem=mtgRemaining(_mtgDraft);
-  if(rem>0)_mtgDraft.allocations[MTG_GENERAL]=mtgAllocFor(_mtgDraft,MTG_GENERAL)+rem;
-  _tpNotesRefresh();
-}
 
-// ── attendees ────────────────────────────────────────────────
-// Internal staff only. New attendees start on the meeting’s own times, which is right
-// far more often than blank — change them when someone joined late or left early.
-function mtgAddAttendee(){
-  mtgSync();
-  const sel=document.getElementById('mtg-att-pick');
-  const id=sel?sel.value:'';
-  if(!id)return;
-  const d=_mtgDraft;
-  if((d.attendees||[]).some(a=>a.staffId===id))return;
-  const s=(DB.staff||[]).find(x=>x.id===id);
-  d.attendees.push({staffId:id,name:s?s.name:'Staff',external:false,
-    start:d.timeMethod==='range'?(d.startTime||''):'',
-    end:d.timeMethod==='range'?(d.endTime||''):'',
-    minutes:null,includeTs:true});
-  if(sel)sel.value='';
-  _tpNotesRefresh();
-}
 function mtgRemoveAttendee(i){mtgSync();_mtgDraft.attendees.splice(i,1);_tpNotesRefresh();}
 
 // ── task links ───────────────────────────────────────────────
@@ -17442,147 +17412,10 @@ function mtgPickerApply(){
   _mtgPicker=null;
   _tpNotesRefresh();
 }
-// Removing a link that holds time: the time has to go somewhere the user chooses.
-function mtgUnlink(taskId){
-  mtgSync();
-  const d=_mtgDraft;if(!d)return;
-  const mins=mtgAllocFor(d,taskId);
-  const drop=()=>{
-    d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
-    delete d.allocations[taskId];
-    if(!d.links.some(l=>l.primary)&&d.links[0])d.links[0].primary=true;
-    if(d.primaryTaskId===taskId)d.primaryTaskId=(d.links[0]||{}).taskId||'';
-    _tpNotesRefresh();
-  };
-  if(!mins){drop();return;}
-  const others=mtgLinks(d).filter(l=>l.taskId!==taskId);
-  const opts=[`<option value="${MTG_GENERAL}">General Meeting</option>`]
-    .concat(others.map(l=>{const t=(DB.tasks||[]).find(x=>x.id===l.taskId);
-      return`<option value="${l.taskId}">${escHtml(taskRef(t)+' – '+(t.name||t.title||''))}</option>`;})).join('');
-  openGenericModal('Move the allocated time',`
-    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 12px">
-      This task has ${mtgFmtMins(mins)} allocated to it. Choose where to move the time before removing the task.</p>
-    <select id="mtg-move-to" class="form-input" style="margin-bottom:14px">${opts}</select>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
-      <button class="btn btn-teal btn-sm" onclick="mtgMoveTimeAndUnlink('${taskId}')">Move time and remove</button>
-    </div>`);
-}
-function mtgMoveTimeAndUnlink(taskId){
-  const d=_mtgDraft;if(!d)return;
-  const to=document.getElementById('mtg-move-to')?.value||MTG_GENERAL;
-  const mins=mtgAllocFor(d,taskId);
-  d.allocations[to]=mtgAllocFor(d,to)+mins;
-  delete d.allocations[taskId];
-  d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
-  if(!d.links.some(l=>l.primary)&&d.links[0])d.links[0].primary=true;
-  if(d.primaryTaskId===taskId)d.primaryTaskId=(d.links[0]||{}).taskId||'';
-  closeGenericModal();
-  _tpNotesRefresh();
-}
 
-// ── saving ───────────────────────────────────────────────────
-function mtgValidate(d){
-  if(!String(d.title||'').trim())return'Give the meeting a title.';
-  if(!d.date)return'Pick the meeting date.';
-  const dur=mtgDuration(d);
-  if(dur<=0)return'The meeting needs a duration — set a start and finish time, or enter the total.';
-  if(d.allocMode==='split'){
-    const over=mtgAllocTotal(d)-dur;
-    if(over>0)return'The allocated time exceeds the meeting duration by '+mtgFmtMins(over)+'. Reduce the allocations before saving.';
-  }
-  if(d.allocMode==='single'&&!d.primaryTaskId&&mtgLinks(d).length)return'Choose which linked task the meeting time is recorded against.';
-  return null;
-}
-function mtgSave(alsoTimesheets){
-  mtgSync();
-  const d=_mtgDraft;if(!d)return;
-  const err=mtgValidate(d);
-  if(err){showAlert(err,'Check the meeting');return;}
-  const now=new Date().toISOString();
-  const dur=mtgDuration(d);
-  if(d.allocMode==='single'){
-    d.allocations={};
-    if(d.primaryTaskId)d.allocations[d.primaryTaskId]=dur;
-  }
-  let rec;
-  if(_mtgEditingId){
-    rec=(DB.meetingNotes||[]).find(n=>n.id===_mtgEditingId);
-    if(!rec)return;
-    const before=mtgDuration(rec);
-    Object.assign(rec,d,{id:rec.id,updatedAt:now});
-    // Drafts can follow the meeting; anything submitted or beyond must not be rewritten.
-    if(before!==dur){
-      const locked=mtgLockedEntries(rec);
-      if(locked.length)showAlert('One or more related timesheet entries have already been submitted, approved or invoiced. The meeting note can be updated, but recorded time requires a separate adjustment.','Recorded time unchanged');
-      const drafts=mtgEntries(rec).filter(e=>_mtgEntryState(e)==='draft');
-      if(drafts.length){
-        openGenericModal('Update the draft timesheets?',`
-          <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 14px">
-            The meeting duration has changed from ${mtgFmtMins(before)} to ${mtgFmtMins(dur)}. Update the linked draft timesheet entries?</p>
-          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
-            <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">No, keep the existing entries</button>
-            <button class="btn btn-teal btn-sm" onclick="mtgSyncDrafts('${rec.id}')">Yes, update draft entries</button>
-          </div>`);
-      }
-    }
-  }else{
-    rec=Object.assign({},d,{id:'mn'+uid(),authorId:currentUser.id,createdAt:now,updatedAt:now,
-      taskId:(_tpCurrentTask||{}).id||null,
-      boardId:_tpCurrentTask?_taskBoardId(_tpCurrentTask):null});
-    (DB.meetingNotes=DB.meetingNotes||[]).push(rec);
-  }
-  saveDB(DB);
-  _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;
-  if(alsoTimesheets)mtgAddToTimesheets(rec.id,true);
-  else{_tpNoteExpandedId=rec.id;_tpNotesRefresh();showToast('Meeting saved','success',2500);}
-}
-function mtgSyncDrafts(id){
-  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
-  if(!m){closeGenericModal();return;}
-  mtgEntries(m).filter(e=>_mtgEntryState(e)==='draft').forEach(e=>{
-    const att=(m.attendees||[]).find(a=>a.staffId===e.staffId);
-    e.hours=+(mtgAttMinutes(m,att||{})/60).toFixed(2);
-    e.date=m.date;e.meetingAllocations=mtgAllocLines(m);
-  });
-  saveDB(DB);closeGenericModal();_tpNotesRefresh();
-  showToast('Draft timesheet entries updated','success',2500);
-}
 function mtgAllocLines(m){
   return Object.keys(m.allocations||{}).filter(k=>mtgAllocFor(m,k)>0)
     .map(k=>({taskId:k===MTG_GENERAL?null:k,minutes:mtgAllocFor(m,k)}));
-}
-// One entry per eligible internal attendee. meetingId+staffId is the dedup key, so running
-// this twice adds nothing the second time.
-function mtgAddToTimesheets(id,quiet){
-  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
-  if(!m)return;
-  const el=mtgEligible(m);
-  if(!el.length){showAlert('No internal attendees are marked for a timesheet entry.','Nothing to add');return;}
-  const lines=mtgAllocLines(m);
-  let made=0,skipped=0;
-  el.forEach(a=>{
-    if(mtgEntryFor(m,a.staffId)){skipped++;return;}
-    const mins=mtgAttMinutes(m,a);
-    const primary=m.primaryTaskId||((mtgLinks(m)[0]||{}).taskId)||null;
-    const task=primary?(DB.tasks||[]).find(t=>t.id===primary):null;
-    (DB.timeEntries=DB.timeEntries||[]).push({
-      id:'te'+uid(),meetingId:m.id,taskId:primary||null,
-      staffId:a.staffId,clientId:task?(task.clientId||(getTaskClient(task)||{}).id||''):'',
-      date:m.date,hours:+(mins/60).toFixed(2),
-      note:(m.title||'Meeting')+(m.body?' — '+_mnPlain(m.body).slice(0,140):''),
-      billable:m.billing==='billable',location:'office',
-      earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
-      status:'draft',meetingAllocations:lines,createdAt:new Date().toISOString()});
-    made++;
-  });
-  saveDB(DB);
-  _tpNoteExpandedId=m.id;_mtgDraft=null;_mtgEditingId=null;
-  _tpNotesRefresh();
-  if(made&&skipped)showToast(`Added ${made} draft entr${made===1?'y':'ies'}; ${skipped} already existed`,'success',3500);
-  else if(made)showToast(`Added ${made} draft timesheet entr${made===1?'y':'ies'}`,'success',3000);
-  else showAlert('A timesheet entry already exists for this attendee.','Already added');
 }
 function mtgToggleStatus(id){_mtgStatusOpen=_mtgStatusOpen===id?null:id;_tpNotesRefresh();}
 function mtgArchive(id){
@@ -17633,152 +17466,590 @@ function _mtgSec(title,inner,hint){
 function _mtgOpts(list,val){
   return list.map(([k,l])=>`<option value="${k}"${String(val)===k?' selected':''}>${escHtml(l)}</option>`).join('');
 }
+
+// ── duration: one parser, one format, used everywhere ────────
+// Accepts 90, 1.5, 1h30, 1:30, "45 min". A bare integer is minutes; a decimal is hours,
+// because "1.5" never means a minute and a half.
+function mtgParseDur(s){
+  s=String(s==null?'':s).trim().toLowerCase();
+  if(!s)return 0;
+  let m;
+  if((m=s.match(/^(\d+)\s*:\s*(\d{1,2})$/)))return (+m[1])*60+(+m[2]);
+  if((m=s.match(/^(\d+(?:\.\d+)?)\s*h(?:ou)?r?s?\.?\s*(\d+)?\s*m?(?:in)?s?\.?$/)))
+    return Math.round((+m[1])*60)+(+(m[2]||0));
+  if((m=s.match(/^(\d+)\s*m(?:in)?s?\.?$/)))return +m[1];
+  if((m=s.match(/^(\d+\.\d+)$/)))return Math.round(parseFloat(m[1])*60);
+  if((m=s.match(/^(\d+)$/)))return +m[1];
+  return 0;
+}
+function mtgFmtMins(v){
+  const n=Math.max(0,Math.round(+v||0));
+  if(!n)return'0 min';
+  const h=Math.floor(n/60),mm=n%60;
+  if(!h)return mm+' min';
+  if(!mm)return h===1?'1 hour':h+' hours';
+  return h+' hr '+mm+' min';
+}
+// "MaintenanceMaintenanceMaintenance" is one segment repeated, not a long name — collapse it,
+// then drop consecutive duplicate crumbs. Truncation alone would only hide the symptom.
+function _mtgDedupeSeg(s){
+  s=String(s==null?'':s).trim();
+  const m=s.match(/^(.{2,}?)\1+$/);
+  return m?m[1]:s;
+}
+function mtgCrumb(task){
+  const wb=(DB.workboards||[]).find(w=>w.id===_taskBoardId(task));
+  const g=(DB.groups||[]).find(x=>x.id===task.groupId);
+  const parts=[wb&&wb.name,g&&g.name].map(_mtgDedupeSeg).filter(Boolean);
+  const out=[];
+  parts.forEach(s=>{if(out[out.length-1]!==s)out.push(s);});
+  return out.join(' › ');
+}
+function mtgMidEllipsis(s,max){
+  s=String(s==null?'':s);
+  if(s.length<=max)return s;
+  const keep=Math.max(4,Math.floor((max-1)/2));
+  return s.slice(0,keep)+'…'+s.slice(-keep);
+}
+function mtgPrimaryTaskId(m){
+  const l=mtgLinks(m).find(x=>x.primary);
+  return l?l.taskId:((mtgLinks(m)[0]||{}).taskId||'');
+}
+function mtgPrimaryTask(m){const id=mtgPrimaryTaskId(m);return id?(DB.tasks||[]).find(t=>t.id===id):null;}
+
+// ── how one attendee's minutes land on the linked tasks ──────
+// Links give visibility; allocations divide the duration. An attendee who was only there
+// for half the meeting has their own minutes spread across the same shares, pro-rata,
+// rounded to 5, with the rounding remainder going to the primary task.
+function mtgAttendeeLines(m,att){
+  const mins=mtgAttMinutes(m,att);
+  const primary=mtgPrimaryTaskId(m);
+  if(!mins)return[];
+  if(m.allocMode!=='split')return[{taskId:primary||null,minutes:mins}];
+  const shares=mtgLinks(m).map(l=>({taskId:l.taskId,minutes:mtgAllocFor(m,l.taskId)})).filter(a=>a.minutes>0);
+  const total=shares.reduce((s,a)=>s+a.minutes,0);
+  if(!total)return[{taskId:primary||null,minutes:mins}];
+  const out=shares.map(a=>({taskId:a.taskId,minutes:Math.round((mins*a.minutes/total)/5)*5}));
+  const diff=mins-out.reduce((s,a)=>s+a.minutes,0);
+  if(diff){
+    let i=out.findIndex(a=>a.taskId===primary);
+    if(i<0)i=0;
+    out[i].minutes=Math.max(0,out[i].minutes+diff);
+  }
+  return out.filter(a=>a.minutes>0);
+}
+// The idempotency key is meeting + staff + task, so a split meeting keeps one entry per
+// task instead of the second and third being swallowed as duplicates.
+function mtgEntryForTask(m,staffId,taskId){
+  return (DB.timeEntries||[]).find(e=>e.meetingId===(m&&m.id)&&e.staffId===staffId
+    &&(e.taskId||null)===(taskId||null))||null;
+}
+// Belt to the key's braces: nobody's minutes for one meeting may exceed their attendance.
+function mtgOverBooked(m){
+  const bad=[];
+  mtgEligible(m).forEach(a=>{
+    const lines=mtgAttendeeLines(m,a);
+    const sum=lines.reduce((s,l)=>s+l.minutes,0);
+    if(sum>mtgAttMinutes(m,a))bad.push({staffId:a.staffId,name:a.name,sum,allowed:mtgAttMinutes(m,a)});
+  });
+  return bad;
+}
+function mtgBillingForTask(task){
+  if(!task)return'tbc';
+  if(task.billable===true)return'billable';
+  if(task.billable===false)return'non-billable';
+  return'tbc';
+}
+// Why a save is refused, or null when it is fine. Shown beside the disabled button too.
+function mtgBlockReason(d){
+  if(!d)return null;
+  if(!String(d.title||'').trim())return'Give the meeting a title';
+  if(!d.date)return'Pick the meeting date';
+  if(mtgDuration(d)<=0)return'The meeting needs a duration';
+  if(d.allocMode==='split'&&mtgLinks(d).length>1){
+    const over=mtgAllocTotal(d)-mtgDuration(d);
+    if(over>0)return'Allocations exceed the meeting duration';
+  }
+  return null;
+}
+
+
+// ── defaults: a standard meeting should need almost nothing typed ──
+function mtgBlank(task){
+  const now=new Date();
+  const mins=now.getHours()*60+Math.floor(now.getMinutes()/15)*15; // round DOWN to 15
+  const hhmm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  const start=hhmm(mins),end=hhmm(mins+30);
+  const wb=task?(DB.workboards||[]).find(w=>w.id===_taskBoardId(task)):null;
+  return{
+    id:null,kind:'meeting',
+    title:(task&&(task.name||task.title))||'',
+    date:toDateStr(now),
+    meetingType:'project',location:'',
+    timeMethod:'range',startTime:start,endTime:end,durationMin:30,
+    body:'',actions:'',
+    attendees:currentUser&&currentUser.id?[{staffId:currentUser.id,name:currentUser.name,
+      external:false,start:start,end:end,minutes:null,includeTs:true}]:[],
+    links:task?[{taskId:task.id,primary:true}]:[],
+    allocMode:'single',primaryTaskId:task?task.id:'',
+    allocations:{},
+    createTs:true,tsCategory:'Meeting Attended',
+    // inherit the primary task's billing rather than assuming billable
+    billing:'task-default',
+    archived:false,_ui:{att:{}}
+  };
+}
+function mtgDurInput(v){
+  const d=_mtgDraft;if(!d)return;
+  mtgSync();
+  const mins=mtgParseDur(v);
+  d.durationMin=mins;d.timeMethod='duration';
+  _tpNotesRefresh();
+}
+function mtgSync(){
+  const d=_mtgDraft;if(!d)return;
+  const v=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
+  const c=id=>{const el=document.getElementById(id);return el?el.checked:undefined;};
+  const set=(k,val)=>{if(val!==undefined)d[k]=val;};
+  set('title',v('mtg-title'));set('date',v('mtg-date'));
+  set('meetingType',v('mtg-type'));set('location',v('mtg-location'));
+  set('startTime',v('mtg-start'));set('endTime',v('mtg-end'));
+  set('body',v('mtg-summary'));set('actions',v('mtg-actions'));
+  set('tsCategory',v('mtg-cat'));set('billing',v('mtg-billing'));
+  const on=c('mtg-tson');if(on!==undefined)d.createTs=on;
+  const dv=v('mtg-dur');if(dv!==undefined){const n=mtgParseDur(dv);if(n)d.durationMin=n;}
+  (d.attendees||[]).forEach((a,i)=>{
+    const s=v('mtg-att-s-'+i),e=v('mtg-att-e-'+i),inc=c('mtg-att-ts-'+i);
+    if(s!==undefined)a.start=s;if(e!==undefined)a.end=e;
+    if(inc!==undefined)a.includeTs=inc;
+  });
+  mtgLinks(d).forEach(l=>{
+    const al=v('mtg-alloc-'+l.taskId);
+    if(al!==undefined){
+      const n=Math.max(0,Math.round(+al||0));
+      if(n)d.allocations[l.taskId]=n;else delete d.allocations[l.taskId];
+    }
+  });
+}
+// Splitting must never open in an invalid state: the primary starts with the whole meeting
+// and everyone else with nothing, rather than inventing an even distribution.
+function mtgSetAllocMode(v){
+  mtgSync();
+  const d=_mtgDraft;
+  d.allocMode=v;
+  if(v==='split'&&!mtgAllocTotal(d)){
+    d.allocations={};
+    const pid=mtgPrimaryTaskId(d);
+    if(pid)d.allocations[pid]=mtgDuration(d);
+  }
+  _tpNotesRefresh();
+}
+
+// ── attendee picker: staff only ──────────────────────────────
+let _mtgAttPicker=null;
+function mtgOpenAttPicker(){mtgSync();_mtgAttPicker={q:''};_tpNotesRefresh();
+  setTimeout(()=>document.getElementById('mtg-att-q')?.focus(),60);}
+function mtgAttPickerClose(){_mtgAttPicker=null;_tpNotesRefresh();}
+function mtgAttPickerSet(q){if(!_mtgAttPicker)return;_mtgAttPicker.q=q;_tpNotesRefresh();
+  setTimeout(()=>{const el=document.getElementById('mtg-att-q');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},0);}
+function mtgAttPickerAdd(id){
+  const d=_mtgDraft;if(!d)return;
+  if((d.attendees||[]).some(a=>a.staffId===id))return;
+  const s=(DB.staff||[]).find(x=>x.id===id);
+  d.attendees.push({staffId:id,name:s?s.name:'Staff',external:false,
+    start:d.timeMethod==='range'?(d.startTime||''):'',
+    end:d.timeMethod==='range'?(d.endTime||''):'',
+    minutes:null,includeTs:true});
+  _mtgAttPicker=null;
+  _tpNotesRefresh();
+}
+function mtgAttPickerHtml(){
+  const P=_mtgAttPicker;if(!P)return'';
+  const q=(P.q||'').toLowerCase();
+  const taken=new Set((_mtgDraft.attendees||[]).map(a=>a.staffId));
+  const rows=(DB.staff||[]).filter(s=>!taken.has(s.id)&&(!q||String(s.name||'').toLowerCase().includes(q)));
+  return`<div class="mtg-pick-ov" onclick="if(event.target===this)mtgAttPickerClose()">
+    <div class="mtg-pick" style="width:min(420px,94vw)">
+      <div class="mtg-pick-hd">Add attendee<button type="button" class="mtg-x" onclick="mtgAttPickerClose()">&#215;</button></div>
+      <input id="mtg-att-q" class="form-input mtg-in" placeholder="Search staff…" value="${escHtml(P.q||'')}" oninput="mtgAttPickerSet(this.value)"/>
+      <div class="mtg-pick-list" style="margin-top:8px">
+        ${rows.length?rows.map(s=>`<button type="button" class="mtg-pick-row" style="width:100%;text-align:left" onclick="mtgAttPickerAdd('${s.id}')">
+          ${avatarHtml(s,20)}<span class="mtg-pick-name">${escHtml(s.name)}</span>
+          <span class="mtg-chip mtg-chip--int">Internal staff</span></button>`).join('')
+          :`<div class="mtg-none">Everyone is already on the list.</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── removing a link ──────────────────────────────────────────
+function mtgUnlink(taskId){
+  mtgSync();
+  const d=_mtgDraft;if(!d)return;
+  if(mtgLinks(d).length<=1){showAlert('A meeting needs at least one linked task.','Cannot remove');return;}
+  // The primary carries the time; reassign it before it can go.
+  if(mtgPrimaryTaskId(d)===taskId){
+    showAlert('This is the primary task. Choose another task as primary first, then remove it.','Primary task');
+    return;
+  }
+  const mins=mtgAllocFor(d,taskId);
+  const drop=()=>{
+    d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
+    delete d.allocations[taskId];
+    // Draft entries for this task go with the link; anything further along is left and flagged.
+    if(_mtgEditingId){
+      const locked=(DB.timeEntries||[]).filter(e=>e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)!=='draft');
+      DB.timeEntries=(DB.timeEntries||[]).filter(e=>!(e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)==='draft'));
+      if(locked.length)showAlert(locked.length+' timesheet entr'+(locked.length===1?'y has':'ies have')+' already been submitted or approved for that task. The link is removed, but the recorded time needs a separate adjustment in the Timesheet module.','Recorded time kept');
+      saveDB(DB);
+    }
+    _tpNotesRefresh();
+  };
+  if(!mins){drop();return;}
+  const others=mtgLinks(d).filter(l=>l.taskId!==taskId);
+  const opts=others.map(l=>{const t=(DB.tasks||[]).find(x=>x.id===l.taskId);
+    return`<option value="${l.taskId}">${escHtml(taskRef(t)+' – '+((t&&(t.name||t.title))||''))}</option>`;}).join('');
+  openGenericModal('Move the allocated time',`
+    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:0 0 12px">
+      This task has ${escHtml(mtgFmtMins(mins))} allocated to it. Choose where to move the time before removing the task.</p>
+    <select id="mtg-move-to" class="form-input" style="margin-bottom:14px">${opts}</select>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button>
+      <button class="btn btn-teal btn-sm" onclick="mtgMoveTimeAndUnlink('${taskId}')">Move time and remove</button>
+    </div>`);
+}
+function mtgMoveTimeAndUnlink(taskId){
+  const d=_mtgDraft;if(!d)return;
+  const to=document.getElementById('mtg-move-to')?.value;
+  const mins=mtgAllocFor(d,taskId);
+  if(to)d.allocations[to]=mtgAllocFor(d,to)+mins;
+  delete d.allocations[taskId];
+  d.links=mtgLinks(d).filter(l=>l.taskId!==taskId);
+  closeGenericModal();
+  _tpNotesRefresh();
+}
+
+// ── saving ───────────────────────────────────────────────────
+function mtgSaveMain(){mtgSave(!!(_mtgDraft&&_mtgDraft.createTs));}
+function mtgSave(alsoTimesheets){
+  mtgSync();
+  const d=_mtgDraft;if(!d)return;
+  const blocked=mtgBlockReason(d);
+  if(blocked){showAlert(blocked+'.','Check the meeting');return;}
+  const now=new Date().toISOString();
+  const dur=mtgDuration(d);
+  if(d.allocMode!=='split'){
+    d.allocations={};
+    const pid=mtgPrimaryTaskId(d);
+    if(pid)d.allocations[pid]=dur;
+  }
+  let rec;
+  if(_mtgEditingId){
+    rec=(DB.meetingNotes||[]).find(n=>n.id===_mtgEditingId);
+    if(!rec)return;
+    Object.assign(rec,d,{id:rec.id,updatedAt:now});
+  }else{
+    rec=Object.assign({},d,{id:'mn'+uid(),authorId:currentUser.id,createdAt:now,updatedAt:now,
+      taskId:(_tpCurrentTask||{}).id||null,
+      boardId:_tpCurrentTask?_taskBoardId(_tpCurrentTask):null});
+    (DB.meetingNotes=DB.meetingNotes||[]).push(rec);
+  }
+  delete rec._ui;
+  saveDB(DB);
+  const res=alsoTimesheets?mtgApplyTimesheets(rec):null;
+  _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_mtgAttPicker=null;
+  _tpNoteExpandedId=rec.id;
+  _tpNotesRefresh();
+  if(res)mtgReportTimesheets(res);
+  else showToast('Meeting saved','success',2500);
+}
+// One entry per meeting, per person, per task. Re-running updates drafts in place and
+// leaves anything submitted, approved or invoiced exactly as it is.
+function mtgApplyTimesheets(m){
+  const over=mtgOverBooked(m);
+  if(over.length){
+    return{blocked:'A timesheet would record more time than '+over[0].name+' actually attended. Adjust the allocations.'};
+  }
+  const primaryTask=mtgPrimaryTask(m);
+  const billing=m.billing==='task-default'?mtgBillingForTask(primaryTask):m.billing;
+  let made=0,updated=0;const locked=[];
+  mtgEligible(m).forEach(a=>{
+    mtgAttendeeLines(m,a).forEach(line=>{
+      const existing=mtgEntryForTask(m,a.staffId,line.taskId);
+      const task=line.taskId?(DB.tasks||[]).find(t=>t.id===line.taskId):null;
+      if(existing){
+        if(_mtgEntryState(existing)!=='draft'){
+          locked.push({name:a.name,ref:task?taskRef(task):'—',
+            state:_mtgEntryState(existing),hours:existing.hours});
+          return;
+        }
+        existing.hours=+(line.minutes/60).toFixed(2);
+        existing.date=m.date;existing.billable=billing==='billable';
+        existing.earningsRateName=m.tsCategory||'Meeting Attended';
+        existing.note=m.title||'Meeting';
+        updated++;return;
+      }
+      (DB.timeEntries=DB.timeEntries||[]).push({
+        id:'te'+uid(),meetingId:m.id,taskId:line.taskId||null,staffId:a.staffId,
+        clientId:task?(task.clientId||(getTaskClient(task)||{}).id||''):'',
+        date:m.date,hours:+(line.minutes/60).toFixed(2),
+        note:m.title||'Meeting',billable:billing==='billable',location:'office',
+        earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
+        status:'draft',createdAt:new Date().toISOString()});
+      made++;
+    });
+  });
+  saveDB(DB);
+  return{made,updated,locked};
+}
+function mtgReportTimesheets(res){
+  if(res.blocked){showAlert(res.blocked,'Cannot add the time');return;}
+  const bits=[];
+  if(res.made)bits.push(res.made+' timesheet entr'+(res.made===1?'y was':'ies were')+' created');
+  if(res.updated)bits.push(res.updated+' entr'+(res.updated===1?'y was':'ies were')+' updated');
+  if(!bits.length&&!res.locked.length)bits.push('No timesheet entries were needed');
+  if(res.locked.length){
+    const l=res.locked[0];
+    const more=res.locked.length>1?` and ${res.locked.length-1} other${res.locked.length-1===1?'':'s'}`:'';
+    showAlert(bits.join(', ')+'. '+res.locked.length+' entr'+(res.locked.length===1?'y':'ies')
+      +' could not be updated because '+(res.locked.length===1?'it has':'they have')+' already been '+l.state
+      +' ('+l.name+', '+l.ref+', '+mtgFmtMins(Math.round((+l.hours||0)*60))+more+'). Adjust '+(res.locked.length===1?'it':'them')
+      +' in the Timesheet module if the time needs to change.','Meeting saved');
+  }else showToast(bits.join(', '),'success',3500);
+}
+function mtgAddToTimesheets(id,quiet){
+  const m=(DB.meetingNotes||[]).find(n=>n.id===id);
+  if(!m)return;
+  if(!mtgEligible(m).length){showAlert('No internal attendees are marked for a timesheet entry.','Nothing to add');return;}
+  const res=mtgApplyTimesheets(m);
+  _tpNoteExpandedId=m.id;_mtgDraft=null;_mtgEditingId=null;
+  _tpNotesRefresh();
+  mtgReportTimesheets(res);
+}
+
+
+// ── the form ─────────────────────────────────────────────────
+// Only what a standard meeting needs is on screen. Everything else appears when it becomes
+// relevant — but a collapsed section always opens if it already holds a value, so no data
+// ever hides behind a chevron.
+function _mtgUI(){const d=_mtgDraft;if(!d)return{};d._ui=d._ui||{att:{}};d._ui.att=d._ui.att||{};return d._ui;}
+function mtgToggleMore(){const u=_mtgUI();u.more=!mtgMoreOpen();mtgSync();_tpNotesRefresh();
+  setTimeout(()=>document.getElementById('mtg-type')?.focus(),40);}
+function mtgMoreOpen(){
+  const d=_mtgDraft;if(!d)return false;
+  return !!(_mtgUI().more||(d.meetingType&&d.meetingType!=='project')||String(d.location||'').trim());
+}
+function mtgToggleTsSettings(){const u=_mtgUI();u.tsSet=!mtgTsSetOpen();mtgSync();_tpNotesRefresh();
+  setTimeout(()=>document.getElementById('mtg-cat')?.focus(),40);}
+function mtgTsSetOpen(){
+  const d=_mtgDraft;if(!d)return false;
+  return !!(_mtgUI().tsSet||(d.tsCategory&&d.tsCategory!=='Meeting Attended')||(d.billing&&d.billing!=='task-default'));
+}
+function mtgAttOpen(i){
+  const d=_mtgDraft;if(!d)return false;
+  const a=(d.attendees||[])[i];if(!a)return false;
+  if(_mtgUI().att[i])return true;
+  // times of their own must never be hidden
+  return !!((a.start&&a.start!==d.startTime)||(a.end&&a.end!==d.endTime));
+}
+function mtgToggleAtt(i){mtgSync();const u=_mtgUI();u.att[i]=!mtgAttOpen(i);_tpNotesRefresh();
+  setTimeout(()=>document.getElementById('mtg-att-s-'+i)?.focus(),40);}
+function mtgSetDurMode(on){
+  mtgSync();
+  const d=_mtgDraft;
+  if(on){d.durationMin=mtgDuration(d)||30;d.timeMethod='duration';}
+  else{d.timeMethod='range';}
+  _tpNotesRefresh();
+  setTimeout(()=>document.getElementById(on?'mtg-dur':'mtg-start')?.focus(),50);
+}
+function mtgMakePrimary(taskId){
+  mtgSync();
+  const d=_mtgDraft;if(!d)return;
+  d.links=mtgLinks(d).map(l=>Object.assign({},l,{primary:l.taskId===taskId}));
+  d.primaryTaskId=taskId;
+  _tpNotesRefresh();
+}
+function mtgSetTsOn(on){mtgSync();_mtgDraft.createTs=!!on;_tpNotesRefresh();}
+// Grow the one-line Actions field on focus without a re-render, so typing is never lost.
+function mtgGrow(el){el.rows=4;el.style.height='auto';el.style.height=Math.max(76,el.scrollHeight)+'px';}
+function mtgShrink(el){if(!el.value.trim()){el.rows=1;el.style.height='';}}
+function mtgFocusFirstOverAlloc(){
+  const d=_mtgDraft;if(!d)return;
+  const first=mtgLinks(d).map(l=>l.taskId).find(id=>mtgAllocFor(d,id)>0);
+  const el=document.getElementById('mtg-alloc-'+first);
+  if(el){el.scrollIntoView({block:'center',behavior:'smooth'});setTimeout(()=>{el.focus();el.select&&el.select();},260);}
+}
+
 function mtgFormHtml(){
   const d=_mtgDraft;if(!d)return'';
   const dur=mtgDuration(d);
   const links=mtgLinkedTasks(d);
-  const staffOpts=(DB.staff||[]).filter(s=>!(d.attendees||[]).some(a=>a.staffId===s.id))
-    .map(s=>`<option value="${s.id}">${escHtml(s.name)}</option>`).join('');
-
-  const details=_mtgSec('Meeting details',`
-    <label class="mtg-lbl">Meeting title <span class="mtg-req">*</span></label>
-    <input id="mtg-title" class="form-input mtg-in" value="${escHtml(d.title||'')}" oninput="mtgField()" placeholder="What was the meeting about?"/>
-    <div class="mtg-row2">
-      <div><label class="mtg-lbl">Date <span class="mtg-req">*</span></label>
-        <input id="mtg-date" type="date" class="form-input mtg-in" value="${d.date||''}" onchange="mtgField()"/></div>
-      <div><label class="mtg-lbl">Meeting type</label>
-        <select id="mtg-type" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_TYPES,d.meetingType)}</select></div>
-    </div>
-    <label class="mtg-lbl">Time entry method <span class="mtg-req">*</span></label>
-    <select id="mtg-method" class="form-input mtg-in" onchange="mtgSetMethod(this.value)">
-      <option value="range"${d.timeMethod==='range'?' selected':''}>Start and finish time</option>
-      <option value="duration"${d.timeMethod==='duration'?' selected':''}>Total duration</option>
-    </select>
-    ${d.timeMethod==='range'?`
-      <div class="mtg-row3">
-        <div><label class="mtg-lbl">Start time</label>
-          <input id="mtg-start" type="time" class="form-input mtg-in" value="${d.startTime||''}" onchange="mtgTimeChanged()"/></div>
-        <div><label class="mtg-lbl">Finish time</label>
-          <input id="mtg-end" type="time" class="form-input mtg-in" value="${d.endTime||''}" onchange="mtgTimeChanged()"/></div>
-        <div><label class="mtg-lbl">Duration</label>
-          <div class="mtg-calc">${mtgFmtMins(dur)}</div></div>
-      </div>`:`
-      <div class="mtg-row3">
-        <div><label class="mtg-lbl">Hours</label>
-          <input id="mtg-dur-h" type="number" min="0" max="24" class="form-input mtg-in" value="${Math.floor((+d.durationMin||0)/60)}" oninput="mtgField()" onchange="mtgStruct()"/></div>
-        <div><label class="mtg-lbl">Minutes</label>
-          <input id="mtg-dur-m" type="number" min="0" max="59" step="5" class="form-input mtg-in" value="${(+d.durationMin||0)%60}" oninput="mtgField()" onchange="mtgStruct()"/></div>
-        <div><label class="mtg-lbl">Total</label><div class="mtg-calc">${mtgFmtMins(dur)}</div></div>
-      </div>`}
-    <label class="mtg-lbl">Meeting summary</label>
-    <textarea id="mtg-summary" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was discussed?">${escHtml(d.body||'')}</textarea>
-    <label class="mtg-lbl">Actions and outcomes</label>
-    <textarea id="mtg-actions" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was decided, and who is doing what?">${escHtml(d.actions||'')}</textarea>`);
-
-  const attendees=_mtgSec('Attendees',`
-    <div class="mtg-addrow">
-      <select id="mtg-att-pick" class="form-input mtg-in" style="flex:1">
-        <option value="">Search staff…</option>
-        ${staffOpts}
-      </select>
-      <button class="btn btn-teal btn-sm" onclick="mtgAddAttendee()">+ Add attendee</button>
-    </div>
-    ${(d.attendees||[]).length?(d.attendees||[]).map((a,i)=>{
-      const mins=mtgAttMinutes(d,a);
-      return`<div class="mtg-att">
-        <div class="mtg-att-top">
-          <span class="mtg-att-name">${escHtml(a.name||'Attendee')}</span>
-          <span class="mtg-chip ${a.external?'mtg-chip--ext':'mtg-chip--int'}">${a.external?'External contact':'Internal staff'}</span>
-          <button class="mtg-x" title="Remove attendee" onclick="mtgRemoveAttendee(${i})">&#215;</button>
-        </div>
-        <div class="mtg-att-times">
-          <input id="mtg-att-s-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.start||''}" onchange="mtgStruct()" title="Attendance start"/>
-          <span class="mtg-to">to</span>
-          <input id="mtg-att-e-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.end||''}" onchange="mtgStruct()" title="Attendance finish"/>
-          <span class="mtg-att-dur">${mtgFmtMins(mins)}</span>
-        </div>
-        <label class="mtg-inc${a.external?' mtg-inc--off':''}" title="${a.external?'External contacts cannot have timesheet entries':'Create a draft timesheet entry for this person'}">
-          <input id="mtg-att-ts-${i}" type="checkbox" ${a.includeTs&&!a.external?'checked':''} ${a.external?'disabled':''} onchange="mtgField()"/>
-          Include in timesheet
-        </label>
-      </div>`;}).join(''):`<div class="mtg-none">No attendees yet.</div>`}`,
-    'Attendance times can differ from the meeting — set them when someone joined late or left early.');
-
-  const linkRows=links.length?links.map(({link,task})=>{
-    const wb=(DB.workboards||[]).find(w=>w.id===_taskBoardId(task));
-    const g=(DB.groups||[]).find(x=>x.id===task.groupId);
-    return`<div class="mtg-link">
-      <div class="mtg-link-main">
-        <div class="mtg-link-t"><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</div>
-        <div class="mtg-link-sub">${escHtml((wb?wb.name:'—')+' › '+(g?g.name:'—'))}</div>
-      </div>
-      <span class="mtg-chip ${link.primary?'mtg-chip--prim':'mtg-chip--link'}">${link.primary?'Primary':'Linked'}</span>
-      ${d.allocMode==='split'?`<span class="mtg-chip mtg-chip--alloc">${mtgFmtMins(mtgAllocFor(d,task.id))}</span>`:''}
-      <button class="mtg-x" title="Remove this link" onclick="mtgUnlink('${task.id}')">&#215;</button>
-    </div>`;}).join(''):`<div class="mtg-none">No tasks linked yet.</div>`;
-
-  const tasksSec=_mtgSec('Tasks and groups discussed',
-    linkRows+`<button class="btn btn-ghost btn-sm mtg-addbtn" onclick="mtgOpenPicker()">+ Link ${links.length?'another task':'task or group'}</button>`,
-    'Select all tasks discussed during this meeting. The meeting will appear in the Meeting Notes tab of each linked task without creating duplicate meeting notes or timesheet hours.');
-
+  const many=links.length>1;
+  const primaryId=mtgPrimaryTaskId(d);
+  const primaryTask=mtgPrimaryTask(d);
   const alloc=mtgAllocTotal(d),rem=dur-alloc;
-  const allocSec=_mtgSec('Meeting time allocation',`
-    <label class="mtg-lbl">How should the meeting time be recorded?</label>
-    <select id="mtg-allocmode" class="form-input mtg-in" onchange="mtgSetAllocMode(this.value)">
-      <option value="single"${d.allocMode==='single'?' selected':''}>Record as one general meeting</option>
-      <option value="split"${d.allocMode==='split'?' selected':''}>Split time across linked tasks</option>
-    </select>
-    ${d.allocMode==='single'?`
-      <label class="mtg-lbl">Primary task <span class="mtg-req">*</span></label>
-      <select id="mtg-primary" class="form-input mtg-in" onchange="mtgField()">
-        <option value="">Select linked task…</option>
-        ${links.map(({task})=>`<option value="${task.id}"${d.primaryTaskId===task.id?' selected':''}>${escHtml(taskRef(task)+' – '+(task.name||task.title||''))}</option>`).join('')}
-      </select>
-      <div class="mtg-hint" style="margin-top:8px">The meeting will appear against every linked task, but the meeting duration will only be counted once.</div>`
-    :`
+  const blocked=mtgBlockReason(d);
+  const chip=v=>`<span class="mtg-durchip">${escHtml(mtgFmtMins(v))}</span>`;
+
+  // ── meeting details ──
+  const timeRow=d.timeMethod==='duration'
+    ?`<div class="mtg-f"><label class="mtg-lbl" for="mtg-dur">Duration</label>
+        <input id="mtg-dur" class="form-input mtg-in" value="${escHtml(mtgFmtMins(dur))}"
+          onchange="mtgDurInput(this.value)" placeholder="90, 1.5, 1h30 or 1:30"/></div>
+      <button type="button" class="mtg-disc" onclick="mtgSetDurMode(false)">Enter start and finish time</button>`
+    :`<div class="mtg-row2">
+        <div class="mtg-f"><label class="mtg-lbl" for="mtg-start">Start</label>
+          <input id="mtg-start" type="time" class="form-input mtg-in" value="${d.startTime||''}" onchange="mtgTimeChanged()"/></div>
+        <div class="mtg-f"><label class="mtg-lbl" for="mtg-end">Finish</label>
+          <div class="mtg-endwrap">
+            <input id="mtg-end" type="time" class="form-input mtg-in" value="${d.endTime||''}" onchange="mtgTimeChanged()"/>
+            ${chip(dur)}
+          </div></div>
+      </div>
+      <button type="button" class="mtg-disc" onclick="mtgSetDurMode(true)">Enter duration only</button>`;
+
+  const moreOpen=mtgMoreOpen();
+  const details=`<div class="mtg-sec">
+    <div class="mtg-sec-hd">Meeting details</div>
+    <div class="mtg-f"><label class="mtg-lbl" for="mtg-title">Meeting title <span class="mtg-req">*</span></label>
+      <input id="mtg-title" class="form-input mtg-in" value="${escHtml(d.title||'')}" oninput="mtgField()" placeholder="What was the meeting about?"/></div>
+    <div class="mtg-f"><label class="mtg-lbl" for="mtg-date">Date <span class="mtg-req">*</span></label>
+      <input id="mtg-date" type="date" class="form-input mtg-in" value="${d.date||''}" onchange="mtgField()"/></div>
+    ${timeRow}
+    <div class="mtg-f"><label class="mtg-lbl" for="mtg-summary">Meeting summary</label>
+      <textarea id="mtg-summary" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was discussed?">${escHtml(d.body||'')}</textarea></div>
+    <div class="mtg-f"><label class="mtg-lbl" for="mtg-actions">Actions and outcomes</label>
+      <textarea id="mtg-actions" class="form-input mtg-in mtg-grow" rows="${String(d.actions||'').trim()?4:1}" oninput="mtgField()"
+        onfocus="mtgGrow(this)" onblur="mtgShrink(this)"
+        placeholder="What was decided, and who is responsible?">${escHtml(d.actions||'')}</textarea></div>
+    <button type="button" class="mtg-disc" aria-expanded="${moreOpen}" aria-controls="mtg-more" onclick="mtgToggleMore()">More meeting options ${moreOpen?'▴':'▾'}</button>
+    <div id="mtg-more" ${moreOpen?'':'hidden'}>
+      <div class="mtg-row2">
+        <div class="mtg-f"><label class="mtg-lbl" for="mtg-type">Meeting type</label>
+          <select id="mtg-type" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_TYPES,d.meetingType)}</select></div>
+        <div class="mtg-f"><label class="mtg-lbl" for="mtg-location">Location or platform</label>
+          <input id="mtg-location" class="form-input mtg-in" value="${escHtml(d.location||'')}" oninput="mtgField()" placeholder="Teams, site, office…"/></div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── tasks discussed ──
+  const taskRows=links.map(({link,task})=>{
+    const crumb=mtgCrumb(task);
+    return`<div class="mtg-tcard">
+      <div class="mtg-tcard-main">
+        <div class="mtg-tcard-t"><span class="mtg-ref">${escHtml(taskRef(task))}</span>${escHtml(task.name||task.title||'')}</div>
+        <div class="mtg-tcard-p" title="${escHtml(crumb)}">${escHtml(mtgMidEllipsis(crumb,42))}</div>
+      </div>
+      ${link.primary?`<span class="mtg-chip mtg-chip--prim">Primary</span>`
+        :`<button type="button" class="mtg-mini" onclick="mtgMakePrimary('${task.id}')">Make primary</button>`}
+      <button type="button" class="mtg-x" title="Remove this task" onclick="mtgUnlink('${task.id}')">&#215;</button>
+    </div>`;}).join('');
+  const oneLine=(!many&&primaryTask)
+    ?`<div class="mtg-oneline" id="mtg-oneline">${escHtml(mtgFmtMins(dur))} will be recorded against ${escHtml(taskRef(primaryTask))}.</div>`:'';
+  const tasksSec=`<div class="mtg-sec">
+    <div class="mtg-sec-hd">Tasks discussed</div>
+    ${taskRows||`<div class="mtg-none">No tasks linked yet.</div>`}
+    <button type="button" class="btn btn-ghost btn-sm mtg-addbtn" onclick="mtgOpenPicker()">+ Link another task</button>
+    ${oneLine}
+  </div>`;
+
+  // ── time allocation: only once there is something to divide ──
+  const allocSec=many?`<div class="mtg-sec">
+    <div class="mtg-sec-hd">Time allocation</div>
+    <div class="mtg-lbl" style="margin-top:0">How should the meeting time be recorded?</div>
+    <label class="mtg-radio"><input type="radio" name="mtg-am" ${d.allocMode!=='split'?'checked':''} onchange="mtgSetAllocMode('single')"/>
+      Record all time against the primary task</label>
+    <label class="mtg-radio"><input type="radio" name="mtg-am" ${d.allocMode==='split'?'checked':''} onchange="mtgSetAllocMode('split')"/>
+      Split time across linked tasks</label>
+    ${d.allocMode==='split'?`
       ${links.map(({task})=>`<div class="mtg-allocrow">
-        <span class="mtg-allocname"><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</span>
-        <span class="mtg-allocin"><input id="mtg-alloc-${task.id}" type="number" min="0" step="5" class="form-input mtg-in mtg-in--sm" value="${mtgAllocFor(d,task.id)||''}" placeholder="0" oninput="mtgField()" onchange="mtgStruct()"/><span class="mtg-min">min</span></span>
+        <span class="mtg-allocname" title="${escHtml((task.name||task.title||''))}"><span class="mtg-ref">${escHtml(taskRef(task))}</span>${escHtml(mtgMidEllipsis(task.name||task.title||'',26))}</span>
+        <span class="mtg-allocin"><input id="mtg-alloc-${task.id}" type="number" min="0" step="5" class="form-input mtg-in mtg-in--sm"
+          value="${mtgAllocFor(d,task.id)||''}" placeholder="0" oninput="mtgField()" onchange="mtgStruct()"/><span class="mtg-min">min</span></span>
       </div>`).join('')}
-      ${mtgAllocFor(d,MTG_GENERAL)?`<div class="mtg-allocrow">
-        <span class="mtg-allocname">General Meeting</span>
-        <span class="mtg-allocin"><input id="mtg-alloc-general" type="number" min="0" step="5" class="form-input mtg-in mtg-in--sm" value="${mtgAllocFor(d,MTG_GENERAL)}" oninput="mtgField()" onchange="mtgStruct()"/><span class="mtg-min">min</span></span>
-      </div>`:''}
       <div class="mtg-tot">
         <span>Meeting duration: <b>${mtgFmtMins(dur)}</b></span>
         <span>Allocated: <b>${mtgFmtMins(alloc)}</b></span>
         <span class="${rem<0?'mtg-over':rem>0?'mtg-under':'mtg-ok'}">Remaining: <b>${mtgFmtMins(Math.abs(rem))}</b>${rem<0?' over':''}</span>
       </div>
-      ${rem<0?`<div class="mtg-warn mtg-warn--bad">The allocated time exceeds the meeting duration by ${mtgFmtMins(-rem)}. Reduce the allocations before saving.</div>`
-        :rem>0?`<div class="mtg-warn">${mtgFmtMins(rem)} remain unallocated.
-          <button class="mtg-inline-btn" onclick="mtgAllocToGeneral()">Allocate to General Meeting</button></div>`:''}
-      <div class="mtg-hint" style="margin-top:8px">Allocations divide the meeting's existing duration — they are never added on top of it.</div>`}`);
+      <div aria-live="polite">
+        ${rem<0?`<div class="mtg-warn mtg-warn--bad">The allocated time exceeds the meeting duration by ${mtgFmtMins(-rem)}. Reduce the allocations before saving.</div>`
+          :rem>0?`<div class="mtg-warn">${mtgFmtMins(rem)} remain unallocated. Save anyway, or adjust the allocations above.</div>`:''}
+      </div>`:`<div class="mtg-hint" style="margin-top:7px">The meeting stays visible on every linked task; its time is counted once, against ${escHtml(primaryTask?taskRef(primaryTask):'the primary task')}.</div>`}
+  </div>`:'';
 
-  const tsSec=_mtgSec('Timesheet option',`
-    <label class="mtg-inc">
-      <input id="mtg-createts" type="checkbox" ${d.createTs?'checked':''} onchange="mtgStruct()"/>
-      Create draft timesheet entries for internal attendees
-    </label>
-    ${d.createTs?`<div class="mtg-row2" style="margin-top:10px">
-      <div><label class="mtg-lbl">Timesheet category</label>
-        <select id="mtg-cat" class="form-input mtg-in" onchange="mtgField()">
-          ${['Meeting Attended','Project Work','Consulting','Administration'].map(c=>`<option${d.tsCategory===c?' selected':''}>${c}</option>`).join('')}
-        </select></div>
-      <div><label class="mtg-lbl">Billing</label>
-        <select id="mtg-billing" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_BILLING,d.billing)}</select></div>
-    </div>`:''}`);
+  // ── attendees ──
+  const attRows=(d.attendees||[]).map((a,i)=>{
+    const mins=mtgAttMinutes(d,a);
+    const open=mtgAttOpen(i);
+    const inTs=d.createTs&&a.includeTs;
+    if(!open)return`<div class="mtg-att">
+      <div class="mtg-att-top">
+        <span class="mtg-att-name">${escHtml(a.name||'Attendee')}</span>
+        <span class="mtg-chip ${a.external?'mtg-chip--ext':'mtg-chip--int'}">${a.external?'External contact':'Internal staff'}</span>
+      </div>
+      <div class="mtg-att-sum">${escHtml(mtgFmtMins(mins))} · ${a.external?'Not eligible for timesheet':(inTs?'Included in timesheet':'Not added to timesheet')}</div>
+      <div class="mtg-att-acts">
+        <button type="button" class="mtg-mini" aria-expanded="false" aria-controls="mtg-attrow-${i}" onclick="mtgToggleAtt(${i})">Edit</button>
+        <button type="button" class="mtg-mini mtg-mini--del" onclick="mtgRemoveAttendee(${i})">Remove</button>
+      </div>
+    </div>`;
+    return`<div class="mtg-att mtg-att--open" id="mtg-attrow-${i}">
+      <div class="mtg-att-top">
+        <span class="mtg-att-name">${escHtml(a.name||'Attendee')}</span>
+        <span class="mtg-chip ${a.external?'mtg-chip--ext':'mtg-chip--int'}">${a.external?'External contact':'Internal staff'}</span>
+      </div>
+      <div class="mtg-lbl">Attendance</div>
+      <div class="mtg-att-times">
+        <input id="mtg-att-s-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.start||''}" onchange="mtgStruct()"/>
+        <span class="mtg-to">to</span>
+        <input id="mtg-att-e-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.end||''}" onchange="mtgStruct()"/>
+        <span class="mtg-att-dur">${escHtml(mtgFmtMins(mins))}</span>
+      </div>
+      ${a.external?'':`<label class="mtg-inc"><input id="mtg-att-ts-${i}" type="checkbox" ${a.includeTs?'checked':''} onchange="mtgField()"/> Include in timesheet</label>`}
+      <div class="mtg-att-acts">
+        <button type="button" class="mtg-mini" aria-expanded="true" aria-controls="mtg-attrow-${i}" onclick="mtgToggleAtt(${i})">Done</button>
+        <button type="button" class="mtg-mini mtg-mini--del" onclick="mtgRemoveAttendee(${i})">Remove</button>
+      </div>
+    </div>`;}).join('');
+
+  const tsOpen=mtgTsSetOpen();
+  const attendees=`<div class="mtg-sec">
+    <div class="mtg-sec-hd">Attendees</div>
+    ${attRows||`<div class="mtg-none">No attendees yet.</div>`}
+    <button type="button" class="btn btn-ghost btn-sm mtg-addbtn" onclick="mtgOpenAttPicker()">+ Add attendee</button>
+    <div class="mtg-tsblock">
+      <label class="mtg-inc"><input id="mtg-tson" type="checkbox" ${d.createTs?'checked':''} onchange="mtgSetTsOn(this.checked)"/>
+        Add meeting time to attendees' timesheets</label>
+      <button type="button" class="mtg-disc" aria-expanded="${tsOpen}" aria-controls="mtg-tsset" onclick="mtgToggleTsSettings()">Settings ${tsOpen?'▴':'▾'}</button>
+      <div id="mtg-tsset" ${tsOpen?'':'hidden'}>
+        <div class="mtg-row2">
+          <div class="mtg-f"><label class="mtg-lbl" for="mtg-cat">Timesheet category</label>
+            <select id="mtg-cat" class="form-input mtg-in" onchange="mtgField()">
+              ${['Meeting Attended','Project Work','Consulting','Administration'].map(c=>`<option${d.tsCategory===c?' selected':''}>${c}</option>`).join('')}
+            </select></div>
+          <div class="mtg-f"><label class="mtg-lbl" for="mtg-billing">Billing</label>
+            <select id="mtg-billing" class="form-input mtg-in" onchange="mtgField()">${_mtgOpts(MTG_BILLING,d.billing)}</select></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
 
   return`<div class="mtg-form">
     <div class="mtg-form-hd">${_mtgEditingId?'Edit meeting':'New meeting note'}</div>
-    ${details}${tasksSec}${attendees}${allocSec}${tsSec}
-    <div class="mtg-form-actions">
-      <button class="btn btn-ghost btn-sm" onclick="mtgCancel()">Cancel</button>
-      <button class="btn btn-ghost btn-sm" onclick="mtgSave(false)">Save meeting</button>
-      <button class="btn btn-teal btn-sm" onclick="mtgSave(true)">Save &amp; add to timesheets</button>
+    <div class="mtg-scroll">${details}${tasksSec}${allocSec}${attendees}</div>
+    <div class="mtg-footer">
+      ${blocked?`<span class="mtg-blocked" id="mtg-blocked">${escHtml(blocked)}</span>`:''}
+      <button type="button" class="btn btn-ghost btn-sm" onclick="mtgCancel()">Cancel</button>
+      <button type="button" class="btn btn-teal btn-sm" ${blocked?`disabled aria-describedby="mtg-blocked"`:''}
+        onclick="${blocked?'mtgFocusFirstOverAlloc()':'mtgSaveMain()'}">${d.createTs?'Save &amp; add time':'Save meeting'}</button>
     </div>
     ${_mtgPicker?mtgPickerHtml():''}
+    ${_mtgAttPicker?mtgAttPickerHtml():''}
   </div>`;
 }
+
 
 // ── task picker ──────────────────────────────────────────────
 function mtgPickerHtml(){
@@ -17936,10 +18207,14 @@ function mtgRemoveLinkFromTask(id,taskId){
   // Removing this task never touches the meeting itself or its other links.
   m.links=mtgLinks(m).filter(l=>l.taskId!==taskId);
   const mins=mtgAllocFor(m,taskId);
-  if(mins){m.allocations[MTG_GENERAL]=mtgAllocFor(m,MTG_GENERAL)+mins;delete m.allocations[taskId];}
+  // “General Meeting” was never a real task or timesheet category, so freed time goes to
+  // the primary task, which is somewhere the hours can actually be recorded.
+  const _pid=mtgPrimaryTaskId(m);
+  if(mins&&_pid&&_pid!==taskId){m.allocations[_pid]=mtgAllocFor(m,_pid)+mins;}
+  delete m.allocations[taskId];
   m.updatedAt=new Date().toISOString();
   saveDB(DB);closeGenericModal();_tpNotesRefresh();
-  showToast('Task unlinked from the meeting'+(mins?' — its time moved to General Meeting':''),'success',3200);
+  showToast('Task unlinked from the meeting'+(mins?' — its time moved to the primary task':''),'success',3200);
 }
 function mtgMore(ev,id){
   ev.stopPropagation();
