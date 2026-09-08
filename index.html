@@ -13063,7 +13063,19 @@ function permanentDeleteAllArchivedTasks(){
   });
 }
 
+let _notesRendering=false;
 function renderNotes(){
+  // A blur inside the editor fires synchronously while the innerHTML swap below is still
+  // tearing down the old DOM. If that blur handler calls renderNotes again, the re-entrant
+  // call replaces everything, then the outer swap tries to remove a node that is already
+  // gone — "The node to be removed is no longer a child of this node." Skip the re-entry;
+  // whatever the blur changed is handled surgically in _noteBindPage, not by a full render.
+  if(_notesRendering)return;
+  _notesRendering=true;
+  try{ _renderNotesInner(); }
+  finally{ _notesRendering=false; }
+}
+function _renderNotesInner(){
   const vc=document.getElementById('view-container');
   if(!selectedNoteClientId&&DB.clientNotes.length>0) selectedNoteClientId=DB.clientNotes[0].clientId;
   const noteObj=DB.clientNotes.find(n=>n.clientId===selectedNoteClientId);
@@ -13232,7 +13244,14 @@ function _noteBindPage(section){
     el.addEventListener('blur',()=>{
       // A blur caused by the paste popup is not the user leaving the box.
       if(document.getElementById('paste-choice-popup'))return;
-      if(_noteSaveBox(el,section))renderNotes();
+      // _noteSaveBox has already dropped an emptied box from the section and saved. Pull
+      // just that one node out of the DOM — a full renderNotes here would re-enter the
+      // render that this blur was fired by. This is also what makes an untouched box
+      // vanish the moment you click away, instead of lingering with a delete cross.
+      if(_noteSaveBox(el,section)){
+        const host=el.closest('.note-box');
+        if(host&&host.parentNode)host.parentNode.removeChild(host);
+      }
     });
     el.addEventListener('paste',e=>_handleDescPaste(e,el.id));
   });
