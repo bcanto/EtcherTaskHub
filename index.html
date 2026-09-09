@@ -289,6 +289,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .ws-sheet-preview table{border-collapse:collapse;font-size:12px;font-family:Lato,sans-serif}
 .ws-sheet-preview td,.ws-sheet-preview th{border:1px solid #e2eaf2;padding:5px 9px;white-space:nowrap;color:#1a2940}
 .ws-sheet-preview tr:first-child td{background:#f4f7fc;font-weight:700;position:sticky;top:0}
+.tp-rolled{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#1a2940;background:#f4f7fc;border:1px solid #e2eaf2;border-radius:6px;padding:4px 9px}
+.tp-rolled-note{font-size:10px;color:#a8b8c8;white-space:nowrap;font-style:italic}
 .note-box{position:absolute;min-width:120px;max-width:calc(100% - 40px)}
 .note-box::before{content:'';position:absolute;inset:-5px -7px;border:1px solid transparent;border-radius:3px;pointer-events:none;transition:border-color 0.12s,background 0.12s}
 .note-box:hover::before,.note-box:focus-within::before{border-color:#cdd6e0;background:rgba(13,28,51,0.012)}
@@ -6780,14 +6782,22 @@ function renderGantt(){
       rightRows+=`<div style="height:36px;width:${trackW}px;background:#f8fafb;border-bottom:1px solid #edf1f6;position:relative"></div>`;
     } else {
       const t=row.task;
+      // A parent with dated subitems shows their rolled-up span, matching the Main Table
+      // and the task panel. Falls back to the row's own dates for leaves and for parents
+      // whose children carry no dates.
+      const _gRoll=(row.depth!==1 && (_gSubCount.get(t.id)||0)>0 && typeof getTaskDateSpan==='function')
+        ? getTaskDateSpan(t.id) : null;
+      const _gS=(_gRoll&&_gRoll.startDate)?_gRoll.startDate:t.startDate;
+      const _gE=(_gRoll&&_gRoll.endDate)?_gRoll.endDate:t.endDate;
+      const _gRolled=!!(_gRoll&&(_gRoll.startDate||_gRoll.endDate));
       const owner=getStaff(t.ownerId);
       const cwId=t.currentlyWithUserId||t.currentlyWith;
       const cw=cwId&&cwId!=='client'?getStaff(cwId):null;
       const cr=checklistRatio(t.id);
-      const hasBoth=t.startDate&&t.endDate;
-      const hasOne=t.startDate||t.endDate;
-      const dateLabel=hasBoth?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:t.startDate?`From ${formatDate(t.startDate)}`:'—';
-      const isOverdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&!t.archived;
+      const hasBoth=_gS&&_gE;
+      const hasOne=_gS||_gE;
+      const dateLabel=hasBoth?`${formatDate(_gS)} → ${formatDate(_gE)}`:_gE?`Due ${formatDate(_gE)}`:_gS?`From ${formatDate(_gS)}`:'—';
+      const isOverdue=_gE&&_gE<todayStr&&t.status!=='done'&&!t.archived;
       // A subitem row is shorter and indented, and never carries an expander of its own.
       const _sub=row.depth===1;
       const _rowH=_sub?32:40;
@@ -6815,23 +6825,23 @@ function renderGantt(){
       let barHTML='';
       if(hasBoth){
         const bc=ganttBarColor(t,ganttColorBy);
-        const bx=d2x(t.startDate);
-        const bw=Math.max(Math.round(depDiffDays(t.startDate,t.endDate)*DW),4);
+        const bx=d2x(_gS);
+        const bw=Math.max(Math.round(depDiffDays(_gS,_gE)*DW),4);
         const locked=!!t.lockedDates;
-        const canEdit=canEditTask(currentUser,t)&&!locked;
+        const canEdit=canEditTask(currentUser,t)&&!locked&&!_gRolled;
         const dAttr=canEdit?`onmousedown="ganttBarMouseDown(event,'${t.id}','move')"`:locked?`title="Dates locked"`:'';
         const rsAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-start')"`:''
         const reAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-end')"`:''
-        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
-          <div class="g2-rh g2-rh-l" ${rsAttr}></div>
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
+          ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
           <div class="g2-bar-label">${escHtml(t.name||t.title||'')}</div>
           ${locked?`<span style="padding-right:4px;flex-shrink:0;display:inline-flex">${icon('lock',9)}</span>`:''}
-          <div class="g2-rh g2-rh-r" ${reAttr}></div>
+          ${_gRolled?'':`<div class="g2-rh g2-rh-r" ${reAttr}></div>`}
         </div>
         ${ganttShowBaseline&&t.baselineStartDate&&t.baselineEndDate?`<div style="position:absolute;left:${d2x(t.baselineStartDate)}px;width:${Math.max(Math.round(depDiffDays(t.baselineStartDate,t.baselineEndDate)*DW),4)}px;height:4px;bottom:5px;border-radius:2px;background:rgba(13,28,51,0.16);pointer-events:none"></div>`:''}`;
       } else if(hasOne){
         // Milestone diamond
-        const mx=d2x(t.startDate||t.endDate);
+        const mx=d2x(_gS||_gE);
         const bc=ganttBarColor(t,ganttColorBy);
         barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(t.name||'')}"></div>`;
       }
@@ -16953,12 +16963,17 @@ function renderTpDetails(task){
   // taking a line each. People collapse into an avatar stack, which replaces the old
   // Assignee dropdown plus the five-row scrolling checkbox list.
   const _tpCli=boardClient((DB.workboards||[]).find(w=>w.id===_taskBoardId(task)));
-  const _tpDue=_wsDueState(task);
+  // A parent's timeline is the span of its subitems, exactly as the Main Table shows it.
+  // Falls back to the task's own dates when it has no children, or none of them are dated.
+  const _tpKids=(DB.tasks||[]).filter(t=>t.parentTaskId===task.id&&!t.archived);
+  const _tpRoll=(!task.parentTaskId&&_tpKids.length)?getTaskDateSpan(task.id):null;
+  const _tpDates=_tpRoll||task;
+  const _tpDue=_wsDueState(_tpRoll?{...task,startDate:_tpRoll.startDate,endDate:_tpRoll.endDate}:task);
   const _tpChipTone={over:'background:#fef2f2;color:#b91c1c',stale:'background:#f1f5f9;color:#64748b',
                      soon:'background:#fffbeb;color:#b45309'}[_tpDue.tone]||'';
   // How long the task runs, so the two dates mean something at a glance.
-  const _tpSpan=(task.startDate&&task.endDate)?(()=>{
-    const d=Math.round((new Date(task.endDate+'T00:00:00')-new Date(task.startDate+'T00:00:00'))/86400000)+1;
+  const _tpSpan=(_tpDates.startDate&&_tpDates.endDate)?(()=>{
+    const d=Math.round((new Date(_tpDates.endDate+'T00:00:00')-new Date(_tpDates.startDate+'T00:00:00'))/86400000)+1;
     if(d<1)return'';
     return d>=14?Math.round(d/7)+' weeks':d+(d===1?' day':' days');
   })():'';
@@ -17005,11 +17020,13 @@ function renderTpDetails(task){
     <div class="tp-prop tp-prop--wide">
       <span class="tp-prop-lbl">Timeline</span>
       <div class="tp-prop-val tp-date">
-        <input type="date" value="${task.startDate||''}" onchange="tpSaveField('startDate',this.value)" title="Start date" style="color:${task.startDate?'#1a2940':'#94a3b8'}"/>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-        <input type="date" value="${task.endDate||''}" onchange="tpSaveField('endDate',this.value)" title="Due date" style="color:${task.endDate?'#1a2940':'#94a3b8'}"/>
+        ${_tpRoll?`<span class="tp-rolled" title="Rolled up from ${_tpKids.length} subitem${_tpKids.length!==1?'s':''} — set the dates on the subitems to change this"><span>${_tpDates.startDate?formatDate(_tpDates.startDate):'—'}</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12h14M13 5l7 7-7 7"/></svg><span>${_tpDates.endDate?formatDate(_tpDates.endDate):'—'}</span></span>`:`
+          <input type="date" value="${task.startDate||''}" onchange="tpSaveField('startDate',this.value)" title="Start date" style="color:${task.startDate?'#1a2940':'#94a3b8'}"/>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8d5e0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          <input type="date" value="${task.endDate||''}" onchange="tpSaveField('endDate',this.value)" title="Due date" style="color:${task.endDate?'#1a2940':'#94a3b8'}"/>`}
         ${_tpSpan?`<span style="font-size:10.5px;color:#a8b8c8;margin-left:3px;white-space:nowrap">${_tpSpan}</span>`:''}
         ${_tpDue.chip?`<span class="tp-chip" style="${_tpChipTone}">${_tpDue.chip}</span>`:''}
+        ${_tpRoll?`<span class="tp-rolled-note">rolled up from ${_tpKids.length} subitem${_tpKids.length!==1?'s':''}</span>`:''}
       </div>
     </div>
     <div class="tp-prop tp-prop--wide">
