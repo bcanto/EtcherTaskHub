@@ -291,6 +291,22 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .ws-sheet-preview tr:first-child td{background:#f4f7fc;font-weight:700;position:sticky;top:0}
 .tp-rolled{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#1a2940;background:#f4f7fc;border:1px solid #e2eaf2;border-radius:6px;padding:4px 9px}
 .tp-rolled-note{font-size:10px;color:#a8b8c8;white-space:nowrap;font-style:italic}
+.ws-cal{user-select:none}
+.ws-cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ws-cal-mon{font-size:11.5px;font-weight:700;color:#0d1c33;font-family:'Jost',sans-serif}
+.ws-cal-nav{width:20px;height:20px;border:1px solid #e2eaf2;background:#fff;border-radius:5px;cursor:pointer;color:#6b8399;font-size:13px;line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.ws-cal-nav:hover{border-color:#97bcbd;color:#0d1c33}
+.ws-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:2px}
+.ws-cal-dow span{text-align:center;font-size:9px;font-weight:700;color:#b0bec5;text-transform:uppercase}
+.ws-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.ws-cal-pad{height:24px}
+.ws-cal-d{height:24px;border:none;background:none;border-radius:5px;cursor:pointer;font-size:11px;color:#1a2940;font-family:inherit;padding:0}
+.ws-cal-d:hover{background:#e7f0f0}
+.ws-cal-in{background:#eaf3f3;border-radius:0}
+.ws-cal-on{background:#0d1c33;color:#fff;font-weight:700}
+.ws-cal-on:hover{background:#0d1c33}
+.ws-cal-today{box-shadow:inset 0 0 0 1.5px #97bcbd}
+.ws-cal-hint{font-size:10px;color:#a8b8c8;margin-top:6px;text-align:center}
 .note-box{position:absolute;min-width:120px;max-width:calc(100% - 40px)}
 .note-box::before{content:'';position:absolute;inset:-5px -7px;border:1px solid transparent;border-radius:3px;pointer-events:none;transition:border-color 0.12s,background 0.12s}
 .note-box:hover::before,.note-box:focus-within::before{border-color:#cdd6e0;background:rgba(13,28,51,0.012)}
@@ -19440,23 +19456,37 @@ function wsBuildDropdownHtml(taskId,field){
     html+=`<div class="ws-dd-sep"></div>`;
     html+=(DB.users||DB.staff).map(s=>`<div class="ws-cell-dd-item${cwVal===s.id?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','${s.id}')">${avatarHtml(s,22)}<span style="font-size:12px">${escHtml(s.name)}</span></div>`).join('');
   } else if(field==='duedate'){
-    html=`<div style="padding:12px 14px;min-width:214px" onclick="event.stopPropagation()">
+    const _sd=task.startDate||'', _ed=task.endDate||'';
+    const _one=(_sd&&_sd===_ed)?_sd:'';
+    const _inSty="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none";
+    const _lbSty="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px";
+    html=`<div style="padding:12px 14px;min-width:246px" onclick="event.stopPropagation()">
       <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Timeline</div>
       <div style="margin-bottom:8px">
-        <div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Start</div>
-        <input type="date" value="${task.startDate||''}"
-          style="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none"
+        <div style="${_lbSty}">Single day</div>
+        <input type="date" value="${_one}" title="Sets the start and the end to the same day"
+          style="${_inSty}"
+          onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
+          onchange="wsCellSaveSingleDay('${taskId}',this.value)"/>
+      </div>
+      <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
+      <div style="margin-bottom:8px">
+        <div style="${_lbSty}">Start</div>
+        <input type="date" value="${_sd}"
+          style="${_inSty}"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
           onchange="wsCellSaveDate('${taskId}','startDate',this.value)"/>
       </div>
       <div>
-        <div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">End / Due</div>
-        <input type="date" value="${task.endDate||''}"
-          style="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none"
+        <div style="${_lbSty}">End / Due</div>
+        <input type="date" value="${_ed}"
+          style="${_inSty}"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
           onchange="wsCellSaveDate('${taskId}','endDate',this.value)"/>
       </div>
-      ${(task.startDate||task.endDate)?`<button onclick="wsCellSave('${taskId}','startDate','');wsCellSave('${taskId}','endDate','')" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>`:''}
+      <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
+      ${_wsCalHtml(taskId)}
+      ${(task.startDate||task.endDate)?`<button onclick="wsClearDates('${taskId}')" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>`:''}
     </div>`;
   } else if(field==='progress'){
     const pcts=[0,10,25,50,75,90,100];
@@ -19709,6 +19739,93 @@ function wsCellSave(taskId,field,value,keepOpen){
 }
 // A Timeline range needs two dates. Keep the popover up while only one end is filled in,
 // so the second can be set without reopening the cell; close once the range is complete.
+// Which month the inline calendar is showing, and the first end of a range that is
+// waiting for its second click. Both are cleared whenever the popover closes.
+let _wsCalMonth=null;
+let _wsCalAnchor=null;
+const _WS_CAL_DOW=['M','T','W','T','F','S','S'];
+function _wsCalMonthLabel(y,m){
+  return new Date(Date.UTC(y,m-1,1)).toLocaleDateString('en-AU',{month:'long',year:'numeric',timeZone:'UTC'});
+}
+function _wsCalHtml(taskId){
+  const task=DB.tasks.find(t=>t.id===taskId)||{};
+  const seed=_wsCalMonth||(_wsCalAnchor||task.startDate||task.endDate||toDateStr(new Date())).slice(0,7);
+  const y=+seed.slice(0,4), m=+seed.slice(5,7);
+  const daysIn=new Date(Date.UTC(y,m,0)).getUTCDate();
+  const lead=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7;   // Monday-first
+  const sd=task.startDate||'', ed=task.endDate||'', today=toDateStr(new Date());
+  let cells='';
+  for(let i=0;i<lead;i++)cells+='<span class="ws-cal-pad"></span>';
+  for(let d=1;d<=daysIn;d++){
+    const ds=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isStart=!!sd&&ds===sd, isEnd=!!ed&&ds===ed;
+    const inRange=!!sd&&!!ed&&ds>sd&&ds<ed;
+    const isAnchor=!!_wsCalAnchor&&ds===_wsCalAnchor;
+    const cls=['ws-cal-d'];
+    if(isStart||isEnd||isAnchor)cls.push('ws-cal-on');
+    else if(inRange)cls.push('ws-cal-in');
+    if(ds===today)cls.push('ws-cal-today');
+    cells+='<button type="button" class="'+cls.join(' ')+'" onclick="wsCalPick(\''+taskId+'\',\''+ds+'\')">'+d+'</button>';
+  }
+  const hint=_wsCalAnchor
+    ? 'Now click the end of the range'
+    : 'Click a day to start a range';
+  return '<div class="ws-cal">'+
+    '<div class="ws-cal-hd">'+
+      '<button type="button" class="ws-cal-nav" onclick="wsCalNav(\''+taskId+'\',-1)" title="Previous month">&lsaquo;</button>'+
+      '<span class="ws-cal-mon">'+_wsCalMonthLabel(y,m)+'</span>'+
+      '<button type="button" class="ws-cal-nav" onclick="wsCalNav(\''+taskId+'\',1)" title="Next month">&rsaquo;</button>'+
+    '</div>'+
+    '<div class="ws-cal-dow">'+_WS_CAL_DOW.map(d=>'<span>'+d+'</span>').join('')+'</div>'+
+    '<div class="ws-cal-grid">'+cells+'</div>'+
+    '<div class="ws-cal-hint">'+hint+'</div>'+
+  '</div>';
+}
+function _wsCalRepaint(taskId){
+  const body=document.getElementById('ws-cell-dd-body');
+  if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'duedate');
+}
+function wsCalNav(taskId,delta){
+  const task=DB.tasks.find(t=>t.id===taskId)||{};
+  const seed=_wsCalMonth||(_wsCalAnchor||task.startDate||task.endDate||toDateStr(new Date())).slice(0,7);
+  let y=+seed.slice(0,4), m=+seed.slice(5,7)+delta;
+  if(m<1){m=12;y--;} else if(m>12){m=1;y++;}
+  _wsCalMonth=y+'-'+String(m).padStart(2,'0');
+  _wsCalRepaint(taskId);
+}
+// First click sets the start and clears the end; the second completes the range. Clicking
+// a day before the anchor is read as picking the range backwards rather than as an error.
+function wsCalPick(taskId,ds){
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task||!canEditTask(currentUser,task))return;
+  _wsCalMonth=ds.slice(0,7);
+  if(!_wsCalAnchor){
+    _wsCalAnchor=ds;
+    wsCellSave(taskId,'startDate',ds,true);
+    wsCellSave(taskId,'endDate','',true);
+    _wsCalRepaint(taskId);
+    return;
+  }
+  const a=_wsCalAnchor;
+  const start=ds<a?ds:a, end=ds<a?a:ds;
+  _wsCalAnchor=null;
+  wsCellSave(taskId,'startDate',start,true);
+  wsCellSave(taskId,'endDate',end,true);
+  wsCellClose();
+}
+// One field for a task that begins and ends on the same day.
+function wsCellSaveSingleDay(taskId,value){
+  _wsCalAnchor=null;
+  wsCellSave(taskId,'startDate',value,true);
+  wsCellSave(taskId,'endDate',value,true);
+  if(value)wsCellClose(); else _wsCalRepaint(taskId);
+}
+function wsClearDates(taskId){
+  _wsCalAnchor=null;
+  wsCellSave(taskId,'startDate','',true);
+  wsCellSave(taskId,'endDate','',true);
+  _wsCalRepaint(taskId);
+}
 function wsCellSaveDate(taskId,field,value){
   wsCellSave(taskId,field,value,true);
   const t=DB.tasks.find(x=>x.id===taskId);
@@ -19717,7 +19834,7 @@ function wsCellSaveDate(taskId,field,value){
 function wsCellClose(){
   const dd=document.getElementById('ws-cell-dd');
   if(dd)dd.style.display='none';
-  _wsCellTask=null;_wsCellField=null;_wsShowLinkInput=false;
+  _wsCellTask=null;_wsCellField=null;_wsShowLinkInput=false;_wsCalMonth=null;_wsCalAnchor=null;
 }
 // Add/remove a co-assignee from the owner dropdown's checkboxes. Deliberately does
 // NOT close the dropdown (#ws-cell-dd sits outside view-container and already stops
