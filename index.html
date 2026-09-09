@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Etcher - Task Hub</title>
 <!-- B3: Content Security Policy — restricts what can load/execute in this page -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.tailwindcss.com; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.tailwindcss.com; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <link rel="icon" type="image/png" href="favicon_taskapp.png"/>
@@ -278,6 +278,17 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .note-page-hd::after{content:'';display:block;width:min(430px,60%);height:1px;background:#d9dee6;margin-top:-2px}
 .note-date{font-family:'Lato',sans-serif;font-size:12px;color:#9aa7b4;margin-top:7px;white-space:pre}
 /* A text box. Invisible at rest like OneNote; its frame and move-grip appear on hover. */
+.ws-doc-preview img{max-width:100%;height:auto}
+.ws-doc-preview h1{font-family:Jost,sans-serif;font-size:22px;font-weight:700;margin:18px 0 10px;color:#0d1c33}
+.ws-doc-preview h2{font-family:Jost,sans-serif;font-size:18px;font-weight:700;margin:16px 0 8px;color:#0d1c33}
+.ws-doc-preview h3{font-family:Jost,sans-serif;font-size:15px;font-weight:700;margin:14px 0 6px;color:#1a2940}
+.ws-doc-preview p{margin:0 0 10px}
+.ws-doc-preview ul,.ws-doc-preview ol{margin:0 0 10px;padding-left:24px}
+.ws-doc-preview table{border-collapse:collapse;width:100%;margin:12px 0}
+.ws-doc-preview td,.ws-doc-preview th{border:1px solid #e2eaf2;padding:6px 9px;font-size:13px;text-align:left}
+.ws-sheet-preview table{border-collapse:collapse;font-size:12px;font-family:Lato,sans-serif}
+.ws-sheet-preview td,.ws-sheet-preview th{border:1px solid #e2eaf2;padding:5px 9px;white-space:nowrap;color:#1a2940}
+.ws-sheet-preview tr:first-child td{background:#f4f7fc;font-weight:700;position:sticky;top:0}
 .note-box{position:absolute;min-width:120px;max-width:calc(100% - 40px)}
 .note-box::before{content:'';position:absolute;inset:-5px -7px;border:1px solid transparent;border-radius:3px;pointer-events:none;transition:border-color 0.12s,background 0.12s}
 .note-box:hover::before,.note-box:focus-within::before{border-color:#cdd6e0;background:rgba(13,28,51,0.012)}
@@ -2080,6 +2091,29 @@ function _mergeDB(current, incoming){
   return merged;
 }
 
+// Is the person in the middle of writing something? A merge from another session must
+// never rebuild the DOM under a live cursor: the caret is lost and the element being
+// edited is repainted from state that has not caught up with the last keystroke yet.
+function _userIsTypingAnywhere(){
+  const el=document.activeElement;
+  if(!el)return false;
+  if(el.isContentEditable)return true;
+  return el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT';
+}
+let _mergeRepaintPending=false;
+function _repaintAfterMerge(){
+  if(!_userIsTypingAnywhere()){if(currentView)renderView(currentView);return;}
+  if(_mergeRepaintPending)return;   // already waiting for them to finish
+  _mergeRepaintPending=true;
+  const settle=()=>{
+    if(_userIsTypingAnywhere())return;            // moved to another field — keep waiting
+    document.removeEventListener('focusout',onOut,true);
+    _mergeRepaintPending=false;
+    if(currentView)renderView(currentView);
+  };
+  const onOut=()=>setTimeout(settle,80);          // let focus land before deciding
+  document.addEventListener('focusout',onOut,true);
+}
 function _startRealtimeSync(){
   if(!window._supabase||_realtimeChannel)return;
   _realtimeChannel=window._supabase.channel('app_state_changes')
@@ -2092,7 +2126,7 @@ function _startRealtimeSync(){
       const merged=_mergeDB(DB,fresh);
       for(const k in DB)delete DB[k];Object.assign(DB,merged);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
-      if(currentView)renderView(currentView);
+      _repaintAfterMerge();
       renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
       // Re-sync open task panel with merged version — but never while the user is typing
       // anywhere inside it, or an incoming merge would clobber unsaved keystrokes.
@@ -2467,7 +2501,7 @@ function clearTextareaDraft(id){
 
 // ── Separate file-data store: keeps base64 blobs out of the main DB JSON ──
 const _FILE_STORE_KEY='etcher_files_v4';
-function _saveFileData(id,url){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');s[id]=url;localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));}catch(e){console.warn('File store write failed',e);}}
+function _saveFileData(id,url){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');s[id]=url;localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));return true;}catch(e){console.warn('File store write failed',e);return false;}}
 function _getFileData(id){try{return JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}')[id]||null;}catch(e){return null;}}
 function _deleteFileData(id){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');delete s[id];localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));}catch(e){}}
 
@@ -16124,7 +16158,7 @@ function renderWorkspace(){
     {key:'priority',    label:'Priority',  w:'112px'},
     {key:'owner',       label:'Owner',     w:'104px'},
     {key:'cwith',       label:'With',      w:'108px'},
-    {key:'duedate',     label:'Timeline',  w:'142px'},
+    {key:'duedate',     label:'Timeline',  w:'150px'},
     {key:'progress',    label:'Progress',  w:'132px'},
     {key:'hours',       label:'Hours',     w:'84px'},
     {key:'client',      label:'Client',    w:'86px'},
@@ -16375,7 +16409,7 @@ const SUB_COL_DEFS=[
   {key:'status',   label:'Status',   w:'104px'},
   {key:'owner',    label:'Owner',    w:'86px'},
   {key:'cwith',    label:'With',     w:'110px'},
-  {key:'duedate',  label:'Timeline', w:'138px'},
+  {key:'duedate',  label:'Timeline', w:'146px'},
   {key:'progress', label:'Progress', w:'118px'},
   {key:'deps',     label:'Deps',     w:'74px'},
 ];
@@ -19396,14 +19430,14 @@ function wsBuildDropdownHtml(taskId,field){
         <input type="date" value="${task.startDate||''}"
           style="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
-          onchange="wsCellSave('${taskId}','startDate',this.value)"/>
+          onchange="wsCellSaveDate('${taskId}','startDate',this.value)"/>
       </div>
       <div>
         <div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">End / Due</div>
         <input type="date" value="${task.endDate||''}"
           style="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
-          onchange="wsCellSave('${taskId}','endDate',this.value)"/>
+          onchange="wsCellSaveDate('${taskId}','endDate',this.value)"/>
       </div>
       ${(task.startDate||task.endDate)?`<button onclick="wsCellSave('${taskId}','startDate','');wsCellSave('${taskId}','endDate','')" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>`:''}
     </div>`;
@@ -19422,11 +19456,11 @@ function wsBuildDropdownHtml(taskId,field){
     </div>`;
   } else if(field==='attachments'){
     const files=(DB.taskFiles||[]).filter(f=>f.taskId===taskId);
-    const _eyeSvg=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-    const _dlSvg=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const _eyeSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const _dlSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
     const _xSvg=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const _iconBtn=(href,title,svg,dl)=>`<a href="${href}" ${dl?`download="${dl}"`:'target="_blank" rel="noopener noreferrer"'} style="display:inline-flex;align-items:center;justify-content:center;color:#97bcbd;text-decoration:none;padding:3px 5px;border-radius:4px;border:1px solid #e2eaf2;line-height:1" onmouseover="this.style.color='${dl?'#0d1c33':'#0d6e4e'}';this.style.borderColor='#97bcbd'" onmouseout="this.style.color='#97bcbd';this.style.borderColor='#e2eaf2'" title="${title}">${svg}</a>`;
-    const _iconBtnDim=(svg)=>`<span style="display:inline-flex;align-items:center;justify-content:center;color:#d0d8e4;padding:3px 5px;border-radius:4px;border:1px solid #f0f4f8;opacity:0.4;line-height:1">${svg}</span>`;
+    const _iconBtn=(href,title,svg,dl)=>`<a href="${href}" ${dl?`download="${dl}"`:'target="_blank" rel="noopener noreferrer"'} style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;background:#fff;line-height:1" onmouseover="this.style.color='#fff';this.style.background='${dl?'#0d1c33':'#0d6e4e'}';this.style.borderColor='${dl?'#0d1c33':'#0d6e4e'}'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="${title}">${svg}</a>`;
+    const _iconBtnDim=(svg,why)=>`<span title="${why||'This file is not available on this device'}" style="display:inline-flex;align-items:center;justify-content:center;color:#b0bec5;padding:5px 7px;border-radius:5px;border:1px dashed #dde5ee;background:#fafcfe;line-height:1;cursor:not-allowed">${svg}</span>`;
     html=`<div style="min-width:240px">
       ${files.length===0?`<div style="padding:8px 14px;font-size:12px;color:#8da2b2;font-style:italic">No files attached</div>`:''}
       ${files.map(f=>{
@@ -19434,15 +19468,15 @@ function wsBuildDropdownHtml(taskId,field){
         const href=isLink?f.url:_getFileData(f.id);
         const subLabel=isLink?(f.url||'').replace(/^https?:\/\//i,'').split('/')[0]:`${(f.size/1024).toFixed(0)} KB`;
         return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px">
-          <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1">
+          <button onclick="event.stopPropagation();${isLink?`window.open('${escHtml(f.url||'')}','_blank','noopener')`:(href?`wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')`:`showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device')`)}" title="${isLink?'Open link':'Open file'}" style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;background:none;border:none;padding:0;margin:0;text-align:left;cursor:pointer;font-family:inherit" onmouseover="this.querySelector('.ws-file-name').style.color='#0d6e4e'" onmouseout="this.querySelector('.ws-file-name').style.color='#1a2940'">
             ${_fileTypeIcon(f.type,f.name,f.url)}
             <div style="min-width:0">
-              <div style="font-size:12px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">${escHtml(f.name)}</div>
+              <div class="ws-file-name" style="font-size:12px;font-weight:600;color:#1a2940;transition:color 0.12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">${escHtml(f.name)}</div>
               <div style="font-size:10px;color:#8da2b2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">${escHtml(subLabel)}</div>
             </div>
-          </div>
+          </button>
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
-            ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')" style="display:inline-flex;align-items:center;justify-content:center;color:#97bcbd;text-decoration:none;padding:3px 5px;border-radius:4px;border:1px solid #e2eaf2;line-height:1;background:none;cursor:pointer" onmouseover="this.style.color='#0d6e4e';this.style.borderColor='#97bcbd'" onmouseout="this.style.color='#97bcbd';this.style.borderColor='#e2eaf2'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
+            ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
             ${!isLink?(href?_iconBtn(href,'Download',_dlSvg,escHtml(f.name)):_iconBtnDim(_dlSvg)):''}
             <button onclick="wsDeleteAttachment('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;cursor:pointer;color:#d0d8e4;padding:3px 5px;border-radius:4px;line-height:1" onmouseover="this.style.color='#dc2626';this.style.borderColor='#fee2e2'" onmouseout="this.style.color='#d0d8e4';this.style.borderColor='transparent'" title="Remove">${_xSvg}</button>
           </div>
@@ -19603,7 +19637,7 @@ function wsCellOpen(taskId,field,evt){
   });
   _wsCellTask=taskId;_wsCellField=field;
 }
-function wsCellSave(taskId,field,value){
+function wsCellSave(taskId,field,value,keepOpen){
   // Custom column values (cc_ prefix)
   if(field.startsWith('cc_')){mtSetCustomVal(taskId,field.slice(3),value);return;}
   const task=DB.tasks.find(t=>t.id===taskId);
@@ -19653,8 +19687,15 @@ function wsCellSave(taskId,field,value){
     }
     saveDB(DB);
   }
-  wsCellClose();
+  if(!keepOpen)wsCellClose();
   renderView('workspace');
+}
+// A Timeline range needs two dates. Keep the popover up while only one end is filled in,
+// so the second can be set without reopening the cell; close once the range is complete.
+function wsCellSaveDate(taskId,field,value){
+  wsCellSave(taskId,field,value,true);
+  const t=DB.tasks.find(x=>x.id===taskId);
+  if(t&&t.startDate&&t.endDate)wsCellClose();
 }
 function wsCellClose(){
   const dd=document.getElementById('ws-cell-dd');
@@ -19757,7 +19798,12 @@ function wsAddAttachment(taskId,input){
     const reader=new FileReader();
     reader.onload=e=>{
       const fid=uid();
-      _saveFileData(fid,e.target.result);
+      // A listed file with no bytes behind it can never be opened and reads as data loss,
+      // so if the browser refuses the write the file is not added to the list at all.
+      if(!_saveFileData(fid,e.target.result)){
+        showAlert('"'+f.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
+        process(rest);return;
+      }
       DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString()});
       saveDB(DB);
       const body=document.getElementById('ws-cell-dd-body');
@@ -19770,35 +19816,156 @@ function wsAddAttachment(taskId,input){
   };
   process(Array.from(input.files));
 }
-function wsPreviewFile(id,name,type){
-  const href=_getFileData(id);
-  if(!href){showToast&&showToast('File data not found','error');return;}
-  const isImg=type&&type.startsWith('image/');
-  const isPdf=type==='application/pdf'||(name||'').toLowerCase().endsWith('.pdf');
-  let body='';
-  if(isImg){
-    body=`<img src="${href}" style="max-width:100%;max-height:calc(85vh - 80px);object-fit:contain;display:block;border-radius:4px"/>`;
-  }else if(isPdf){
-    body=`<iframe src="${href}" style="width:min(820px,82vw);height:calc(85vh - 80px);border:none;display:block"></iframe>`;
-  }else{
-    body=`<div style="padding:48px 32px;text-align:center"><div style="margin-bottom:12px;color:#c8d4e0">${icon('doc',34)}</div><div style="font-size:14px;color:#4a5568;margin-bottom:16px">Preview not available for this file type.</div><a href="${href}" download="${name}" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;padding:8px 18px;border-radius:8px;text-decoration:none">↓ Download ${name}</a></div>`;
-  }
+function _dataUrlToBlobUrl(dataUrl,mime){
+  try{
+    const parts=String(dataUrl).split(',');
+    const bin=atob(parts[1]||'');
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([arr],{type:mime||(parts[0].match(/:(.*?);/)||[])[1]||'application/octet-stream'}));
+  }catch(e){return null;}
+}
+function _dataUrlToArrayBuffer(dataUrl){
+  const bin=atob(String(dataUrl).split(',')[1]||'');
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  return arr.buffer;
+}
+// Lazily pull in a document viewer only when someone actually opens that kind of file.
+// Both libraries are on cdnjs, which the page's CSP already allows for scripts.
+function _ensureDocViewer(kind,cb,onerror){
+  const have=kind==='docx'?()=>!!window.mammoth:()=>!!window.XLSX;
+  if(have())return cb();
+  const src=kind==='docx'
+    ?'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'
+    :'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  const s=document.createElement('script');
+  s.src=src;s.crossOrigin='anonymous';
+  s.onload=()=>have()?cb():onerror&&onerror();
+  s.onerror=()=>onerror&&onerror();
+  document.head.appendChild(s);
+}
+function _previewShell(name,href,inner){
   const ov=document.createElement('div');
   ov.id='_file-preview-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
-  ov.onclick=e=>{if(e.target===ov)ov.remove();};
-  ov.innerHTML=`<div style="background:#fff;border-radius:12px;overflow:hidden;max-width:min(900px,92vw);box-shadow:0 24px 64px rgba(0,0,0,0.45);display:flex;flex-direction:column">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e8edf4;flex-shrink:0">
-      <span style="font-size:13px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">${escHtml(name)}</span>
-      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-        <a href="${href}" download="${escHtml(name)}" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#6b8399;text-decoration:none;padding:4px 10px;border:1px solid #e2eaf2;border-radius:6px" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d1c33'" onmouseout="this.style.borderColor='#e2eaf2';this.style.color='#6b8399'">↓ Download</a>
-        <button onclick="document.getElementById('_file-preview-ov').remove()" style="background:none;border:none;cursor:pointer;color:#6b8399;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">×</button>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:center;background:#f4f7fc;overflow:auto">${body}</div>
-  </div>`;
-  document.getElementById('_file-preview-ov')?.remove();
+  ov.onclick=e=>{if(e.target===ov)_closeFilePreview();};
+  ov.innerHTML='<div style="background:#fff;border-radius:12px;overflow:hidden;max-width:min(980px,94vw);box-shadow:0 24px 64px rgba(0,0,0,0.45);display:flex;flex-direction:column">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e8edf4;flex-shrink:0">'+
+      '<span style="font-size:13px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">'+escHtml(name)+'</span>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">'+
+        (href?'<a href="'+href+'" download="'+escHtml(name)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#4a6572;text-decoration:none;padding:5px 12px;border:1px solid #cfdae4;border-radius:6px" onmouseover="this.style.background=\'#0d1c33\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#4a6572\'">Download</a>':'')+
+        '<button onclick="_closeFilePreview()" style="background:none;border:none;cursor:pointer;color:#6b8399;font-size:22px;line-height:1;padding:2px 8px;border-radius:4px" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'none\'" title="Close">&times;</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="_file-preview-body" style="display:flex;align-items:center;justify-content:center;background:#f4f7fc;overflow:auto;min-width:min(560px,80vw)">'+inner+'</div>'+
+  '</div>';
+  _closeFilePreview();
   document.body.appendChild(ov);
+  return ov;
+}
+function _closeFilePreview(){
+  const ov=document.getElementById('_file-preview-ov');
+  if(!ov)return;
+  // release any blob URL this preview created, or the page leaks it for the session
+  if(ov.dataset.blobUrl){try{URL.revokeObjectURL(ov.dataset.blobUrl);}catch(e){}}
+  ov.remove();
+}
+function _previewSetBody(html){
+  const el=document.getElementById('_file-preview-body');
+  if(el)el.innerHTML=html;
+}
+function _previewSpinner(what){
+  return '<div style="padding:56px 40px;text-align:center;color:#8da2b2;font-size:13px">Loading '+escHtml(what)+' viewer…</div>';
+}
+function _previewMessage(msg,href,name){
+  return '<div style="padding:48px 32px;text-align:center;max-width:420px">'+
+    '<div style="margin-bottom:12px;color:#c8d4e0">'+icon('doc',34)+'</div>'+
+    '<div style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:16px">'+escHtml(msg)+'</div>'+
+    (href?'<a href="'+href+'" download="'+escHtml(name||'file')+'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;text-decoration:none;padding:8px 18px;border-radius:7px">Download instead</a>':'')+
+  '</div>';
+}
+function wsPreviewFile(id,name,type){
+  const data=_getFileData(id);
+  if(!data){
+    showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device');
+    return;
+  }
+  const lower=String(name||'').toLowerCase();
+  const ext=(lower.match(/\.([a-z0-9]+)$/)||[])[1]||'';
+  const isImg=(type&&type.startsWith('image/'))||['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext);
+  const isPdf=type==='application/pdf'||ext==='pdf';
+  const isDocx=ext==='docx';
+  const isSheet=['xlsx','xls','csv'].includes(ext);
+
+  if(isImg){
+    _previewShell(name,data,'<img src="'+data+'" style="max-width:100%;max-height:calc(85vh - 80px);object-fit:contain;display:block;border-radius:4px"/>');
+    return;
+  }
+  if(isPdf){
+    // A data: iframe is refused by our CSP; a blob: URL of our own file is allowed.
+    const burl=_dataUrlToBlobUrl(data,'application/pdf');
+    const ov=_previewShell(name,data,burl
+      ?'<iframe src="'+burl+'" style="width:min(880px,88vw);height:calc(85vh - 80px);border:none;display:block;background:#fff"></iframe>'
+      :_previewMessage('This PDF could not be opened.',data,name));
+    if(burl&&ov)ov.dataset.blobUrl=burl;
+    return;
+  }
+  if(isDocx){
+    _previewShell(name,data,_previewSpinner('Word'));
+    _ensureDocViewer('docx',()=>{
+      try{
+        window.mammoth.convertToHtml({arrayBuffer:_dataUrlToArrayBuffer(data)})
+          .then(r=>{
+            const doc=(r&&r.value||'').trim();
+            _previewSetBody(doc
+              ?'<div style="width:min(820px,88vw);max-height:calc(85vh - 80px);overflow:auto;background:#fff;padding:40px 48px;box-sizing:border-box;font-family:Lato,sans-serif;font-size:14px;line-height:1.7;color:#1a2940" class="ws-doc-preview">'+doc+'</div>'
+              :_previewMessage('This document appears to be empty.',data,name));
+          })
+          .catch(()=>_previewSetBody(_previewMessage('This Word file could not be read. Older .doc files are not supported — only .docx.',data,name)));
+      }catch(e){_previewSetBody(_previewMessage('This Word file could not be read.',data,name));}
+    },()=>_previewSetBody(_previewMessage('The Word viewer could not be loaded. Check your connection and try again.',data,name)));
+    return;
+  }
+  if(isSheet){
+    _previewShell(name,data,_previewSpinner('spreadsheet'));
+    _ensureDocViewer('sheet',()=>{
+      try{
+        const wb=window.XLSX.read(_dataUrlToArrayBuffer(data),{type:'array'});
+        const names=wb.SheetNames||[];
+        if(!names.length){_previewSetBody(_previewMessage('This spreadsheet has no sheets.',data,name));return;}
+        const tabs=names.length>1
+          ?'<div style="display:flex;gap:4px;padding:8px 10px 0;flex-wrap:wrap;background:#fff">'+names.map((n,i)=>
+              '<button onclick="_previewSheet(\''+id+'\','+i+')" data-sheet="'+i+'" style="font-size:11px;font-weight:600;padding:4px 11px;border-radius:6px 6px 0 0;border:1px solid #e2eaf2;border-bottom:none;background:'+(i===0?'#0d1c33':'#f4f7fc')+';color:'+(i===0?'#fff':'#4a6572')+';cursor:pointer">'+escHtml(n)+'</button>').join('')+'</div>'
+          :'';
+        window.__sheetWb=wb;
+        _previewSetBody('<div style="width:min(900px,90vw);max-height:calc(85vh - 80px);overflow:auto;background:#fff;box-sizing:border-box">'+
+          tabs+'<div id="_sheet-body" style="padding:0 10px 10px">'+_sheetToHtml(wb,0)+'</div></div>');
+      }catch(e){_previewSetBody(_previewMessage('This spreadsheet could not be read.',data,name));}
+    },()=>_previewSetBody(_previewMessage('The spreadsheet viewer could not be loaded. Check your connection and try again.',data,name)));
+    return;
+  }
+  const label=ext==='doc'?'Old .doc files cannot be previewed in the browser — save it as .docx to preview it here.'
+    :ext?'Preview is not available for .'+ext+' files.'
+    :'Preview is not available for this file type.';
+  _previewShell(name,data,_previewMessage(label,data,name));
+}
+function _sheetToHtml(wb,idx){
+  const ws=wb.Sheets[wb.SheetNames[idx]];
+  if(!ws)return '<div style="padding:32px;color:#8da2b2;font-size:13px">This sheet is empty.</div>';
+  const html=window.XLSX.utils.sheet_to_html(ws,{editable:false});
+  return '<div class="ws-sheet-preview">'+html+'</div>';
+}
+function _previewSheet(id,idx){
+  const wb=window.__sheetWb;
+  if(!wb)return;
+  const body=document.getElementById('_sheet-body');
+  if(body)body.innerHTML=_sheetToHtml(wb,idx);
+  document.querySelectorAll('[data-sheet]').forEach(b=>{
+    const on=+b.getAttribute('data-sheet')===idx;
+    b.style.background=on?'#0d1c33':'#f4f7fc';
+    b.style.color=on?'#fff':'#4a6572';
+  });
 }
 function wsDeleteAttachment(attId){
   _deleteFileData(attId);
@@ -21036,7 +21203,12 @@ function cpUploadToTask(taskId,input){
     reader.onload=e=>{
       if(!DB.taskFiles)DB.taskFiles=[];
       const fid='cf-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
-      _saveFileData(fid,e.target.result);
+      // A listed file with no bytes behind it can never be opened and reads as data loss,
+      // so if the browser refuses the write the file is not added to the list at all.
+      if(!_saveFileData(fid,e.target.result)){
+        showAlert('"'+file.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
+        done++;return;
+      }
       DB.taskFiles.push({
         id:fid,
         taskId,name:file.name,type:file.type,size:file.size,
