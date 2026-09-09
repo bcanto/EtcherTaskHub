@@ -3097,7 +3097,7 @@ function renderUniversalToolbar(view,opts){
   const groupOpts=gList.map(g=>{const cl=DB.clients.find(c=>c.id===g.clientId);return`<option value="${g.id}"${f.groupId===g.id?' selected':''}>${cl?escHtml(cl.shortCode||cl.name)+' — ':''}${escHtml(g.name)}</option>`;}).join('');
   const viewControls=(opts.viewControlsHtml!=null?opts.viewControlsHtml:_utViewControls(view));
   const personChipsHtml=view==='workspace'?_utPersonChips():'';
-  const exportBtn=view==='workspace'?`<button class="btn btn-ghost btn-sm" onclick="wsMtExport()" title="Export CSV" style="gap:4px;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M1 10v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Export</button>`:'';
+  const exportBtn=view==='workspace'?`<button class="btn btn-ghost btn-sm" onclick="wsMtExport()" title="Export to Excel — grouped, with subitems and status colours" style="gap:4px;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M1 10v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Export</button>`:'';
   // Borderless by default — the controls earn their outline on hover, not at rest.
   const sel=`height:30px;padding:0 6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#1a2940;background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer`;
   const borderR=utFilterOpen?'10px 10px 0 0':'10px';
@@ -16111,6 +16111,86 @@ function wsDeleteTask(id){
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
+// The Main Table's fixed columns. Shared with the export so the spreadsheet carries the
+// same columns, in the same order, as the board on screen.
+const WS_COL_DEFS=[
+  {key:'ref',         label:'ID',        w:'78px'},
+  {key:'status',      label:'Status',    w:'108px'},
+  {key:'priority',    label:'Priority',  w:'112px'},
+  {key:'owner',       label:'Owner',     w:'104px'},
+  {key:'cwith',       label:'With',      w:'108px'},
+  {key:'duedate',     label:'Timeline',  w:'150px'},
+  {key:'progress',    label:'Progress',  w:'132px'},
+  {key:'hours',       label:'Hours',     w:'84px'},
+  {key:'client',      label:'Client',    w:'86px'},
+  {key:'tags',        label:'Tags',      w:'110px'},
+  {key:'attachments', label:'Files',     w:'88px'},
+  {key:'deps',        label:'Deps',      w:'110px'},
+];
+
+// How the board divides itself into sections for the current "group by" choice, sorted
+// the way the board is sorted. Lifted out of renderWorkspace so the export groups the
+// spreadsheet exactly as the screen groups it.
+function _wsBuildSections(tasks){
+let sections=[];
+const wbGroups=getWbGroups();
+const wbDefGrp=getWbDefaultGroup();
+if(wsGroupBy==='group'){
+  wbGroups.forEach(g=>{
+    const client=DB.clients.find(c=>c.id===g.clientId);
+    sections.push({id:g.id,label:g.name,sub:client?.name||'',clientId:g.clientId||'',color:g.color||client?.color||'#8da2b2',defGrp:g.id,tasks:tasks.filter(t=>t.groupId===g.id)});
+  });
+} else if(wsGroupBy==='client'){
+  DB.clients.forEach(c=>{
+    const ct=tasks.filter(t=>{const g=wbGroups.find(x=>x.id===t.groupId);return g?.clientId===c.id;});
+    if(ct.length||wbGroups.some(g=>g.clientId===c.id))
+      sections.push({id:c.id,label:c.name,sub:c.shortCode,color:c.color,defGrp:wbGroups.find(g=>g.clientId===c.id)?.id||wbDefGrp,tasks:ct});
+  });
+} else if(wsGroupBy==='status'){
+  ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'].forEach(s=>{
+    const sm=getStatusMeta(s);
+    sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
+  });
+} else if(wsGroupBy==='owner'){
+  DB.staff.forEach(s=>{
+    sections.push({id:s.id,label:s.name,sub:s.role,color:s.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.ownerId===s.id)});
+  });
+} else if(wsGroupBy==='priority'){
+  const PL={crit:'Critical',high:'High',med:'Medium',low:'Low'};
+  const PC={crit:'#b91c1c',high:'#c2410c',med:'#b45309',low:'#475569'};
+  ['crit','high','med','low'].forEach(p=>{
+    sections.push({id:p,label:PL[p],sub:'',color:PC[p],defGrp:wbDefGrp,tasks:tasks.filter(t=>t.priority===p)});
+  });
+}
+
+// When searching, drop empty sections to keep the view clean
+if(wsMtSearch) sections=sections.filter(s=>s.tasks.length>0);
+
+// Apply sort to section tasks
+if(wsSort.col){
+  const PO={crit:0,high:1,med:2,low:3};
+  sections.forEach(sec=>{
+    sec.tasks.sort((a,b)=>{
+      let va,vb;
+      if(wsSort.col==='status'){va=a.status||'';vb=b.status||'';}
+      else if(wsSort.col==='priority'){va=PO[a.priority]??99;vb=PO[b.priority]??99;}
+      else if(wsSort.col==='owner'){va=getStaff(a.ownerId)?.name||'';vb=getStaff(b.ownerId)?.name||'';}
+      else if(wsSort.col==='duedate'||wsSort.col==='timeline'){va=a.endDate||'9999';vb=b.endDate||'9999';}
+      else if(wsSort.col==='name'){va=a.name||'';vb=b.name||'';}
+      else if(wsSort.col==='client'){va=getTaskClient(a)?.name||'';vb=getTaskClient(b)?.name||'';}
+      if(va<vb)return wsSort.dir==='asc'?-1:1;
+      if(va>vb)return wsSort.dir==='asc'?1:-1;
+      return 0;
+    });
+  });
+} else if(wsGroupBy==='group'){
+  // Manual drag order — every task defaults to order:0, so this is a no-op (stable sort
+  // preserves the existing array order) until the user actually drags a row.
+  sections.forEach(sec=>sec.tasks.sort((a,b)=>(a.order||0)-(b.order||0)));
+}
+  return sections;
+}
+
 function renderWorkspace(){
   if(currentUser.role==='client') return renderClientDashboard();
   // Pre-compute O(1) lookup maps — eliminates O(n²) scans inside renderWsRow
@@ -16128,78 +16208,10 @@ function renderWorkspace(){
 
   // Build sections based on group-by selection
   const GB_OPTIONS=[{val:'group',label:'Group'},{val:'client',label:'Client'},{val:'status',label:'Status'},{val:'owner',label:'Owner'},{val:'priority',label:'Priority'}];
-  let sections=[];
-  const wbGroups=getWbGroups();
-  const wbDefGrp=getWbDefaultGroup();
-  if(wsGroupBy==='group'){
-    wbGroups.forEach(g=>{
-      const client=DB.clients.find(c=>c.id===g.clientId);
-      sections.push({id:g.id,label:g.name,sub:client?.name||'',clientId:g.clientId||'',color:g.color||client?.color||'#8da2b2',defGrp:g.id,tasks:tasks.filter(t=>t.groupId===g.id)});
-    });
-  } else if(wsGroupBy==='client'){
-    DB.clients.forEach(c=>{
-      const ct=tasks.filter(t=>{const g=wbGroups.find(x=>x.id===t.groupId);return g?.clientId===c.id;});
-      if(ct.length||wbGroups.some(g=>g.clientId===c.id))
-        sections.push({id:c.id,label:c.name,sub:c.shortCode,color:c.color,defGrp:wbGroups.find(g=>g.clientId===c.id)?.id||wbDefGrp,tasks:ct});
-    });
-  } else if(wsGroupBy==='status'){
-    ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'].forEach(s=>{
-      const sm=getStatusMeta(s);
-      sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
-    });
-  } else if(wsGroupBy==='owner'){
-    DB.staff.forEach(s=>{
-      sections.push({id:s.id,label:s.name,sub:s.role,color:s.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.ownerId===s.id)});
-    });
-  } else if(wsGroupBy==='priority'){
-    const PL={crit:'Critical',high:'High',med:'Medium',low:'Low'};
-    const PC={crit:'#b91c1c',high:'#c2410c',med:'#b45309',low:'#475569'};
-    ['crit','high','med','low'].forEach(p=>{
-      sections.push({id:p,label:PL[p],sub:'',color:PC[p],defGrp:wbDefGrp,tasks:tasks.filter(t=>t.priority===p)});
-    });
-  }
-
-  // When searching, drop empty sections to keep the view clean
-  if(wsMtSearch) sections=sections.filter(s=>s.tasks.length>0);
-
-  // Apply sort to section tasks
-  if(wsSort.col){
-    const PO={crit:0,high:1,med:2,low:3};
-    sections.forEach(sec=>{
-      sec.tasks.sort((a,b)=>{
-        let va,vb;
-        if(wsSort.col==='status'){va=a.status||'';vb=b.status||'';}
-        else if(wsSort.col==='priority'){va=PO[a.priority]??99;vb=PO[b.priority]??99;}
-        else if(wsSort.col==='owner'){va=getStaff(a.ownerId)?.name||'';vb=getStaff(b.ownerId)?.name||'';}
-        else if(wsSort.col==='duedate'||wsSort.col==='timeline'){va=a.endDate||'9999';vb=b.endDate||'9999';}
-        else if(wsSort.col==='name'){va=a.name||'';vb=b.name||'';}
-        else if(wsSort.col==='client'){va=getTaskClient(a)?.name||'';vb=getTaskClient(b)?.name||'';}
-        if(va<vb)return wsSort.dir==='asc'?-1:1;
-        if(va>vb)return wsSort.dir==='asc'?1:-1;
-        return 0;
-      });
-    });
-  } else if(wsGroupBy==='group'){
-    // Manual drag order — every task defaults to order:0, so this is a no-op (stable sort
-    // preserves the existing array order) until the user actually drags a row.
-    sections.forEach(sec=>sec.tasks.sort((a,b)=>(a.order||0)-(b.order||0)));
-  }
+  let sections=_wsBuildSections(tasks);
 
   // Fixed column definitions
-  const COL_DEFS=[
-    {key:'ref',         label:'ID',        w:'78px'},
-    {key:'status',      label:'Status',    w:'108px'},
-    {key:'priority',    label:'Priority',  w:'112px'},
-    {key:'owner',       label:'Owner',     w:'104px'},
-    {key:'cwith',       label:'With',      w:'108px'},
-    {key:'duedate',     label:'Timeline',  w:'150px'},
-    {key:'progress',    label:'Progress',  w:'132px'},
-    {key:'hours',       label:'Hours',     w:'84px'},
-    {key:'client',      label:'Client',    w:'86px'},
-    {key:'tags',        label:'Tags',      w:'110px'},
-    {key:'attachments', label:'Files',     w:'88px'},
-    {key:'deps',        label:'Deps',      w:'110px'},
-  ];
+  const COL_DEFS=WS_COL_DEFS;
   const _colOrder=_wsGetColOrder('item')||_WS_DEFAULT_COL_ORDER;
   const sortedDefs=[...COL_DEFS].sort((a,b)=>{const ai=_colOrder.indexOf(a.key),bi=_colOrder.indexOf(b.key);return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const visCols=sortedDefs.filter(c=>cols[c.key]);
@@ -20176,29 +20188,174 @@ function wsAddAttachmentLink(taskId){
 // ═══════════════════════════════════════════════════════════
 function wsMtSetPerson(id){wsMtPersonFilter=wsMtPersonFilter===id?'':id;renderView('workspace');}
 function wsMtToggleFilters(){utToggleFilter('workspace');}
-function wsMtExport(){
-  const tasks=getFilteredTasks();
-  const headers=['Task','Status','Priority','Owner','Currently With','Start Date','End Date','Progress %','Hours Logged','Client'];
-  const rows=tasks.map(t=>{
-    const owner=getStaff(t.ownerId);
-    const cw=t.currentlyWith==='client'?'Client':t.currentlyWith==='approver'?'Approver':(getStaff(t.currentlyWith)?.name||'');
-    const client=getTaskClient(t);
-    const sm=getStatusMeta(t.status);
-    const pm=getPrioMeta(t.priority);
-    return[
-      `"${(t.name||'').replace(/"/g,'""')}"`,
-      `"${sm.label}"`,`"${pm.label}"`,
-      `"${owner?.name||''}"`,`"${cw}"`,
-      t.startDate||'',t.endDate||'',
-      t.percentComplete||0,hoursForTask(t.id),
-      `"${client?.name||''}"`
-    ].join(',');
+// ── Main Table export ────────────────────────────────────────────────────────
+// Writes the board as it reads on screen: grouped, with subitems nested under their
+// parent, and the Status/Priority cells carrying the same colours as the board.
+function _ensureExcelJs(cb,onerror){
+  if(window.ExcelJS)return cb();
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+  s.crossOrigin='anonymous';
+  s.onload=()=>window.ExcelJS?cb():(onerror&&onerror());
+  s.onerror=()=>onerror&&onerror();
+  document.head.appendChild(s);
+}
+// '#1a2940' -> 'FF1A2940'. ExcelJS wants ARGB, and silently ignores anything else.
+function _argb(hex,fallback){
+  let h=String(hex||'').trim().replace('#','');
+  if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  if(!/^[0-9a-f]{6}$/i.test(h))h=String(fallback||'ffffff').replace('#','');
+  return 'FF'+h.toUpperCase();
+}
+// One cell's worth of the board, as text plus the colours it is drawn in.
+function _xlCell(t,key){
+  const plain=v=>({v:v==null?'':v});
+  switch(key){
+    case 'name':   return plain(t.name||t.title||'');
+    case 'ref':    return plain(taskRef(t)||'');
+    case 'status':{
+      const sm=getStatusMeta(t.status);
+      return{v:sm.label||t.status||'',bg:sm.bg,fg:sm.color,bold:true,center:true};
+    }
+    case 'priority':{
+      const pm=getPrioMeta(t.priority);
+      return{v:pm.label||t.priority||'',bg:pm.bg,fg:pm.color,bold:true,center:true};
+    }
+    case 'owner':  return plain(getStaff(t.ownerId)?.name||'');
+    case 'cwith':{
+      const id=t.currentlyWithUserId||t.currentlyWith;
+      if(id==='client')return plain('Client');
+      if(id==='approver')return plain('Approver');
+      return plain(id?(getStaff(id)?.name||''):'');
+    }
+    case 'duedate':{
+      // A parent's timeline is the span of its subitems, exactly as the board shows it.
+      const roll=(!t.parentTaskId&&typeof getTaskDateSpan==='function')?getTaskDateSpan(t.id):null;
+      const s0=(roll&&roll.startDate)||t.startDate, e0=(roll&&roll.endDate)||t.endDate;
+      const sd=s0?formatDate(s0):'';
+      const ed=e0?formatDate(e0):'';
+      return plain(sd&&ed?(sd+' – '+ed):(sd||ed||''));
+    }
+    case 'progress':return{v:(getEffectiveTaskPct(t.id)||0)/100,pct:true,center:true};
+    case 'hours':   return{v:hoursForTask(t.id)||0,center:true};
+    case 'client':  return plain(getTaskClient(t)?.name||'');
+    case 'tags':    return plain((t.tags||[]).join(', '));
+    case 'attachments':{
+      const n=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
+      return{v:n||'',center:true};
+    }
+    case 'deps':{
+      const n=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id).length;
+      return{v:n||'',center:true};
+    }
+    default: return plain('');
+  }
+}
+function _xlWrite(ws,rowIdx,startCol,cells,opts){
+  const o=opts||{};
+  const row=ws.getRow(rowIdx);
+  cells.forEach((c,i)=>{
+    const cell=row.getCell(startCol+i);
+    cell.value=c.v;
+    const font={name:'Calibri',size:11};
+    if(c.bold||o.bold)font.bold=true;
+    if(c.fg||o.fg)font.color={argb:_argb(c.fg||o.fg,'1a2940')};
+    cell.font=font;
+    const fill=c.bg||o.bg;
+    if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:_argb(fill,'ffffff')}};
+    if(c.pct)cell.numFmt='0%';
+    cell.alignment={vertical:'middle',horizontal:c.center||o.center?'center':'left',wrapText:false};
+    if(o.border!==false)cell.border={
+      top:{style:'thin',color:{argb:'FFE2EAF2'}},bottom:{style:'thin',color:{argb:'FFE2EAF2'}},
+      left:{style:'thin',color:{argb:'FFE2EAF2'}},right:{style:'thin',color:{argb:'FFE2EAF2'}}};
   });
-  const csv=[headers.join(','),...rows].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`tasks-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  return row;
+}
+function wsMtExport(){
+  _ensureExcelJs(()=>{
+    try{ _wsMtExportNow(); }
+    catch(e){ console.error(e); showAlert('The export could not be built: '+e.message,'Export failed'); }
+  },()=>showAlert('The spreadsheet writer could not be loaded. Check your connection and try again.','Export failed'));
+}
+function _wsMtExportNow(){
+  const wbk=new window.ExcelJS.Workbook();
+  wbk.creator='Etcher Task Hub';
+  wbk.created=new Date();
+  const boardName=(currentWorkboard&&currentWorkboard.name)||'Tasks';
+  const ws=wbk.addWorksheet(boardName.slice(0,28).replace(/[\\/*?:\[\]]/g,'-'));
+
+  // the same columns, order and grouping the board is showing
+  const cols=wsColumns;
+  const order=_wsGetColOrder('item')||_WS_DEFAULT_COL_ORDER;
+  const defs=[...WS_COL_DEFS].sort((a,b)=>{
+    const ai=order.indexOf(a.key),bi=order.indexOf(b.key);
+    return(ai===-1?999:ai)-(bi===-1?999:bi);});
+  const vis=defs.filter(c=>cols[c.key]);
+  const custCols=mtGetBoardCustomCols();
+  const itemCols=[{key:'name',label:'Name'},...vis,...custCols.map(c=>({key:'cc_'+c.id,label:c.name,cc:c}))];
+
+  const subOrder=_wsGetColOrder('sub')||_WS_DEFAULT_SUB_COL_ORDER;
+  const subDefs=[...SUB_COL_DEFS].sort((a,b)=>{
+    const ai=subOrder.indexOf(a.key),bi=subOrder.indexOf(b.key);
+    return(ai===-1?999:ai)-(bi===-1?999:bi);});
+  const subVis=subDefs.filter(c=>wsSubColumns[c.key]);
+  const subCust=custCols.filter(cc=>mtColAppliesTo(cc,true));
+  const subCols=[{key:'name',label:'Name'},...subVis,...subCust.map(c=>({key:'cc_'+c.id,label:c.name,cc:c}))];
+
+  const val=(t,c)=>c.cc?{v:mtGetCustomVal(t.id,c.cc.id)||''}:_xlCell(t,c.key);
+
+  let r=1;
+  // title
+  _xlWrite(ws,r,1,[{v:boardName,bold:true}],{border:false});
+  ws.getRow(r).getCell(1).font={name:'Calibri',size:14,bold:true,color:{argb:'FF0D1C33'}};
+  r+=2;
+
+  const sections=_wsBuildSections(getFilteredTasks());
+  sections.forEach(sec=>{
+    // group title
+    _xlWrite(ws,r,1,[{v:sec.label+(sec.sub?'  ·  '+sec.sub:''),bold:true,fg:sec.color}],{border:false});
+    ws.getRow(r).height=20;
+    r++;
+    // item header
+    _xlWrite(ws,r,1,itemCols.map(c=>({v:c.label})),{bold:true,bg:'#f4f7fc',fg:'#4a6572'});
+    r++;
+    sec.tasks.forEach(t=>{
+      _xlWrite(ws,r,1,itemCols.map(c=>val(t,c)));
+      r++;
+      const kids=(DB.tasks||[]).filter(k=>k.parentTaskId===t.id&&!k.archived&&canViewTask(currentUser,k));
+      if(!kids.length)return;
+      _xlWrite(ws,r,2,[{v:'Subitems',bold:true,fg:'#8da2b2'}],{border:false});
+      r++;
+      _xlWrite(ws,r,2,subCols.map(c=>({v:c.label})),{bold:true,bg:'#f8fbff',fg:'#8da2b2'});
+      r++;
+      kids.forEach(k=>{
+        _xlWrite(ws,r,2,subCols.map(c=>val(k,c)));
+        r++;
+      });
+      r++;   // breathing room under a subitem block
+    });
+    r++;     // blank row between groups
+  });
+
+  // sensible widths: the name column is wide, the rest sized to their label
+  const widest=Math.max(itemCols.length,subCols.length+1);
+  for(let i=1;i<=widest;i++){
+    const c=ws.getColumn(i);
+    c.width=i===1?38:(i===2?30:16);
+  }
+
+  wbk.xlsx.writeBuffer().then(buf=>{
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=boardName.replace(/[^\w\-]+/g,'-')+'-'+new Date().toISOString().slice(0,10)+'.xlsx';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }).catch(e=>{
+    console.error(e);
+    showAlert('The export could not be written: '+e.message,'Export failed');
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
