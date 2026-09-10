@@ -2055,6 +2055,9 @@ function assigneeTitleAttr(t){
 }
 
 let _saveDebounceTimer=null;
+// A realtime payload that landed while the save debounce was pending. It must be merged in
+// before this client uploads, or the upload clobbers it — see _startRealtimeSync.
+let _pendingRemote=null;
 let _supabaseSyncEnabled=false; // only true after post-login app_state load confirms data
 let _realtimeChannel=null;
 let _syncFailCount=0;
@@ -2161,10 +2164,15 @@ function _startRealtimeSync(){
   _realtimeChannel=window._supabase.channel('app_state_changes')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},payload=>{
       // Another user saved — smart-merge so concurrent edits on different tasks both survive
-      if(_saveDebounceTimer)return; // we have unsaved local changes; flush will win
       const fresh=payload.new?.data;
       if(!fresh||(fresh.users?.length===0&&fresh.tasks?.length===0))return;
       _migrateDB(fresh);_applyCompatAliases(fresh);
+      // Mid-save: this client is holding unsaved edits behind the 300ms debounce. Returning
+      // here used to DISCARD the payload outright, and the pending flush then uploaded this
+      // client's whole blob — which had never seen the remote change — so the other person's
+      // edit was silently overwritten. Queue it and merge at flush time instead: the flush
+      // still wins on local edits (newer updatedAt), without losing theirs.
+      if(_saveDebounceTimer){_pendingRemote=fresh;return;}
       const merged=_mergeDB(DB,fresh);
       for(const k in DB)delete DB[k];Object.assign(DB,merged);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
@@ -2255,25 +2263,44 @@ function _assignTaskRefs(data){
   boards.forEach(b=>{const m=byBoard.get(b.id);if(m)b.nextRef=m+1;});
   return true;
 }
+// Drain any realtime payload that arrived mid-debounce, folding it into DB before this
+// client uploads. Returns true if something was merged, so the caller can repaint.
+function _applyPendingRemote(){
+  if(!_pendingRemote)return false;
+  const fresh=_pendingRemote;_pendingRemote=null;
+  const merged=_mergeDB(DB,fresh);
+  for(const k in DB)delete DB[k];Object.assign(DB,merged);
+  _vcClear();
+  return true;
+}
 function saveDB(data){
   _assignTaskRefs(data);
   _vcClear(); // invalidate render cache whenever data changes
   data._savedAt=new Date().toISOString(); // timestamp for conflict detection
   clearTimeout(_saveDebounceTimer);
-  _saveDebounceTimer=setTimeout(()=>{_saveDebounceTimer=null;const safe=_stripPasswords(data);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);},300);
+  _saveDebounceTimer=setTimeout(()=>{
+    _saveDebounceTimer=null;
+    // Only DB itself can absorb a queued remote merge; the load/migration path calls
+    // saveDB with a detached object that is not the live DB.
+    if(data===DB&&_applyPendingRemote())_repaintAfterMerge();
+    const safe=_stripPasswords(data);
+    localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));
+    _syncToSupabase(safe);
+  },300);
 }
 // Immediate flush — bypasses the 300ms debounce. Use after structural deletes (client, board)
 // so the change reaches localStorage + Supabase before any page reload or realtime event can overwrite it.
 function _flushDB(){
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=null;
+  if(_applyPendingRemote())_repaintAfterMerge();
   const safe=_stripPasswords(DB);
   localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));
   _syncToSupabase(safe);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);const safe=_stripPasswords(DB);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);}
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);}
   let hasUnsaved=false;
   document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
     try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
