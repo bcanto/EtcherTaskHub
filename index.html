@@ -1280,9 +1280,9 @@ const SEED = {
   // ── Clients ────────────────────────────────────────────
   clients:[
     {id:'c0',name:'Etcher Solutions',  contactName:'Bruna Canto',   contactEmail:'b.canto@etchersolutions.com', portalEnabled:false, loginEmail:'', loginPassword:'', archived:false, color:'#0d6e4e', shortCode:'ETR', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'c1',name:'General Cranes',    contactName:'John Smith',    contactEmail:'john@generalcranes.com.au',  portalEnabled:true,  loginEmail:'client@generalcranes.com.au', loginPassword:'TaskHub123', archived:false, color:'#c2410c', shortCode:'GCR', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'c2',name:'Daltech',           contactName:'Sarah Johnson', contactEmail:'sarah@daltech.com.au',       portalEnabled:true,  loginEmail:'client@daltech.com.au',        loginPassword:'TaskHub123', archived:false, color:'#1d6fb8', shortCode:'DAL', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
-    {id:'c3',name:'Retained Services', contactName:'Michael Brown', contactEmail:'michael@retained.com.au',   portalEnabled:true,  loginEmail:'client@retained.com.au',       loginPassword:'TaskHub123', archived:false, color:'#7c3aed', shortCode:'RTS', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'c1',name:'General Cranes',    contactName:'John Smith',    contactEmail:'john@generalcranes.com.au',  portalEnabled:true,  loginEmail:'client@generalcranes.com.au', archived:false, color:'#c2410c', shortCode:'GCR', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'c2',name:'Daltech',           contactName:'Sarah Johnson', contactEmail:'sarah@daltech.com.au',       portalEnabled:true,  loginEmail:'client@daltech.com.au',        archived:false, color:'#1d6fb8', shortCode:'DAL', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
+    {id:'c3',name:'Retained Services', contactName:'Michael Brown', contactEmail:'michael@retained.com.au',   portalEnabled:true,  loginEmail:'client@retained.com.au',       archived:false, color:'#7c3aed', shortCode:'RTS', createdAt:'2026-01-01T00:00:00.000Z', updatedAt:'2026-01-01T00:00:00.000Z'},
   ],
 
   // ── Boards (one per project/engagement per client) ─────
@@ -1716,17 +1716,10 @@ function _migrateDB(data){
     }
   });
 
-  // Seed defaults for client portal — only applied when the field is genuinely missing,
-  // so that admin-set credentials are never silently overwritten on page load.
-  const _clientCreds={'c1':{e:'client@generalcranes.com.au',p:'TaskHub123'},'c2':{e:'client@daltech.com.au',p:'TaskHub123'},'c3':{e:'client@retained.com.au',p:'TaskHub123'}};
-  (data.clients||[]).forEach(c=>{
-    const cr=_clientCreds[c.id];
-    if(cr){
-      if(!c.loginEmail)    c.loginEmail=cr.e;
-      if(!c.loginPassword) c.loginPassword=cr.p;
-      if(c.portalEnabled===undefined) c.portalEnabled=true;
-    }
-  });
+  // Client portal credentials are no longer seeded here. These were demo defaults that
+  // _stripPasswords removes before every save, so each page load silently reinstated a
+  // publicly known password on three real clients. Portal accounts are created through
+  // /api/invite-user against Supabase Auth; there is no plaintext client password path.
 
   // Upgrade users: add new fields if missing, normalise color
   (data.users||[]).forEach(u=>{
@@ -3323,9 +3316,8 @@ function doLogin(){
       initials:user.initials||getInitials(user.name)};
     _saveSession();launchApp();return;
   }
-  // Legacy client portal login (loginEmail on client object)
-  const client=DB.clients.find(c=>c.loginEmail&&c.loginEmail.toLowerCase()===email&&c.loginPassword===pass);
-  if(client){sessionStorage.removeItem('_lk');currentUser={id:client.id,name:client.name,role:'client',type:'client',clientId:client.id,initials:client.shortCode||'CL',color:client.color||'#64748b'};_saveSession();launchClientView();return;}
+  // The legacy client portal login that compared c.loginPassword in plaintext is gone.
+  // Client portal auth is Supabase-only; this fallback branch is staff/local-dev only.
   // Record failed attempt
   const attempts=(_lk.count||0)+1;
   if(attempts>=5){sessionStorage.setItem('_lk',JSON.stringify({count:attempts,until:Date.now()+900000}));}
