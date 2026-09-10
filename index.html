@@ -2168,6 +2168,10 @@ function _startRealtimeSync(){
       const merged=_mergeDB(DB,fresh);
       for(const k in DB)delete DB[k];Object.assign(DB,merged);
       localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+      // saveDB was the only caller of _vcClear, so a merge from another user left the cached
+      // views (gantt/capacity/schedule/dashboard/staff) re-serving pre-merge HTML for up to
+      // the 8s TTL — their changes simply did not appear.
+      _vcClear();
       _repaintAfterMerge();
       renderSidebarWorkboards();updateNotifBadge();updateClientReqBadge();
       // Re-sync open task panel with merged version — but never while the user is typing
