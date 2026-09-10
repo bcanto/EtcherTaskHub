@@ -2195,11 +2195,14 @@ function _loadPwStore(){try{return JSON.parse(localStorage.getItem(_PW_KEY)||'{}
 function _savePw(userId,pw){if(!userId||!pw)return;const s=_loadPwStore();s[userId]=pw;localStorage.setItem(_PW_KEY,JSON.stringify(s));}
 
 function _stripPasswords(data){
-  // Never persist plaintext passwords to localStorage or Supabase
-  const d=JSON.parse(JSON.stringify(data));
-  (d.users||[]).forEach(u=>{delete u.password;});
-  (d.staff||[]).forEach(u=>{delete u.password;});
-  (d.clients||[]).forEach(c=>{delete c.loginPassword;});
+  // Never persist plaintext passwords to localStorage or Supabase.
+  // Shallow-copy and rebuild only the three collections that carry credentials. This runs on
+  // every debounced save, and deep-cloning the whole DB through JSON was the most expensive
+  // thing on that path — every other collection is only read from here, never mutated.
+  const d={...data};
+  if(data.users)  d.users  =data.users.map(u=>{const{password,...r}=u;return r;});
+  if(data.staff)  d.staff  =data.staff.map(u=>{const{password,...r}=u;return r;});
+  if(data.clients)d.clients=data.clients.map(c=>{const{loginPassword,...r}=c;return r;});
   return d;
 }
 // ── Human-readable task references (e.g. AN-070) ────────────
