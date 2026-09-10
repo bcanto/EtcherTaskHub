@@ -1986,6 +1986,11 @@ function _filterSig(filters){
     f.awaitingClient?1:0,f.overdue?1:0,f.hasChecklist?1:0,f.hasDeps?1:0,
     f.pctMin,f.pctMax].join('~');
 }
+// Toolbar state that changes what a cached view draws but does not live in activeFilters:
+// whether the advanced-filter panel is open, and the row-search box. Neither was in any
+// cache key, so on every cached view pressing Done, typing in search, or clearing it
+// re-served the old HTML and appeared to do nothing until the 8s TTL happened to expire.
+function _utSig(){return(utFilterOpen?1:0)+'~'+(wsMtSearch||'');}
 
 // ── Ponytail helpers — canonical one-liners used 4–8× each ─────────────
 function allStaff(){return DB.users||DB.staff||[];}
@@ -3642,13 +3647,13 @@ function renderView(v){
   try{
     switch(v){
       // Cacheable views: read-heavy, rarely edited inline — 8 s TTL, invalidated on saveDB
-      case 'dashboard': _renderCached(vc,'dashboard',renderDashboard);_wbOptsApply();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
+      case 'dashboard': _renderCached(vc,'dashboard-'+_utSig(),renderDashboard);_wbOptsApply();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
       case 'my-week':   vc.innerHTML=renderMyWeek();break;
       case 'digest':    vc.innerHTML=renderDigests();break;
-      case 'gantt':     _renderCached(vc,'gantt-'+_ganttSig()+'-'+_filterSig(),renderGantt);break;
-      case 'capacity':  _renderCached(vc,'capacity-'+mcScale+'-'+mcThreshold+'-'+mcView+'-'+mcDateFrom+'-'+mcDateTo+'-'+_filterSig(mcFilters),renderCapacity);break;
-      case 'schedule':  _renderCached(vc,'schedule-'+schedCalView+'-'+schedYear+'-'+schedMonth+'-'+(schedWeekBase||''),renderSchedule);break;
-      case 'staff':     _renderCached(vc,'staff',renderStaff);break;
+      case 'gantt':     _renderCached(vc,'gantt-'+_ganttSig()+'-'+_filterSig()+'-'+_utSig(),renderGantt);break;
+      case 'capacity':  _renderCached(vc,'capacity-'+mcScale+'-'+mcThreshold+'-'+mcView+'-'+mcDateFrom+'-'+mcDateTo+'-'+_filterSig(mcFilters)+'-'+_utSig(),renderCapacity);break;
+      case 'schedule':  _renderCached(vc,'schedule-'+schedCalView+'-'+schedYear+'-'+schedMonth+'-'+(schedWeekBase||'')+'-'+_filterSig()+'-'+_utSig(),renderSchedule);break;
+      case 'staff':     _renderCached(vc,'staff-'+_utSig(),renderStaff);break;
       // Live views: always fresh (mutations happen inline)
       // Two passes: the first runs before the topbar/toolbar heights have settled, which
       // left Add Group a few px out of line with Sign Out.
