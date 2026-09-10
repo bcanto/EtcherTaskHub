@@ -3296,9 +3296,40 @@ function renderAdvancedFilterPanel(view){
 // ═══════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════
-function doLogin(){
+// Offline/localStorage auth is a local-development affordance, not a production fallback.
+// Allowed only on a local origin, or where a build has explicitly opted in.
+function _localAuthAllowed(){
+  const h=location.hostname;
+  if(h==='localhost'||h==='127.0.0.1'||h==='::1'||h==='')return true;
+  try{return localStorage.getItem('etcher_local_auth')==='1';}catch(_){return false;}
+}
+function _supabaseUnavailableMessage(){
+  const why=window._supabaseInitError;
+  return 'Cannot reach the sign-in service. '+(why?why.charAt(0).toUpperCase()+why.slice(1)+' ':'')+'Please try again in a moment — if it keeps happening, contact your administrator.';
+}
+// Offline mode must never be invisible: work done in it stays in this browser and is
+// discarded the next time a Supabase session loads app_state over the top of it.
+function _showOfflineBanner(){
+  if(window._supabase)return;
+  if(!document.body){document.addEventListener('DOMContentLoaded',_showOfflineBanner,{once:true});return;}
+  if(document.getElementById('offline-mode-banner'))return;
+  const el=document.createElement('div');
+  el.id='offline-mode-banner';
+  el.style.cssText='position:fixed;bottom:14px;left:14px;z-index:99998;background:#7c2d12;color:#fff;font-family:Jost,sans-serif;font-size:11px;font-weight:600;padding:8px 12px;border-radius:7px;box-shadow:0 4px 16px rgba(13,28,51,0.25);display:flex;align-items:center;gap:7px;max-width:320px;line-height:1.45';
+  el.innerHTML='<span style="font-size:13px;flex-shrink:0">⚠</span><span>Offline mode — changes stay in this browser and are not synced.</span>';
+  document.body.appendChild(el);
+}
+// The inline script runs before the deferred supabase-client.js, so _supabaseReady does not
+// exist yet here; DOMContentLoaded fires after deferred scripts have run.
+document.addEventListener('DOMContentLoaded',()=>{
+  Promise.resolve(window._supabaseReady).then(()=>{if(!window._supabase)_showOfflineBanner();});
+});
+async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
+  // Init is async. Without this await a click landing before /api/config resolves would fall
+  // straight through to the offline branch and authenticate against local data instead.
+  if(window._supabaseReady){try{await window._supabaseReady;}catch(_){}}
   // ── Supabase Auth path (Phase 2) ─────────────────────────────────────────
   if(window._supabase){
     const btn=document.querySelector('#login-form button[type="submit"]');
@@ -3312,6 +3343,10 @@ function doLogin(){
     return; // async — Supabase callback handles the rest
   }
   // ── localStorage fallback (no Supabase configured) ───────────────────────
+  // Reaching here on a deployed origin means Supabase failed to initialise. Continuing
+  // would quietly downgrade to weaker auth against whatever this browser has cached, so
+  // refuse and say why rather than silently accepting a local password.
+  if(!_localAuthAllowed()){showLoginError(_supabaseUnavailableMessage());return;}
   // Brute-force lockout: 5 failures → 15 min lockout (sessionStorage)
   const _lk=JSON.parse(sessionStorage.getItem('_lk')||'{}');
   if(_lk.until&&Date.now()<_lk.until){

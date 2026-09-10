@@ -6,21 +6,34 @@
  *
  * Loaded AFTER the @supabase/supabase-js CDN script in index.html.
  * The rest of the app checks `window._supabase` before using Supabase APIs.
+ *
+ * Init is async, so window._supabase is still unset while it runs. Anything branching on
+ * it — doLogin above all — must await window._supabaseReady first, or a fast click lands
+ * in the offline fallback purely because /api/config had not resolved yet.
+ * window._supabaseInitError records why init produced no client, so the app can tell
+ * "not configured, running locally" apart from "this should have worked and did not".
  */
 
-(async function _initSupabase() {
+window._supabaseInitError = null;
+window._supabaseReady = (async function _initSupabase() {
   try {
     const resp = await fetch('/api/config');
-    if (!resp.ok) return;
+    if (!resp.ok) {
+      window._supabaseInitError = 'the configuration service returned HTTP ' + resp.status + '.';
+      console.warn('[Supabase] /api/config returned', resp.status);
+      return;
+    }
     const cfg = await resp.json();
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      window._supabaseInitError = 'no Supabase credentials are configured on the server.';
       console.info('[Supabase] Not configured — running in offline/localStorage mode.');
       return;
     }
 
     if (!window.supabase || !window.supabase.createClient) {
-      console.warn('[Supabase] CDN script not loaded yet.');
+      window._supabaseInitError = 'the Supabase library did not load (CDN blocked or offline).';
+      console.warn('[Supabase] CDN script not loaded.');
       return;
     }
 
@@ -54,6 +67,7 @@
     console.info('[Supabase] Client ready →', cfg.supabaseUrl);
 
   } catch (e) {
+    window._supabaseInitError = e.message || 'an unexpected error occurred during sign-in setup.';
     console.warn('[Supabase] Init error:', e.message);
   }
 })();
