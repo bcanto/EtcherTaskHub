@@ -2193,6 +2193,16 @@ function _startRealtimeSync(){
 const _PW_KEY='etcher_pw_v1';
 function _loadPwStore(){try{return JSON.parse(localStorage.getItem(_PW_KEY)||'{}');}catch(_){return {};}}
 function _savePw(userId,pw){if(!userId||!pw)return;const s=_loadPwStore();s[userId]=pw;localStorage.setItem(_PW_KEY,JSON.stringify(s));}
+// The Supabase auth uid for a staff record. Users created through /api/invite-user carry it
+// as their own id; users linked at first Supabase sign-in carry it in supabase_uid; legacy
+// records that have never signed in have neither, and cannot have a password set remotely.
+const _UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function _staffAuthUid(s){
+  if(!s)return null;
+  if(s.supabase_uid&&_UUID_RE.test(s.supabase_uid))return s.supabase_uid;
+  if(_UUID_RE.test(s.id||''))return s.id;
+  return null;
+}
 
 function _stripPasswords(data){
   // Never persist plaintext passwords to localStorage or Supabase.
@@ -13728,7 +13738,30 @@ async function saveStaff(id){
     // Edit existing — update DB only
     const s=DB.staff.find(x=>x.id===id);
     s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
-    const pw=document.getElementById('sm-pw')?.value;if(pw){_savePw(s.id,pw);}
+    const pw=(document.getElementById('sm-pw')?.value||'').trim();
+    if(pw){
+      if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
+      // This used to write only to the local fallback store, so the form reported success
+      // while the person's real Supabase login was untouched — an admin who believed they
+      // had rotated a password had not. Route it through /api/set-password the way the
+      // client modal already does. Local dev has no such service, so there the local store
+      // legitimately remains the whole story.
+      if(window._supabase){
+        const _uid=_staffAuthUid(s);
+        if(!_uid){showAlert('No Supabase account is linked to '+s.name+' yet, so their password cannot be changed here. Ask them to sign in once — that links the account — then try again.','Cannot Change Password');return;}
+        const btn=document.getElementById('sm-save-btn');
+        if(btn){btn.disabled=true;btn.textContent='Saving…';}
+        try{
+          const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:_uid,password:pw})});
+          if(!resp.ok){const r=await resp.json().catch(()=>({}));throw new Error(r.error||'Failed to update password');}
+        }catch(e){
+          showAlert(e.message,'Password Update Failed');
+          if(btn){btn.disabled=false;btn.textContent='Save';}
+          return;
+        }
+      }
+      _savePw(s.id,pw);
+    }
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
     // New user — create account directly (no email needed)
