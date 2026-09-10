@@ -1744,7 +1744,14 @@ function _migrateDB(data){
   (data.clients||[]).forEach(c=>{
     if(!c.contactName)                    c.contactName='';
     if(!c.contactEmail)                   c.contactEmail='';
-    if(c.portalEnabled===undefined)       c.portalEnabled=c.portal_enabled??false;
+    // Two spellings existed and disagreed: SEED/migration wrote portalEnabled, while the
+    // client modal read and wrote portal_enabled and _supabaseRestoreSession gated on it —
+    // so a seeded client with portalEnabled:true had portal_enabled undefined and was denied
+    // at session restore. Collapse onto portalEnabled here: an explicit modal write (snake
+    // defined) is a deliberate admin action and wins; otherwise fall back to the declared
+    // portalEnabled. Never fail open on a deliberate disable.
+    c.portalEnabled=(c.portal_enabled!==undefined)?!!c.portal_enabled:!!c.portalEnabled;
+    delete c.portal_enabled;
     if(c.archived===undefined)            c.archived=false;
     if(!c.createdAt)                      c.createdAt=new Date().toISOString();
     if(!c.updatedAt)                      c.updatedAt=c.createdAt;
@@ -2412,7 +2419,7 @@ async function _supabaseRestoreSession(session){
     if(isClient){
       // Look up client from app_state (Supabase clients table is not used as source of truth)
       const clientData=DB.clients.find(c=>c.id===p.client_id);
-      if(!clientData||!clientData.portal_enabled){return false;}
+      if(!clientData||!clientData.portalEnabled){return false;}
       currentUser={id:p.id,name:p.name,role:'client',type:'client',clientId:p.client_id,
         initials:p.initials||clientData.shortCode||'CL',color:p.display_color||clientData.color||'#64748b'};
       launchClientView();
@@ -8022,7 +8029,7 @@ function _cmAutoCode(name){
   if(el)el.value=suggestClientCode(name,'');
 }
 function openClientModal(id){
-  const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portal_enabled:false};
+  const c=id?DB.clients.find(x=>x.id===id):{id:'',name:'',color:'#3b82f6',shortCode:'',loginEmail:'',active:true,portalEnabled:false};
   _cmCodeTouched=!!id; // editing an existing client never rewrites its code
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
   document.getElementById('generic-modal-body').innerHTML=`
@@ -8063,7 +8070,7 @@ function openClientModal(id){
           <div style="display:flex;align-items:flex-end;gap:8px">
             <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com" ${id?'readonly style="opacity:0.6"':''}/></div>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;padding-bottom:8px;white-space:nowrap">
-              <input type="checkbox" id="cm-portal-enabled" ${c.portal_enabled?'checked':''}/> Enabled
+              <input type="checkbox" id="cm-portal-enabled" ${c.portalEnabled?'checked':''}/> Enabled
             </label>
           </div>
           ${id
@@ -8102,7 +8109,7 @@ async function saveClient(id){
       DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=color;});
     }else{c.color=color;}
     const enabledEl=document.getElementById('cm-portal-enabled');
-    if(enabledEl)c.portal_enabled=enabledEl.checked;
+    if(enabledEl)c.portalEnabled=enabledEl.checked;
     const logoEl=document.getElementById('cm-logo-b64');
     if(logoEl)c.logo=logoEl.value||null;
     // Handle optional password update for existing client
@@ -8139,7 +8146,7 @@ async function saveClient(id){
         const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid,password:pw})});
         const result=await resp.json();
         if(!resp.ok)throw new Error(result.error||'Failed to create account');
-        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portal_enabled:true,supabaseUserId:result.id});
+        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id});
         saveDB(DB);closeGenericModal();renderView('clients');
         showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
@@ -8147,7 +8154,7 @@ async function saveClient(id){
         if(btn){btn.disabled=false;btn.textContent='Save';}
       }
     }else{
-      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portal_enabled:false});
+      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portalEnabled:false});
       saveDB(DB);closeGenericModal();renderView('clients');
     }
   }
@@ -20930,7 +20937,7 @@ function renderCpNotifications(){
 function _cpBuildBoardTaskIndex(clientId){
   const idx=new Map();
   const clientObj=DB.clients.find(c=>c.id===clientId);
-  if(!clientObj?.portalEnabled&&!clientObj?.portal_enabled)return idx;
+  if(!clientObj?.portalEnabled)return idx;
   (DB.boards||DB.workboards||[]).filter(b=>b.clientId===clientId&&!b.archived).forEach(b=>{
     const bid=b.id;
     const groupIds=new Set((DB.groups||[]).filter(g=>(g.boardId||g.workboardId)===bid).map(g=>g.id));
