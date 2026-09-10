@@ -2098,6 +2098,25 @@ function _mergeDB(current, incoming){
   merged.notifications=unionById(current.notifications,incoming.notifications);
   merged.meetingNotes=mergeById(current.meetingNotes,incoming.meetingNotes,'updatedAt');
   merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
+  // Everything else used to come straight off `incoming`, so any collection the remote
+  // snapshot had not caught up on was replaced by the older copy and the local work in it
+  // was gone. That is how a freshly typed client note vanished: clientNotes was not on the
+  // list above, so a realtime echo carrying a pre-note snapshot simply overwrote it.
+  // Merge every remaining collection of {id} records by id instead of naming them one by
+  // one — a whitelist only protects what someone remembered to add to it.
+  const _named=new Set(['tasks','comments','clientComments','notifications','meetingNotes',
+    'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds']);
+  for(const key of new Set([...Object.keys(current||{}),...Object.keys(incoming||{})])){
+    if(_named.has(key))continue;
+    const cur=Array.isArray(current[key])?current[key]:null;
+    const inc=Array.isArray(incoming[key])?incoming[key]:null;
+    if(!cur&&!inc)continue;                 // objects (labelConfig, flags) keep incoming
+    const both=[...(cur||[]),...(inc||[])];
+    if(!both.length)continue;
+    // arrays of plain values (id tombstones, string lists) have nothing to merge on
+    if(!both.every(x=>x&&typeof x==='object'&&x.id!=null))continue;
+    merged[key]=mergeById(cur||[],inc||[],'updatedAt');
+  }
   // Carry forward deleted-ID tombstones from both sides; filter out tombstoned clients
   const deletedClientIds=new Set([...(current.deletedClientIds||[]),...(incoming.deletedClientIds||[])]);
   merged.deletedClientIds=[...deletedClientIds];
