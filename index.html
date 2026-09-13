@@ -9203,8 +9203,36 @@ function _teTaskPick(id,el){
   const drop=document.getElementById('te-task-drop');
   if(drop)drop.style.display='none';
 }
+// Shared by the desktop Log Time form and the mobile quick-log sheet, so the two can never
+// drift into different validation or a different record shape. Returns the created entry,
+// or false if a validation message was already shown.
+function _teCreateEntry(opts){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return false;}
+  const{taskId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}=opts;
+  let clientId=opts.clientId||null;
+  // Every entry carries a note. A task name says what the work was attached to, not what
+  // was actually done, and that is what a timesheet is read for later.
+  if(!note){
+    showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');
+    document.getElementById('te-note')?.focus();
+    return false;
+  }
+  if(!staffId){showAlert('Staff member is required.','Validation');return false;}
+  if(!date){showAlert('Date is required.','Validation');return false;}
+  if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return false;}
+  if(!clientId&&taskId){const t=DB.tasks.find(x=>x.id===taskId);clientId=t?t.clientId||(getTaskClient(t)?.id||null):null;}
+  // Logged time goes straight to submitted. Draft was a state nobody could leave: the Submit
+  // button is rendered for non-admins only, so an admin's own entries sat in Draft for good
+  // and never reached Pending Approval.
+  const _now=new Date().toISOString();
+  const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'submitted',submittedAt:_now,createdAt:_now,updatedAt:_now};
+  DB.timeEntries.push(entry);
+  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
+  if(taskId)applyHourBudgetPct(taskId);
+  saveDB(DB);
+  return entry;
+}
 function logTime(){
-  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const mode=_teMode==='client'?'client':'task';
   const taskId=mode==='task'?(document.getElementById('te-task')?.value||''):'';
   const selectedClientId=mode==='client'?(document.getElementById('te-client')?.value||''):'';
@@ -9218,31 +9246,90 @@ function logTime(){
   const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||'Ordinary Hours';
   const location=document.getElementById('te-location')?.value||'remote';
   const billable=_teBillableOn;
-  // Validation
+  // Mode-specific validation stays here: it is about the form's task/client toggle, not
+  // about what makes an entry valid on its own.
   if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
-  // Every entry carries a note. A task name says what the work was attached to, not what
-  // was actually done, and that is what a timesheet is read for later.
-  if(!note){
-    showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');
-    document.getElementById('te-note')?.focus();
-    return;
-  }
-  if(!staffId){showAlert('Staff member is required.','Validation');return;}
-  if(!date){showAlert('Date is required.','Validation');return;}
-  if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
-  const task=mode==='task'?DB.tasks.find(t=>t.id===taskId):null;
-  const clientId=mode==='client'?selectedClientId:((task?task.clientId||(getTaskClient(task)?.id):'')||'');
-  // Logged time goes straight to submitted. Draft was a state nobody could leave: the Submit
-  // button is rendered for non-admins only, so an admin's own entries sat in Draft for good
-  // and never reached Pending Approval.
-  const _now=new Date().toISOString();
-  const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'submitted',submittedAt:_now,createdAt:_now,updatedAt:_now};
-  DB.timeEntries.push(entry);
-  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
-  if(taskId)applyHourBudgetPct(taskId);
-  saveDB(DB);
+  const clientId=mode==='client'?selectedClientId:null;
+  if(!_teCreateEntry({taskId,clientId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}))return;
   renderView('time');
+}
+
+// ── Mobile quick-log sheet ───────────────────────────────────────────────
+// Duration and recent-task chips replace typing for the overwhelming majority of entries;
+// everything still goes through _teCreateEntry, the same validation and record shape the
+// desktop form uses.
+let _teQuickPicked={taskId:null,clientId:null,label:'Select task or client…'};
+let _teQuickHours=1;
+function _teRecentTargets(){
+  // Last 5 distinct task/client combinations this person logged, most recent first —
+  // one tap replaces the search-and-type picker for routine, repeat work.
+  const mine=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&e.staffId===currentUser.id)
+    .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const seen=new Set(),out=[];
+  for(const e of mine){
+    const key=(e.taskId||'')+'|'+(e.clientId||'');
+    if(seen.has(key)||(!e.taskId&&!e.clientId))continue;
+    seen.add(key);
+    const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
+    const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
+    out.push({taskId:e.taskId||null,clientId:e.clientId||null,label:task?task.name:(client?.name||'Unknown')});
+    if(out.length>=5)break;
+  }
+  return out;
+}
+function teQuickPick(i,recent){
+  const r=recent[i];
+  _teQuickPicked={taskId:r.taskId,clientId:r.clientId,label:r.label};
+  document.querySelectorAll('.qte-recent-chip').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
+  const disp=document.getElementById('qte-picked-label');if(disp)disp.textContent=r.label;
+}
+function teQuickSetHours(h){
+  _teQuickHours=h;
+  document.querySelectorAll('.qte-hours-chip').forEach(el=>el.classList.toggle('selected',+el.dataset.h===h));
+  const custom=document.getElementById('qte-hours-custom');if(custom&&+custom.value!==h)custom.value='';
+  const btn=document.getElementById('qte-save-btn');if(btn)btn.textContent=`Log ${h}h`;
+}
+function teQuickLogOpen(){
+  _teQuickPicked={taskId:null,clientId:null,label:'Select task or client…'};
+  _teQuickHours=1;
+  const recent=_teRecentTargets();
+  const chips=recent.map((r,i)=>`<button type="button" class="mobile-chip qte-recent-chip" onclick="teQuickPick(${i},window._teQuickRecent)">${escHtml(r.label.length>18?r.label.slice(0,18)+'…':r.label)}</button>`).join('')
+    ||'<span style="font-size:12px;color:#8da2b2">No recent tasks yet — pick one from the Time Log form.</span>';
+  window._teQuickRecent=recent;
+  const durs=[0.25,0.5,1,2,4,8];
+  const durChips=durs.map(h=>`<button type="button" class="mobile-chip qte-hours-chip" data-h="${h}"${h===1?' style="border-color:#0d6e4e;background:#eaf4ee;color:#0d6e4e"':''} onclick="teQuickSetHours(${h})">${h}h</button>`).join('');
+  document.getElementById('te-quicklog-body').innerHTML=`
+    <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin-bottom:4px">Log time</div>
+    <div class="mobile-field-label">Recent</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${chips}</div>
+    <div id="qte-picked-label" style="font-size:12px;color:#8da2b2;margin-top:6px">${recent.length?'Tap one, or use the full form on the page for anything else.':''}</div>
+    <div class="mobile-field-label">How long</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${durChips}
+      <input id="qte-hours-custom" type="number" min="0.25" step="0.25" placeholder="Custom" class="mobile-chip" style="width:84px;text-align:center" oninput="if(this.value)teQuickSetHours(+this.value)"/>
+    </div>
+    <div class="mobile-field-label">Note</div>
+    <textarea id="qte-note" rows="2" placeholder="What did you do?" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e2eaf2;border-radius:10px;font-size:14px;font-family:'Lato',sans-serif;resize:none"></textarea>
+    <button id="qte-save-btn" onclick="teQuickLogSave()" class="btn btn-teal" style="width:100%;height:48px;font-size:14px;margin-top:16px">Log ${_teQuickHours}h</button>`;
+  document.getElementById('te-quicklog-wrap').classList.add('open');
+}
+function teQuickLogClose(){document.getElementById('te-quicklog-wrap')?.classList.remove('open');}
+function teQuickLogSave(){
+  const note=(document.getElementById('qte-note')?.value||'').trim();
+  if(!note){document.getElementById('qte-note')?.focus();return;}
+  if(!_teQuickPicked.taskId&&!_teQuickPicked.clientId){showAlert('Pick a recent task or client first.','Validation');return;}
+  const entry=_teCreateEntry({taskId:_teQuickPicked.taskId,clientId:_teQuickPicked.clientId,staffId:currentUser.id,
+    hours:_teQuickHours,date:_teFmtYMD(new Date()),note,earningsRateId:'er1',earningsRateName:'Ordinary Hours',
+    location:'remote',billable:true});
+  if(!entry)return;
+  teQuickLogClose();
+  renderView('time');
+  showToast(`Logged ${_teQuickHours}h`,'success',5000,{label:'Undo',onClick:`teQuickLogUndo('${entry.id}')`});
+}
+function teQuickLogUndo(id){
+  DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.id!==id);
+  saveDB(DB);
+  if(currentView==='time')renderView('time');
 }
 
 function deleteTimeEntry(id){
