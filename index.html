@@ -3427,7 +3427,12 @@ function _showOfflineBanner(){
   if(document.getElementById('offline-mode-banner'))return;
   const el=document.createElement('div');
   el.id='offline-mode-banner';
-  el.style.cssText='position:fixed;bottom:14px;left:14px;z-index:99998;background:#7c2d12;color:#fff;font-family:Jost,sans-serif;font-size:11px;font-weight:600;padding:8px 12px;border-radius:7px;box-shadow:0 4px 16px rgba(13,28,51,0.25);display:flex;align-items:center;gap:7px;max-width:320px;line-height:1.45';
+  // z-index was 99998 — "above literally everything", which included the mobile FABs and
+  // the bottom sheets added later. On a narrow screen this banner sat directly on top of a
+  // sheet's Save button with no way to reach it while offline. 850 still clears ordinary
+  // page content but no longer outranks the sheets (900) or sits over the tab bar's tap
+  // targets; the position is lifted clear of the tab bar under 768px in the mobile shell CSS.
+  el.style.cssText='position:fixed;bottom:14px;left:14px;z-index:850;background:#7c2d12;color:#fff;font-family:Jost,sans-serif;font-size:11px;font-weight:600;padding:8px 12px;border-radius:7px;box-shadow:0 4px 16px rgba(13,28,51,0.25);display:flex;align-items:center;gap:7px;max-width:320px;line-height:1.45';
   el.innerHTML='<span style="font-size:13px;flex-shrink:0">⚠</span><span>Offline mode — changes stay in this browser and are not synced.</span>';
   document.body.appendChild(el);
 }
