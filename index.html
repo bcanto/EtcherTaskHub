@@ -8518,17 +8518,26 @@ function renderTime(){
     const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
     const locMeta={remote:{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'},client_office:{label:'Client Office',bg:'#fef3c7',color:'#92400e'},office:{label:'Office',bg:'#f0fdf4',color:'#166534'}}[e.location||'remote']||{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'};
     const inlineStyle='border:none;outline:none;background:transparent;font-family:inherit;width:100%;box-sizing:border-box;padding:0;margin:0;border-radius:4px;transition:background 0.12s;display:block';
+    // Rounded rectangle, as it was. The two states now share one box style and one fixed
+    // width: the editable box was ~80px and the read-only one ~35px, so the number and its
+    // "h" landed at a different x on every row depending on whether that entry could still
+    // be edited, which is what made the column look crooked. Number is right-aligned against
+    // the "h" in both, so the figures line up down the column whatever their length.
+    const hoursBox='display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;width:62px;box-sizing:border-box;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:2px 7px';
     const hoursCell=canEdit
-      ?`<div style="display:inline-flex;align-items:center;gap:3px;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:2px 7px 2px 5px;transition:border-color 0.12s"
+      ?`<div style="${hoursBox};transition:border-color 0.12s,background 0.12s"
            onfocusin="this.style.borderColor='#0d6e4e';this.style.background='#f0fdf4'" onfocusout="this.style.borderColor='#e2eaf2';this.style.background='#f4f7fa'">
           <input type="number" step="0.25" min="0.25" value="${e.hours}" title="Click to edit hours" class="te-inline-hours"
-            style="border:none;outline:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;width:56px;min-width:56px;text-align:right;padding:0;appearance:textfield"
+            style="border:none;outline:none;background:transparent;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;flex:1;min-width:0;text-align:right;padding:0;appearance:textfield"
             onfocus="this.select()"
             onblur="_teSaveInline('${e.id}','hours',this.value)"
             onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${e.hours}';this.blur();}"/>
           <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;flex-shrink:0">h</span>
         </div>`
-      :`<span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:6px;padding:2px 8px;white-space:nowrap">${e.hours}h</span>`;
+      :`<div style="${hoursBox}">
+          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33">${e.hours}</span>
+          <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;flex-shrink:0">h</span>
+        </div>`;
     const noteCell=canEdit
       ?`<div style="display:flex;align-items:center;gap:4px;min-width:0;width:100%">
           <textarea placeholder="Add a note…" title="Click to edit note" rows="1" class="_te-note-ta"
