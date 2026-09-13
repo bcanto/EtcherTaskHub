@@ -20229,6 +20229,15 @@ function wsBuildDropdownHtml(taskId,field){
       <div class="ws-dd-sep"></div>
       <div style="padding:8px 14px" onclick="event.stopPropagation()">
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:${_wsShowLinkInput?8:0}px">
+          <label class="ws-photo-btn" style="cursor:pointer">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6b8399;padding:4px 10px;border:1.5px solid #e2eaf2;border-radius:6px">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Photo
+            </span>
+            <!-- capture opens the camera directly instead of the file browser. Only relevant
+                 on a phone, so hidden on desktop by the .ws-photo-btn media rule — accept and
+                 capture together are otherwise just ignored there. Same handler as File. -->
+            <input type="file" accept="image/*" capture="environment" onchange="wsAddAttachment('${taskId}',this);event.stopPropagation()" style="display:none"/>
+          </label>
           <label style="cursor:pointer">
             <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${_wsShowLinkInput?'#97bcbd':'#6b8399'};padding:4px 10px;border:1.5px ${_wsShowLinkInput?'dashed #c8d4e0':'solid #e2eaf2'};border-radius:6px;transition:all 0.12s" onmouseover="this.style.borderColor='#97bcbd';this.style.color='#0d6e4e'" onmouseout="this.style.borderColor='${_wsShowLinkInput?'#c8d4e0':'#e2eaf2'}';this.style.color='${_wsShowLinkInput?'#97bcbd':'#6b8399'}'">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> File
