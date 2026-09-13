@@ -8227,7 +8227,7 @@ function logTimeFromModal(taskId){
   const hours=parseFloat(document.getElementById('tte-hours')?.value||'0');
   const note=(document.getElementById('tte-note')?.value||'').trim();
   const billable=document.getElementById('tte-billable')?.checked!==false;
-  const staffId=document.getElementById('tte-staff')?.value||currentUser.id;
+  const staffId=currentUser.role==='admin'?(document.getElementById('tte-staff')?.value||currentUser.id):currentUser.id;
   // Validate
   if(!date){showAlert('Date is required.','Validation');return;}
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
@@ -8694,7 +8694,7 @@ function saveEditTimeEntry(id){
   const earningsRateId=document.getElementById('ete-rate')?.value||e.earningsRateId||'er1';
   const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||e.earningsRateName||'Ordinary Hours';
   const billable=document.getElementById('ete-billable')?.checked!==false;
-  const staffId=document.getElementById('ete-staff')?.value||e.staffId;
+  const staffId=currentUser.role==='admin'?(document.getElementById('ete-staff')?.value||e.staffId):e.staffId;
   const task=taskId?DB.tasks.find(t=>t.id===taskId):null;
   const resolvedClientId=task?getTaskClient(task)?.id||clientId:clientId;
   e.taskId=taskId||null;
@@ -8969,7 +8969,9 @@ function logTime(){
   const mode=_teMode==='client'?'client':'task';
   const taskId=mode==='task'?(document.getElementById('te-task')?.value||''):'';
   const selectedClientId=mode==='client'?(document.getElementById('te-client')?.value||''):'';
-  const staffId=document.getElementById('te-staff')?.value||currentUser.id;
+  // Only an admin may log against another person. The Staff select is not rendered for
+  // anyone else, so this held by markup alone; state it in the handler too.
+  const staffId=currentUser.role==='admin'?(document.getElementById('te-staff')?.value||currentUser.id):currentUser.id;
   const hours=parseFloat(document.getElementById('te-hours')?.value||'0');
   const date=document.getElementById('te-date')?.value;
   const note=(document.getElementById('te-note')?.value||'').trim();
