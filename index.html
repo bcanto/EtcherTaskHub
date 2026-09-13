@@ -2422,13 +2422,16 @@ window.addEventListener('unhandledrejection',e=>{
 });
 
 // ── Toast notification system ──────────────────────────────────────────
-function showToast(msg,type,duration){
+// action is optional: {label,onClick} adds a button (e.g. "Undo") before the close-x.
+// Existing 3-argument callers are unaffected.
+function showToast(msg,type,duration,action){
   type=type||'info';duration=duration||4000;
   const root=document.getElementById('app-toast-root');if(!root)return;
   const icons={info:'ℹ',success:'✓',warning:'⚠',error:'✕'};
   const t=document.createElement('div');
   t.className='app-toast app-toast-'+type;
-  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+escHtml(msg)+'</span><button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button><div class="app-toast-progress" style="animation-duration:'+duration+'ms"></div>';
+  const actionBtn=action?'<button class="app-toast-x" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;width:auto;padding:0 8px" onclick="(('+action.onClick+'));this.closest(\'.app-toast\').remove()">'+escHtml(action.label)+'</button>':'';
+  t.innerHTML='<span style="font-size:14px;flex-shrink:0;line-height:1">'+(icons[type]||'ℹ')+'</span><span style="flex:1;line-height:1.45">'+escHtml(msg)+'</span>'+actionBtn+'<button class="app-toast-x" onclick="this.closest(\'.app-toast\').remove()">×</button><div class="app-toast-progress" style="animation-duration:'+duration+'ms"></div>';
   root.appendChild(t);
   setTimeout(()=>{try{t.style.animation='_toastOut 0.22s ease-in forwards';setTimeout(()=>{try{t.remove();}catch(_){}},240);}catch(_){}},duration);
 }
