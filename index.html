@@ -16100,11 +16100,8 @@ function wsCycleStatus(id){
 // until the row is saved. The column is only ~138px wide — too narrow for two date
 // inputs — so it opens the same Start / End popover as every other Timeline cell.
 let _wsInlineSubTL={start:'',end:''};
-function wsInlineSubTLOpen(evt){
-  evt.stopPropagation();
-  const dd=document.getElementById('ws-cell-dd'),body=document.getElementById('ws-cell-dd-body');
-  if(!dd||!body)return;
-  const r=evt.currentTarget.getBoundingClientRect();
+// Same body as a saved row's Timeline cell, calendar included — see _WS_INLINE_SUB.
+function _wsInlineSubTLHtml(){
   const fld=(lbl,key)=>`<div style="margin-bottom:8px">
       <div style="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${lbl}</div>
       <input type="date" value="${_wsInlineSubTL[key]}"
@@ -16112,11 +16109,24 @@ function wsInlineSubTLOpen(evt){
         onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
         onchange="wsInlineSubTLSet('${key}',this.value)"/>
     </div>`;
-  body.innerHTML=`<div style="padding:12px 14px;min-width:214px" onclick="event.stopPropagation()">
+  const has=_wsInlineSubTL.start||_wsInlineSubTL.end;
+  return`<div style="padding:12px 14px;min-width:246px" onclick="event.stopPropagation()">
     <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Timeline</div>
     ${fld('Start','start')}${fld('End / Due','end')}
-    <button onclick="wsInlineSubTLSet('start','');wsInlineSubTLSet('end','');wsCellClose()" style="background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>
+    <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
+    ${_wsCalHtml(_WS_INLINE_SUB)}
+    ${has?`<button onclick="wsClearDates('${_WS_INLINE_SUB}')" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>`:''}
   </div>`;
+}
+function wsInlineSubTLOpen(evt){
+  evt.stopPropagation();
+  const dd=document.getElementById('ws-cell-dd'),body=document.getElementById('ws-cell-dd-body');
+  if(!dd||!body)return;
+  const r=evt.currentTarget.getBoundingClientRect();
+  // The calendar's click handlers key off _wsCellTask, so claim it for the row that does
+  // not exist yet. wsCellClose() clears this along with the anchor and month.
+  _wsCellTask=_WS_INLINE_SUB;_wsCellField='duedate';
+  body.innerHTML=_wsInlineSubTLHtml();
   // Measure before placing so a row near the bottom flips above the cell.
   dd.style.visibility='hidden';dd.style.left=r.left+'px';dd.style.top='0px';dd.style.display='block';
   requestAnimationFrame(()=>{
@@ -16131,6 +16141,9 @@ function wsInlineSubTLOpen(evt){
 // the name the user is halfway through typing in the same row.
 function wsInlineSubTLSet(which,val){
   _wsInlineSubTL[which]=val||'';
+  // Keep the calendar's highlighting and its two date boxes in step, whichever of them
+  // the change came from.
+  _wsCalMark(_WS_INLINE_SUB);
   const cell=document.getElementById('ws-inline-subtask-tl');
   if(!cell)return;
   const has=_wsInlineSubTL.start||_wsInlineSubTL.end;
@@ -20168,13 +20181,33 @@ const _WS_CAL_DOW=['M','T','W','T','F','S','S'];
 function _wsCalMonthLabel(y,m){
   return new Date(Date.UTC(y,m-1,1)).toLocaleDateString('en-AU',{month:'long',year:'numeric',timeZone:'UTC'});
 }
+// The inline "add subitem" row has no task to write to yet, so its dates live in
+// _wsInlineSubTL until the row is saved. Rather than keep a second, cut-down copy of the
+// calendar for it — which is how it ended up with only two date boxes and no calendar at
+// all — the calendar reads and writes through these three, and this id stands in for the
+// row that does not exist yet. Everything else about it is identical.
+const _WS_INLINE_SUB='__inline_sub__';
+function _wsCalDates(taskId){
+  if(taskId===_WS_INLINE_SUB)return{startDate:_wsInlineSubTL.start||'',endDate:_wsInlineSubTL.end||''};
+  const t=DB.tasks.find(x=>x.id===taskId)||{};
+  return{startDate:t.startDate||'',endDate:t.endDate||''};
+}
+function _wsCalEditable(taskId){
+  if(taskId===_WS_INLINE_SUB)return true;
+  const t=DB.tasks.find(x=>x.id===taskId);
+  return !!t&&canEditTask(currentUser,t);
+}
+function _wsCalWrite(taskId,field,val){
+  if(taskId===_WS_INLINE_SUB){wsInlineSubTLSet(field==='startDate'?'start':'end',val);return;}
+  wsCellSave(taskId,field,val,true);
+}
 function _wsCalHtml(taskId){
-  const task=DB.tasks.find(t=>t.id===taskId)||{};
-  const seed=_wsCalMonth||(_wsCalAnchor||task.startDate||task.endDate||toDateStr(new Date())).slice(0,7);
+  const _d=_wsCalDates(taskId);
+  const seed=_wsCalMonth||(_wsCalAnchor||_d.startDate||_d.endDate||toDateStr(new Date())).slice(0,7);
   const y=+seed.slice(0,4), m=+seed.slice(5,7);
   const daysIn=new Date(Date.UTC(y,m,0)).getUTCDate();
   const lead=(new Date(Date.UTC(y,m-1,1)).getUTCDay()+6)%7;   // Monday-first
-  const sd=task.startDate||'', ed=task.endDate||'', today=toDateStr(new Date());
+  const sd=_d.startDate, ed=_d.endDate, today=toDateStr(new Date());
   let cells='';
   for(let i=0;i<lead;i++)cells+='<span class="ws-cal-pad"></span>';
   for(let d=1;d<=daysIn;d++){
@@ -20207,8 +20240,8 @@ function _wsCalHtml(taskId){
 function _wsCalMark(taskId){
   const body=document.getElementById('ws-cell-dd-body');
   if(!body||_wsCellTask!==taskId)return;
-  const t=DB.tasks.find(x=>x.id===taskId)||{};
-  const sd=t.startDate||'', ed=t.endDate||'', today=toDateStr(new Date());
+  const _d=_wsCalDates(taskId);
+  const sd=_d.startDate, ed=_d.endDate, today=toDateStr(new Date());
   body.querySelectorAll('.ws-cal-d').forEach(btn=>{
     const ds=btn.getAttribute('data-d')||'';
     const on=(!!sd&&ds===sd)||(!!ed&&ds===ed)||(!!_wsCalAnchor&&ds===_wsCalAnchor);
@@ -20227,11 +20260,12 @@ function _wsCalMark(taskId){
 }
 function _wsCalRepaint(taskId){
   const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'duedate');
+  if(!body||_wsCellTask!==taskId)return;
+  body.innerHTML=taskId===_WS_INLINE_SUB?_wsInlineSubTLHtml():wsBuildDropdownHtml(taskId,'duedate');
 }
 function wsCalNav(taskId,delta){
-  const task=DB.tasks.find(t=>t.id===taskId)||{};
-  const seed=_wsCalMonth||(_wsCalAnchor||task.startDate||task.endDate||toDateStr(new Date())).slice(0,7);
+  const _d=_wsCalDates(taskId);
+  const seed=_wsCalMonth||(_wsCalAnchor||_d.startDate||_d.endDate||toDateStr(new Date())).slice(0,7);
   let y=+seed.slice(0,4), m=+seed.slice(5,7)+delta;
   if(m<1){m=12;y--;} else if(m>12){m=1;y++;}
   _wsCalMonth=y+'-'+String(m).padStart(2,'0');
@@ -20240,21 +20274,20 @@ function wsCalNav(taskId,delta){
 // First click sets the start and clears the end; the second completes the range. Clicking
 // a day before the anchor is read as picking the range backwards rather than as an error.
 function wsCalPick(taskId,ds){
-  const task=DB.tasks.find(t=>t.id===taskId);
-  if(!task||!canEditTask(currentUser,task))return;
+  if(!_wsCalEditable(taskId))return;
   _wsCalMonth=ds.slice(0,7);
   if(!_wsCalAnchor){
     _wsCalAnchor=ds;
-    wsCellSave(taskId,'startDate',ds,true);
-    wsCellSave(taskId,'endDate','',true);
+    _wsCalWrite(taskId,'startDate',ds);
+    _wsCalWrite(taskId,'endDate','');
     _wsCalMark(taskId);   // in place: a rebuild here would eat the second click
     return;
   }
   const a=_wsCalAnchor;
   const start=ds<a?ds:a, end=ds<a?a:ds;
   _wsCalAnchor=null;
-  wsCellSave(taskId,'startDate',start,true);
-  wsCellSave(taskId,'endDate',end,true);
+  _wsCalWrite(taskId,'startDate',start);
+  _wsCalWrite(taskId,'endDate',end);
   wsCellClose();
 }
 // Restores a date box that was left mid-keystroke, so it never shows a year the task
@@ -20271,17 +20304,16 @@ function wsDateBlur(el,taskId,field){
 // against an earlier anchor, the popover has closed and this is left alone.
 function wsCalDouble(taskId,ds){
   if(_wsCellTask!==taskId)return;
-  const task=DB.tasks.find(t=>t.id===taskId);
-  if(!task||!canEditTask(currentUser,task))return;
+  if(!_wsCalEditable(taskId))return;
   _wsCalAnchor=null;
-  wsCellSave(taskId,'startDate',ds,true);
-  wsCellSave(taskId,'endDate',ds,true);
+  _wsCalWrite(taskId,'startDate',ds);
+  _wsCalWrite(taskId,'endDate',ds);
   wsCellClose();
 }
 function wsClearDates(taskId){
   _wsCalAnchor=null;
-  wsCellSave(taskId,'startDate','',true);
-  wsCellSave(taskId,'endDate','',true);
+  _wsCalWrite(taskId,'startDate','');
+  _wsCalWrite(taskId,'endDate','');
   _wsCalRepaint(taskId);
 }
 function wsCellSaveDate(taskId,field,value){
