@@ -8390,7 +8390,10 @@ function renderTime(){
     return`<option value="${t.id}">${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;
   }).join('');
   window._teTaskAllItems=DB.tasks.filter(t=>!t.archived).map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
-  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  // Nothing here was marked selected, so the browser pre-selected the first client
+  // alphabetically and a fresh form looked as though it had silently chosen one. Lead with
+  // an empty placeholder instead; logTime already rejects a blank client.
+  const clientOpts=`<option value="" disabled selected>Choose a client</option>`+[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
   const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id==='er1'?' selected':''}>${escHtml(r.name)}</option>`).join('');
 
