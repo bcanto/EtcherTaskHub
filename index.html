@@ -10041,6 +10041,10 @@ function pfiStatusMeta(s){
 function pfiDayName(d){return new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{weekday:'long',timeZone:'UTC'});}
 function pfiShortDay(d){return new Date(d+'T00:00:00Z').toLocaleDateString('en-AU',{weekday:'short',timeZone:'UTC'});}
 function pfiFmtDate(d){if(!d)return'';const[y,m,dd]=(d||'').split('-');return dd?`${dd}/${m}/${y}`:d;}
+// Line items store the raw time-entry value; these are the words that go in front of a client.
+function pfiLocationLabel(loc){
+  return{remote:'Remote',client_office:'In Client Office',office:'Etcher Office'}[loc]||'';
+}
 
 function pfiCreate(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
@@ -10195,7 +10199,10 @@ function pfiConfirmImport(invId){
       activityCode:(e.earningsRateName||'ORD').replace(/[aeiou\s]/gi,'').slice(0,4).toUpperCase()||'ORD',
       boardId:board?.id||null,boardName:board?.name||null,
       clientId:client?.id||e.clientId||null,clientName:client?.name||'',
-      clientCode:client?.shortCode||null,location:null,
+      // Was hardcoded null, so the Location column in the editor, the CSV export and the
+      // Excel export — all three already existed — have been blank on every invoice since
+      // this was written. Copy it from the source entry like every other field here does.
+      clientCode:client?.shortCode||null,location:e.location||null,
       hours:e.hours,sourceHours:e.hours,billable:e.billable!==false,
       description:e.note||'',note:e.note||'',descriptionEdited:false,manual:false,
     });
@@ -10353,7 +10360,7 @@ function pfiExportCSV(id){
       }
       lastDate=li.date;
     }
-    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',li.location||'',li.hours.toFixed(2),li.billable?'Yes':'No',li.description||li.note||'']);
+    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',pfiLocationLabel(li.location),li.hours.toFixed(2),li.billable?'Yes':'No',li.description||li.note||'']);
   });
   if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);}
   rows.push(['','','','','','','','','','','','','']);
@@ -10381,7 +10388,7 @@ function pfiExportExcel(id){
       const dH=sorted.filter(l=>l.date===li.date&&l.billable).reduce((s,l)=>s+l.hours,0);
       grpRow=`<tr style="background:#f1f5f9"><td colspan="10" style="padding:5px 8px;font-weight:bold;font-size:11px">${escHtml(pfiDayName(li.date)+', '+pfiFmtDate(li.date))}</td><td style="text-align:right;font-weight:bold;padding:5px 8px;font-size:11px">${dH.toFixed(2)}</td><td colspan="2"></td></tr>`;
     }
-    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(li.location||'')}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
+    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(pfiLocationLabel(li.location))}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
   }).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>table{border-collapse:collapse}td,th{border:1px solid #dee2e6}</style></head><body><table>
 <tr><td colspan="13" style="background:#0d1c33;color:#fff;font-size:15px;font-weight:bold;padding:8px">PRO FORMA HOURS REPORT — ${escHtml(inv.number)}</td></tr>
@@ -10414,6 +10421,10 @@ function pfiExportPDF(id){
       const client=DB.clients.find(c=>c.id===inv.clientId);
       const sorted=[...(inv.lineItems||[])].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffName||'').localeCompare(b.staffName||''));
       const t=pfiCalcTotals(inv);
+      // The client's document shows only what is being charged. A non-billable line is
+      // excluded work, not a zero-value line, so it is omitted rather than shown as a dash.
+      const billableLines=sorted.filter(li=>li.billable);
+      if(!billableLines.length){showAlert('This invoice has no billable lines to export.','Nothing to Export');return;}
       if(!window.jspdf)throw new Error('PDF library not loaded.');
       const{jsPDF}=window.jspdf;
       const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -10425,7 +10436,7 @@ function pfiExportPDF(id){
       doc.setFontSize(18);doc.setTextColor(...TEAL);
       doc.text('PRO FORMA HOURS REPORT',W-mX,y,{align:'right'});y+=5;
       doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...GREY);
-      doc.text('admin@etchersolutions.com',mX,y+=4);
+      doc.text('Accounts@etchersolutions.com.au',mX,y+=4);
       doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(...DARK);
       doc.text(inv.number,W-mX,y,{align:'right'});y+=2;
       doc.setDrawColor(...BORDER);doc.setLineWidth(0.4);doc.line(mX,y+=5,W-mX,y);y+=7;
@@ -10456,10 +10467,10 @@ function pfiExportPDF(id){
         alternateRowStyles:{fillColor:[250,251,253]},
         margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
         showHead:'everyPage',showFoot:'lastPage',
-        head:[['Date','Day','Team Member','Activity','Project','Hours','Incl.','Notes']],
-        body:sorted.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',li.hours.toFixed(2),li.billable?'✓':'—',li.description||li.note||'']),
-        foot:[['','','','','Total Hours',t.totalHrs.toFixed(2),'','']],
-        columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:36},3:{cellWidth:24},4:{cellWidth:24},5:{halign:'right',cellWidth:14},6:{halign:'center',cellWidth:12},7:{cellWidth:'auto'}},
+        head:[['Date','Day','Team Member','Activity','Project','Location','Hours','Notes']],
+        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(li.location),li.hours.toFixed(2),li.description||li.note||'']),
+        foot:[['','','','','','Total Hours',t.totalHrs.toFixed(2),'']],
+        columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:26},6:{halign:'right',cellWidth:14},7:{cellWidth:'auto'}},
       });
       const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=16;
       doc.setFillColor(248,251,255);doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);
@@ -10663,7 +10674,7 @@ function _pfiEditorHtml(inv){
       <td style="${tdS2}"><input type="number" value="${li.hours.toFixed(2)}" style="width:55px;padding:2px 5px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;text-align:right;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','hours',this.value)" min="0" step="0.25"/></td>
       <td style="${tdS2};text-align:right;font-size:12px;font-weight:700;color:${li.billable?'#178082':'#c8d7e1'};white-space:nowrap">${li.hours.toFixed(2)}${(li.sourceHours!=null&&Math.abs(li.sourceHours-li.hours)>0.004)?`<div title="Approved: ${li.sourceHours}h" style="font-size:9px;font-weight:700;color:#b45309;white-space:nowrap">was ${li.sourceHours}h</div>`:''}</td>
       <td style="${tdS2};text-align:center"><label style="cursor:pointer"><input type="checkbox" ${li.billable?'checked':''} style="accent-color:#0d1c33" onchange="pfiToggleBillable('${inv.id}','${li.id}')" title="Include in total"/></label></td>
-      <td style="${tdS2};color:#8da2b2;font-size:10px;white-space:nowrap">${escHtml(li.location||'')}</td>
+      <td style="${tdS2}"><select style="border:1px solid transparent;background:transparent;font-size:10px;color:#8da2b2;font-family:inherit;cursor:pointer" onchange="pfiSaveLineField('${inv.id}','${li.id}','location',this.value)"><option value=""${!li.location?' selected':''}>—</option><option value="remote"${li.location==='remote'?' selected':''}>Remote</option><option value="client_office"${li.location==='client_office'?' selected':''}>In Client Office</option><option value="office"${li.location==='office'?' selected':''}>Etcher Office</option></select></td>
       <td style="${tdS2}"><button onclick="pfiRemoveLine('${inv.id}','${li.id}')" style="padding:0 7px;height:22px;border-radius:4px;font-size:10px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c" title="Remove">✕</button></td>
     </tr>`;
   });
