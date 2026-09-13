@@ -9344,14 +9344,20 @@ function tsBulkApprove(){
   const ids=[...tsSelectedIds];const now=new Date().toISOString();let count=0;
   ids.forEach(id=>{
     const e=DB.timeEntries.find(t=>t.id===id);
-    if(e&&e.status==='submitted'){
+    // Was 'submitted' only, which quietly matched nothing on a board of drafts: entries are
+    // created as draft and the Submit button is rendered for non-admins alone, so an admin's
+    // own time never reaches submitted. The single-row tick approves a draft happily, so the
+    // two disagreed — approve anything not already approved, as that button does.
+    if(e&&e.status!=='approved'){
       e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
       delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
       e.updatedAt=now;count++;
     }
   });
   saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
+  // Never finish silently: a run that changed nothing used to look identical to one that worked.
   if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved.`,'Timesheets Approved');
+  else showAlert('Nothing to approve — every entry selected was already approved.','Timesheets');
 }
 function openTsBulkRejectModal(){
   const ids=[...tsSelectedIds];
@@ -9413,7 +9419,7 @@ function tsBulkApproveForStaff(staffId,fortnightEnding){
   const allDays=[...tsGetWeekDates(w1),...tsGetWeekDates(w2)];
   const now=new Date().toISOString();let count=0;
   (DB.timeEntries||[]).forEach(e=>{
-    if(e.staffId===staffId&&allDays.includes(e.date)&&e.status==='submitted'){
+    if(e.staffId===staffId&&allDays.includes(e.date)&&e.status!=='approved'){
       e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
       delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
       e.updatedAt=now;count++;
@@ -9421,6 +9427,7 @@ function tsBulkApproveForStaff(staffId,fortnightEnding){
   });
   saveDB(DB);renderView('reports');
   if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved for this fortnight.`,'Timesheets Approved');
+  else showAlert('Nothing to approve — this fortnight has no entries awaiting approval.','Timesheets');
 }
 function openTsBulkRejectForStaff(staffId,fortnightEnding){
   const staff=getStaff(staffId);
