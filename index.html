@@ -8258,7 +8258,11 @@ function logTimeFromModal(taskId){
   if(!staffId){showAlert('Staff member is required.','Validation');return;}
   if(!note){showAlert('Add a note describing the work. Every timesheet entry needs one.','Note Required');document.getElementById('tte-note')?.focus();return;}
   const clientId=task.clientId||(getTaskClient(task)?.id)||'';
-  const mEntry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  // This carried no status at all, and _migrateDB fills a missing one with 'approved' — so
+  // time logged from the task modal quietly approved itself on the next load, skipping
+  // approval entirely. Set it explicitly, like every other entry.
+  const _mNow=new Date().toISOString();
+  const mEntry={id:'te'+uid(),taskId,staffId,clientId,date,hours,note,billable,status:'submitted',submittedAt:_mNow,createdAt:_mNow,updatedAt:_mNow};
   DB.timeEntries.push(mEntry);
   writeAuditEvent('TimeEntry',mEntry.id,'created',null,{taskId,staffId,date,hours,billable,note:note||null});
   applyHourBudgetPct(taskId);
@@ -9018,7 +9022,11 @@ function logTime(){
   if(isNaN(hours)||hours<=0){showAlert('Hours must be greater than 0.','Validation');return;}
   const task=mode==='task'?DB.tasks.find(t=>t.id===taskId):null;
   const clientId=mode==='client'?selectedClientId:((task?task.clientId||(getTaskClient(task)?.id):'')||'');
-  const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'draft',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  // Logged time goes straight to submitted. Draft was a state nobody could leave: the Submit
+  // button is rendered for non-admins only, so an admin's own entries sat in Draft for good
+  // and never reached Pending Approval.
+  const _now=new Date().toISOString();
+  const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'submitted',submittedAt:_now,createdAt:_now,updatedAt:_now};
   DB.timeEntries.push(entry);
   writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
   if(taskId)applyHourBudgetPct(taskId);
@@ -15423,7 +15431,8 @@ function mnBulkAddTimesheet(scope){
         date:m.date,hours:+(mins/60).toFixed(2),
         note:(m.title||'Meeting'),billable:m.billing==='billable',location:'office',
         earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
-        status:'draft',meetingAllocations:lines,createdAt:new Date().toISOString()});
+        status:'submitted',submittedAt:new Date().toISOString(),
+        meetingAllocations:lines,createdAt:new Date().toISOString()});
       made++;
     });
   });
@@ -18064,7 +18073,8 @@ function mtgApplyTimesheets(m){
         date:m.date,hours:+(line.minutes/60).toFixed(2),
         note:m.title||'Meeting',billable:billing==='billable',location:'office',
         earningsRateId:'er1',earningsRateName:m.tsCategory||'Meeting Attended',
-        status:'draft',createdAt:new Date().toISOString()});
+        status:'submitted',submittedAt:new Date().toISOString(),
+        createdAt:new Date().toISOString()});
       made++;
     });
   });
