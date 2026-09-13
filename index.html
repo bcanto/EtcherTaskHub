@@ -2891,6 +2891,32 @@ let ganttColorBy='status';
 let ganttCollapsed=new Set();
 // The statuses that mean "finished". Progress goes to 100% on any of them.
 const _TASK_DONE_STATUSES=['done','completed','completed-approved'];
+// One place deciding what a status change does to progress. Six call sites each carried
+// their own version of this and five were one-way: they set 100% on the way into done and
+// left it there on the way out, so a task reverted to Not Started still read 100%.
+// Only a task actually leaving a done status is reset. Moving between two unfinished
+// statuses — in-progress at 40% to blocked — must keep the progress it already had.
+function _applyStatusProgress(task,newStatus,prevStatus){
+  if(!task)return;
+  const wasDone=_TASK_DONE_STATUSES.includes(prevStatus);
+  const isDone=_TASK_DONE_STATUSES.includes(newStatus);
+  // A task measured against an hour budget has its progress computed from logged time by
+  // applyHourBudgetPct. Forcing 100 or 0 here would overwrite that until the next time entry
+  // recomputed it, so the progress of those tasks belongs to the calculation that owns it.
+  // completedAt is still ours either way.
+  const ownedByHours=task.percentMode==='hour_budget'&&!!task.hourBudget;
+  if(isDone){
+    if(!ownedByHours)task.percentComplete=100;
+    if(!wasDone)task.completedAt=new Date().toISOString();
+  }else{
+    task.completedAt=null;
+    if(ownedByHours)return;
+    // Only clear the 100% that completing the task put there. A figure someone typed while
+    // it was done — 40% on a completed-approved item — is a deliberate value rather than a
+    // leftover, so it survives the status change (three-asks-test asserts exactly this).
+    if(wasDone&&task.percentComplete===100)task.percentComplete=0;
+  }
+}
 // Parents whose subitems are showing on the Gantt. Collapsed by default: a board with
 // subitems on every task would otherwise open as hundreds of rows.
 let ganttExpanded=new Set();
@@ -6651,9 +6677,7 @@ function onDrop(e,newStatus){
   const wasStatus=task.status;
   task.status=newStatus;
   task.updatedAt=new Date().toISOString();
-  if(newStatus==='done'){task.percentComplete=100;if(wasStatus!=='done')task.completedAt=new Date().toISOString();}
-  else{task.completedAt=null;}
-  if(newStatus==='in-progress'&&task.percentComplete===0) task.percentComplete=0;
+  _applyStatusProgress(task,newStatus,wasStatus);
   saveDB(DB);
   renderView('board');
 }
@@ -14434,9 +14458,8 @@ function saveTask(){
         notify(t.currentlyWithUserId,t.id,'currently_with',`Task is now with you: ${t.name}`);
       }
     }
-    // Set/clear completedAt
-    if(t.status==='done'&&old.status!=='done') t.completedAt=new Date().toISOString();
-    else if(t.status!=='done'&&old.status==='done') t.completedAt=null;
+    // Progress follows the status in both directions — see _applyStatusProgress.
+    _applyStatusProgress(t,t.status,old.status);
     t.updatedAt=new Date().toISOString();
     // Cascade downstream dates if end date changed
     if(old.endDate!==t.endDate) cascadeDates(t.id);
@@ -15650,8 +15673,9 @@ function _wsToggleExpandInPlace(id,expanding){
 }
 function wsToggleDone(id,checked){
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
+  const _was=t.status;
   t.status=checked?'done':'todo';
-  if(checked){t.percentComplete=100;t.completedAt=new Date().toISOString();}
+  _applyStatusProgress(t,t.status,_was);
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
 }
@@ -15729,9 +15753,10 @@ function wsBulkSetStatus(status){
   [...wsSelected].forEach(id=>{
     const t=DB.tasks.find(x=>x.id===id);
     if(!t)return;
+    const _was=t.status;
     t.status=status;
     t.updatedAt=new Date().toISOString();
-    if(status==='done'||status==='completed'){t.completedAt=new Date().toISOString();t.percentComplete=100;}
+    _applyStatusProgress(t,status,_was);
   });
   saveDB(DB);renderView('workspace');
 }
@@ -15833,8 +15858,9 @@ function wsCycleStatus(id){
   const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','change-requested','completed-approved','done','blocked','cancelled'];
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   const idx=CYCLE.indexOf(t.status);
+  const _was=t.status;
   t.status=CYCLE[idx>=0?(idx+1)%CYCLE.length:0];
-  if(t.status==='done'||t.status==='completed'){t.percentComplete=100;t.completedAt=new Date().toISOString();}
+  _applyStatusProgress(t,t.status,_was);
   t.updatedAt=new Date().toISOString();
   saveDB(DB);renderView('workspace');
 }
@@ -18602,18 +18628,14 @@ function tpSaveField(field,value){
   // first digit of the year — do not store one until the year is complete.
   if((field==='startDate'||field==='endDate')&&!_dateReady(value))return;
   if(!canEditTask(currentUser,_tpCurrentTask))return;
+  // Captured before the write. prevStatus below is read after it and is therefore the new
+  // value; the approval check at the foot of this function relies on that, so leave it be.
+  const _tpWasStatus=field==='status'?_tpCurrentTask.status:null;
   _tpCurrentTask[field]=value;
   _tpCurrentTask.updatedAt=new Date().toISOString();
   const prevStatus=field==='status'?(_tpCurrentTask.status):null;
   if(field==='status'){
-    // Marking a task complete takes progress with it. The reverse (100% → done) was already
-    // wired below; from the header dropdown it was not, so a finished task sat on 11%.
-    // Every other route to "done" — the bulk bar, the row checkbox, My Week — already did this.
-    if(_TASK_DONE_STATUSES.includes(value)){
-      if(!_tpCurrentTask.completedAt)_tpCurrentTask.completedAt=new Date().toISOString();
-      _tpCurrentTask.percentComplete=100;
-    }
-    else _tpCurrentTask.completedAt=null;
+    _applyStatusProgress(_tpCurrentTask,value,_tpWasStatus);
   }
   let _pctStatusChanged=false;
   if(field==='percentComplete'){
@@ -19843,6 +19865,10 @@ function wsCellSave(taskId,field,value,keepOpen){
     const oldVal=task[field];
     task[field]=value;
     task.updatedAt=new Date().toISOString();
+    // The Main Table status dropdown routes here. It synced progress to status but never
+    // status to progress, so this one cell disagreed with every other way of setting a
+    // status: Completed left progress untouched. Same rule as everywhere else now.
+    if(field==='status'){_applyStatusProgress(task,value,oldVal);}
     if(field==='percentComplete'){
       const pct=value;const st=task.status;
       if(pct===100){task.status='done';if(!task.completedAt)task.completedAt=new Date().toISOString();}
@@ -21454,7 +21480,9 @@ function cpSubmitChangesRequest(taskId){
   if(!task||!canViewTask(currentUser,task))return;
   const now=new Date().toISOString();
   task.clientApproval={status:'changes-requested',note:notes,at:now};
+  const _wasCR=task.status;
   task.status='change-requested';
+  _applyStatusProgress(task,'change-requested',_wasCR);
   task.currentlyWithType='staff';
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
@@ -21605,7 +21633,10 @@ function cpApproveTask(taskId){
   task.clientApproval={status:'approved',note:null,at:new Date().toISOString(),approvedBy:currentUser.name||'Client'};
   // Final delivery approvals go straight to completed-approved; all others go to approved-client (Incoming Approvals)
   const isFinalDelivery=task.approvalType==='final';
+  const _was=task.status;
   task.status=isFinalDelivery?'completed-approved':'approved-client';
+  // completed-approved is a finished status, so progress follows it here too.
+  _applyStatusProgress(task,task.status,_was);
   task.currentlyWithType='staff';
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
@@ -21637,7 +21668,9 @@ function cpSubmitChanges(taskId){
   if(!task||!canViewTask(currentUser,task))return;
   if(!task.awaitingClient&&task.currentlyWithType!=='client'&&task.status!=='ready-approval'&&task.status!=='waiting-client')return;
   task.clientApproval={status:'changes-requested',note,at:new Date().toISOString()};
+  const _wasCR=task.status;
   task.status='change-requested';
+  _applyStatusProgress(task,'change-requested',_wasCR);
   task.currentlyWithType='staff';
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
