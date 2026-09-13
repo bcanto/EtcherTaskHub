@@ -9497,6 +9497,98 @@ function tsExportCSV(){
   const cn=tsClientFilter!=='all'?'_'+(DB.clients.find(c=>c.id===tsClientFilter)?.name||'').replace(/\s+/g,'_'):'';
   a.download=`Timesheets${sn}${cn}_${from}_to_${to}.csv`;a.click();
 }
+// Export exactly what the Reports table is showing — same _tsFilterEntries() set, same
+// columns, same order — as a landscape PDF. CSV is for Xero and spreadsheets; this is the
+// version you can send to someone or file against a client.
+function tsExportPDF(){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  const entries=_tsFilterEntries().sort((a,b)=>a.date.localeCompare(b.date));
+  if(!entries.length){showAlert('No entries match the current filters.','Nothing to Export');return;}
+  const btn=document.getElementById('ts-export-pdf-btn');
+  const setBusy=on=>{if(!btn)return;btn.disabled=on;btn.textContent=on?'Generating…':'↓ PDF';btn.style.opacity=on?'0.7':'1';};
+  setBusy(true);
+  _ensureJsPdf(()=>{
+    // Let the browser paint the busy state before the synchronous build blocks it.
+    setTimeout(()=>{
+      try{
+        const {jsPDF}=window.jspdf;
+        const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+        const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),mX=12;
+        const DARK=[13,28,51],TEAL=[23,120,130],GREY=[90,90,90],BORDER=[210,218,228];
+        const fmtD=d=>(d||'').split('-').reverse().join('/');
+        const hrs=n=>n.toFixed(1)+'h';
+        let y=14;
+        doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...DARK);
+        doc.text('Etcher Solutions Pty Ltd',mX,y);
+        doc.setFontSize(17);doc.setTextColor(...TEAL);
+        doc.text('Timesheet Report',W-mX,y,{align:'right'});
+        y+=6;
+        // What was on screen when this was exported, so the numbers can be accounted for later.
+        const staffName=tsStaffFilter!=='all'?(getStaff(tsStaffFilter)?.name||''):'All staff';
+        const clientName=tsClientFilter!=='all'?(DB.clients.find(c=>c.id===tsClientFilter)?.name||''):'All clients';
+        const from=tsDateFrom||entries[0].date,to=tsDateTo||entries[entries.length-1].date;
+        const tabLabel={all:'All',pending:'Pending approval',approved:'Approved',rejected:'Rejected',draft:'Draft'}[tsStatusTab]||'All';
+        doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...GREY);
+        doc.text(`${fmtD(from)} to ${fmtD(to)}  ·  ${staffName}  ·  ${clientName}  ·  ${tabLabel}`,mX,y);
+        doc.text('Generated '+new Date().toLocaleString(),W-mX,y,{align:'right'});
+        y+=5;
+        doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);doc.line(mX,y,W-mX,y);y+=6;
+        // Totals, mirroring the cards above the table.
+        const t=entries.reduce((s,e)=>s+e.hours,0);
+        const bill=entries.filter(e=>e.billable!==false).reduce((s,e)=>s+e.hours,0);
+        const stats=[['Total',hrs(t)],['Billable',hrs(bill)],['Non-billable',hrs(t-bill)],
+          ['Pending',hrs(entries.filter(e=>e.status==='submitted').reduce((s,e)=>s+e.hours,0))],
+          ['Approved',hrs(entries.filter(e=>e.status==='approved').reduce((s,e)=>s+e.hours,0))],
+          ['Rejected',hrs(entries.filter(e=>e.status==='rejected').reduce((s,e)=>s+e.hours,0))],
+          ['Draft',hrs(entries.filter(e=>!e.status||e.status==='draft').reduce((s,e)=>s+e.hours,0))]];
+        const bw=(W-mX*2-6*3)/7,bh=13;
+        stats.forEach(([label,val],i)=>{
+          const x=mX+i*(bw+3);
+          doc.setFillColor(248,251,253);doc.setDrawColor(...BORDER);doc.roundedRect(x,y,bw,bh,1.5,1.5,'FD');
+          doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(...GREY);
+          doc.text(label.toUpperCase(),x+3,y+4.8);
+          doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...DARK);
+          doc.text(val,x+3,y+10.4);
+        });
+        y+=bh+6;
+        doc.autoTable({
+          startY:y,
+          styles:{fontSize:7.6,cellPadding:2,font:'helvetica',textColor:[30,30,30],overflow:'linebreak'},
+          headStyles:{fillColor:DARK,textColor:[255,255,255],fontStyle:'bold',lineColor:BORDER,lineWidth:0.3},
+          footStyles:{fillColor:[240,244,248],textColor:DARK,fontStyle:'bold'},
+          bodyStyles:{lineColor:[230,236,244],lineWidth:0.2},
+          alternateRowStyles:{fillColor:[250,251,253]},
+          margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
+          showHead:'everyPage',showFoot:'lastPage',
+          head:[['Date','Staff','Client','Task','Earnings Rate','Hours','Type','Status','Note']],
+          body:entries.map(e=>{
+            const task=e.taskId?DB.tasks.find(x=>x.id===e.taskId):null;
+            const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
+            return[fmtD(e.date),getStaff(e.staffId)?.name||'',client?.name||'',
+              task?(task.name||task.title||''):'—',e.earningsRateName||'Ordinary Hours',
+              e.hours.toFixed(1),e.billable!==false?'Bill.':'Non-bill.',
+              tsStatusMeta(e.status).label,e.note||''];
+          }),
+          foot:[['','','','','Total',t.toFixed(1),'','','']],
+          columnStyles:{0:{cellWidth:20},1:{cellWidth:30},2:{cellWidth:28},3:{cellWidth:42},
+            4:{cellWidth:26},5:{halign:'right',cellWidth:14},6:{halign:'center',cellWidth:17},
+            7:{halign:'center',cellWidth:20},8:{cellWidth:'auto'}},
+        });
+        const pages=doc.internal.getNumberOfPages();
+        for(let p=1;p<=pages;p++){
+          doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...GREY);
+          doc.text(`Page ${p} of ${pages}`,W-mX,H-6,{align:'right'});
+          doc.text(`${entries.length} entr${entries.length!==1?'ies':'y'}`,mX,H-6);
+        }
+        const sn=tsStaffFilter!=='all'?'_'+(getStaff(tsStaffFilter)?.name||'').replace(/\s+/g,'_'):'';
+        const cn=tsClientFilter!=='all'?'_'+(DB.clients.find(c=>c.id===tsClientFilter)?.name||'').replace(/\s+/g,'_'):'';
+        doc.save(`Timesheets${sn}${cn}_${from}_to_${to}.pdf`);
+      }catch(err){
+        showAlert(err.message||'Could not build the PDF.','PDF Error');
+      }finally{setBusy(false);}
+    },30);
+  },()=>setBusy(false));
+}
 function tsExportXeroCSV(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const fe=tsFortnightEnding||tsDefaultFortnightEnding();
@@ -9832,6 +9924,7 @@ function _rptTimesheetHtml(){
     </select></div>
     <div style="margin-left:auto;display:flex;gap:6px;align-items:flex-end">
       <button onclick="tsExportCSV()" class="btn btn-ghost btn-sm" style="white-space:nowrap">↓ CSV</button>
+      <button id="ts-export-pdf-btn" onclick="tsExportPDF()" class="btn btn-ghost btn-sm" style="white-space:nowrap">↓ PDF</button>
       <button onclick="tsExportXeroCSV()" class="btn btn-teal btn-sm" style="white-space:nowrap">↓ Xero CSV</button>
       ${anyFilter?`<button onclick="tsClearFilters()" style="padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:#fee2e2;color:#991b1b;white-space:nowrap">✕ Clear</button>`:''}
     </div>
