@@ -9987,7 +9987,10 @@ function pfiNextNumber(){
 }
 function pfiCalcTotals(inv){
   const totalHrs=(inv.lineItems||[]).filter(l=>l.billable).reduce((s,l)=>s+l.hours,0);
-  return{totalHrs};
+  // Approved hours minus billed hours: what is deliberately not being charged. Internal-only —
+  // never surface this on a client-facing export, only in the editor totals.
+  const writeOff=(inv.lineItems||[]).reduce((s,l)=>s+((l.sourceHours!=null?l.sourceHours:l.hours)-l.hours),0);
+  return{totalHrs,writeOff};
 }
 // Every time entry already claimed by a line item on ANY invoice (except excludeInvoiceId).
 // → Map<timeEntryId, {invoiceId, number, status}>. Used to flag double-billing.
@@ -10010,12 +10013,16 @@ function pfiDiffAgainstSource(inv){
     const e=(DB.timeEntries||[]).find(x=>x.id===li.timeEntryId);
     if(!e||e.deletedAt){orphaned.push(li);return;}
     if(e.status!=='approved')unapproved.push({li,entry:e});
+    // A field the biller has edited is no longer "stale" when it differs from the entry —
+    // differing is the entire point. Only unedited fields can drift.
+    const edited=new Set(li.editedFields||[]);
+    if(li.descriptionEdited)edited.add('description');
     const fields=[];
-    if(e.hours!==li.hours)fields.push('hours');
-    if(e.date!==li.date)fields.push('date');
-    if(!li.descriptionEdited&&(e.note||'')!==(li.description||''))fields.push('description');
-    if(e.staffId!==li.staffId)fields.push('staff');
-    if((e.earningsRateName||'Ordinary Hours')!==li.activity)fields.push('activity');
+    if(!edited.has('hours')&&e.hours!==li.hours)fields.push('hours');
+    if(!edited.has('date')&&e.date!==li.date)fields.push('date');
+    if(!edited.has('description')&&(e.note||'')!==(li.description||''))fields.push('description');
+    if(!edited.has('staffId')&&e.staffId!==li.staffId)fields.push('staff');
+    if(!edited.has('activity')&&(e.earningsRateName||'Ordinary Hours')!==li.activity)fields.push('activity');
     if(fields.length)stale.push({li,entry:e,fields});
   });
   return{stale,orphaned,unapproved};
@@ -10189,7 +10196,7 @@ function pfiConfirmImport(invId){
       boardId:board?.id||null,boardName:board?.name||null,
       clientId:client?.id||e.clientId||null,clientName:client?.name||'',
       clientCode:client?.shortCode||null,location:null,
-      hours:e.hours,billable:e.billable!==false,
+      hours:e.hours,sourceHours:e.hours,billable:e.billable!==false,
       description:e.note||'',note:e.note||'',descriptionEdited:false,manual:false,
     });
   });
@@ -10257,6 +10264,9 @@ function pfiSaveLineField(invId,liId,field,value){
   if(field==='hours')li.hours=parseFloat(value)||0;
   else li[field]=value;
   if(field==='description')li.descriptionEdited=true;
+  // Every field a person edits here is a deliberate billing decision. Record it so re-sync
+  // cannot quietly restore the payroll figure over the top of a write-off.
+  (li.editedFields=li.editedFields||[]).includes(field)||li.editedFields.push(field);
   if(field==='staffId'){const s=getStaff(value);li.staffName=s?.name||'Unknown';li.memberCode=s?.initials||'';}
   inv.updatedAt=new Date().toISOString();
   (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'line_edited',liId,field,actorId:currentUser.id,at:new Date().toISOString()});
@@ -10651,7 +10661,7 @@ function _pfiEditorHtml(inv){
       <td style="${tdS2};color:#6b8399;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${li.billable?'':';opacity:0.7'}" title="${escHtml(li.boardName||li.taskTitle||'')}">${escHtml(li.boardName||li.taskTitle||'—')}</td>
       <td style="${tdS2};max-width:180px"><input type="text" value="${escHtml(li.description||li.note||'')}" style="width:100%;padding:2px 6px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','description',this.value)" placeholder="Description…"/></td>
       <td style="${tdS2}"><input type="number" value="${li.hours.toFixed(2)}" style="width:55px;padding:2px 5px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;text-align:right;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','hours',this.value)" min="0" step="0.25"/></td>
-      <td style="${tdS2};text-align:right;font-size:12px;font-weight:700;color:${li.billable?'#178082':'#c8d7e1'};white-space:nowrap">${li.hours.toFixed(2)}</td>
+      <td style="${tdS2};text-align:right;font-size:12px;font-weight:700;color:${li.billable?'#178082':'#c8d7e1'};white-space:nowrap">${li.hours.toFixed(2)}${(li.sourceHours!=null&&Math.abs(li.sourceHours-li.hours)>0.004)?`<div title="Approved: ${li.sourceHours}h" style="font-size:9px;font-weight:700;color:#b45309;white-space:nowrap">was ${li.sourceHours}h</div>`:''}</td>
       <td style="${tdS2};text-align:center"><label style="cursor:pointer"><input type="checkbox" ${li.billable?'checked':''} style="accent-color:#0d1c33" onchange="pfiToggleBillable('${inv.id}','${li.id}')" title="Include in total"/></label></td>
       <td style="${tdS2};color:#8da2b2;font-size:10px;white-space:nowrap">${escHtml(li.location||'')}</td>
       <td style="${tdS2}"><button onclick="pfiRemoveLine('${inv.id}','${li.id}')" style="padding:0 7px;height:22px;border-radius:4px;font-size:10px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c" title="Remove">✕</button></td>
@@ -10672,9 +10682,13 @@ function _pfiEditorHtml(inv){
       <tbody>${lineRows}</tbody>
     </table></div></div>`;
 
+  // Internal-only figure — what was approved for payroll but is not being charged to this
+  // client. Never render this on a client-facing export (PDF/Excel), only here in the editor.
+  const writeOffRow=t.writeOff>0.004?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><span style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:0.04em">Not charged</span><span style="font-size:13px;font-weight:700;color:#b45309">${t.writeOff.toFixed(2)}h</span></div>`:'';
   const totalsCard=`<div class="card" style="padding:16px 20px;margin-bottom:12px">
     <div style="display:flex;justify-content:flex-end">
       <div style="min-width:220px">
+        ${writeOffRow}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:2px solid #e4ecf4"><span style="font-size:15px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">TOTAL HOURS</span><span style="font-size:28px;font-weight:700;font-family:'Jost',sans-serif;color:#178082">${t.totalHrs.toFixed(2)}<span style="font-size:14px;font-weight:500;color:#8da2b2">h</span></span></div>
       </div>
     </div>
