@@ -2600,7 +2600,13 @@ function _ensureJsPdf(callback,onerror){
   const s1=document.createElement('script');
   s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
   s1.crossOrigin='anonymous';
-  s1.integrity='sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTHgtNA==';
+  // This hash was missing a character (87 base64 chars instead of a valid 88), so it could
+  // never match the real file — every SRI check failed closed and the browser refused to
+  // run jsPDF, with no detail beyond a generic load error. Every PDF export in the app shares
+  // this loader, so all of them — pro forma, reports, quotes, this session's timesheet export
+  // — were broken by this typo, not by network or CSP. Recomputed from the actual file at
+  // this pinned URL.
+  s1.integrity='sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==';
   s1.onerror=()=>{showAlert('Failed to load PDF library. Check your internet connection.','PDF Error');if(onerror)onerror();};
   s1.onload=()=>{
     const s2=document.createElement('script');
