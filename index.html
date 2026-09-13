@@ -15369,6 +15369,22 @@ function wsStartInlineAdd(sectionId,groupId){
   renderView('workspace');
   setTimeout(()=>document.getElementById('ws-inline-name')?.focus(),40);
 }
+// Shared by the desktop inline-add row and the mobile quick-add sheet, so the two can never
+// construct a task differently. groupId defaults to the last-used group, then the board's
+// first — the same fallback wsSaveInlineTask always used.
+function _wsBuildNewTask(opts){
+  const groupId=opts.groupId||wsInlineAddGroupId||getWbDefaultGroup();
+  const grp=DB.groups.find(g=>g.id===groupId);
+  const cwith=opts.cwith||'internal';
+  const ownerId=opts.ownerId||currentUser.id;
+  const _now=new Date().toISOString();
+  return{id:'t'+uid(),groupId,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:grp?.clientId||null,
+    name:opts.name,status:opts.status||'todo',priority:opts.priority||'med',ownerId,
+    currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),
+    currentlyWithUserId:cwith==='client'?null:ownerId||null,
+    percentComplete:opts.pct||0,startDate:opts.startDate||new Date().toISOString().slice(0,10),endDate:opts.endDate||'',
+    hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+}
 function wsSaveInlineTask(){
   const name=(document.getElementById('ws-inline-name')?.value||'').trim();
   if(!name){wsCancelInlineAdd();return;}
@@ -15379,10 +15395,7 @@ function wsSaveInlineTask(){
   const endDate=document.getElementById('ws-inline-duedate')?.value||'';
   const startDate=document.getElementById('ws-inline-startdate')?.value||'';
   const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
-  const _now=new Date().toISOString();
-  const _gid=wsInlineAddGroupId||getWbDefaultGroup();
-  const _grp=DB.groups.find(g=>g.id===_gid);
-  const _inlineTask={id:'t'+uid(),groupId:_gid,workboardId:currentWorkboard?.id||DB.workboards[0]?.id||'',clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+  const _inlineTask=_wsBuildNewTask({name,status,priority,ownerId,cwith,startDate,endDate,pct});
   DB.tasks.push(_inlineTask);
   notifyTaskCreated(_inlineTask);
   saveDB(DB);wsCancelInlineAdd();
@@ -15413,6 +15426,61 @@ function wsHandlePasteMultiline(e){
   wsCancelInlineAdd();
 }
 function wsCancelInlineAdd(){wsInlineAddSectionId=null;wsInlineAddGroupId=null;renderView('workspace');}
+
+// ── Mobile quick-add sheet ──────────────────────────────────────────────
+// Same statuses as the desktop inline row (STATUS_META filtered the same way), same
+// _wsBuildNewTask used there, same notifyTaskCreated/saveDB — a different form in front of
+// the identical save path, not a second way of creating a task.
+function wsQuickAddOpen(){
+  if(!currentWorkboard)return;
+  const groups=getWbGroups();
+  const groupOpts=groups.map((g,i)=>`<option value="${g.id}"${(wsInlineAddGroupId||groups[0]?.id)===g.id?' selected':''}>${escHtml(g.name)}</option>`).join('');
+  const statusOpts=Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}"${k==='todo'?' selected':''}>${v.label}</option>`).join('');
+  document.getElementById('ws-quickadd-body').innerHTML=`
+    <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin-bottom:12px">New item</div>
+    <input id="qa-name" type="text" placeholder="Task name…" enterkeyhint="done" autocapitalize="sentences"
+      style="width:100%;box-sizing:border-box;height:46px;padding:0 14px;border:1.5px solid #e2eaf2;border-radius:10px;font-size:15px;font-family:'Lato',sans-serif;outline:none"
+      onkeydown="if(event.key==='Enter'){this.blur();wsQuickAddSave();}"/>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <select id="qa-group" class="ws-inline-select" style="height:38px;flex:1;min-width:110px">${groupOpts}</select>
+      <select id="qa-priority" class="ws-inline-select" style="height:38px">
+        <option value="low">▼ Low</option><option value="med" selected>● Medium</option>
+        <option value="high">▲ High</option><option value="crit">‼ Critical</option>
+      </select>
+    </div>
+    <button type="button" onclick="this.nextElementSibling.style.display='block';this.style.display='none'"
+      style="background:none;border:none;color:#0d6e4e;font-size:12px;font-weight:700;padding:10px 0;cursor:pointer">⌄ More details</button>
+    <div style="display:none">
+      <div class="mobile-field-label">Status</div>
+      <select id="qa-status" class="ws-inline-select" style="height:38px;width:100%">${statusOpts}</select>
+      <div class="mobile-field-label">Due date</div>
+      <input id="qa-duedate" type="date" class="ws-inline-select" style="height:38px;width:100%"/>
+    </div>
+    <button id="qa-save-btn" onclick="wsQuickAddSave()" class="btn btn-teal" style="width:100%;height:48px;font-size:14px;margin-top:16px">Save item</button>`;
+  document.getElementById('ws-quickadd-wrap').classList.add('open');
+  setTimeout(()=>document.getElementById('qa-name')?.focus(),250);
+}
+function wsQuickAddClose(){document.getElementById('ws-quickadd-wrap')?.classList.remove('open');}
+function wsQuickAddSave(){
+  const name=(document.getElementById('qa-name')?.value||'').trim();
+  if(!name){document.getElementById('qa-name')?.focus();return;}
+  const groupId=document.getElementById('qa-group')?.value||'';
+  const status=document.getElementById('qa-status')?.value||'todo';
+  const priority=document.getElementById('qa-priority')?.value||'med';
+  const endDate=document.getElementById('qa-duedate')?.value||'';
+  const task=_wsBuildNewTask({name,status,priority,groupId,ownerId:currentUser.id,endDate});
+  DB.tasks.push(task);
+  notifyTaskCreated(task);
+  saveDB(DB);
+  wsQuickAddClose();
+  renderView('workspace');
+  showToast(`Added "${name}"`,'success',5000,{label:'Undo',onClick:`wsQuickAddUndo('${task.id}')`});
+}
+function wsQuickAddUndo(id){
+  DB.tasks=DB.tasks.filter(t=>t.id!==id);
+  saveDB(DB);
+  if(currentView==='workspace')renderView('workspace');
+}
 
 // ── Inline add group ──
 function wsSaveInlineGroup(){
