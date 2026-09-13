@@ -17618,6 +17618,16 @@ function mtgCancel(){_mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesR
 
 function mtgField(){mtgSync();}                       // cheap: no re-render
 function mtgStruct(){mtgSync();_tpNotesRefresh();}    // structure changed: redraw
+// A time typed against one attendee is a deliberate choice, so record that it was made.
+// mtgTimeChanged used to infer it by comparing the attendee's time to the meeting's, which
+// cannot tell a deliberate 10:15 from one merely inherited — so an attendee whose time
+// happened to match the meeting was dragged along the next time the meeting moved.
+function mtgAttTimeChanged(i){
+  mtgSync();
+  const a=(_mtgDraft&&_mtgDraft.attendees||[])[i];
+  if(a)a.timeTouched=true;
+  _tpNotesRefresh();
+}
 
 // Moving the meeting drags along every attendee who was still sitting on the old times.
 // Anyone given their own start or finish is left exactly where they are.
@@ -17626,7 +17636,9 @@ function mtgTimeChanged(){
   const oldS=d.startTime,oldE=d.endTime;
   mtgSync();
   (d.attendees||[]).forEach(a=>{
-    const untouched=(!a.start&&!a.end)||(a.start===oldS&&a.end===oldE);
+    // timeTouched is authoritative. The value comparison stays as a fallback for drafts
+    // saved before the flag existed, and can only ever carry someone, never pin them.
+    const untouched=!a.timeTouched&&((!a.start&&!a.end)||(a.start===oldS&&a.end===oldE));
     if(untouched){a.start=d.startTime||'';a.end=d.endTime||'';}
   });
   _tpNotesRefresh();
@@ -18252,9 +18264,9 @@ function mtgFormHtml(){
       </div>
       <div class="mtg-lbl">Attendance</div>
       <div class="mtg-att-times">
-        <input id="mtg-att-s-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.start||''}" onchange="mtgStruct()"/>
+        <input id="mtg-att-s-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.start||''}" onchange="mtgAttTimeChanged(${i})"/>
         <span class="mtg-to">to</span>
-        <input id="mtg-att-e-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.end||''}" onchange="mtgStruct()"/>
+        <input id="mtg-att-e-${i}" type="time" class="form-input mtg-in mtg-in--sm" value="${a.end||''}" onchange="mtgAttTimeChanged(${i})"/>
         <span class="mtg-att-dur">${escHtml(mtgFmtMins(mins))}</span>
       </div>
       ${a.external?'':`<label class="mtg-inc"><input id="mtg-att-ts-${i}" type="checkbox" ${a.includeTs?'checked':''} onchange="mtgField()"/> Include in timesheet</label>`}
