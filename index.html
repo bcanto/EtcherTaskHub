@@ -467,6 +467,51 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
   .login-left>div:first-child{flex:1}
   .login-right{padding:28px 24px}
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE SHELL — additive only. Nothing here changes desktop (>768px)
+   layout, permissions, or which functions save data; see PLAN-mobile.md.
+   ═══════════════════════════════════════════════════════════════════════ */
+#mobile-menu-btn,#mobile-scrim,#mobile-tabbar,.ws-photo-btn{display:none}
+.mobile-sheet-wrap{display:none}
+@media(max-width:768px){
+  /* Sidebar becomes an off-canvas drawer instead of permanent 215px furniture —
+     that 215px was 55% of a 393pt iPhone screen. */
+  #sidebar{transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:600}
+  body.mobile-nav-open #sidebar{transform:translateX(0)}
+  #main-content{margin-left:0!important}
+  #mobile-menu-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1.5px solid #e8edf4;background:#fff;color:#0d1c33;cursor:pointer;flex-shrink:0}
+  #mobile-scrim{display:none;position:fixed;inset:0;background:rgba(13,28,51,.45);z-index:550}
+  body.mobile-nav-open #mobile-scrim{display:block}
+  #topbar{padding:0 12px}
+  /* Room for the bottom tab bar so page content is never hidden behind it. */
+  #view-container{padding-bottom:calc(72px + env(safe-area-inset-bottom))!important}
+  /* Found via testing: fixed at bottom:14px, this sat directly on top of a bottom sheet's
+     Save button once the tab bar and sheets existed. Lift it clear of the tab bar instead. */
+  #offline-mode-banner{bottom:calc(72px + env(safe-area-inset-bottom) + 8px)!important;left:8px!important;right:8px!important;max-width:none!important}
+  #mobile-tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:500;background:#fff;border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(13,28,51,.06)}
+  .mobile-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border:none;background:none;color:#8da2b2;font-family:'Jost',sans-serif;font-size:10px;font-weight:600;cursor:pointer;min-height:44px}
+  .mobile-tab.active{color:#0d6e4e}
+  .mobile-tab svg{flex-shrink:0}
+  /* The cell editor (status, owner, timeline, everything) becomes a bottom sheet instead of
+     a small popover pinned to wherever the tapped cell happened to be — the same reposition
+     logic in wsCellOpen still runs and sets inline top/left, so this must win with
+     !important rather than by load order. */
+  #ws-cell-dd{position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;max-height:75vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(13,28,51,.18)}
+  /* Quick-add / quick-log sheets. */
+  .mobile-sheet-wrap{display:flex;position:fixed;inset:0;background:rgba(13,28,51,.4);z-index:900;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .2s}
+  .mobile-sheet-wrap.open{opacity:1;visibility:visible}
+  .mobile-sheet{background:#fff;width:100%;max-height:85vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:8px 18px calc(18px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+  .mobile-sheet-wrap.open .mobile-sheet{transform:translateY(0)}
+  .mobile-sheet-handle{width:36px;height:4px;border-radius:2px;background:#e2eaf2;margin:6px auto 14px}
+  .mobile-fab{display:none;position:fixed;right:18px;bottom:calc(72px + env(safe-area-inset-bottom) + 16px);width:56px;height:56px;border-radius:50%;background:#0d6e4e;color:#fff;border:none;box-shadow:0 6px 20px rgba(13,110,78,.35);cursor:pointer;align-items:center;justify-content:center;z-index:400}
+  body.on-board-view #mobile-board-fab{display:flex}
+  body.on-time-view #mobile-time-fab{display:flex}
+  /* Chips used by both quick-add and quick-log — 44pt minimum touch target throughout. */
+  .mobile-chip{min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid #e2eaf2;background:#fff;color:#4a5568;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+  .mobile-chip.selected{border-color:#0d6e4e;background:#eaf4ee;color:#0d6e4e}
+  .mobile-field-label{font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+  .ws-photo-btn{display:inline-flex}
+}
 /* ── Misc ── */
 .notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;animation:_notifPulse 2s ease-in-out infinite}
 @keyframes _notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 4px rgba(239,68,68,0)}}
@@ -1171,12 +1216,18 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     </div>
   </aside>
 
+  <!-- Tap-to-dismiss backdrop for the mobile drawer, <768px only -->
+  <div id="mobile-scrim" onclick="closeMobileNav()"></div>
+
   <!-- MAIN CONTENT -->
   <div id="main-content">
     <!-- TOPBAR -->
     <div id="topbar">
-      <div style="display:flex;align-items:center;gap:14px">
-        <h2 id="view-title" style="font-family:'Jost',sans-serif;font-size:17px;font-weight:600;color:#0d1c33">Dashboard</h2>
+      <div style="display:flex;align-items:center;gap:14px;min-width:0">
+        <button id="mobile-menu-btn" onclick="toggleMobileNav()" title="Menu" aria-label="Menu">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <h2 id="view-title" style="font-family:'Jost',sans-serif;font-size:17px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">Dashboard</h2>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
         <button onclick="openReportIssueModal()" title="Report an issue or give feedback" style="display:flex;align-items:center;gap:5px;padding:0 10px;height:28px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #e8edf4;background:#fff;color:#a0b4c4;font-family:'Lato',sans-serif;transition:color 0.15s,border-color 0.15s" onmouseover="this.style.color='#0d1c33';this.style.borderColor='#c4d4e0'" onmouseout="this.style.color='#a0b4c4';this.style.borderColor='#e8edf4'"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.9" fill="currentColor"/></svg>Report Issue</button>
@@ -1185,6 +1236,32 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
     <!-- VIEW CONTAINER -->
     <div id="view-container" style="padding:24px;flex:1"></div>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM TAB BAR — built from the same _acBlockedViews/applyRolePermissions gates
+     the sidebar already reads; see renderMobileTabbar(). <768px only. -->
+<div id="mobile-tabbar"></div>
+
+<!-- MOBILE QUICK-ADD (board item) — <768px only, shown while on a board -->
+<button id="mobile-board-fab" class="mobile-fab" onclick="wsQuickAddOpen()" title="Add item" aria-label="Add item">
+  <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+<div id="ws-quickadd-wrap" class="mobile-sheet-wrap" onclick="if(event.target===this)wsQuickAddClose()">
+  <div class="mobile-sheet">
+    <div class="mobile-sheet-handle"></div>
+    <div id="ws-quickadd-body"></div>
+  </div>
+</div>
+
+<!-- MOBILE QUICK-LOG (timesheet) — <768px only, shown while on the Time view -->
+<button id="mobile-time-fab" class="mobile-fab" onclick="teQuickLogOpen()" title="Log time" aria-label="Log time">
+  <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+<div id="te-quicklog-wrap" class="mobile-sheet-wrap" onclick="if(event.target===this)teQuickLogClose()">
+  <div class="mobile-sheet">
+    <div class="mobile-sheet-handle"></div>
+    <div id="te-quicklog-body"></div>
   </div>
 </div>
 
@@ -3687,7 +3764,40 @@ function navigate(view){
   // (what every card setting triggers when it saves) deliberately leaves it open.
   _wbOptsOpenId=null;
   updateSidebarWorkboard();
+  // Mobile shell: a real navigation always closes the drawer, and the two mobile FABs are
+  // shown only on the view they add to, driven by a class rather than by re-checking `view`
+  // in CSS. No-ops above 768px — the drawer/tabbar/FABs do not exist visually there.
+  closeMobileNav();
+  document.body.classList.toggle('on-board-view',workboardViews.has(view)&&!!currentWorkboard);
+  document.body.classList.toggle('on-time-view',view==='time');
+  renderMobileTabbar(view);
   renderView(view);
+}
+// ── Mobile shell: drawer + bottom tab bar ───────────────────────────────
+// The drawer reuses #sidebar verbatim — same nav-item elements, same
+// applyRolePermissions()/canViewBoard-driven visibility, same click handlers. Nothing here
+// decides who can see what; it only decides whether the existing menu is on- or off-screen.
+function toggleMobileNav(){document.body.classList.toggle('mobile-nav-open');}
+function closeMobileNav(){document.body.classList.remove('mobile-nav-open');}
+// Three tabs are look-ups against elements applyRolePermissions() already set display:none
+// on, so a role change is reflected here for free rather than re-decided. "More" always
+// shows and just opens the same drawer — every other destination lives there already,
+// correctly filtered.
+function renderMobileTabbar(view){
+  const bar=document.getElementById('mobile-tabbar');
+  if(!bar||!currentUser)return;
+  const shown=id=>{const el=document.getElementById(id);return!!el&&el.style.display!=='none';};
+  const hasBoard=(DB.workboards||[]).some(wb=>!wb.archived&&canViewBoard(currentUser,wb));
+  const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
+  const tab=(active,onclick,label,path)=>`<button class="mobile-tab${active?' active':''}" onclick="${onclick}">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
+    ${label}</button>`;
+  let html='';
+  if(hasBoard)html+=tab(workboardViews.has(view),`if(currentWorkboard)navigate('workspace');else{const wb=(DB.workboards||[]).find(w=>!w.archived&&canViewBoard(currentUser,w));if(wb)openWorkboard(wb.id);}`,'Board','<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>');
+  if(shown('nav-my-week-item'))html+=tab(view==='my-week',"navigate('my-week')",'My Week','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>');
+  if(shown('nav-time-item'))html+=tab(view==='time',"navigate('time')",'Time','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>');
+  html+=tab(false,'toggleMobileNav()','More','<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>');
+  bar.innerHTML=html;
 }
 let _mtSearchTimer=null;
 function onMtSearch(el,view){
