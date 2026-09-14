@@ -8789,7 +8789,12 @@ function renderTime(){
     </div>
   </div>`;
 
-  const listBody=weekBarHtml+standaloneQuickAdd+`<div>
+  // The outer card is overflow:hidden, for its rounded corners. .te-row's fixed-px columns
+  // (52+80+90+90+82+28 alone, before the avatar and the flexible name/note tracks) do not
+  // shrink to fit a phone-width card, so without a scroll container of their own here the
+  // Location/Billable/Status/delete columns were not just off-screen but unreachable —
+  // clipped by the card, not scrollable past. #te-week-bar above already gets this right.
+  const listBody=weekBarHtml+standaloneQuickAdd+`<div style="overflow-x:auto">
       ${groups.length?groupsHtml:emptyState}
     </div>`;
 
