@@ -519,6 +519,11 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
   .mobile-chip{min-height:44px;padding:0 16px;border-radius:22px;border:1.5px solid #e2eaf2;background:#fff;color:#4a5568;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
   .mobile-chip.selected{border-color:#0d6e4e;background:#eaf4ee;color:#0d6e4e}
   .mobile-field-label{font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+  /* The desktop Log Time form is a fixed-column grid (~800px natural width) — this is what
+     the mobile quick-log sheet exists to bypass for routine entries, but the full form
+     stays on the page underneath for anything the sheet does not cover, and it must not
+     force the page itself to scroll sideways to reach it. */
+  .te-log-form-grid{grid-template-columns:1fr!important}
   .ws-photo-btn{display:inline-flex}
 }
 /* ── Misc ── */
@@ -8581,7 +8586,7 @@ function renderTime(){
         ${toggleBtn('task','Task')}${toggleBtn('client','Client')}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
+    <div class="te-log-form-grid" style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
       ${mode==='task'
         ?`<div style="position:relative"><label class="form-label">Task <span style="color:#ef4444">*</span></label>
         <input id="te-task-input" class="form-input" autocomplete="off" placeholder="Search task…" oninput="_teTaskFilter(this)" onfocus="_teTaskOpen(this)" onblur="_teTaskBlur()" style="cursor:text"/>
