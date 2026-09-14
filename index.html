@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve to anything but 0
+     (WebKit spec) — the mobile shell's bottom-sheet/tab-bar/FAB padding for the home
+     indicator was written against these insets but silently a no-op without this. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Etcher - Task Hub</title>
 <!-- B3: Content Security Policy — restricts what can load/execute in this page -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.tailwindcss.com; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self';">
@@ -476,13 +479,19 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
 @media(max-width:768px){
   /* Sidebar becomes an off-canvas drawer instead of permanent 215px furniture —
      that 215px was 55% of a 393pt iPhone screen. */
-  #sidebar{transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:600}
+  /* Same Dynamic Island clearance as #topbar — the drawer is a full-height overlay from
+     y:0, so without this its logo sits directly under the island on Pro/Pro Max models. */
+  #sidebar{transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:600;padding-top:env(safe-area-inset-top);box-sizing:border-box}
   body.mobile-nav-open #sidebar{transform:translateX(0)}
   #main-content{margin-left:0!important}
   #mobile-menu-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1.5px solid #e8edf4;background:#fff;color:#0d1c33;cursor:pointer;flex-shrink:0}
   #mobile-scrim{display:none;position:fixed;inset:0;background:rgba(13,28,51,.45);z-index:550}
   body.mobile-nav-open #mobile-scrim{display:block}
-  #topbar{padding:0 12px}
+  /* Dynamic Island clearance — largest on exactly the Pro/Pro Max models this was tuned
+     for. #topbar is position:sticky;top:0;height:56px with no top inset, so its content
+     would sit directly under the island; grow the box upward instead of shrinking the
+     56px tap-target row inside it. */
+  #topbar{padding:env(safe-area-inset-top) 12px 0;height:calc(56px + env(safe-area-inset-top));box-sizing:border-box}
   /* Room for the bottom tab bar so page content is never hidden behind it. */
   #view-container{padding-bottom:calc(72px + env(safe-area-inset-bottom))!important}
   /* Found via testing: fixed at bottom:14px, this sat directly on top of a bottom sheet's
