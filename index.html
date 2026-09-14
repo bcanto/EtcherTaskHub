@@ -3205,7 +3205,14 @@ function getFilteredTasks(){
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
   if(pmin>0||pmax<100)t=t.filter(x=>{const p=typeof x.percentComplete==='number'?x.percentComplete:0;return p>=pmin&&p<=pmax;});
-  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _sh=s=>s?s.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/gi,' '):'';const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||_sh(x.description||'').toLowerCase().includes(q)||_sh(x.notes||'').toLowerCase().includes(q)||taskRef(x).toLowerCase().includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(getWbGroups().map(g=>g.id));const existingIds=new Set(t.map(x=>x.id));const sub=(DB.tasks||[]).filter(x=>(!x.archived||wsShowArchived)&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId)&&canViewTask(currentUser,x)&&!existingIds.has(x.id));if(sub.length)t=[...t,...sub];}
+  if(wsMtSearch){const q=wsMtSearch.toLowerCase();const _sh=s=>s?s.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/gi,' '):'';
+    // Group name was never checked, only the task's own name/description/notes/ref — so
+    // typing a group's name (e.g. "Adhoc") found nothing unless some individual task inside
+    // it happened to repeat that word. Every task shares its group's name, so this also
+    // brings in the whole group when its name matches, which is what searching a group name
+    // actually means.
+    const _grpNameById=new Map(getWbGroups().map(g=>[g.id,(g.name||'').toLowerCase()]));
+    const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||_sh(x.description||'').toLowerCase().includes(q)||_sh(x.notes||'').toLowerCase().includes(q)||taskRef(x).toLowerCase().includes(q)||(_grpNameById.get(x.groupId)||'').includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(_grpNameById.keys());const existingIds=new Set(t.map(x=>x.id));const sub=(DB.tasks||[]).filter(x=>(!x.archived||wsShowArchived)&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId)&&canViewTask(currentUser,x)&&!existingIds.has(x.id));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>isAssignedTo(x,wsMtPersonFilter)||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
   return t;
 }
