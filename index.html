@@ -3906,7 +3906,32 @@ function renderView(v){
       case 'dashboard': _renderCached(vc,'dashboard-'+_utSig(),renderDashboard);_wbOptsApply();setTimeout(()=>{renderDashStatPanel();renderPclWidget();},0);break;
       case 'my-week':   vc.innerHTML=renderMyWeek();break;
       case 'digest':    vc.innerHTML=renderDigests();break;
-      case 'gantt':     _renderCached(vc,'gantt-'+_ganttSig()+'-'+_filterSig()+'-'+_utSig(),renderGantt);break;
+      // Re-rendering replaces #g2-right, which holds both the row scroll and the timeline's
+      // horizontal scroll, so recolouring bars or collapsing a group used to throw you back
+      // to the top-left. Same capture/restore the workspace table uses below.
+      case 'gantt': {
+        const _gEl=document.getElementById('g2-right');
+        const _gTop=_gEl?_gEl.scrollTop:0, _gLeft=_gEl?_gEl.scrollLeft:0;
+        _renderCached(vc,'gantt-'+_ganttSig()+'-'+_filterSig()+'-'+_utSig(),renderGantt);
+        if(_gTop||_gLeft){
+          requestAnimationFrame(()=>{
+            const _r=document.getElementById('g2-right');
+            if(!_r)return;
+            _r.scrollTop=_gTop;_r.scrollLeft=_gLeft;
+            const _lb=document.getElementById('g2-left-body');
+            if(_lb)_lb.scrollTop=_gTop;
+            requestAnimationFrame(()=>{
+              const _r2=document.getElementById('g2-right');
+              if(!_r2)return;
+              if(_r2.scrollTop!==_gTop)_r2.scrollTop=_gTop;
+              if(_r2.scrollLeft!==_gLeft)_r2.scrollLeft=_gLeft;
+              const _lb2=document.getElementById('g2-left-body');
+              if(_lb2)_lb2.scrollTop=_gTop;
+            });
+          });
+        }
+        break;
+      }
       case 'capacity':  _renderCached(vc,'capacity-'+mcScale+'-'+mcThreshold+'-'+mcView+'-'+mcDateFrom+'-'+mcDateTo+'-'+_filterSig(mcFilters)+'-'+_utSig(),renderCapacity);break;
       case 'schedule':  _renderCached(vc,'schedule-'+schedCalView+'-'+schedYear+'-'+schedMonth+'-'+(schedWeekBase||'')+'-'+_filterSig()+'-'+_utSig(),renderSchedule);break;
       case 'staff':     _renderCached(vc,'staff-'+_utSig(),renderStaff);break;
@@ -6985,10 +7010,14 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
     const dRow=rowMap.get(dep.dependentTaskId);
     if(!pRow||!dRow)continue;
     const pt=pRow.task,dt=dRow.task;
-    if(!pt.endDate||!dt.startDate)continue;
-    const x1=Math.round((new Date(pt.endDate)-viewStart)/86400000*DW)+DW;
+    // A rollup parent's bar is drawn from its subitems' span, not its own dates — use the
+    // same effective dates the bar loop computed (row.effEnd/effStart), falling back to the
+    // task's own dates for anything the loop didn't tag (e.g. group rows never reach here).
+    const pEnd=pRow.effEnd||pt.endDate, dStart=dRow.effStart||dt.startDate;
+    if(!pEnd||!dStart)continue;
+    const x1=Math.round((new Date(pEnd)-viewStart)/86400000*DW)+DW;
     const y1=pRow.y+20;
-    const x2=Math.round((new Date(dt.startDate)-viewStart)/86400000*DW);
+    const x2=Math.round((new Date(dStart)-viewStart)/86400000*DW);
     const y2=dRow.y+20;
     let d;
     if(x2>x1+8){
@@ -7110,6 +7139,10 @@ function renderGantt(){
       const _gS=(_gRoll&&_gRoll.startDate)?_gRoll.startDate:t.startDate;
       const _gE=(_gRoll&&_gRoll.endDate)?_gRoll.endDate:t.endDate;
       const _gRolled=!!(_gRoll&&(_gRoll.startDate||_gRoll.endDate));
+      // Hand the dates the bar is actually drawn from to ganttDepSVG, which runs after this
+      // loop. Without this a rollup parent's connector is drawn from its own dates — which
+      // can be months away from the bar on screen, or missing entirely.
+      row.effStart=_gS;row.effEnd=_gE;
       const owner=getStaff(t.ownerId);
       const cwId=t.currentlyWithUserId||t.currentlyWith;
       const cw=cwId&&cwId!=='client'?getStaff(cwId):null;
@@ -7149,10 +7182,18 @@ function renderGantt(){
         const bw=Math.max(Math.round(depDiffDays(_gS,_gE)*DW),4);
         const locked=!!t.lockedDates;
         const canEdit=canEditTask(currentUser,t)&&!locked&&!_gRolled;
-        const dAttr=canEdit?`onmousedown="ganttBarMouseDown(event,'${t.id}','move')"`:locked?`title="Dates locked"`:'';
+        // dAttr used to carry its own title= for locked tasks, which collided with the title
+        // on the same div below — HTML keeps the first and drops the second, so a locked bar
+        // lost its name and dates on hover. One title now, with the reason folded in.
+        const dAttr=canEdit?`onmousedown="ganttBarMouseDown(event,'${t.id}','move')"`:'';
         const rsAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-start')"`:''
         const reAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-end')"`:''
-        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
+        // A rollup parent ignoring a drag is correct — its dates come from its subitems — but
+        // silently ignoring one looks exactly like a broken Gantt. Say so on hover.
+        const _noDragWhy=_gRolled?' · dates roll up from subitems — drag a subitem instead'
+                        :locked?' · dates locked'
+                        :!canEditTask(currentUser,t)?' · you cannot edit this task':'';
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_noDragWhy}">
           ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
           <div class="g2-bar-label"></div>
           ${locked?`<span style="padding-right:4px;flex-shrink:0;display:inline-flex">${icon('lock',9)}</span>`:''}
@@ -14751,11 +14792,11 @@ function openTaskModal(id, defaultGroupId){
           })()}
         </div>
         <div style="display:flex;gap:8px;margin-bottom:6px">
-          <select id="tm-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tmDepFilterChange('${id}')">
+          <select id="tm-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tmDepClientChange('${id}')">
             <option value="">All Clients</option>
             ${DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}
           </select>
-          <select id="tm-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tmDepFilterChange('${id}')">
+          <select id="tm-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tmDepGroupChange('${id}')">
             <option value="">All Groups</option>
           </select>
         </div>
@@ -14850,14 +14891,25 @@ function closeTaskModal(){
   document.getElementById('task-modal').classList.add('hidden');
   editingTaskId=null;
 }
-function tmDepFilterChange(taskId){
+// Same fix as tpDepClientChange/tpDepGroupChange (Task Panel): the group select must only be
+// rebuilt when the CLIENT changes, never on its own change, or picking a group snaps straight
+// back to "All Groups" before the filter step reads it.
+function tmDepClientChange(taskId){
   const clientId=document.getElementById('tm-dep-client')?.value||'';
   const groupSel=document.getElementById('tm-dep-group');
-  const taskSel=document.getElementById('tm-dep-task');
-  if(!groupSel||!taskSel)return;
+  if(!groupSel)return;
   const groups=DB.groups.filter(g=>!clientId||g.clientId===clientId);
   groupSel.innerHTML=`<option value="">All Groups</option>`+groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
-  const groupId=groupSel.value;
+  tmDepFilterTasks();
+}
+function tmDepGroupChange(taskId){
+  tmDepFilterTasks();
+}
+function tmDepFilterTasks(){
+  const clientId=document.getElementById('tm-dep-client')?.value||'';
+  const groupId=document.getElementById('tm-dep-group')?.value||'';
+  const taskSel=document.getElementById('tm-dep-task');
+  if(!taskSel)return;
   Array.from(taskSel.options).forEach(opt=>{
     if(!opt.value){opt.style.display='';return;}
     const matchC=!clientId||opt.dataset.client===clientId;
@@ -18023,10 +18075,10 @@ function renderTpDependencies(task){
     <div style="border-top:1px solid #e2eaf2;padding-top:16px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#8da2b2;margin-bottom:10px">Add dependency — this task waits on:</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <select id="tp-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tpDepFilterChange()">
+        <select id="tp-dep-client" class="form-input" style="flex:1;font-size:12px" onchange="tpDepClientChange()">
           <option value="">All Clients</option>${clientOpts}
         </select>
-        <select id="tp-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tpDepFilterChange()">
+        <select id="tp-dep-group" class="form-input" style="flex:1;font-size:12px" onchange="tpDepGroupChange()">
           <option value="">All Groups</option>
         </select>
       </div>
@@ -18048,16 +18100,28 @@ function renderTpDependencies(task){
   </div>`;
 }
 
-function tpDepFilterChange(){
+// Changing the client rebuilds the group list — the old groups may not belong to the new
+// client — then re-filters the task list.
+function tpDepClientChange(){
   const clientId=document.getElementById('tp-dep-client')?.value||'';
   const groupSel=document.getElementById('tp-dep-group');
-  const taskSel=document.getElementById('tp-dep-task');
-  if(!groupSel||!taskSel)return;
-  // Repopulate group dropdown
+  if(!groupSel)return;
   const groups=DB.groups.filter(g=>!clientId||g.clientId===clientId);
   groupSel.innerHTML=`<option value="">All Groups</option>`+groups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
-  // Filter task options
-  const groupId=groupSel.value;
+  tpDepFilterTasks();
+}
+// Changing the group must NOT rebuild the group select itself — replacing its innerHTML on
+// every change (including the group select's own change) reset the selection straight back
+// to "All Groups" the instant you picked one, which is why group filtering looked like it
+// did nothing.
+function tpDepGroupChange(){
+  tpDepFilterTasks();
+}
+function tpDepFilterTasks(){
+  const clientId=document.getElementById('tp-dep-client')?.value||'';
+  const groupId=document.getElementById('tp-dep-group')?.value||'';
+  const taskSel=document.getElementById('tp-dep-task');
+  if(!taskSel)return;
   Array.from(taskSel.options).forEach(opt=>{
     if(!opt.value){opt.style.display='';return;}
     const matchC=!clientId||opt.dataset.client===clientId;
