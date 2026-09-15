@@ -2064,7 +2064,11 @@ function _renderCached(el,key,fn){
 // carried only the scale, so collapsing a group, recolouring the bars, toggling the baseline
 // or opening a task's subitems all re-served the cached HTML and appeared to do nothing.
 function _ganttSig(){
-  return[ganttScale,ganttColorBy,ganttShowBaseline?1:0,ganttLeftCollapsed?1:0,
+  // _ganttFitDW must be in here: Fit often lands on the SAME scale bucket that was already
+  // active (e.g. re-clicking Fit after a resize), in which case every other field above is
+  // unchanged too — without this, that's an exact cache-key match, _renderCached serves the
+  // pre-Fit HTML, and Fit silently does nothing despite having computed a new width.
+  return[ganttScale,ganttColorBy,ganttShowBaseline?1:0,ganttLeftCollapsed?1:0,_ganttFitDW||'',
     [...ganttCollapsed].sort().join('|'),
     [...ganttExpanded].sort().join('|')].join('~');
 }
@@ -2990,6 +2994,16 @@ let mtSelectedColLevel='both'; // which row tier a new custom column carries dat
 let ganttScale='weeks';
 let ganttColorBy='status';
 let ganttCollapsed=new Set();
+// Fit sets this to compress the timeline so the full date range shows without horizontal
+// scrolling; picking any fixed scale (Days/Weeks/Months/Quarters) clears it. Every place that
+// converts between pixels and days — rendering AND the drag handlers — must read this same
+// value, or a drag after Fit would move a bar by the wrong number of days relative to what's
+// visually dragged (the three call sites used to each hard-code their own copy of the
+// per-scale pixel width, which is what made this easy to get out of sync).
+let _ganttFitDW=null;
+function ganttEffectiveDW(){
+  return _ganttFitDW||{days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
+}
 // The statuses that mean "finished". Progress goes to 100% on any of them.
 const _TASK_DONE_STATUSES=['done','completed','completed-approved'];
 // One place deciding what a status change does to progress. Six call sites each carried
@@ -7065,7 +7079,7 @@ function renderGantt(){
   if(ungrouped.length)sections.push({id:'__none',label:'Ungrouped',color:'#8da2b2',tasks:ungrouped});
 
   // Scale → pixels per day
-  const DW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
+  const DW=ganttEffectiveDW();
 
   // View range
   const _gDated=[...tasks,...[..._gShownSubs.values()].flat()];
@@ -7257,7 +7271,7 @@ function renderGantt(){
 }
 
 // ── Gantt toolbar actions ────────────────────────────────
-function ganttSetScale(s){ganttScale=s;renderView('gantt');}
+function ganttSetScale(s){_ganttFitDW=null;ganttScale=s;renderView('gantt');}
 function ganttSetColorBy(c){ganttColorBy=c;renderView('gantt');}
 function ganttToggleGroup(id){if(ganttCollapsed.has(id))ganttCollapsed.delete(id);else ganttCollapsed.add(id);renderView('gantt');}
 // Show or hide one task’s subitems. Kept separate from ganttCollapsed, which is groups.
@@ -7265,12 +7279,53 @@ function ganttToggleTask(id){if(ganttExpanded.has(id))ganttExpanded.delete(id);e
 // Fold the whole task list away. The calendar keeps its own scroll, so nothing is lost —
 // the bars still carry their labels.
 function ganttToggleLeft(){ganttLeftCollapsed=!ganttLeftCollapsed;renderView('gantt');}
+// Fit used to only pick a granularity (days/weeks/months/quarters) — it never actually made
+// the timeline fit the panel, so a 3-month spread at "days" scale still needed scrolling. Now
+// it also compresses the pixel-per-day width so the whole range shows at once, the same way a
+// "fit to window" control works anywhere else. Re-click Fit after resizing the window, folding
+// the task list, or filtering to a different date range — like any fit-to-view control, it's a
+// one-shot best effort at the current layout, not something that stays continuously fitted.
 function ganttAutoFit(){
-  const ts=getFilteredTasks().filter(t=>t.startDate&&t.endDate);
+  // Mirror renderGantt's own task set exactly (its `tasks` at index.html~7043): the same
+  // excluded-board filter, and "has a date at all" (||) rather than requiring both — a
+  // single-date (milestone) task still counts toward the visible range renderGantt will draw.
+  // Getting this set wrong is exactly what threw the pixel estimate off before this fix.
+  const _gExcl=_excludedBoardIds();
+  const ts=getFilteredTasks().filter(t=>!_gExcl.has(t.workboardId||t.boardId)).filter(t=>t.startDate||t.endDate);
   if(!ts.length)return;
-  const allD=ts.flatMap(t=>[new Date(t.startDate),new Date(t.endDate)]);
+  const allD=ts.flatMap(t=>[t.startDate,t.endDate].filter(Boolean).map(ds=>new Date(ds)));
   const days=Math.ceil((Math.max(...allD)-Math.min(...allD))/86400000);
   ganttScale=days<=60?'days':days<=180?'weeks':days<=730?'months':'quarters';
+  // Mirror renderGantt's own pad so this estimate lines up with what will actually render.
+  // Not exact (renderGantt also folds in shown subitems' dates, which aren't known until that
+  // render runs) but close enough for a fit estimate — a residual few pixels of scroll on an
+  // edge case is fine; the point is going from "definitely scrolls" to "usually doesn't".
+  const pad={days:3,weeks:7,months:14,quarters:30}[ganttScale]||7;
+  // At weeks scale renderGantt also snaps viewStart back to the Monday of its week — up to 6
+  // extra days beyond the padded range — which this estimate needs to cover or it comes in
+  // consistently a few percent short and Fit leaves a visible sliver of scroll behind.
+  const weeksSnap=ganttScale==='weeks'?6:0;
+  const totalDays=Math.max(1,days+pad*2+weeksSnap);
+  const defaultDW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
+  const right=document.getElementById('g2-right');
+  if(right){
+    // Subtract a margin for: a vertical scrollbar that may appear once rows are laid out
+    // (unknown at this point), and a task-name label overhanging past its bar's right edge —
+    // .g2-bar-name (added for the outside-bar labels) can extend up to 260px beyond a bar,
+    // and whichever task ends last in the view is exactly the one whose label is most likely
+    // to push past the calculated width. 140px isn't a guarantee against every name (an
+    // extreme name near that 260px cap can still leave a sliver of scroll) but it absorbs the
+    // common case without reserving so much space that Fit under-fills every ordinary board.
+    const avail=Math.max(100,right.clientWidth-24-140);
+    const fitDW=avail/totalDays;
+    // Floors keep header labels legible at very wide date ranges instead of compressing to
+    // the point of hard-clipping every label; the ceiling means Fit only ever compresses,
+    // never stretches a short range wider than its scale's normal spacing.
+    const floorDW={days:4,weeks:3,months:1,quarters:0.4}[ganttScale]||1;
+    _ganttFitDW=Math.min(defaultDW,Math.max(floorDW,fitDW));
+  } else {
+    _ganttFitDW=null; // no live panel to measure (shouldn't happen — Fit lives inside it)
+  }
   renderView('gantt');
 }
 
@@ -7290,7 +7345,7 @@ function ganttBarMouseDown(evt,taskId,type){
 function ganttOnMove(evt){
   if(!_ganttDrag||!_ganttViewStart)return;
   evt.preventDefault();
-  const DW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
+  const DW=ganttEffectiveDW();
   const delta=evt.clientX-_ganttDrag.startX;
   _ganttDrag.moved=true;
   const bar=document.getElementById('g2-bar-'+_ganttDrag.taskId);
@@ -7313,7 +7368,7 @@ function ganttOnUp(evt){
   const bar=document.getElementById('g2-bar-'+drag.taskId);
   if(bar)bar.classList.remove('dragging');
   if(!drag.moved){return;}
-  const DW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
+  const DW=ganttEffectiveDW();
   const deltaDays=Math.round((evt.clientX-drag.startX)/DW);
   if(deltaDays===0){renderView('gantt');return;}
   let ns=drag.origStart,ne=drag.origEnd;
