@@ -212,7 +212,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .g2-bar:hover{box-shadow:0 3px 12px rgba(0,0,0,0.18);filter:brightness(1.06)}
 .g2-bar.dragging{cursor:grabbing;box-shadow:0 6px 20px rgba(0,0,0,0.22);z-index:20;opacity:0.88}
 .g2-bar-label{padding:0 6px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;flex:1;min-width:0}
-.g2-bar-name{position:absolute;top:8px;height:24px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;max-width:260px}
+.g2-bar-name{position:absolute;top:8px;height:24px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;max-width:260px;z-index:4}
 .g2-rh{width:7px;height:100%;flex-shrink:0;cursor:ew-resize;position:relative;z-index:1}
 .g2-rh::after{content:'';position:absolute;top:25%;bottom:25%;width:2px;border-radius:2px;background:rgba(255,255,255,0.4)}
 .g2-rh-l::after{left:2px}.g2-rh-r::after{right:2px}
@@ -3004,8 +3004,34 @@ let _ganttFitDW=null;
 function ganttEffectiveDW(){
   return _ganttFitDW||{days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
 }
+// How far past the last task's end date the timeline keeps drawing empty calendar, so there's
+// room to plan forward instead of a hard stop. Scale-aware rather than a flat number of days —
+// a flat 6 months would drag ~4400px of empty track along with it at Days zoom. Read by both
+// renderGantt (the actual view range) and ganttAutoFit (its estimate of that range).
+const _GANTT_LOOKAHEAD_DAYS={days:30,weeks:60,months:183,quarters:183};
 // The statuses that mean "finished". Progress goes to 100% on any of them.
 const _TASK_DONE_STATUSES=['done','completed','completed-approved'];
+// Finished or abandoned — both read as "no longer live work" and get a strikethrough. Eight
+// render sites each carried their own version of this and no two agreed: most were
+// status==='done' only, one also counted percentComplete===100, and only one included
+// cancelled. Anything that strikes a task title through goes through here.
+function taskIsStruck(t){
+  return !!t&&(_TASK_DONE_STATUSES.includes(t.status)||t.status==='cancelled');
+}
+// Progress for display only — never written back. Order matters: an explicit hour-budget task
+// keeps its computed figure (that's _applyStatusProgress's / applyHourBudgetPct's job, not
+// this one's), a parent with subitems reflects how many of them are finished, and everything
+// else falls back to the manual field.
+function taskProgressPct(t){
+  if(!t)return 0;
+  if(t.percentMode==='hour_budget'&&t.hourBudget>0)return Math.min(100,Math.round(t.percentComplete||0));
+  const kids=(DB.tasks||[]).filter(c=>c.parentTaskId===t.id&&!c.archived);
+  if(kids.length){
+    const done=kids.filter(k=>_TASK_DONE_STATUSES.includes(k.status)).length;
+    return Math.round(done/kids.length*100);
+  }
+  return Math.min(100,Math.max(0,t.percentComplete||0));
+}
 // One place deciding what a status change does to progress. Six call sites each carried
 // their own version of this and five were one-way: they set 100% on the way into done and
 // left it there on the way out, so a task reverted to Not Started still read 100%.
@@ -4168,17 +4194,28 @@ function statusMixOf(tasks){
 }
 // A parent with subitems spans its children: earliest start to latest end. Its own dates
 // are kept as a fallback for when the children carry none.
-function getTaskDateSpan(taskId){
+function getTaskDateSpan(taskId,_seen){
+  // Guard against a cycle in parentTaskId — a malformed import could otherwise recurse forever.
+  _seen=_seen||new Set();
+  if(_seen.has(taskId))return null;
+  _seen.add(taskId);
   const kids=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
   if(!kids.length)return null;
   let start=null,end=null;
   kids.forEach(k=>{
-    if(k.startDate&&(!start||k.startDate<start))start=k.startDate;
+    // A child that is itself a parent contributes its own rolled span, not just its own
+    // dates, so a deeper tree still rolls all the way up. The model is two levels today
+    // (subitems can't have subitems of their own), so this is defensive rather than
+    // load-bearing — nothing currently exercises the recursive branch.
+    const ks=getTaskDateSpan(k.id,_seen);
+    const kStart=ks&&ks.startDate?ks.startDate:k.startDate;
+    const kEnd=ks&&ks.endDate?ks.endDate:k.endDate;
+    if(kStart&&(!start||kStart<start))start=kStart;
     // a child with only an end date still extends the span
-    const s2=k.startDate||k.endDate;
+    const s2=kStart||kEnd;
     if(s2&&(!start||s2<start))start=s2;
-    if(k.endDate&&(!end||k.endDate>end))end=k.endDate;
-    const e2=k.endDate||k.startDate;
+    if(kEnd&&(!end||kEnd>end))end=kEnd;
+    const e2=kEnd||kStart;
     if(e2&&(!end||e2>end))end=e2;
   });
   return(start||end)?{startDate:start||"",endDate:end||"",rolled:true}:null;
@@ -6803,7 +6840,7 @@ function renderBoard(){
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px">
             <div style="flex:1;min-width:0">
               ${client?`<div style="font-size:10px;color:${client.color};font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${escHtml(client.name)}</div>`:''}
-              <div style="font-size:13px;font-weight:600;color:#1a2940;line-height:1.3">${escHtml(t.name)}</div>
+              <div style="font-size:13px;font-weight:600;color:${taskIsStruck(t)?'#94a3b8':'#1a2940'};line-height:1.3;text-decoration:${taskIsStruck(t)?'line-through':'none'}">${escHtml(t.name)}</div>
             </div>
             ${prioFlag(t.priority)}
           </div>
@@ -6898,7 +6935,7 @@ function renderListView(tasks){
         const isOverdue=t.endDate&&t.status!=='done'&&new Date(t.endDate)<new Date();
         const cw=t.currentlyWith==='client'?'Client':t.currentlyWith?getStaff(t.currentlyWith).name.split(' ')[0]:'—';
         return `<tr onclick="openTaskModal('${t.id}')" style="cursor:pointer">
-          <td><div style="font-weight:600;color:#1a2940;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.name)}</div>${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'}">☑ ${r.done}/${r.total}</div>`:''})()}</td>
+          <td><div style="font-weight:600;color:${taskIsStruck(t)?'#94a3b8':'#1a2940'};max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:${taskIsStruck(t)?'line-through':'none'}">${escHtml(t.name)}</div>${(()=>{const r=checklistRatio(t.id);return r?`<div style="font-size:10px;color:${r.done===r.total?'#166534':'#8da2b2'}">☑ ${r.done}/${r.total}</div>`:''})()}</td>
           <td>${client?`<div style="display:flex;align-items:center;gap:6px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:12px">${escHtml(client.name)}</span></div>`:'—'}</td>
           <td>${statusBadge(t.status)}</td>
           <td>${prioBadge(t.priority)}</td>
@@ -7057,7 +7094,7 @@ function renderGantt(){
   // Subitems only appear under an expanded parent, and only when they carry a date of
   // their own — an undated subitem has nothing to draw.
   const _gSubsOf=t=>(DB.tasks||[]).filter(c=>c.parentTaskId===t.id&&!c.archived
-    &&(c.startDate||c.endDate)&&canViewTask(currentUser,c));
+    &&(c.startDate||c.endDate)&&canViewTask(currentUser,c)).sort((a,b)=>(a.order||0)-(b.order||0));
   const _gSubCount=new Map(), _gShownSubs=new Map();
   tasks.forEach(t=>{
     const subs=_gSubsOf(t);
@@ -7069,13 +7106,15 @@ function renderGantt(){
 
   // Group by workboard groups
   const wbGroups=getWbGroups();
+  // Same ordering the Main Table uses (_wsOrderTasks) — a drag-reorder or column sort there
+  // used to never show up here, since this built its own sections with no sort at all.
   const sections=wbGroups.map(g=>{
     const client=DB.clients.find(c=>c.id===g.clientId);
-    return{id:g.id,label:g.name,color:client?.color||'#8da2b2',tasks:tasks.filter(t=>t.groupId===g.id)};
+    return{id:g.id,label:g.name,color:client?.color||'#8da2b2',tasks:_wsOrderTasks(tasks.filter(t=>t.groupId===g.id))};
   }).filter(s=>s.tasks.length>0);
   // Ungrouped tasks
   const groupedIds=new Set(wbGroups.map(g=>g.id));
-  const ungrouped=tasks.filter(t=>!t.groupId||!groupedIds.has(t.groupId));
+  const ungrouped=_wsOrderTasks(tasks.filter(t=>!t.groupId||!groupedIds.has(t.groupId)));
   if(ungrouped.length)sections.push({id:'__none',label:'Ungrouped',color:'#8da2b2',tasks:ungrouped});
 
   // Scale → pixels per day
@@ -7089,7 +7128,10 @@ function renderGantt(){
   const pad={days:3,weeks:7,months:14,quarters:30}[ganttScale]||7;
   const viewStart=new Date(rawMin);viewStart.setUTCDate(viewStart.getUTCDate()-pad);
   if(ganttScale==='weeks'){const dow=viewStart.getUTCDay();viewStart.setUTCDate(viewStart.getUTCDate()-(dow===0?6:dow-1));}
-  const viewEnd=new Date(rawMax);viewEnd.setUTCDate(viewEnd.getUTCDate()+pad);
+  // Look-ahead past the last task so the timeline doesn't stop dead at the last end date —
+  // scale-aware rather than a flat 6 months, or Days zoom would drag along ~4400px of empty
+  // calendar. Keep _GANTT_LOOKAHEAD_DAYS in sync with ganttAutoFit's own estimate below.
+  const viewEnd=new Date(rawMax);viewEnd.setUTCDate(viewEnd.getUTCDate()+pad+_GANTT_LOOKAHEAD_DAYS[ganttScale]);
   const totalDays=Math.max(1,Math.ceil((viewEnd-viewStart)/86400000));
   const trackW=Math.ceil(totalDays*DW);
 
@@ -7178,7 +7220,7 @@ function renderGantt(){
               style="width:12px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#8da2b2;
               ${_nSubs?'cursor:pointer':'visibility:hidden'};transform:${_open?'rotate(0)':'rotate(-90deg)'};transition:transform 0.15s">▾</span>`}
         <div style="flex:1;min-width:0">
-          <div style="font-size:${_sub?11.5:12}px;font-weight:${_sub?400:500};color:${t.status==='done'?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${t.status==='done'?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
+          <div style="font-size:${_sub?11.5:12}px;font-weight:${_sub?400:500};color:${taskIsStruck(t)?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${taskIsStruck(t)?'text-decoration:line-through':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(taskTitle(t))}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
             <span style="font-size:10px;color:${isOverdue?'#dc2626':'#8da2b2'};font-weight:${isOverdue?700:400}">${isOverdue?'⚠ ':''}${dateLabel}</span>
             ${(!_sub&&cr)?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
@@ -7207,20 +7249,39 @@ function renderGantt(){
         const _noDragWhy=_gRolled?' · dates roll up from subitems — drag a subitem instead'
                         :locked?' · dates locked'
                         :!canEditTask(currentUser,t)?' · you cannot edit this task':'';
-        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_noDragWhy}">
+        const _prog=taskProgressPct(t);
+        // Label placement: right of the bar by default; flip left when the bar ends too close
+        // to the timeline's edge for the text to fit; fall back to inside only when the bar
+        // itself is wide enough to hold it. Widths are estimated from character count rather
+        // than measured — a render pass can't measure text it hasn't drawn yet — so this is
+        // approximate, not pixel-exact.
+        const _nm=t.name||t.title||'';
+        const _lblW=Math.min(260,_nm.length*6.2+8);
+        const _fitsRight=(bx+bw+8+_lblW)<=trackW;
+        const _fitsLeft=(bx-_lblW-8)>=0;
+        const _fitsInside=bw>=_lblW+12;
+        const _lblLeft=_fitsRight?(bx+bw+8):_fitsLeft?(bx-_lblW-8):(_fitsInside?bx+6:Math.max(0,trackW-_lblW));
+        const _lblInside=!_fitsRight&&!_fitsLeft&&_fitsInside;
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_noDragWhy}${_prog?` · ${_prog}% complete`:''}">
+          ${_prog>0?`<div style="position:absolute;left:0;top:0;bottom:0;width:${_prog}%;background:rgba(255,255,255,0.32);pointer-events:none;border-radius:5px 0 0 5px"></div>`:''}
           ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
           <div class="g2-bar-label"></div>
           ${locked?`<span style="padding-right:4px;flex-shrink:0;display:inline-flex">${icon('lock',9)}</span>`:''}
           ${_gRolled?'':`<div class="g2-rh g2-rh-r" ${reAttr}></div>`}
         </div>
-        <div class="g2-bar-name" style="left:${bx+bw+8}px${_sub?';top:9px;height:13px;font-size:10px':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'')}</div>
+        <div class="g2-bar-name" style="left:${_lblLeft}px${_lblInside?';color:rgba(255,255,255,0.95)':''}${_sub?';top:9px;height:13px;font-size:10px':''}" title="${escHtml(_nm)}">${escHtml(_nm)}${_prog>0&&_prog<100?` <span style="color:${_lblInside?'rgba(255,255,255,0.75)':'#b0bec5'};font-weight:500">${_prog}%</span>`:''}</div>
         ${ganttShowBaseline&&t.baselineStartDate&&t.baselineEndDate?`<div style="position:absolute;left:${d2x(t.baselineStartDate)}px;width:${Math.max(Math.round(depDiffDays(t.baselineStartDate,t.baselineEndDate)*DW),4)}px;height:4px;bottom:5px;border-radius:2px;background:rgba(13,28,51,0.16);pointer-events:none"></div>`:''}`;
       } else if(hasOne){
         // Milestone diamond — always blue, matching the reference, unless By Priority is on.
         const mx=d2x(_gS||_gE);
         const bc=ganttColorBy==='priority'?ganttBarColor(t,ganttColorBy):'#3b82f6';
-        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(t.name||'')}"></div>
-        <div class="g2-bar-name" style="left:${mx+11}px" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'')}</div>`;
+        // Same right-then-left flip as a regular bar's label — a milestone near the timeline's
+        // right edge used to run its label straight off the track.
+        const _mNm=t.name||t.title||'';
+        const _mLblW=Math.min(260,_mNm.length*6.2+8);
+        const _mLblLeft=(mx+11+_mLblW)<=trackW?(mx+11):Math.max(0,mx-11-_mLblW);
+        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(_mNm)}"></div>
+        <div class="g2-bar-name" style="left:${_mLblLeft}px" title="${escHtml(_mNm)}">${escHtml(_mNm)}</div>`;
       }
 
       rightRows+=`<div style="height:${_rowH}px;width:${trackW}px;position:relative;border-bottom:1px solid #f4f6fa;${_sub?'background:#fcfdfe':''}">${barHTML}</div>`;
@@ -7305,7 +7366,9 @@ function ganttAutoFit(){
   // extra days beyond the padded range — which this estimate needs to cover or it comes in
   // consistently a few percent short and Fit leaves a visible sliver of scroll behind.
   const weeksSnap=ganttScale==='weeks'?6:0;
-  const totalDays=Math.max(1,days+pad*2+weeksSnap);
+  // Must match renderGantt's own extra trailing look-ahead or Fit under-compresses and leaves
+  // a chunk of the empty forward calendar scrolled off.
+  const totalDays=Math.max(1,days+pad*2+weeksSnap+_GANTT_LOOKAHEAD_DAYS[ganttScale]);
   const defaultDW={days:24,weeks:12,months:4,quarters:1.5}[ganttScale]||12;
   const right=document.getElementById('g2-right');
   if(right){
@@ -14777,7 +14840,7 @@ function openTaskModal(id, defaultGroupId){
         </div>
         <div id="tm-checklist" style="max-height:160px;overflow-y:auto">
           ${checklistItems.length===0?'<div style="font-size:12px;color:#8da2b2;padding:4px 0">No subitems yet.</div>':
-            checklistItems.map(si=>{const sm=getStatusMeta(si.status);const isDone=si.status==='done';return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
+            checklistItems.map(si=>{const sm=getStatusMeta(si.status);const isDone=taskIsStruck(si);return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f4f8">
             <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${sm.bg};color:${sm.color};white-space:nowrap">${sm.label}</span>
             <span style="flex:1;font-size:13px;text-decoration:${isDone?'line-through':'none'};color:${isDone?'#8da2b2':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(si.name)}">${escHtml(si.name)}</span>
             ${canEdit?`<button onclick="tmDeleteSubitem('${si.id}')" title="Delete subitem" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>`:''}
@@ -17010,6 +17073,30 @@ const WS_COL_DEFS=[
   {key:'deps',        label:'Deps',      w:'110px'},
 ];
 
+// The board's current row order: an active column sort wins, otherwise the manual drag order
+// (`order`, written by _wsApplyRowDrop). Every task defaults to order:0, so the manual branch
+// is a no-op on a board nobody has dragged — a stable sort keeps the existing array order.
+// Shared by the Main Table and the Gantt so both agree on row order.
+function _wsOrderTasks(arr){
+  if(wsSort.col){
+    const PO={crit:0,high:1,med:2,low:3};
+    arr.sort((a,b)=>{
+      let va,vb;
+      if(wsSort.col==='status'){va=a.status||'';vb=b.status||'';}
+      else if(wsSort.col==='priority'){va=PO[a.priority]??99;vb=PO[b.priority]??99;}
+      else if(wsSort.col==='owner'){va=getStaff(a.ownerId)?.name||'';vb=getStaff(b.ownerId)?.name||'';}
+      else if(wsSort.col==='duedate'||wsSort.col==='timeline'){va=a.endDate||'9999';vb=b.endDate||'9999';}
+      else if(wsSort.col==='name'){va=a.name||'';vb=b.name||'';}
+      else if(wsSort.col==='client'){va=getTaskClient(a)?.name||'';vb=getTaskClient(b)?.name||'';}
+      if(va<vb)return wsSort.dir==='asc'?-1:1;
+      if(va>vb)return wsSort.dir==='asc'?1:-1;
+      return 0;
+    });
+  } else {
+    arr.sort((a,b)=>(a.order||0)-(b.order||0));
+  }
+  return arr;
+}
 // How the board divides itself into sections for the current "group by" choice, sorted
 // the way the board is sorted. Lifted out of renderWorkspace so the export groups the
 // spreadsheet exactly as the screen groups it.
@@ -17048,28 +17135,10 @@ if(wsGroupBy==='group'){
 // When searching, drop empty sections to keep the view clean
 if(wsMtSearch) sections=sections.filter(s=>s.tasks.length>0);
 
-// Apply sort to section tasks
-if(wsSort.col){
-  const PO={crit:0,high:1,med:2,low:3};
-  sections.forEach(sec=>{
-    sec.tasks.sort((a,b)=>{
-      let va,vb;
-      if(wsSort.col==='status'){va=a.status||'';vb=b.status||'';}
-      else if(wsSort.col==='priority'){va=PO[a.priority]??99;vb=PO[b.priority]??99;}
-      else if(wsSort.col==='owner'){va=getStaff(a.ownerId)?.name||'';vb=getStaff(b.ownerId)?.name||'';}
-      else if(wsSort.col==='duedate'||wsSort.col==='timeline'){va=a.endDate||'9999';vb=b.endDate||'9999';}
-      else if(wsSort.col==='name'){va=a.name||'';vb=b.name||'';}
-      else if(wsSort.col==='client'){va=getTaskClient(a)?.name||'';vb=getTaskClient(b)?.name||'';}
-      if(va<vb)return wsSort.dir==='asc'?-1:1;
-      if(va>vb)return wsSort.dir==='asc'?1:-1;
-      return 0;
-    });
-  });
-} else if(wsGroupBy==='group'){
-  // Manual drag order — every task defaults to order:0, so this is a no-op (stable sort
-  // preserves the existing array order) until the user actually drags a row.
-  sections.forEach(sec=>sec.tasks.sort((a,b)=>(a.order||0)-(b.order||0)));
-}
+// Ordering is shared with the Gantt (_wsOrderTasks) so both views agree on row order — the
+// Gantt used to build its own sections with no sort at all, so drag-reordering or sorting a
+// column in the Main Table never showed up there.
+sections.forEach(sec=>_wsOrderTasks(sec.tasks));
   return sections;
 }
 
@@ -17406,7 +17475,7 @@ function renderSubRow(t,visSub,subCust){
   const owner=getStaff(t.ownerId);
   const sm=getStatusMeta(t.status);
   const isSelected=wsSelected.has(t.id);
-  const isDone=t.status==='done';
+  const isDone=taskIsStruck(t);
   const pct=t.percentComplete||0;
   const due=_wsDueState(t);
   const tlText=_wsCompactRange(t.startDate,t.endDate);
@@ -17424,6 +17493,7 @@ function renderSubRow(t,visSub,subCust){
     <td onclick="openTaskPanel('${t.id}')" style="cursor:pointer">
       <div style="display:flex;align-items:center;gap:5px;padding:0 8px">
         ${canDrag?`<span class="ws-row-grip" draggable="true" ondragstart="_wsRowDragStart(event,'${t.id}')" ondragend="_wsRowDragEnd(event)" onclick="event.stopPropagation()" title="Drag to reorder">⠿</span>`:''}
+        <span title="${escHtml(sm.label)}" style="width:7px;height:7px;border-radius:50%;background:${sm.dot};flex-shrink:0"></span>
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:12px;cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
           title="${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
@@ -17484,7 +17554,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const hasChildren=childTasks.length>0;
   const isExpanded=wsExpanded.has(t.id)||wsInlineAddSubtaskId===t.id;
   const expanded=!isSubitem&&isExpanded&&(hasChildren||wsInlineAddSubtaskId===t.id);
-  const isDone=t.status==='done';
+  const isDone=taskIsStruck(t);
   const sm=getStatusMeta(t.status);
   const pm=getPrioMeta(t.priority);
   const cw=t.currentlyWith==='client'
@@ -17529,6 +17599,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
           :(hasChildren||currentUser?.role!=='client'
             ?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" style="background:none;border:none;cursor:pointer;padding:2px;color:${hasChildren?'#8da2b2':'#d4dde8'};font-size:9px;width:14px;flex-shrink:0;line-height:1">${wsExpanded.has(t.id)?'▼':'▶'}</button>`
             :'<span style="width:14px;flex-shrink:0"></span>')}
+        <span title="${escHtml(sm.label)}" style="width:7px;height:7px;border-radius:50%;background:${sm.dot};flex-shrink:0"></span>
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
@@ -18004,7 +18075,7 @@ function renderTpSubtasks(taskId){
         const sm=getStatusMeta(si.status);
         const pm=PRIO_META[si.priority]||PRIO_META['med'];
         const owner=DB.staff.find(s=>s.id===si.ownerId);
-        const isDone=si.status==='done'||si.status==='completed';
+        const isDone=taskIsStruck(si);
         const siPct=si.percentComplete||0;
         return`<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid #e2eaf2;border-radius:8px;margin-bottom:6px;background:#fafcff;cursor:pointer;transition:border-color 0.1s" onclick="openTaskPanel('${si.id}')" onmouseover="this.style.borderColor='#97bcbd';this.querySelector('.si-actions').style.opacity='1'" onmouseout="this.style.borderColor='#e2eaf2';this.querySelector('.si-actions').style.opacity='0'">
           <div style="flex:1;min-width:0">
