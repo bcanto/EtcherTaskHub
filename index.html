@@ -212,6 +212,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .g2-bar:hover{box-shadow:0 3px 12px rgba(0,0,0,0.18);filter:brightness(1.06)}
 .g2-bar.dragging{cursor:grabbing;box-shadow:0 6px 20px rgba(0,0,0,0.22);z-index:20;opacity:0.88}
 .g2-bar-label{padding:0 6px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;flex:1;min-width:0}
+.g2-bar-name{position:absolute;top:8px;height:24px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#8da2b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;max-width:260px}
 .g2-rh{width:7px;height:100%;flex-shrink:0;cursor:ew-resize;position:relative;z-index:1}
 .g2-rh::after{content:'';position:absolute;top:25%;bottom:25%;width:2px;border-radius:2px;background:rgba(255,255,255,0.4)}
 .g2-rh-l::after{left:2px}.g2-rh-r::after{right:2px}
@@ -6888,7 +6889,11 @@ function ganttBarColor(task,colorBy){
   if(colorBy==='priority'){
     return{low:'#94a3b8',med:'#f59e0b',high:'#f97316',crit:'#dc2626'}[task.priority]||'#94a3b8';
   }
-  const map={'todo':'#94a3b8','not-started':'#94a3b8','in-progress':'#3b82f6','waiting-client':'#f59e0b','review':'#a855f7','waiting-review':'#a855f7','blocked':'#ef4444','ready-approval':'#22c55e','done':'#10b981','completed':'#10b981','cancelled':'#78716c'};
+  const map={'todo':'#94a3b8','not-started':'#94a3b8','ready-to-start':'#94a3b8','in-progress':'#f59e0b','waiting-client':'#f59e0b','change-requested':'#f59e0b','needs-changes':'#f59e0b','review':'#a855f7','waiting-review':'#a855f7','blocked':'#ef4444','ready-approval':'#22c55e','approved-client':'#22c55e','done':'#10b981','completed':'#10b981','completed-approved':'#10b981','cancelled':'#78716c'};
+  // Overdue outranks the status colour — a task past its end date and not finished reads red
+  // regardless of what it claims to be. _TASK_DONE_STATUSES is the app-wide "finished" list.
+  const _td=new Date().toISOString().slice(0,10);
+  if(task.endDate&&task.endDate<_td&&!_TASK_DONE_STATUSES.includes(task.status)&&task.status!=='cancelled')return'#ef4444';
   return map[task.status]||'#94a3b8';
 }
 
@@ -6993,8 +6998,8 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
       const ex=Math.max(x1+22,x2+22);
       d=`M${x1},${y1} L${ex},${y1} L${ex},${y2} L${x2},${y2}`;
     }
-    paths+=`<path d="${d}" fill="none" stroke="#97bcbd" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.65"/>
-    <polygon points="${x2},${y2} ${x2-6},${y2-3} ${x2-6},${y2+3}" fill="#97bcbd" opacity="0.7"/>`;
+    paths+=`<path d="${d}" fill="none" stroke="#8da2b2" stroke-width="1.25" opacity="0.9"/>
+    <polygon points="${x2},${y2} ${x2-6},${y2-3} ${x2-6},${y2+3}" fill="#8da2b2" opacity="0.95"/>`;
   }
   if(!paths)return'';
   return `<svg style="position:absolute;top:0;left:0;width:${trackW}px;height:${totalH}px;overflow:visible;pointer-events:none;z-index:3">${paths}</svg>`;
@@ -7083,7 +7088,18 @@ function renderGantt(){
         <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#1a2940;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(sec.label)}</span>
         <span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border-radius:8px;padding:1px 6px;flex-shrink:0">${sec.tasks.length}</span>
       </div>`;
-      rightRows+=`<div style="height:36px;width:${trackW}px;background:#f8fafb;border-bottom:1px solid #edf1f6;position:relative"></div>`;
+      // Group summary: the span of every dated child, drawn as a thin rail so a collapsed
+      // group still shows when its phase runs.
+      const _gDates=(sec.tasks||[]).flatMap(gt=>[gt.startDate,gt.endDate]).filter(Boolean).sort();
+      let _gSummary='';
+      if(_gDates.length){
+        const _gsx=d2x(_gDates[0]);
+        const _gsw=Math.max(Math.round(depDiffDays(_gDates[0],_gDates[_gDates.length-1])*DW),4);
+        _gSummary=`<div style="position:absolute;left:${_gsx}px;width:${_gsw}px;height:6px;top:15px;border-radius:3px;background:${sec.color};opacity:0.75;pointer-events:none"></div>
+        <div style="position:absolute;left:${_gsx}px;width:3px;height:12px;top:12px;background:${sec.color};border-radius:1px;pointer-events:none"></div>
+        <div style="position:absolute;left:${_gsx+_gsw-3}px;width:3px;height:12px;top:12px;background:${sec.color};border-radius:1px;pointer-events:none"></div>`;
+      }
+      rightRows+=`<div style="height:36px;width:${trackW}px;background:#f8fafb;border-bottom:1px solid #edf1f6;position:relative">${_gSummary}</div>`;
     } else {
       const t=row.task;
       // A parent with dated subitems shows their rolled-up span, matching the Main Table
@@ -7138,16 +7154,18 @@ function renderGantt(){
         const reAttr=canEdit?`onmousedown="event.stopPropagation();ganttBarMouseDown(event,'${t.id}','resize-end')"`:''
         barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${t.startDate} → ${t.endDate}${locked?' (locked)':''}">
           ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
-          <div class="g2-bar-label">${escHtml(t.name||t.title||'')}</div>
+          <div class="g2-bar-label"></div>
           ${locked?`<span style="padding-right:4px;flex-shrink:0;display:inline-flex">${icon('lock',9)}</span>`:''}
           ${_gRolled?'':`<div class="g2-rh g2-rh-r" ${reAttr}></div>`}
         </div>
+        <div class="g2-bar-name" style="left:${bx+bw+8}px${_sub?';top:9px;height:13px;font-size:10px':''}" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'')}</div>
         ${ganttShowBaseline&&t.baselineStartDate&&t.baselineEndDate?`<div style="position:absolute;left:${d2x(t.baselineStartDate)}px;width:${Math.max(Math.round(depDiffDays(t.baselineStartDate,t.baselineEndDate)*DW),4)}px;height:4px;bottom:5px;border-radius:2px;background:rgba(13,28,51,0.16);pointer-events:none"></div>`:''}`;
       } else if(hasOne){
-        // Milestone diamond
+        // Milestone diamond — always blue, matching the reference, unless By Priority is on.
         const mx=d2x(_gS||_gE);
-        const bc=ganttBarColor(t,ganttColorBy);
-        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(t.name||'')}"></div>`;
+        const bc=ganttColorBy==='priority'?ganttBarColor(t,ganttColorBy):'#3b82f6';
+        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(t.name||'')}"></div>
+        <div class="g2-bar-name" style="left:${mx+11}px" title="${escHtml(t.name||t.title||'')}">${escHtml(t.name||t.title||'')}</div>`;
       }
 
       rightRows+=`<div style="height:${_rowH}px;width:${trackW}px;position:relative;border-bottom:1px solid #f4f6fa;${_sub?'background:#fcfdfe':''}">${barHTML}</div>`;
@@ -7268,10 +7286,25 @@ function ganttOnUp(evt){
 }
 
 // ── Apply a validated Gantt move ─────────────────────────
+// A drag that would move other people's work asks first. recalculateDependentSchedule clones
+// the task list it is given, so the prospective chain can be computed against a hypothetical
+// before anything is written — cancel then costs nothing, because nothing has happened yet.
 function applyGanttMove(taskId,newStart,newEnd){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task){renderView('gantt');return;}
   if(task.startDate===newStart&&task.endDate===newEnd){renderView('gantt');return;}
+  const hypothetical=DB.tasks.map(t=>t.id===taskId?{...t,startDate:newStart,endDate:newEnd}:t);
+  const preview=recalculateDependentSchedule(taskId,hypothetical,DB.dependencies||[]);
+  if(preview.shifts.length){
+    _ganttCascadeConfirm(taskId,newStart,newEnd,preview.shifts);
+    return;   // nothing written yet; the dialog commits or discards
+  }
+  _ganttCommitMove(taskId,newStart,newEnd);
+}
+// The actual write. Only reached with no downstream impact, or after an explicit confirm.
+function _ganttCommitMove(taskId,newStart,newEnd){
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task){renderView('gantt');return;}
   writeAuditEvent('Task',taskId,'dates_changed',{startDate:task.startDate,endDate:task.endDate},{startDate:newStart,endDate:newEnd,source:'gantt_drag'});
   task.startDate=newStart;task.endDate=newEnd;task.updatedAt=new Date().toISOString();
   saveDB(DB);
@@ -7279,6 +7312,39 @@ function applyGanttMove(taskId,newStart,newEnd){
   const cw=_applyScheduleResult(result);
   if(result.shifts.length||cw.length)_ganttCascadeToast(result.shifts,cw);
   renderView('gantt');
+}
+// Mirrors _ganttWarnDialog's overlay pattern; only the copy and the buttons' actions differ.
+function _ganttCascadeConfirm(taskId,newStart,newEnd,shifts){
+  document.getElementById('g2-cascade-overlay')?.remove();
+  const task=DB.tasks.find(t=>t.id===taskId);
+  const n=shifts.length;
+  const days=Math.abs(depDiffDays(task.startDate,newStart));
+  const names=shifts.slice(0,5).map(s=>{
+    const t=DB.tasks.find(x=>x.id===s.taskId);
+    return escHtml(t?(t.name||t.title||'Untitled'):'Untitled');
+  });
+  const ov=document.createElement('div');
+  ov.id='g2-cascade-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(13,28,51,0.45);z-index:900;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  ov.onclick=e=>{if(e.target===ov){ov.remove();renderView('gantt');}};
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:420px;width:calc(100% - 40px);padding:22px 24px;box-shadow:0 20px 60px rgba(13,28,51,0.3);font-family:'Lato',sans-serif" onclick="event.stopPropagation()">
+    <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin-bottom:8px">Move dependent tasks?</div>
+    <div style="font-size:13px;color:#4a5568;line-height:1.55;margin-bottom:12px">Shifting this task will move <strong>${n}</strong> dependent task${n!==1?'s':''} by <strong>${days}</strong> day${days!==1?'s':''}.</div>
+    <div style="font-size:12px;color:#8da2b2;line-height:1.6;margin-bottom:18px">${names.map(nm=>'• '+nm).join('<br>')}${n>5?`<br>• and ${n-5} more`:''}</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="_ganttCascadeCancel()" class="btn btn-ghost btn-sm">Cancel</button>
+      <button onclick="_ganttCascadeAccept('${taskId}','${newStart}','${newEnd}')" class="btn btn-primary btn-sm">Continue</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function _ganttCascadeCancel(){
+  document.getElementById('g2-cascade-overlay')?.remove();
+  renderView('gantt');   // repaint from unmodified DB — the bar springs back to its old spot
+}
+function _ganttCascadeAccept(taskId,newStart,newEnd){
+  document.getElementById('g2-cascade-overlay')?.remove();
+  _ganttCommitMove(taskId,newStart,newEnd);
 }
 
 // ── Warning dialog for predecessor violations ─────────────
