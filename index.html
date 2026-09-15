@@ -7174,8 +7174,17 @@ function renderGantt(){
         <span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border-radius:8px;padding:1px 6px;flex-shrink:0">${sec.tasks.length}</span>
       </div>`;
       // Group summary: the span of every dated child, drawn as a thin rail so a collapsed
-      // group still shows when its phase runs.
-      const _gDates=(sec.tasks||[]).flatMap(gt=>[gt.startDate,gt.endDate]).filter(Boolean).sort();
+      // group still shows when its phase runs. Each task contributes its EFFECTIVE dates —
+      // getTaskDateSpan's rolled-up span when it has dated subitems, its own dates otherwise
+      // — the same rule the task's own bar uses (row.effStart/effEnd). Reading gt.startDate/
+      // endDate directly here used to ignore subitems entirely, so the group's rail could stop
+      // short of a task whose real span (via its children) ran later than its own stored dates.
+      const _gDates=(sec.tasks||[]).flatMap(gt=>{
+        const _gtRoll=getTaskDateSpan(gt.id);
+        const _gtS=(_gtRoll&&_gtRoll.startDate)?_gtRoll.startDate:gt.startDate;
+        const _gtE=(_gtRoll&&_gtRoll.endDate)?_gtRoll.endDate:gt.endDate;
+        return[_gtS,_gtE];
+      }).filter(Boolean).sort();
       let _gSummary='';
       if(_gDates.length){
         const _gsx=d2x(_gDates[0]);
@@ -10596,6 +10605,16 @@ function pfiFmtDate(d){if(!d)return'';const[y,m,dd]=(d||'').split('-');return dd
 function pfiLocationLabel(loc){
   return{remote:'Remote',client_office:'In Client Office',office:'Etcher Office'}[loc]||'';
 }
+// Invoices imported before pfiConfirmImport copied location (see the comment there) have
+// li.location frozen at null forever — that data was never written, so there is nothing on
+// the invoice itself to migrate. Rather than rewrite already-issued, already-approved invoice
+// records, fall back to the source time entry's current location at display/export time —
+// a read-only lookup, so it never touches the time entry or the stored invoice.
+function pfiEffectiveLocation(li){
+  if(li.location)return li.location;
+  const e=li.timeEntryId?(DB.timeEntries||[]).find(x=>x.id===li.timeEntryId):null;
+  return e?.location||null;
+}
 
 function pfiCreate(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
@@ -10911,7 +10930,7 @@ function pfiExportCSV(id){
       }
       lastDate=li.date;
     }
-    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',pfiLocationLabel(li.location),li.hours.toFixed(2),li.billable?'Yes':'No',li.description||li.note||'']);
+    rows.push([li.date,li.day||pfiDayName(li.date),li.staffName,li.memberCode||'',li.activity||'',li.activityCode||'',li.boardName||'',li.clientName||'',li.clientCode||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),li.billable?'Yes':'No',li.description||li.note||'']);
   });
   if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);}
   rows.push(['','','','','','','','','','','','','']);
@@ -10939,7 +10958,7 @@ function pfiExportExcel(id){
       const dH=sorted.filter(l=>l.date===li.date&&l.billable).reduce((s,l)=>s+l.hours,0);
       grpRow=`<tr style="background:#f1f5f9"><td colspan="10" style="padding:5px 8px;font-weight:bold;font-size:11px">${escHtml(pfiDayName(li.date)+', '+pfiFmtDate(li.date))}</td><td style="text-align:right;font-weight:bold;padding:5px 8px;font-size:11px">${dH.toFixed(2)}</td><td colspan="2"></td></tr>`;
     }
-    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(pfiLocationLabel(li.location))}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
+    return grpRow+`<tr style="${li.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(li.date)}${d(li.day||pfiShortDay(li.date))}${d(li.staffName,true)}${d(li.memberCode||'')}${d(li.activity||'')}${d(li.activityCode||'')}${d(li.boardName||'')}${d(li.clientName||'')}${d(li.clientCode||'')}${d(pfiLocationLabel(pfiEffectiveLocation(li)))}${d(li.hours.toFixed(2),false,'right')}${d(li.billable?'Yes':'No')}${d(li.description||li.note||'')}</tr>`;
   }).join('');
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>table{border-collapse:collapse}td,th{border:1px solid #dee2e6}</style></head><body><table>
 <tr><td colspan="13" style="background:#0d1c33;color:#fff;font-size:15px;font-weight:bold;padding:8px">PRO FORMA HOURS REPORT — ${escHtml(inv.number)}</td></tr>
@@ -11019,7 +11038,7 @@ function pfiExportPDF(id){
         margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
         showHead:'everyPage',showFoot:'lastPage',
         head:[['Date','Day','Team Member','Activity','Project','Location','Hours','Notes']],
-        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(li.location),li.hours.toFixed(2),li.description||li.note||'']),
+        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),li.description||li.note||'']),
         foot:[['','','','','','Total Hours',t.totalHrs.toFixed(2),'']],
         columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:26},6:{halign:'right',cellWidth:14},7:{cellWidth:'auto'}},
       });
@@ -11225,7 +11244,7 @@ function _pfiEditorHtml(inv){
       <td style="${tdS2}"><input type="number" value="${li.hours.toFixed(2)}" style="width:55px;padding:2px 5px;border:1px solid #e2eaf2;border-radius:4px;font-size:11px;text-align:right;font-family:inherit" onblur="pfiSaveLineField('${inv.id}','${li.id}','hours',this.value)" min="0" step="0.25"/></td>
       <td style="${tdS2};text-align:right;font-size:12px;font-weight:700;color:${li.billable?'#178082':'#c8d7e1'};white-space:nowrap">${li.hours.toFixed(2)}${(li.sourceHours!=null&&Math.abs(li.sourceHours-li.hours)>0.004)?`<div title="Approved: ${li.sourceHours}h" style="font-size:9px;font-weight:700;color:#b45309;white-space:nowrap">was ${li.sourceHours}h</div>`:''}</td>
       <td style="${tdS2};text-align:center"><label style="cursor:pointer"><input type="checkbox" ${li.billable?'checked':''} style="accent-color:#0d1c33" onchange="pfiToggleBillable('${inv.id}','${li.id}')" title="Include in total"/></label></td>
-      <td style="${tdS2}"><select style="border:1px solid transparent;background:transparent;font-size:10px;color:#8da2b2;font-family:inherit;cursor:pointer" onchange="pfiSaveLineField('${inv.id}','${li.id}','location',this.value)"><option value=""${!li.location?' selected':''}>—</option><option value="remote"${li.location==='remote'?' selected':''}>Remote</option><option value="client_office"${li.location==='client_office'?' selected':''}>In Client Office</option><option value="office"${li.location==='office'?' selected':''}>Etcher Office</option></select></td>
+      <td style="${tdS2}">${(()=>{const _eLoc=pfiEffectiveLocation(li);return`<select style="border:1px solid transparent;background:transparent;font-size:10px;color:#8da2b2;font-family:inherit;cursor:pointer" onchange="pfiSaveLineField('${inv.id}','${li.id}','location',this.value)"><option value=""${!_eLoc?' selected':''}>—</option><option value="remote"${_eLoc==='remote'?' selected':''}>Remote</option><option value="client_office"${_eLoc==='client_office'?' selected':''}>In Client Office</option><option value="office"${_eLoc==='office'?' selected':''}>Etcher Office</option></select>`;})()}</td>
       <td style="${tdS2}"><button onclick="pfiRemoveLine('${inv.id}','${li.id}')" style="padding:0 7px;height:22px;border-radius:4px;font-size:10px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c" title="Remove">✕</button></td>
     </tr>`;
   });
@@ -17493,7 +17512,6 @@ function renderSubRow(t,visSub,subCust){
     <td onclick="openTaskPanel('${t.id}')" style="cursor:pointer">
       <div style="display:flex;align-items:center;gap:5px;padding:0 8px">
         ${canDrag?`<span class="ws-row-grip" draggable="true" ondragstart="_wsRowDragStart(event,'${t.id}')" ondragend="_wsRowDragEnd(event)" onclick="event.stopPropagation()" title="Drag to reorder">⠿</span>`:''}
-        <span title="${escHtml(sm.label)}" style="width:7px;height:7px;border-radius:50%;background:${sm.dot};flex-shrink:0"></span>
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:12px;cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
           title="${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
@@ -17599,7 +17617,6 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
           :(hasChildren||currentUser?.role!=='client'
             ?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" style="background:none;border:none;cursor:pointer;padding:2px;color:${hasChildren?'#8da2b2':'#d4dde8'};font-size:9px;width:14px;flex-shrink:0;line-height:1">${wsExpanded.has(t.id)?'▼':'▶'}</button>`
             :'<span style="width:14px;flex-shrink:0"></span>')}
-        <span title="${escHtml(sm.label)}" style="width:7px;height:7px;border-radius:50%;background:${sm.dot};flex-shrink:0"></span>
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
