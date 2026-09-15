@@ -208,7 +208,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .gantt-bar{position:absolute;height:20px;border-radius:5px;top:2px;display:flex;align-items:center;padding:0 6px;font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;cursor:pointer}
 /* ── Gantt v2 ── */
 .g2-container{display:flex;border:1.5px solid var(--border);border-radius:var(--r-md);background:#fff;overflow:hidden;height:calc(100vh - 222px);min-height:360px}
-.g2-bar{position:absolute;height:24px;top:8px;border-radius:5px;display:flex;align-items:center;overflow:hidden;user-select:none;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,0.1);transition:box-shadow 0.18s,filter 0.18s}
+.g2-bar{position:absolute;height:24px;top:8px;border-radius:5px;display:flex;align-items:center;overflow:hidden;user-select:none;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,0.1);transition:box-shadow 0.18s,filter 0.18s;z-index:2}
 .g2-bar:hover{box-shadow:0 3px 12px rgba(0,0,0,0.18);filter:brightness(1.06)}
 .g2-bar.dragging{cursor:grabbing;box-shadow:0 6px 20px rgba(0,0,0,0.22);z-index:20;opacity:0.88}
 .g2-bar-label{padding:0 6px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;flex:1;min-width:0}
@@ -2068,7 +2068,10 @@ function _ganttSig(){
   // active (e.g. re-clicking Fit after a resize), in which case every other field above is
   // unchanged too — without this, that's an exact cache-key match, _renderCached serves the
   // pre-Fit HTML, and Fit silently does nothing despite having computed a new width.
-  return[ganttScale,ganttColorBy,ganttShowBaseline?1:0,ganttLeftCollapsed?1:0,_ganttFitDW||'',
+  // currentWorkboard.id must be in here too: switching boards inside the 8s cache TTL used to
+  // serve the PREVIOUS board's Gantt HTML unchanged, since nothing else about toolbar state
+  // necessarily differs between two boards.
+  return[currentWorkboard?.id||'',ganttScale,ganttColorBy,ganttShowBaseline?1:0,ganttLeftCollapsed?1:0,_ganttFitDW||'',
     [...ganttCollapsed].sort().join('|'),
     [...ganttExpanded].sort().join('|')].join('~');
 }
@@ -3065,6 +3068,8 @@ let ganttExpanded=new Set();
 let ganttLeftCollapsed=false;
 let ganttShowBaseline=false;
 let _ganttViewStart=null;
+let _ganttTodayX=null; // set by renderGantt each render; used by renderView's 'gantt' case to
+                        // scroll a freshly-opened Gantt to today instead of the far-left edge
 let _ganttDrag=null;
 let cpSection='overview';
 let cpGanttScale='weeks';
@@ -3298,7 +3303,8 @@ function _utViewControls(view){
     <button class="g2-cb-btn ${ganttColorBy==='priority'?'active':''}" onclick="ganttSetColorBy('priority')">By Priority</button>
     <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#6b8399;cursor:pointer;white-space:nowrap;flex-shrink:0">
       <input type="checkbox" ${ganttShowBaseline?'checked':''} onchange="ganttShowBaseline=this.checked;renderView('gantt')" style="accent-color:#97bcbd"/> Baseline
-    </label>`;
+    </label>
+    ${currentUser.role==='admin'?`<button onclick="ganttSetBaseline()" class="btn btn-ghost btn-sm" style="flex-shrink:0" title="Snapshot every dated task's current start/end as its baseline">Set Baseline</button>`:''}`;
   }
   if(view==='capacity'){
     const swimCtls=mcView==='gantt'?`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
@@ -3968,6 +3974,17 @@ function renderView(v){
               const _lb2=document.getElementById('g2-left-body');
               if(_lb2)_lb2.scrollTop=_gTop;
             });
+          });
+        } else if(_ganttTodayX!=null){
+          // Fresh navigation, nothing to restore — the Gantt used to always open scrolled all
+          // the way left, so today (and any board whose earliest task predates today by more
+          // than a screen's width) opened off-screen to the right, looking like it was showing
+          // nothing but old history. Open scrolled to today instead, a quarter of the way in
+          // from the left so upcoming work is more visible than past.
+          requestAnimationFrame(()=>{
+            const _r=document.getElementById('g2-right');
+            if(!_r)return;
+            _r.scrollLeft=Math.max(0,_ganttTodayX-_r.clientWidth*0.25);
           });
         }
         break;
@@ -6968,14 +6985,17 @@ function ganttBarColor(task,colorBy){
   const map={'todo':'#94a3b8','not-started':'#94a3b8','ready-to-start':'#94a3b8','in-progress':'#f59e0b','waiting-client':'#f59e0b','change-requested':'#f59e0b','needs-changes':'#f59e0b','review':'#a855f7','waiting-review':'#a855f7','blocked':'#ef4444','ready-approval':'#22c55e','approved-client':'#22c55e','done':'#10b981','completed':'#10b981','completed-approved':'#10b981','cancelled':'#78716c'};
   // Overdue outranks the status colour — a task past its end date and not finished reads red
   // regardless of what it claims to be. _TASK_DONE_STATUSES is the app-wide "finished" list.
-  const _td=new Date().toISOString().slice(0,10);
+  // toDateStr (local date), not toISOString (UTC) — every Australian timezone is ahead of UTC,
+  // so UTC's date lags the local date until UTC also crosses midnight (8am local in Perth).
+  // In that window a task due "yesterday" by the user's own clock doesn't read as overdue yet.
+  const _td=toDateStr(new Date());
   if(task.endDate&&task.endDate<_td&&!_TASK_DONE_STATUSES.includes(task.status)&&task.status!=='cancelled')return'#ef4444';
   return map[task.status]||'#94a3b8';
 }
 
 // ── Build header HTML for a given scale ──────────────────
 function ganttBuildHeaders(viewStart,totalDays,DW,scale){
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date()); // local date, not UTC — see ganttBarColor's comment
   const mStyle=(w,extra)=>`style="flex-shrink:0;width:${w}px;height:32px;border-right:1px solid #e8edf4;padding:0 6px;display:flex;align-items:center;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;overflow:hidden;background:#f8fbff${extra?';'+extra:''}"`;
   const dStyle=(w,tod,wknd)=>`style="flex-shrink:0;width:${w}px;height:34px;border-right:1px solid #f0f4f8;display:flex;align-items:center;justify-content:center;font-family:'Jost',sans-serif;font-size:10px;color:${tod?'#ef4444':'#8da2b2'};font-weight:${tod?700:400};background:${tod?'#fff5f5':wknd?'rgba(0,0,0,0.018)':'#fff'};white-space:nowrap;overflow:hidden"`;
 
@@ -7028,7 +7048,7 @@ function ganttBuildHeaders(viewStart,totalDays,DW,scale){
 // ── SVG grid overlay (lines + weekend shading) ───────────
 function ganttGridSVG(viewStart,totalDays,DW,totalH,scale){
   let rects='',lines='';
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date()); // local date, not UTC — see ganttBarColor's comment
   const trackW=Math.ceil(totalDays*DW);
   for(let i=0;i<totalDays;i++){
     const x=i*DW;
@@ -7055,11 +7075,23 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
   const deps=DB.dependencies||[];
   if(!deps.length)return'';
   const rowMap=new Map(rowList.filter(r=>r.type==='task').map(r=>[r.id,r]));
+  // A dependency on a subitem that isn't currently shown (parent collapsed, or its subitems
+  // not expanded) used to be silently dropped — rowMap simply has no row for it. Route the
+  // line to the subitem's PARENT row instead, so the connection is still visible; it lands on
+  // the parent's own bar (drawn from its rolled-up span), which is the closest visible stand-in
+  // for the hidden subitem. Real for your data specifically: 201 of 241 tasks are subitems.
+  const _rowOrParent=id=>{
+    const row=rowMap.get(id);
+    if(row)return row;
+    const task=DB.tasks.find(x=>x.id===id);
+    return task?.parentTaskId?rowMap.get(task.parentTaskId):null;
+  };
   let paths='';
   for(const dep of deps){
-    const pRow=rowMap.get(dep.predecessorTaskId);
-    const dRow=rowMap.get(dep.dependentTaskId);
+    const pRow=_rowOrParent(dep.predecessorTaskId);
+    const dRow=_rowOrParent(dep.dependentTaskId);
     if(!pRow||!dRow)continue;
+    if(pRow.id===dRow.id)continue; // both ends fell back to the same hidden parent — nothing to draw
     const pt=pRow.task,dt=dRow.task;
     // A rollup parent's bar is drawn from its subitems' span, not its own dates — use the
     // same effective dates the bar loop computed (row.effEnd/effStart), falling back to the
@@ -7089,7 +7121,11 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
 function renderGantt(){
   const _wbTabs=renderWbTabs('gantt');
   const _gExcl=_excludedBoardIds();
-  const allTasks=getFilteredTasks().filter(t=>!_gExcl.has(t.workboardId||t.boardId));
+  // The Gantt has no archived-task styling or handling at all (no dimming, no toggle of its
+  // own), so it must never depend on the Main Table's "show archived" toggle — getFilteredTasks
+  // ->getVisibleTasks does respect that toggle, which let an archived task appear here whenever
+  // someone had it switched on elsewhere.
+  const allTasks=getFilteredTasks().filter(t=>!_gExcl.has(t.workboardId||t.boardId)&&!t.archived);
   const tasks=allTasks.filter(t=>t.startDate||t.endDate);
   // Subitems only appear under an expanded parent, and only when they carry a date of
   // their own — an undated subitem has nothing to draw.
@@ -7140,8 +7176,9 @@ function renderGantt(){
 
   // Helpers
   const d2x=ds=>Math.round((new Date(ds)-viewStart)/86400000*DW);
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date()); // local date, not UTC — see ganttBarColor's comment
   const todayX=d2x(todayStr)+DW/2;
+  _ganttTodayX=todayX;
 
   // Build row list for dep lines + vertical positions
   const rowList=[];
@@ -7243,8 +7280,16 @@ function renderGantt(){
       let barHTML='';
       if(hasBoth){
         const bc=ganttBarColor(t,ganttColorBy);
-        const bx=d2x(_gS);
-        const bw=Math.max(Math.round(depDiffDays(_gS,_gE)*DW),4);
+        // An end date before the start date used to render as a meaningless 4px sliver at the
+        // START position with no indication anything was wrong (depDiffDays went negative,
+        // clamped straight to the 4px floor). Position at whichever date is earlier, size by
+        // the real span, and mark it unmistakably instead of hiding the problem.
+        const _inverted=_gE<_gS;
+        const bx=d2x(_inverted?_gE:_gS);
+        // depDiffDays clamps a negative span to 0 internally (Math.max(0,…) inside it, correct
+        // for its other callers which assume end-after-start) — Math.abs() around a value
+        // that's already floored at 0 does nothing. Pass the earlier date first instead.
+        const bw=Math.max(Math.round(depDiffDays(_inverted?_gE:_gS,_inverted?_gS:_gE)*DW),4);
         const locked=!!t.lockedDates;
         const canEdit=canEditTask(currentUser,t)&&!locked&&!_gRolled;
         // dAttr used to carry its own title= for locked tasks, which collided with the title
@@ -7258,6 +7303,7 @@ function renderGantt(){
         const _noDragWhy=_gRolled?' · dates roll up from subitems — drag a subitem instead'
                         :locked?' · dates locked'
                         :!canEditTask(currentUser,t)?' · you cannot edit this task':'';
+        const _invertedWarn=_inverted?' · ⚠ end date is before start date':'';
         const _prog=taskProgressPct(t);
         // Label placement: right of the bar by default; flip left when the bar ends too close
         // to the timeline's edge for the text to fit; fall back to inside only when the bar
@@ -7271,7 +7317,7 @@ function renderGantt(){
         const _fitsInside=bw>=_lblW+12;
         const _lblLeft=_fitsRight?(bx+bw+8):_fitsLeft?(bx-_lblW-8):(_fitsInside?bx+6:Math.max(0,trackW-_lblW));
         const _lblInside=!_fitsRight&&!_fitsLeft&&_fitsInside;
-        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_noDragWhy}${_prog?` · ${_prog}% complete`:''}">
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}${_inverted?';border:2px dashed #dc2626;background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.35) 4px,rgba(255,255,255,0.35) 8px)':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_invertedWarn}${_noDragWhy}${_prog?` · ${_prog}% complete`:''}">
           ${_prog>0?`<div style="position:absolute;left:0;top:0;bottom:0;width:${_prog}%;background:rgba(255,255,255,0.32);pointer-events:none;border-radius:5px 0 0 5px"></div>`:''}
           ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
           <div class="g2-bar-label"></div>
@@ -7289,7 +7335,16 @@ function renderGantt(){
         const _mNm=t.name||t.title||'';
         const _mLblW=Math.min(260,_mNm.length*6.2+8);
         const _mLblLeft=(mx+11+_mLblW)<=trackW?(mx+11):Math.max(0,mx-11-_mLblW);
-        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;cursor:pointer" onclick="openTaskPanel('${t.id}')" title="${escHtml(_mNm)}"></div>
+        // A milestone used to have no id and no drag handler at all, so a single-date task
+        // could only ever be rescheduled by editing it in the task panel — the diamond looked
+        // exactly as interactive as a regular bar but silently did nothing when dragged.
+        // g2-bar-mouse-down/on-move/on-up all handle isMilestone as a special case (only one
+        // of startDate/endDate exists, so there is no width/resize concept — only "move").
+        const _mLocked=!!t.lockedDates;
+        const _mCanEdit=canEditTask(currentUser,t)&&!_mLocked&&!_gRolled;
+        const _mDAttr=_mCanEdit?`onmousedown="ganttBarMouseDown(event,'${t.id}','move')"`:'';
+        const _mNoDragWhy=_gRolled?' · dates roll up from subitems':_mLocked?' · dates locked':!canEditTask(currentUser,t)?' · you cannot edit this task':'';
+        barHTML=`<div id="g2-bar-${t.id}" class="g2-bar" ${_mDAttr} style="left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${bc};border-radius:2px;box-shadow:none;cursor:${_mCanEdit?'grab':'pointer'}" onclick="openTaskPanel('${t.id}')" title="${escHtml(_mNm)}${_mNoDragWhy}"></div>
         <div class="g2-bar-name" style="left:${_mLblLeft}px" title="${escHtml(_mNm)}">${escHtml(_mNm)}</div>`;
       }
 
@@ -7401,13 +7456,39 @@ function ganttAutoFit(){
   renderView('gantt');
 }
 
+// The Baseline checkbox had nothing to show — baselineStartDate/baselineEndDate were read by
+// the render but never written anywhere in the app, so toggling it never did anything for any
+// task. This captures a snapshot; the checkbox then compares live dates against it.
+function ganttSetBaseline(){
+  if(!currentWorkboard)return;
+  const dated=getFilteredTasks().filter(t=>t.startDate&&t.endDate);
+  // Cover subitems too — the Gantt draws their bars whenever a parent is expanded.
+  const subs=[];
+  dated.forEach(t=>(DB.tasks||[]).filter(k=>k.parentTaskId===t.id&&!k.archived&&k.startDate&&k.endDate).forEach(k=>subs.push(k)));
+  const all=[...dated,...subs];
+  if(!all.length){showAlert('No dated tasks on this board to baseline.');return;}
+  openConfirm('Set baseline?',
+    `Capture the current start/end dates of ${all.length} task${all.length!==1?'s':''} on this board as the baseline? This snapshots the plan as it stands right now — the Baseline toggle will then show it against whatever the dates become later.`,
+    'Set Baseline',()=>{
+      all.forEach(t=>{t.baselineStartDate=t.startDate;t.baselineEndDate=t.endDate;});
+      writeAuditEvent('Workboard',currentWorkboard.id,'baseline_set',null,{taskCount:all.length});
+      saveDB(DB);
+      ganttShowBaseline=true;
+      closeConfirm();
+      renderView('gantt');
+    },false);
+}
+
 // ── Drag / resize ────────────────────────────────────────
 function ganttBarMouseDown(evt,taskId,type){
   if(currentUser.role==='client')return;
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canEditTask(currentUser,task)||task.lockedDates)return;
   evt.preventDefault();evt.stopPropagation();
-  _ganttDrag={taskId,type,startX:evt.clientX,origStart:task.startDate,origEnd:task.endDate,moved:false};
+  // A milestone (only one of startDate/endDate set) has no second edge — no width, no resize,
+  // just a single point that moves. ganttOnMove/ganttOnUp both branch on this.
+  const isMilestone=!task.startDate||!task.endDate;
+  _ganttDrag={taskId,type,startX:evt.clientX,origStart:task.startDate,origEnd:task.endDate,moved:false,isMilestone};
   const bar=document.getElementById('g2-bar-'+taskId);
   if(bar)bar.classList.add('dragging');
   document.addEventListener('mousemove',ganttOnMove);
@@ -7422,6 +7503,15 @@ function ganttOnMove(evt){
   _ganttDrag.moved=true;
   const bar=document.getElementById('g2-bar-'+_ganttDrag.taskId);
   if(!bar)return;
+  if(_ganttDrag.isMilestone){
+    // Only one of origStart/origEnd exists — new Date(null) is the Unix epoch, so the normal
+    // bar math below (which needs both) would place this off in 1970. Just translate the
+    // diamond by the raw pixel delta from whichever single date it actually has.
+    const refDate=_ganttDrag.origStart||_ganttDrag.origEnd;
+    const ox=Math.round((new Date(refDate)-_ganttViewStart)/86400000*DW);
+    bar.style.left=(ox-7+delta)+'px';
+    return;
+  }
   const ox=Math.round((new Date(_ganttDrag.origStart)-_ganttViewStart)/86400000*DW);
   const ow=Math.max(Math.round((new Date(_ganttDrag.origEnd)-new Date(_ganttDrag.origStart))/86400000*DW),4);
   let nl,nw;
@@ -7444,7 +7534,12 @@ function ganttOnUp(evt){
   const deltaDays=Math.round((evt.clientX-drag.startX)/DW);
   if(deltaDays===0){renderView('gantt');return;}
   let ns=drag.origStart,ne=drag.origEnd;
-  if(drag.type==='move'){ns=depAddDays(drag.origStart,deltaDays);ne=depAddDays(drag.origEnd,deltaDays);}
+  if(drag.isMilestone){
+    // Shift whichever single date this task actually has — depAddDays(null,…) would silently
+    // compute from the Unix epoch instead of correctly leaving the missing field untouched.
+    if(ns)ns=depAddDays(ns,deltaDays);
+    if(ne)ne=depAddDays(ne,deltaDays);
+  } else if(drag.type==='move'){ns=depAddDays(drag.origStart,deltaDays);ne=depAddDays(drag.origEnd,deltaDays);}
   else if(drag.type==='resize-start'){ns=depAddDays(drag.origStart,deltaDays);if(ns>=ne)ns=depAddDays(ne,-1);}
   else{ne=depAddDays(drag.origEnd,deltaDays);if(ne<=ns)ne=depAddDays(ns,1);}
   const warnings=getDependencyWarnings(drag.taskId,ns,ne,DB.tasks,DB.dependencies||[]);
@@ -7457,24 +7552,32 @@ function ganttOnUp(evt){
 // A drag that would move other people's work asks first. recalculateDependentSchedule clones
 // the task list it is given, so the prospective chain can be computed against a hypothetical
 // before anything is written — cancel then costs nothing, because nothing has happened yet.
-function applyGanttMove(taskId,newStart,newEnd){
+// lockAfter: set by ganttLockAndApply — the lock must land in the SAME write as the actual
+// move, not before it. It used to be written immediately, so cancelling the cascade dialog
+// (or the predecessor-warning dialog underneath it) left the task permanently locked with
+// nothing actually moved.
+function applyGanttMove(taskId,newStart,newEnd,lockAfter){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task){renderView('gantt');return;}
-  if(task.startDate===newStart&&task.endDate===newEnd){renderView('gantt');return;}
+  if(task.startDate===newStart&&task.endDate===newEnd){
+    if(lockAfter){task.lockedDates=true;saveDB(DB);}
+    renderView('gantt');return;
+  }
   const hypothetical=DB.tasks.map(t=>t.id===taskId?{...t,startDate:newStart,endDate:newEnd}:t);
   const preview=recalculateDependentSchedule(taskId,hypothetical,DB.dependencies||[]);
   if(preview.shifts.length){
-    _ganttCascadeConfirm(taskId,newStart,newEnd,preview.shifts);
+    _ganttCascadeConfirm(taskId,newStart,newEnd,preview.shifts,lockAfter);
     return;   // nothing written yet; the dialog commits or discards
   }
-  _ganttCommitMove(taskId,newStart,newEnd);
+  _ganttCommitMove(taskId,newStart,newEnd,lockAfter);
 }
 // The actual write. Only reached with no downstream impact, or after an explicit confirm.
-function _ganttCommitMove(taskId,newStart,newEnd){
+function _ganttCommitMove(taskId,newStart,newEnd,lockAfter){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task){renderView('gantt');return;}
   writeAuditEvent('Task',taskId,'dates_changed',{startDate:task.startDate,endDate:task.endDate},{startDate:newStart,endDate:newEnd,source:'gantt_drag'});
   task.startDate=newStart;task.endDate=newEnd;task.updatedAt=new Date().toISOString();
+  if(lockAfter)task.lockedDates=true;
   saveDB(DB);
   const result=recalculateDependentSchedule(taskId,DB.tasks,DB.dependencies||[]);
   const cw=_applyScheduleResult(result);
@@ -7482,11 +7585,18 @@ function _ganttCommitMove(taskId,newStart,newEnd){
   renderView('gantt');
 }
 // Mirrors _ganttWarnDialog's overlay pattern; only the copy and the buttons' actions differ.
-function _ganttCascadeConfirm(taskId,newStart,newEnd,shifts){
+function _ganttCascadeConfirm(taskId,newStart,newEnd,shifts,lockAfter){
   document.getElementById('g2-cascade-overlay')?.remove();
   const task=DB.tasks.find(t=>t.id===taskId);
   const n=shifts.length;
-  const days=Math.abs(depDiffDays(task.startDate,newStart));
+  // Was derived from the DRAGGED task's own start delta — always 0 on a resize-end drag,
+  // since only the end date moves. The number that actually matters is how far each
+  // downstream task itself shifts; take that directly from the shifts recalculateDependent
+  // Schedule already computed, per shift, since different branches can shift by different
+  // amounts (different lag days on each dependency).
+  const shiftDays=shifts.map(s=>Math.abs(depDiffDays(s.oldStartDate,s.newStartDate)));
+  const minDays=Math.min(...shiftDays), maxDays=Math.max(...shiftDays);
+  const dayLabel=minDays===maxDays?`${minDays} day${minDays!==1?'s':''}`:`${minDays}–${maxDays} days`;
   const names=shifts.slice(0,5).map(s=>{
     const t=DB.tasks.find(x=>x.id===s.taskId);
     return escHtml(t?(t.name||t.title||'Untitled'):'Untitled');
@@ -7497,11 +7607,11 @@ function _ganttCascadeConfirm(taskId,newStart,newEnd,shifts){
   ov.onclick=e=>{if(e.target===ov){ov.remove();renderView('gantt');}};
   ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:420px;width:calc(100% - 40px);padding:22px 24px;box-shadow:0 20px 60px rgba(13,28,51,0.3);font-family:'Lato',sans-serif" onclick="event.stopPropagation()">
     <div style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin-bottom:8px">Move dependent tasks?</div>
-    <div style="font-size:13px;color:#4a5568;line-height:1.55;margin-bottom:12px">Shifting this task will move <strong>${n}</strong> dependent task${n!==1?'s':''} by <strong>${days}</strong> day${days!==1?'s':''}.</div>
+    <div style="font-size:13px;color:#4a5568;line-height:1.55;margin-bottom:12px">Shifting this task will move <strong>${n}</strong> dependent task${n!==1?'s':''} by <strong>${dayLabel}</strong>.</div>
     <div style="font-size:12px;color:#8da2b2;line-height:1.6;margin-bottom:18px">${names.map(nm=>'• '+nm).join('<br>')}${n>5?`<br>• and ${n-5} more`:''}</div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="_ganttCascadeCancel()" class="btn btn-ghost btn-sm">Cancel</button>
-      <button onclick="_ganttCascadeAccept('${taskId}','${newStart}','${newEnd}')" class="btn btn-primary btn-sm">Continue</button>
+      <button onclick="_ganttCascadeAccept('${taskId}','${newStart}','${newEnd}',${lockAfter?'true':'false'})" class="btn btn-primary btn-sm">Continue</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
@@ -7510,9 +7620,9 @@ function _ganttCascadeCancel(){
   document.getElementById('g2-cascade-overlay')?.remove();
   renderView('gantt');   // repaint from unmodified DB — the bar springs back to its old spot
 }
-function _ganttCascadeAccept(taskId,newStart,newEnd){
+function _ganttCascadeAccept(taskId,newStart,newEnd,lockAfter){
   document.getElementById('g2-cascade-overlay')?.remove();
-  _ganttCommitMove(taskId,newStart,newEnd);
+  _ganttCommitMove(taskId,newStart,newEnd,lockAfter);
 }
 
 // ── Warning dialog for predecessor violations ─────────────
@@ -7553,9 +7663,10 @@ function _ganttWarnDialog(taskId,ns,ne,violations){
 
 function ganttLockAndApply(taskId,ns,ne){
   document.getElementById('g2-warn-overlay')?.remove();
-  const task=DB.tasks.find(t=>t.id===taskId);
-  if(task){task.lockedDates=true;saveDB(DB);}
-  applyGanttMove(taskId,ns,ne);
+  // Lock intent travels WITH the move through applyGanttMove's preview/commit pipeline now —
+  // it used to be written here immediately, before applyGanttMove even ran, so cancelling the
+  // cascade dialog it could still go on to show left the task locked with nothing moved.
+  applyGanttMove(taskId,ns,ne,true);
 }
 
 // ── Cascade summary toast ─────────────────────────────────
