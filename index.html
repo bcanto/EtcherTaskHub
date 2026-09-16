@@ -11354,6 +11354,13 @@ ${dataRows}
   URL.revokeObjectURL(_xlsUrl);
 }
 
+// A note typed as a run of sentences with no space after the period (e.g. "...role
+// lists.Corrected shutdown...") has no natural word boundary there, so the PDF table's
+// word-wrap — squeezed into a ~28mm Notes column — has to hard-split it mid-word to fit
+// ("Di" / "cussed"). Insert the missing space so wrapping always lands on a real boundary.
+function _pfiReadableWrap(s){
+  return String(s||'').replace(/([.!?])([A-Z])/g,'$1 $2');
+}
 function pfiExportPDF(id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===id);if(!inv)return;
@@ -11401,7 +11408,7 @@ function pfiExportPDF(id){
       if(inv.clientNotes){
         doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...GREY);doc.text('NOTES',mX,y);y+=4;
         doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...DARK);
-        const ln=doc.splitTextToSize(inv.clientNotes,W-mX*2);doc.text(ln,mX,y);y+=ln.length*4+2;
+        const ln=doc.splitTextToSize(_pfiReadableWrap(inv.clientNotes),W-mX*2);doc.text(ln,mX,y);y+=ln.length*4+2;
       }
       doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);doc.line(mX,y+=2,W-mX,y);y+=7;
       doc.autoTable({
@@ -11414,7 +11421,7 @@ function pfiExportPDF(id){
         margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
         showHead:'everyPage',showFoot:'lastPage',
         head:[['Date','Day','Team Member','Activity','Project','Location','Hours','Notes']],
-        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),li.description||li.note||'']),
+        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),_pfiReadableWrap(li.description||li.note||'')]),
         foot:[['','','','','','Total Hours',t.totalHrs.toFixed(2),'']],
         columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:26},6:{halign:'right',cellWidth:14},7:{cellWidth:'auto'}},
       });
