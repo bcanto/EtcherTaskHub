@@ -2203,6 +2203,22 @@ function _mergeDB(current, incoming){
     (inc||[]).forEach(x=>map.set(x.id,x));
     return[...map.values()];
   }
+  // clientNotes has no top-level updatedAt (only its nested sections do), and one client
+  // has exactly one note object holding every section — merging it as a plain per-id record
+  // (like the generic loop below does for everything else) meant whichever whole object
+  // "won" took its entire sections array with it, silently dropping any section the losing
+  // side had added or edited. Merge sections by their OWN id/updatedAt instead, so a section
+  // added on one side survives regardless of which side's note object is picked.
+  function _mergeClientNotes(curr,inc){
+    const byClient=new Map();
+    (curr||[]).forEach(n=>byClient.set(n.clientId,{...n}));
+    (inc||[]).forEach(n=>{
+      const ex=byClient.get(n.clientId);
+      if(!ex){byClient.set(n.clientId,{...n});return;}
+      byClient.set(n.clientId,{...ex,sections:mergeById(ex.sections,n.sections,'updatedAt')});
+    });
+    return[...byClient.values()];
+  }
   const merged={...incoming};
   merged.tasks=mergeById(current.tasks,incoming.tasks,'updatedAt');
   merged.comments=unionById(current.comments,incoming.comments);
@@ -2210,6 +2226,7 @@ function _mergeDB(current, incoming){
   merged.notifications=unionById(current.notifications,incoming.notifications);
   merged.meetingNotes=mergeById(current.meetingNotes,incoming.meetingNotes,'updatedAt');
   merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
+  merged.clientNotes=_mergeClientNotes(current.clientNotes,incoming.clientNotes);
   // Everything else used to come straight off `incoming`, so any collection the remote
   // snapshot had not caught up on was replaced by the older copy and the local work in it
   // was gone. That is how a freshly typed client note vanished: clientNotes was not on the
@@ -2217,7 +2234,7 @@ function _mergeDB(current, incoming){
   // Merge every remaining collection of {id} records by id instead of naming them one by
   // one — a whitelist only protects what someone remembered to add to it.
   const _named=new Set(['tasks','comments','clientComments','notifications','meetingNotes',
-    'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds']);
+    'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds','clientNotes']);
   for(const key of new Set([...Object.keys(current||{}),...Object.keys(incoming||{})])){
     if(_named.has(key))continue;
     const cur=Array.isArray(current[key])?current[key]:null;
@@ -2229,6 +2246,11 @@ function _mergeDB(current, incoming){
     if(!both.every(x=>x&&typeof x==='object'&&x.id!=null))continue;
     merged[key]=mergeById(cur||[],inc||[],'updatedAt');
   }
+  // `clients` is excluded from the generic loop above (it's in _named, so a tombstone
+  // filter can run on it below) but was never actually given an explicit merge — it just
+  // kept whatever {...incoming} put there, so ANY local client edit (rename, recolour,
+  // logo, portal toggle) not yet synced was silently discarded by every merge.
+  merged.clients=mergeById(current.clients,incoming.clients,'updatedAt');
   // Carry forward deleted-ID tombstones from both sides; filter out tombstoned clients
   const deletedClientIds=new Set([...(current.deletedClientIds||[]),...(incoming.deletedClientIds||[])]);
   merged.deletedClientIds=[...deletedClientIds];
@@ -2288,7 +2310,7 @@ function _startRealtimeSync(){
       if(_saveDebounceTimer){_pendingRemote=fresh;return;}
       const merged=_mergeDB(DB,fresh);
       for(const k in DB)delete DB[k];Object.assign(DB,merged);
-      localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+      _safeSaveLocal(JSON.stringify(DB));
       // saveDB was the only caller of _vcClear, so a merge from another user left the cached
       // views (gantt/capacity/schedule/dashboard/staff) re-serving pre-merge HTML for up to
       // the 8s TTL — their changes simply did not appear.
@@ -2399,6 +2421,26 @@ function _applyPendingRemote(){
   _vcClear();
   return true;
 }
+// The local write and the Supabase upload are two independent safety nets for the same data —
+// one failing must never take the other down with it. localStorage.setItem was called bare at
+// every site below, so a single QuotaExceededError (this blob will eventually hit the ~5MB
+// per-origin cap) threw INSIDE the save path and skipped the _syncToSupabase call that follows
+// it in every caller, silently killing the cloud upload too. Worse, the throw reached
+// window.onerror → _logAppError → another saveDB() → same throw, forever. Contain it here once.
+let _lsQuotaWarned=false;
+function _safeSaveLocal(json){
+  try{
+    localStorage.setItem('etcher_taskhub_v4',json);
+    return true;
+  }catch(e){
+    console.warn('[localStorage]',e.message);
+    if(!_lsQuotaWarned){
+      _lsQuotaWarned=true;
+      if(typeof showToast==='function')showToast('This browser\'s local storage is full — changes are still being sent to the server, but this device can no longer keep an offline copy until space is freed (e.g. remove old attachments).','error',9000);
+    }
+    return false;
+  }
+}
 function saveDB(data){
   _assignTaskRefs(data);
   _vcClear(); // invalidate render cache whenever data changes
@@ -2410,7 +2452,7 @@ function saveDB(data){
     // saveDB with a detached object that is not the live DB.
     if(data===DB&&_applyPendingRemote())_repaintAfterMerge();
     const safe=_stripPasswords(data);
-    localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));
+    _safeSaveLocal(JSON.stringify(safe));
     _syncToSupabase(safe);
   },300);
 }
@@ -2421,12 +2463,12 @@ function _flushDB(){
   _saveDebounceTimer=null;
   if(_applyPendingRemote())_repaintAfterMerge();
   const safe=_stripPasswords(DB);
-  localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));
+  _safeSaveLocal(JSON.stringify(safe));
   _syncToSupabase(safe);
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(safe));_syncToSupabase(safe);}
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));_syncToSupabase(safe);}
   let hasUnsaved=false;
   document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
     try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
@@ -2568,7 +2610,7 @@ async function _supabaseRestoreSession(session){
           clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
           const merged=_mergeDB(DB,fresh);
           for(const k in DB)delete DB[k];Object.assign(DB,merged);
-          localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+          _safeSaveLocal(JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
       // Reconcile currentUser.id with legacy app IDs ('u1','u2'…) vs Supabase UUIDs.
@@ -8856,17 +8898,10 @@ async function saveClient(id){
   const color=document.getElementById('cm-color').value;
   if(id){
     const c=DB.clients.find(x=>x.id===id);
-    c.name=name;c.shortCode=shortCode;
-    if(color!==c.color){
-      c.color=color;
-      (DB.boards||DB.workboards||[]).filter(b=>b.clientId===id).forEach(b=>{b.color=color;});
-      DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=color;});
-    }else{c.color=color;}
-    const enabledEl=document.getElementById('cm-portal-enabled');
-    if(enabledEl)c.portalEnabled=enabledEl.checked;
-    const logoEl=document.getElementById('cm-logo-b64');
-    if(logoEl)c.logo=logoEl.value||null;
-    // Handle optional password update for existing client
+    // Validate + apply any password change BEFORE touching name/colour/logo/portal below —
+    // this used to mutate all of those first, so a failed password update left them applied
+    // in memory but never saved: the admin saw the new name/logo in the UI, closed the modal,
+    // and lost every one of those edits on reload once the abandoned mutation was overwritten.
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     if(pw){
@@ -8884,6 +8919,18 @@ async function saveClient(id){
         return;
       }
     }
+    c.name=name;c.shortCode=shortCode;
+    const now=new Date().toISOString();
+    if(color!==c.color){
+      c.color=color;
+      (DB.boards||DB.workboards||[]).filter(b=>b.clientId===id).forEach(b=>{b.color=color;b.updatedAt=now;});
+      DB.groups.filter(g=>g.clientId===id).forEach(g=>{g.color=color;g.updatedAt=now;});
+    }else{c.color=color;}
+    const enabledEl=document.getElementById('cm-portal-enabled');
+    if(enabledEl)c.portalEnabled=enabledEl.checked;
+    const logoEl=document.getElementById('cm-logo-b64');
+    if(logoEl)c.logo=logoEl.value||null;
+    c.updatedAt=now;
     saveDB(DB);closeGenericModal();renderView('clients');
   }else{
     const email=(document.getElementById('cm-email')?.value||'').trim();
@@ -8900,7 +8947,7 @@ async function saveClient(id){
         const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid,password:pw})});
         const result=await resp.json();
         if(!resp.ok)throw new Error(result.error||'Failed to create account');
-        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id});
+        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
         saveDB(DB);closeGenericModal();renderView('clients');
         showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
@@ -8908,7 +8955,7 @@ async function saveClient(id){
         if(btn){btn.disabled=false;btn.textContent='Save';}
       }
     }else{
-      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portalEnabled:false});
+      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portalEnabled:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       saveDB(DB);closeGenericModal();renderView('clients');
     }
   }
@@ -14819,9 +14866,11 @@ async function saveStaff(id){
   const color=document.getElementById('sm-color').value;
   const initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
   if(id){
-    // Edit existing — update DB only
+    // Edit existing — validate + apply any password change BEFORE touching name/role/colour
+    // below. This used to mutate those fields first, so a rejected password update (too
+    // short, or no linked Supabase account) left them applied in memory but never saved —
+    // reverted the next time this browser synced.
     const s=DB.staff.find(x=>x.id===id);
-    s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
     const pw=(document.getElementById('sm-pw')?.value||'').trim();
     if(pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
@@ -14846,6 +14895,8 @@ async function saveStaff(id){
       }
       _savePw(s.id,pw);
     }
+    s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
+    s.updatedAt=new Date().toISOString();
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
     // New user — create account directly (no email needed)
@@ -15383,6 +15434,16 @@ function saveTask(){
   if(_sd&&_ed&&_ed<_sd){showAlert('End date cannot be before start date.','Validation');return;}
   if(editingTaskId){
     const t=DB.tasks.find(x=>x.id===editingTaskId);
+    // Validate BEFORE mutating anything below. A circular dependency used to be checked only
+    // after every other field on this form had already been written onto the live task, so
+    // rejecting it left the rest of the edit applied in memory but never saved — the user saw
+    // it "work", then lost the whole edit on the next reload or merge.
+    const depEl=document.getElementById('tm-deps');
+    const _selectedDeps=depEl?[...depEl.selectedOptions].map(o=>o.value):null;
+    if(_selectedDeps){
+      const circular=_selectedDeps.find(d=>wouldCycle(t.id,d));
+      if(circular){const bad=DB.tasks.find(x=>x.id===circular);showAlert(`Circular dependency detected with "${bad?bad.name:circular}". Dependency not saved.`,'Circular Dependency');return;}
+    }
     const old={status:t.status,ownerId:t.ownerId,currentlyWith:t.currentlyWith,startDate:t.startDate,endDate:t.endDate};
     const oldAssigneeIds=[...(t.assigneeIds||[])];
     t.name=name;
@@ -15420,19 +15481,15 @@ function saveTask(){
     else if(pct>0&&['todo','not-started','done','completed'].includes(st)){t.status='in-progress';t.completedAt=null;}
     else if(pct===0&&(st==='done'||st==='completed')){t.status='todo';t.completedAt=null;}}
     t.description=document.getElementById('tm-desc')?.innerHTML||'';
-    // Dependency update — block circular dependencies, sync DB.dependencies entity list
-    const depEl=document.getElementById('tm-deps');
-    if(depEl){
-      const selected=[...depEl.selectedOptions].map(o=>o.value);
-      const circular=selected.find(d=>wouldCycle(t.id,d));
-      if(circular){const bad=DB.tasks.find(x=>x.id===circular);showAlert(`Circular dependency detected with "${bad?bad.name:circular}". Dependency not saved.`,'Circular Dependency');return;}
-      t.dependencies=selected;
+    // Dependency update — validity was already checked above; just sync the entity list now.
+    if(_selectedDeps){
+      t.dependencies=_selectedDeps;
       // Keep DB.dependencies entity list in sync (Dependency model)
       if(!DB.dependencies) DB.dependencies=[];
       // Remove old deps for this task as the dependent
       DB.dependencies=DB.dependencies.filter(d=>d.dependentTaskId!==t.id);
       // Add new deps
-      selected.forEach(predId=>{
+      _selectedDeps.forEach(predId=>{
         DB.dependencies.push({
           id:'dep'+uid(),
           predecessorTaskId:predId,
@@ -17218,7 +17275,7 @@ function wsStartRenameGroup(secId){
 function wsCommitRenameGroup(groupId,name){
   if(!name)return renderView('workspace');
   const g=DB.groups.find(x=>x.id===groupId);
-  if(g&&g.name!==name){g.name=name;saveDB(DB);}
+  if(g&&g.name!==name){g.name=name;g.updatedAt=new Date().toISOString();saveDB(DB);}
   renderView('workspace');
 }
 function wsToggleCol(key){
@@ -20636,6 +20693,7 @@ function wsSetGroupColor(groupId,color){
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   g.color=color;
+  g.updatedAt=new Date().toISOString();
   saveDB(DB);
   renderView('workspace');
 }
@@ -20643,6 +20701,7 @@ function wsSetGroupClient(groupId,clientId){
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   g.clientId=clientId||'';
+  g.updatedAt=new Date().toISOString();
   saveDB(DB);
   renderView('workspace');
 }
@@ -22864,6 +22923,19 @@ function cpUploadToTask(taskId,input){
   const valid=sizeOk.filter(f=>f.size<=1048576);
   if(!valid.length){input.value='';return;}
   let done=0;
+  // saveDB used to fire only from the success branch of whichever file finished LAST — so if
+  // that particular file hit the storage-full or read-error branch instead, every OTHER file
+  // that had already succeeded (bytes written, record pushed to DB.taskFiles) was never saved
+  // at all: it looked uploaded until the next reload, then quietly vanished. Route every
+  // completion path (success, storage-full, read-error) through one shared finish() so the
+  // save always happens once all files are accounted for, regardless of which one finishes last.
+  const finish=()=>{
+    if(done!==valid.length)return;
+    saveDB(DB);
+    input.value='';
+    cpCloseTaskModal();
+    cpOpenTaskModal(taskId);
+  };
   valid.forEach(file=>{
     const reader=new FileReader();
     reader.onload=e=>{
@@ -22873,7 +22945,7 @@ function cpUploadToTask(taskId,input){
       // so if the browser refuses the write the file is not added to the list at all.
       if(!_saveFileData(fid,e.target.result)){
         showAlert('"'+file.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
-        done++;return;
+        done++;finish();return;
       }
       DB.taskFiles.push({
         id:fid,
@@ -22883,14 +22955,9 @@ function cpUploadToTask(taskId,input){
         internalOnly:false,
       });
       done++;
-      if(done===valid.length){
-        saveDB(DB);
-        input.value='';
-        cpCloseTaskModal();
-        cpOpenTaskModal(taskId);
-      }
+      finish();
     };
-    reader.onerror=()=>{showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');done++;if(done===valid.length){input.value='';}};
+    reader.onerror=()=>{showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');done++;finish();};
     reader.readAsDataURL(file);
   });
 }
@@ -23170,7 +23237,7 @@ document.addEventListener('keydown',e=>{
           // load. Diffing against fresh normalised the same way isolates real local-only content.
           const recoveredLocalEdit=JSON.stringify(merged)!==JSON.stringify(_mergeDB(fresh,fresh));
           for(const k in DB)delete DB[k];Object.assign(DB,merged);
-          localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+          _safeSaveLocal(JSON.stringify(DB));
           window._appStateLoaded=true;clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
           // Push the healed state back right away, or the recovered edit sits only in this
           // browser until something else triggers another save — and could be lost again.
