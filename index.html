@@ -216,6 +216,11 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .g2-rh{width:7px;height:100%;flex-shrink:0;cursor:ew-resize;position:relative;z-index:1}
 .g2-rh::after{content:'';position:absolute;top:25%;bottom:25%;width:2px;border-radius:2px;background:rgba(255,255,255,0.4)}
 .g2-rh-l::after{left:2px}.g2-rh-r::after{right:2px}
+/* Small connector handle at a bar's right edge, dragged to another bar to create a
+   dependency. Subtle until hovered so it doesn't clutter every bar at rest. */
+.g2-link-dot{position:absolute;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:#4361c2;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.25);cursor:crosshair;opacity:0.35;transition:opacity 0.15s,transform 0.15s;z-index:6}
+.g2-link-dot:hover{opacity:1;transform:scale(1.3)}
+.g2-bar-drop-target{outline:2px solid #4361c2;outline-offset:1px}
 .g2-scale-btn{padding:4px 12px;border-radius:0;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;border-right:1px solid var(--border);background:#fff;color:var(--text-3);transition:background 0.15s,color 0.15s}
 .g2-scale-btn.active{background:#f0f7f7;color:#0d6e4e;font-weight:700}
 .g2-scale-btn:hover:not(.active){background:#f6f9ff;color:var(--navy)}
@@ -3071,6 +3076,11 @@ let _ganttViewStart=null;
 let _ganttTodayX=null; // set by renderGantt each render; used by renderView's 'gantt' case to
                         // scroll a freshly-opened Gantt to today instead of the far-left edge
 let _ganttDrag=null;
+// A completely separate state machine from _ganttDrag/ganttBarMouseDown on purpose — dragging
+// a new dependency link is a different gesture (from a small connector dot, not the bar or its
+// resize handles) with different math (a straight line to the cursor, not a date/pixel
+// conversion). Keeping the two independent means neither can leak into or corrupt the other.
+let _ganttLinkDrag=null;
 let cpSection='overview';
 let cpGanttScale='weeks';
 let cpGanttCollapsed=new Set();
@@ -3294,17 +3304,45 @@ function _utPersonChips(){
 function _utViewControls(view){
   if(view==='gantt'){
     const scaleKeys=['days','weeks','months','quarters'];
+    // Was 11 flat, identically-styled buttons plus two thin dividers, all at the same visual
+    // weight — Scale, Fit and Today (used constantly) looked no different from Set Baseline
+    // and Expand/Collapse All (used rarely), and the row had nowhere near enough width to fit
+    // them all, so it wrapped mid-group (the Baseline checkbox landing on a different line
+    // than its own "Set Baseline" button). Frequent controls stay inline; the two
+    // lower-frequency, plan-once/occasional-bulk actions move into one "More" menu, reusing
+    // the exact dropdown the Main Table already uses (ws-dropdown / wsToggleDropdown) rather
+    // than inventing a second menu pattern — same onclick targets throughout, nothing about
+    // what any control DOES has changed, only how it's grouped.
     return`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
       ${scaleKeys.map(s=>`<button class="g2-scale-btn ${ganttScale===s?'active':''}" onclick="ganttSetScale('${s}')">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}
     </div>
-    <button onclick="ganttAutoFit()" class="btn btn-ghost btn-sm" style="flex-shrink:0">⊞ Fit</button>
+    <button onclick="ganttAutoFit()" class="btn btn-ghost btn-sm" style="gap:4px;flex-shrink:0" title="Fit the whole date range into the panel">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 5V2a1 1 0 0 1 1-1h3M13 5V2a1 1 0 0 0-1-1h-3M1 9v3a1 1 0 0 0 1 1h3M13 9v3a1 1 0 0 1-1 1h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Fit
+    </button>
+    <button onclick="ganttScrollToday()" class="btn btn-ghost btn-sm" style="gap:4px;flex-shrink:0" title="Scroll the timeline to today">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 5.5h12" stroke="currentColor" stroke-width="1.3"/><path d="M4 1v2M10 1v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="6" y="7.5" width="2" height="2" rx="0.5" fill="currentColor"/></svg>
+      Today
+    </button>
     <div style="width:1px;height:20px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
     <button class="g2-cb-btn ${ganttColorBy==='status'?'active':''}" onclick="ganttSetColorBy('status')">By Status</button>
     <button class="g2-cb-btn ${ganttColorBy==='priority'?'active':''}" onclick="ganttSetColorBy('priority')">By Priority</button>
-    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#6b8399;cursor:pointer;white-space:nowrap;flex-shrink:0">
-      <input type="checkbox" ${ganttShowBaseline?'checked':''} onchange="ganttShowBaseline=this.checked;renderView('gantt')" style="accent-color:#97bcbd"/> Baseline
-    </label>
-    ${currentUser.role==='admin'?`<button onclick="ganttSetBaseline()" class="btn btn-ghost btn-sm" style="flex-shrink:0" title="Snapshot every dated task's current start/end as its baseline">Set Baseline</button>`:''}`;
+    <div style="width:1px;height:20px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
+    <div style="position:relative">
+      <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('g2-more-menu')" style="gap:4px;flex-shrink:0;${ganttShowBaseline?'border-color:#97bcbd;color:#0d1c33;':''}" title="Baseline and subitem display options">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="7" r="1.3" fill="currentColor"/><circle cx="7" cy="7" r="1.3" fill="currentColor"/><circle cx="11" cy="7" r="1.3" fill="currentColor"/></svg>
+        More <span style="font-size:9px">▾</span>
+      </button>
+      <div id="g2-more-menu" class="ws-dropdown hidden" style="min-width:220px">
+        <label class="ws-dropdown-item" style="cursor:pointer;font-weight:400">
+          <input type="checkbox" ${ganttShowBaseline?'checked':''} onchange="ganttShowBaseline=this.checked;renderView('gantt')" style="accent-color:#97bcbd"/> Show Baseline
+        </label>
+        ${currentUser.role==='admin'?`<div class="ws-dropdown-item" onclick="ganttSetBaseline()" title="Snapshot every dated task's current start/end as its baseline">Set Baseline…</div>`:''}
+        <div class="ws-dd-sep"></div>
+        <div class="ws-dropdown-item" onclick="ganttExpandAll()" title="Show every task's subitems — including any dependency lines currently hidden behind a collapsed one">Expand all subitems</div>
+        <div class="ws-dropdown-item" onclick="ganttCollapseAll()">Collapse all subitems</div>
+      </div>
+    </div>`;
   }
   if(view==='capacity'){
     const swimCtls=mcView==='gantt'?`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">
@@ -7137,6 +7175,18 @@ function renderGantt(){
     if(subs.length)_gSubCount.set(t.id,subs.length);
     if(subs.length&&ganttExpanded.has(t.id))_gShownSubs.set(t.id,subs);
   });
+  // How many dependency records touch a subitem of each parent — the collapsed-parent badge
+  // below is what makes bug #6's fallback-to-parent-row survivable without expanding every
+  // task: without this, a dependency connecting two hidden subitems is invisible unless you
+  // already know to expand that exact parent. One dependency touching both ends' parents (a
+  // cross-parent link) counts once for EACH parent, not twice for one.
+  const _gHiddenDepCount=new Map();
+  (DB.dependencies||[]).forEach(d=>{
+    const pt=DB.tasks.find(x=>x.id===d.predecessorTaskId);
+    const dt=DB.tasks.find(x=>x.id===d.dependentTaskId);
+    const parents=new Set([pt?.parentTaskId,dt?.parentTaskId].filter(Boolean));
+    parents.forEach(pid=>_gHiddenDepCount.set(pid,(_gHiddenDepCount.get(pid)||0)+1));
+  });
 
   if(!tasks.length)return _wbTabs+renderUniversalToolbar('gantt',{itemCount:0})+`<div class="card" style="margin-top:12px"><p style="color:#8da2b2;text-align:center;padding:40px">No tasks with dates to display. Add start/end dates to tasks to see them here.</p></div>`;
 
@@ -7258,6 +7308,9 @@ function renderGantt(){
       const _rowH=_sub?32:40;
       const _nSubs=_sub?0:(_gSubCount.get(t.id)||0);
       const _open=ganttExpanded.has(t.id);
+      // Only relevant while collapsed — once expanded, the real dependency line is on screen
+      // and a count badge would just be noise on top of it.
+      const _hiddenDeps=(!_sub&&!_open)?(_gHiddenDepCount.get(t.id)||0):0;
 
       leftRows+=`<div style="height:${_rowH}px;display:flex;align-items:center;padding:0 6px 0 ${_sub?34:8}px;gap:5px;border-bottom:1px solid #f4f6fa;overflow:hidden;cursor:pointer;${_sub?'background:#fcfdfe':''}" onclick="openTaskPanel('${t.id}')">
         ${_sub
@@ -7270,6 +7323,7 @@ function renderGantt(){
           <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
             <span style="font-size:10px;color:${isOverdue?'#dc2626':'#8da2b2'};font-weight:${isOverdue?700:400}">${isOverdue?'⚠ ':''}${dateLabel}</span>
             ${(!_sub&&cr)?`<span style="font-size:10px;color:${cr.done===cr.total&&cr.total>0?'#16a34a':'#b0bec5'}">☑${cr.done}/${cr.total}</span>`:''}
+            ${_hiddenDeps?`<span title="${_hiddenDeps} dependency link${_hiddenDeps!==1?'s':''} among hidden subitems — expand to see ${_hiddenDeps!==1?'them':'it'} on the timeline" style="font-size:10px;font-weight:700;color:#4361c2">⛓${_hiddenDeps}</span>`:''}
           </div>
         </div>
         ${owner?`<div title="${escHtml(assigneeTitleAttr(t))}">${assigneeStackHtml(t,18)}</div>`:''}
@@ -7317,6 +7371,12 @@ function renderGantt(){
         const _fitsInside=bw>=_lblW+12;
         const _lblLeft=_fitsRight?(bx+bw+8):_fitsLeft?(bx-_lblW-8):(_fitsInside?bx+6:Math.max(0,trackW-_lblW));
         const _lblInside=!_fitsRight&&!_fitsLeft&&_fitsInside;
+        // Connector dot to drag out a new dependency (this bar as predecessor). Gated on the
+        // same canEdit as the bar itself (so a rollup parent or a locked task gets neither),
+        // plus excluded for an inverted-date bar specifically — its own dates need fixing
+        // before adding a relationship that depends on them being meaningful.
+        const _canLinkFrom=canEdit&&!_inverted;
+        const _linkAttr=_canLinkFrom?`onmousedown="event.stopPropagation();ganttLinkMouseDown(event,'${t.id}')"`:'';
         barHTML=`<div id="g2-bar-${t.id}" class="g2-bar${_gRolled?' g2-bar-rollup':''}" ${dAttr} style="left:${bx}px;width:${bw}px;background:${bc};${_sub?'height:13px;top:9px;opacity:0.88':''}${_gRolled?';opacity:0.55;cursor:default':''}${_inverted?';border:2px dashed #dc2626;background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,0.35) 4px,rgba(255,255,255,0.35) 8px)':''}" title="${escHtml(t.name||'')}: ${_gS} → ${_gE}${_invertedWarn}${_noDragWhy}${_prog?` · ${_prog}% complete`:''}">
           ${_prog>0?`<div style="position:absolute;left:0;top:0;bottom:0;width:${_prog}%;background:rgba(255,255,255,0.32);pointer-events:none;border-radius:5px 0 0 5px"></div>`:''}
           ${_gRolled?'':`<div class="g2-rh g2-rh-l" ${rsAttr}></div>`}
@@ -7325,6 +7385,7 @@ function renderGantt(){
           ${_gRolled?'':`<div class="g2-rh g2-rh-r" ${reAttr}></div>`}
         </div>
         <div class="g2-bar-name" style="left:${_lblLeft}px${_lblInside?';color:rgba(255,255,255,0.95)':''}${_sub?';top:9px;height:13px;font-size:10px':''}" title="${escHtml(_nm)}">${escHtml(_nm)}${_prog>0&&_prog<100?` <span style="color:${_lblInside?'rgba(255,255,255,0.75)':'#b0bec5'};font-weight:500">${_prog}%</span>`:''}</div>
+        ${_canLinkFrom?`<div class="g2-link-dot" id="g2-link-${t.id}" ${_linkAttr} style="left:${bx+bw-5}px" title="Drag to another task to make it depend on this one"></div>`:''}
         ${ganttShowBaseline&&t.baselineStartDate&&t.baselineEndDate?`<div style="position:absolute;left:${d2x(t.baselineStartDate)}px;width:${Math.max(Math.round(depDiffDays(t.baselineStartDate,t.baselineEndDate)*DW),4)}px;height:4px;bottom:5px;border-radius:2px;background:rgba(13,28,51,0.16);pointer-events:none"></div>`:''}`;
       } else if(hasOne){
         // Milestone diamond — always blue, matching the reference, unless By Priority is on.
@@ -7456,6 +7517,47 @@ function ganttAutoFit(){
   renderView('gantt');
 }
 
+// A fresh Gantt navigation already opens scrolled toward today (renderView's 'gantt' case).
+// This is the same scroll, callable any time — after scrolling away, after a scale change, or
+// after switching boards — without having to navigate off the view and back.
+function ganttScrollToday(){
+  const r=document.getElementById('g2-right');
+  if(!r||_ganttTodayX==null)return;
+  r.scrollLeft=Math.max(0,_ganttTodayX-r.clientWidth*0.25);
+}
+
+// Which parent task ids on the given board actually have subitems — shared by ganttExpandAll
+// and ganttCollapseAll below. Subitems carry NEITHER boardId nor workboardId themselves (only
+// parentTaskId) — checking a subitem's own board field, as a first attempt here did, matches
+// nothing on any board and makes both actions silent no-ops. Board membership has to come from
+// the PARENT task, which does carry it.
+function _ganttSubitemParentIdsOnBoard(boardId){
+  const parentIds=new Set();
+  (DB.tasks||[]).forEach(t=>{
+    if(!t.parentTaskId||t.archived)return;
+    const parent=DB.tasks.find(p=>p.id===t.parentTaskId);
+    if(parent&&(parent.boardId||parent.workboardId)===boardId)parentIds.add(t.parentTaskId);
+  });
+  return parentIds;
+}
+// Expanding every parent one at a time was the only way to see a dependency line involving a
+// subitem (bug #6's fallback draws it on the parent's row, but only once you already know to
+// expand that exact parent). Deliberately touches only ganttExpanded (subitem visibility) —
+// ganttCollapsed (group visibility) has its own per-group toggle and isn't part of this.
+function ganttExpandAll(){
+  if(!currentWorkboard)return;
+  _ganttSubitemParentIdsOnBoard(currentWorkboard.id).forEach(id=>ganttExpanded.add(id));
+  renderView('gantt');
+}
+function ganttCollapseAll(){
+  if(!currentWorkboard)return;
+  // Scoped to this board only, same as ganttExpandAll above — ganttExpanded is a single global
+  // Set shared by every board (pre-existing, same as ganttCollapsed for groups), so clearing
+  // it outright would also silently collapse tasks a user had expanded on a DIFFERENT board.
+  _ganttSubitemParentIdsOnBoard(currentWorkboard.id).forEach(id=>ganttExpanded.delete(id));
+  renderView('gantt');
+}
+
 // The Baseline checkbox had nothing to show — baselineStartDate/baselineEndDate were read by
 // the render but never written anywhere in the app, so toggling it never did anything for any
 // task. This captures a snapshot; the checkbox then compares live dates against it.
@@ -7546,6 +7648,77 @@ function ganttOnUp(evt){
   const predVio=warnings.filter(w=>w.taskId===drag.taskId);
   if(predVio.length)_ganttWarnDialog(drag.taskId,ns,ne,predVio);
   else applyGanttMove(drag.taskId,ns,ne);
+}
+
+// ── Create a dependency by dragging bar-edge to bar-edge ─────────────────
+// Deliberately its own state machine (_ganttLinkDrag), not reusing _ganttDrag — see the
+// variable's declaration. addDependency() already validates everything (self-link, duplicate,
+// cycle) and cascades + saves on success, so this only needs to figure out source and target
+// and hand off to it; no new validation logic duplicated here.
+function ganttLinkMouseDown(evt,taskId){
+  if(currentUser.role==='client')return;
+  evt.preventDefault();evt.stopPropagation();
+  _ganttLinkDrag={taskId,moved:false};
+  const svgNS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(svgNS,'svg');
+  svg.id='g2-link-drag-svg';
+  svg.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:950';
+  const line=document.createElementNS(svgNS,'line');
+  line.setAttribute('x1',evt.clientX);line.setAttribute('y1',evt.clientY);
+  line.setAttribute('x2',evt.clientX);line.setAttribute('y2',evt.clientY);
+  line.setAttribute('stroke','#4361c2');line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-dasharray','5,4');
+  svg.appendChild(line);
+  document.body.appendChild(svg);
+  _ganttLinkDrag.lineEl=line;
+  document.body.style.cursor='crosshair';
+  document.addEventListener('mousemove',ganttLinkOnMove);
+  document.addEventListener('mouseup',ganttLinkOnUp);
+}
+// Same element resolution needed by both onMove (for the hover highlight) and onUp (for the
+// actual drop): the connector dot is a SIBLING of its bar, not nested inside it, so landing
+// exactly on another task's dot has no g2-bar- ancestor for closest() to find — check for
+// either id prefix and normalise to a task id.
+function _ganttLinkTargetIdAt(x,y){
+  const el=document.elementFromPoint(x,y);
+  const hit=el?el.closest('[id^="g2-bar-"],[id^="g2-link-"]'):null;
+  return hit?hit.id.replace(/^g2-(bar|link)-/,''):null;
+}
+function ganttLinkOnMove(evt){
+  if(!_ganttLinkDrag)return;
+  evt.preventDefault();
+  _ganttLinkDrag.moved=true;
+  const line=_ganttLinkDrag.lineEl;
+  if(line){line.setAttribute('x2',evt.clientX);line.setAttribute('y2',evt.clientY);}
+  const hoverId=_ganttLinkTargetIdAt(evt.clientX,evt.clientY);
+  const validHover=hoverId&&hoverId!==_ganttLinkDrag.taskId;
+  if(_ganttLinkDrag.hoverEl&&_ganttLinkDrag.hoverId!==hoverId){
+    _ganttLinkDrag.hoverEl.classList.remove('g2-bar-drop-target');
+    _ganttLinkDrag.hoverEl=null;
+  }
+  if(validHover&&!_ganttLinkDrag.hoverEl){
+    const el=document.getElementById('g2-bar-'+hoverId);
+    if(el){el.classList.add('g2-bar-drop-target');_ganttLinkDrag.hoverEl=el;_ganttLinkDrag.hoverId=hoverId;}
+  }
+}
+function ganttLinkOnUp(evt){
+  document.removeEventListener('mousemove',ganttLinkOnMove);
+  document.removeEventListener('mouseup',ganttLinkOnUp);
+  document.body.style.cursor='';
+  document.getElementById('g2-link-drag-svg')?.remove();
+  if(!_ganttLinkDrag)return;
+  const drag=_ganttLinkDrag;
+  _ganttLinkDrag=null;
+  drag.hoverEl?.classList.remove('g2-bar-drop-target');
+  if(!drag.moved)return; // a plain click on the dot, no drag — nothing to do
+  const targetId=_ganttLinkTargetIdAt(evt.clientX,evt.clientY);
+  if(!targetId||targetId===drag.taskId)return; // released over empty space or back on itself
+  const srcTask=DB.tasks.find(t=>t.id===drag.taskId);
+  const tgtTask=DB.tasks.find(t=>t.id===targetId);
+  const result=addDependency(drag.taskId,targetId,0);
+  if(!result.ok){showAlert(result.error,'Cannot Add Dependency');return;}
+  showToast(`"${escHtml(tgtTask?.name||targetId)}" now depends on "${escHtml(srcTask?.name||drag.taskId)}"`,'success',4000);
+  renderView('gantt');
 }
 
 // ── Apply a validated Gantt move ─────────────────────────
