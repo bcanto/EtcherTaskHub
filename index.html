@@ -23136,7 +23136,25 @@ document.addEventListener('keydown',e=>{
     if(window._supabase){
       try{
         const{data:row,error}=await window._supabase.from('app_state').select('data').eq('id',1).single();
-        if(!error&&row?.data){const fresh=row.data;_migrateDB(fresh);_applyCompatAliases(fresh);for(const k in DB)delete DB[k];Object.assign(DB,fresh);localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));window._appStateLoaded=true;clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;}
+        if(!error&&row?.data){
+          const fresh=row.data;_migrateDB(fresh);_applyCompatAliases(fresh);
+          // Merge instead of overwrite: DB here still holds whatever localStorage had, which
+          // can include an edit whose Supabase upload never finished before the last reload —
+          // a blind overwrite from the server snapshot discarded that edit outright. _mergeDB
+          // is the same merge the realtime path already trusts for exactly this conflict.
+          const merged=_mergeDB(DB,fresh);
+          // Compare against _mergeDB(fresh,fresh), not raw fresh — _mergeDB normalises a few
+          // named collections (e.g. clientComments) to [] even when the source lacked the key
+          // at all, so a raw diff against fresh would flag that cosmetic gap on every single
+          // load. Diffing against fresh normalised the same way isolates real local-only content.
+          const recoveredLocalEdit=JSON.stringify(merged)!==JSON.stringify(_mergeDB(fresh,fresh));
+          for(const k in DB)delete DB[k];Object.assign(DB,merged);
+          localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
+          window._appStateLoaded=true;clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
+          // Push the healed state back right away, or the recovered edit sits only in this
+          // browser until something else triggers another save — and could be lost again.
+          if(recoveredLocalEdit)saveDB(DB);
+        }
       }catch(e){console.warn('[sync load]',e.message);}
       const{data:{session}}=await window._supabase.auth.getSession();
       if(session){
