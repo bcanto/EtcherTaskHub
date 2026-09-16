@@ -2237,6 +2237,15 @@ function _mergeDB(current, incoming){
   merged.deletedWorkRequestIds=[...deletedWorkRequestIds];
   if(deletedWorkRequestIds.size)merged.clientWorkRequests=(merged.clientWorkRequests||[]).filter(r=>!deletedWorkRequestIds.has(r.id));
   if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
+  // staff/users and workboards/boards are ALIASES of one array (_applyCompatAliases), but every
+  // merge above rebuilds each key into its OWN array, so DB.workboards!==DB.boards afterwards.
+  // Board and staff creation push to the alias only (DB.workboards.push), so the next load's
+  // `data.workboards=data.boards` dropped anything that lived only in the alias — a new board
+  // and everything under it, gone. Union each pair and re-point both keys at one array.
+  merged.users=mergeById(merged.users||[],merged.staff||[],'updatedAt');
+  merged.staff=merged.users;
+  merged.boards=mergeById(merged.boards||[],merged.workboards||[],'updatedAt');
+  merged.workboards=merged.boards;
   return merged;
 }
 
@@ -2532,6 +2541,11 @@ async function _supabaseRestoreSession(session){
       if(!clientData||!clientData.portalEnabled){return false;}
       currentUser={id:p.id,name:p.name,role:'client',type:'client',clientId:p.client_id,
         initials:p.initials||clientData.shortCode||'CL',color:p.display_color||clientData.color||'#64748b'};
+      // Client sessions never set this, so _syncToSupabase bailed on every client write: work
+      // requests, portal comments and change requests were saved to that browser's localStorage
+      // and never uploaded — the client saw a success message, staff never received anything.
+      _supabaseSyncEnabled=true;
+      _startRealtimeSync();
       launchClientView();
     } else {
       currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
@@ -2545,8 +2559,15 @@ async function _supabaseRestoreSession(session){
         if(!stateErr&&stateRow?.data&&(stateRow.data.users?.length>0||stateRow.data.tasks?.length>0)){
           const fresh=stateRow.data;
           _migrateDB(fresh);_applyCompatAliases(fresh);
+          // Merge, never overwrite. This runs moments after _startApp has already merged the
+          // same row, so a blind assign here re-fetched the unhealed server copy and destroyed
+          // the rescued local edit in memory AND in localStorage — silently undoing the whole
+          // merge-on-load rescue on every single login.
+          // Dropping the pending-save timer is safe: its data is the live DB, it survives the
+          // merge below, and the force-sync after _supabaseSyncEnabled=true uploads the result.
           clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
-          for(const k in DB)delete DB[k];Object.assign(DB,fresh);
+          const merged=_mergeDB(DB,fresh);
+          for(const k in DB)delete DB[k];Object.assign(DB,merged);
           localStorage.setItem('etcher_taskhub_v4',JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
@@ -2615,7 +2636,7 @@ async function _supabaseRestoreSession(session){
       // Always force-sync after login so migration fixes (ghost deletion,
       // email/name patches) reach Supabase before any other session can
       // overwrite with stale data.
-      _syncToSupabase(DB);
+      _syncToSupabase(_stripPasswords(DB));
       _startRealtimeSync();
       launchApp();
     }
