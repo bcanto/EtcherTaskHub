@@ -1688,12 +1688,14 @@ function _migrateDB(data){
   if(!data.deletedGroupIds)       data.deletedGroupIds       = [];
   if(!data.deletedCommentIds)     data.deletedCommentIds     = [];
   if(!data.deletedTimeEntryIds)   data.deletedTimeEntryIds   = [];
+  if(!data.deletedChecklistItemIds) data.deletedChecklistItemIds = [];
   // Apply tombstones — ensure deleted clients never reappear after migration
   if(data.deletedClientIds.length)data.clients=(data.clients||[]).filter(c=>!data.deletedClientIds.includes(c.id));
   if(data.deletedTaskIds.length)data.tasks=(data.tasks||[]).filter(t=>!data.deletedTaskIds.includes(t.id));
   if(data.deletedGroupIds.length)data.groups=(data.groups||[]).filter(g=>!data.deletedGroupIds.includes(g.id));
   if(data.deletedCommentIds.length)data.comments=(data.comments||[]).filter(c=>!data.deletedCommentIds.includes(c.id));
   if(data.deletedTimeEntryIds.length)data.timeEntries=(data.timeEntries||[]).filter(e=>!data.deletedTimeEntryIds.includes(e.id));
+  if(data.deletedChecklistItemIds.length)data.checklistItems=(data.checklistItems||[]).filter(c=>!data.deletedChecklistItemIds.includes(c.id));
   if(!data.deletedWorkRequestIds) data.deletedWorkRequestIds = [];
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Apply tombstones — ensure deleted work requests never reappear after migration
@@ -2311,7 +2313,7 @@ function _mergeDB(current, incoming){
   // resurrect: a task, group, comment or time entry deleted here reappears the moment a
   // peer who hasn't synced that deletion yet merges — every delete site for these four now
   // records into the matching tombstone via _tombstoneRemoved.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds']]){
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
@@ -2509,6 +2511,18 @@ function saveDB(data){
     // Only DB itself can absorb a queued remote merge; the load/migration path calls
     // saveDB with a detached object that is not the live DB.
     if(data===DB&&_applyPendingRemote())_repaintAfterMerge();
+    // _seedOnly marks a DB that is still nothing but bundled demo data, so the load paths
+    // take the server copy outright rather than merging demo records into it. It was written
+    // into localStorage and never cleared, so it survived into sessions holding REAL work,
+    // and the load path then discarded that work. A genuine save by a signed-in user means
+    // this is no longer untouched demo data, so drop the marker before it's persisted below.
+    // `data===DB` excludes the detached-object write loadDB does when it first seeds, and
+    // requiring a logged-in user stops a pre-login startup error (which routes through
+    // _logAppError → saveDB) clearing it before the first server load has had its chance.
+    // NB: this must stay inside the debounce — saveDB is called from loadDB, i.e. while
+    // `let DB = loadDB()` is still evaluating, so touching DB/currentUser synchronously up
+    // top throws a temporal-dead-zone ReferenceError and the whole app fails to boot.
+    if(data===DB&&data._seedOnly&&currentUser)delete data._seedOnly;
     const safe=_stripPasswords(data);
     _safeSaveLocal(JSON.stringify(safe));
     _syncToSupabase(safe);
@@ -10061,7 +10075,7 @@ function teQuickLogSave(){
   showToast(`Logged ${_teQuickHours}h`,'success',5000,{label:'Undo',onClick:`teQuickLogUndo('${entry.id}')`});
 }
 function teQuickLogUndo(id){
-  DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.id!==id);
+  {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.id!==id);_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
   saveDB(DB);
   if(currentView==='time')renderView('time');
 }
@@ -14462,9 +14476,9 @@ function permanentDeleteTask(id){
     function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
     collect(id);
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
-    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();renderView('archive');
   });
 }
@@ -14473,9 +14487,9 @@ function permanentDeleteAllArchivedTasks(){
   if(!ids.size)return;
   openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`,'Delete All Forever',()=>{
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
-    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();renderView('archive');
   });
 }
@@ -15003,7 +15017,7 @@ function deleteStaff(id){
       if(Array.isArray(t.assigneeIds)&&t.assigneeIds.includes(id))setTaskAssignees(t,t.assigneeIds.filter(a=>a!==id));
     });
     DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id);
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     DB.users=DB.users.filter(x=>x.id!==id);
     DB.staff=DB.users;
     saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
@@ -15787,7 +15801,7 @@ function tmDeleteSubitem(siId){
   const si=DB.tasks.find(t=>t.id===siId);
   const parentId=si?.parentTaskId;
   {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-  DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
+  {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
   saveDB(DB);
   if(parentId)openTaskModal(parentId);
 }
@@ -15892,6 +15906,44 @@ function addComment(taskId){
 // ═══════════════════════════════════════════════════════════
 // CONFIRM + DELETE
 // ═══════════════════════════════════════════════════════════
+// A task id plus every subitem beneath it, recursively.
+function _collectTaskIds(taskId,out=new Set()){
+  out.add(taskId);
+  (DB.tasks||[]).filter(t=>t.parentTaskId===taskId).forEach(c=>_collectTaskIds(c.id,out));
+  return out;
+}
+// What deleting this set of tasks actually destroys. The confirmation text and the deletion
+// itself both read from here, because when they were written separately they drifted: the
+// client dialog counted comments and time entries its handler never touched, so an admin was
+// told invoiced hours were being deleted when they were silently left behind as orphans.
+function _taskCascadeCounts(ids){
+  const entries=(DB.timeEntries||[]).filter(e=>ids.has(e.taskId));
+  return{
+    tasks:ids.size,
+    comments:(DB.comments||[]).filter(c=>ids.has(c.taskId)).length,
+    checklist:(DB.checklistItems||[]).filter(c=>ids.has(c.taskId)).length,
+    entriesDeleted:entries.filter(e=>e.status!=='approved').length,
+    entriesKept:entries.filter(e=>e.status==='approved').length,
+  };
+}
+// Approved time entries are deliberately NOT destroyed here. They are billing records, they
+// are already locked against direct deletion, and most of these paths are one misclick away —
+// a cascade must not become the way around that lock. They're kept, and the dialog says so.
+function _cascadeDeleteTasks(ids){
+  {const _before=DB.tasks;DB.tasks=(DB.tasks||[]).filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
+  {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+  {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+  {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
+}
+function _cascadeSentence(lead,extraParts,c){
+  const parts=[...extraParts];
+  if(c.comments)parts.push(`${c.comments} comment${c.comments!==1?'s':''}`);
+  if(c.checklist)parts.push(`${c.checklist} checklist item${c.checklist!==1?'s':''}`);
+  if(c.entriesDeleted)parts.push(`${c.entriesDeleted} time ${c.entriesDeleted!==1?'entries':'entry'}`);
+  let msg=parts.length?`${lead} This also permanently deletes ${parts.join(', ')}.`:`${lead}`;
+  if(c.entriesKept)msg+=` ${c.entriesKept} approved time ${c.entriesKept!==1?'entries':'entry'} will be kept as billing ${c.entriesKept!==1?'records':'record'}.`;
+  return msg+' This cannot be undone.';
+}
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   // Deleting a client cascades to every one of its groups and tasks (and everything under
@@ -15899,56 +15951,41 @@ function confirmDelete(type, id){
   // requires admin. This didn't.
   if(type==='client'&&currentUser.role!=='admin'){showAlert('Only admins can delete clients.');return;}
   let msg=`Are you sure you want to delete this ${type}? This cannot be undone.`;
+  let ids=null;
   if(type==='client'){
     const client=DB.clients.find(c=>c.id===id);
     const clientGroupIds=new Set(DB.groups.filter(g=>g.clientId===id).map(g=>g.id));
-    const topTasks=DB.tasks.filter(t=>clientGroupIds.has(t.groupId));
-    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
-    const ids=new Set();topTasks.forEach(t=>_collectIds(t.id,ids));
-    const entries=DB.timeEntries.filter(e=>ids.has(e.taskId));
-    const approvedCount=entries.filter(e=>e.status==='approved').length;
-    const parts=[];
-    if(clientGroupIds.size)parts.push(`${clientGroupIds.size} group${clientGroupIds.size!==1?'s':''}`);
-    if(ids.size)parts.push(`${ids.size} task${ids.size!==1?'s':''}`);
-    if(entries.length)parts.push(`${entries.length} time ${entries.length!==1?'entries':'entry'}${approvedCount?` (${approvedCount} already approved)`:''}`);
-    msg=parts.length
-      ?`Delete "${client?.name||'this client'}"? This also permanently deletes ${parts.join(', ')}. This cannot be undone.`
-      :`Delete "${client?.name||'this client'}"? This cannot be undone.`;
+    ids=new Set();
+    DB.tasks.filter(t=>clientGroupIds.has(t.groupId)).forEach(t=>_collectTaskIds(t.id,ids));
+    const c=_taskCascadeCounts(ids);
+    const lead=`Delete "${client?.name||'this client'}"?`;
+    const extra=[];
+    if(clientGroupIds.size)extra.push(`${clientGroupIds.size} group${clientGroupIds.size!==1?'s':''}`);
+    if(c.tasks)extra.push(`${c.tasks} task${c.tasks!==1?'s':''}`);
+    msg=_cascadeSentence(lead,extra,c);
   }
   if(type==='task'){
     // This used to delete immediately, bypassing the confirm modal below entirely — one
     // misclick on the bare ✕ permanently removed the task, every subitem recursively, and
-    // all of its comments/checklist items/time entries (including any already approved and
-    // on a pro forma invoice), with no prompt and no undo.
-    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
-    const ids=_collectIds(id);
-    const subCount=ids.size-1;
-    const entries=DB.timeEntries.filter(e=>ids.has(e.taskId));
-    const approvedCount=entries.filter(e=>e.status==='approved').length;
-    const parts=[];
-    if(subCount)parts.push(`${subCount} subitem${subCount!==1?'s':''}`);
-    if(entries.length)parts.push(`${entries.length} time ${entries.length!==1?'entries':'entry'}${approvedCount?` (${approvedCount} already approved)`:''}`);
-    const commentCount=DB.comments.filter(c=>ids.has(c.taskId)).length;
-    if(commentCount)parts.push(`${commentCount} comment${commentCount!==1?'s':''}`);
-    msg=parts.length
-      ?`Delete this task? This also permanently deletes ${parts.join(', ')}. This cannot be undone.`
-      :'Delete this task? This cannot be undone.';
+    // all of its comments/checklist items/time entries, with no prompt and no undo.
+    ids=_collectTaskIds(id);
+    const c=_taskCascadeCounts(ids);
+    const extra=[];
+    if(c.tasks>1)extra.push(`${c.tasks-1} subitem${c.tasks-1!==1?'s':''}`);
+    msg=_cascadeSentence('Delete this task?',extra,c);
   }
   confirmCallback=()=>{
     if(type==='task'){
-      const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
-      const ids=_collectIds(id);
-      {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-      DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
-      {const _before=DB.comments;DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-      {const _before=DB.timeEntries;DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
+      _cascadeDeleteTasks(ids);
       saveDB(DB);closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
       return;
     }
     if(type==='client'){
-      const clientGroupIds=DB.groups.filter(g=>g.clientId===id).map(g=>g.id);
+      // Cascade the tasks properly — this used to drop only groups/tasks, leaving every
+      // comment, checklist item and time entry behind with a dangling taskId, still counted
+      // by anything aggregating on clientId.
+      _cascadeDeleteTasks(ids);
       {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.clientId!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
-      {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!clientGroupIds.includes(t.groupId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
       DB.clients=DB.clients.filter(c=>c.id!==id);
       // Track deleted client IDs so realtime merge can't restore them
       (DB.deletedClientIds=DB.deletedClientIds||[]).push(id);
@@ -16205,6 +16242,12 @@ function _showPasteChoice(rect,id){
   if(left<8)left=8;
   pop.style.top=top+'px';pop.style.left=left+'px';pop.style.visibility='visible';
   const dismiss=(e)=>{
+    // Picking a format removes the popup from its own onclick, which never reached the
+    // cleanup below — so this listener stayed registered on document with a stale closure
+    // and fired on the user's NEXT click anywhere, dispatching a blur (and therefore a save)
+    // against an editor that may since have been re-rendered, or may now belong to a
+    // different task entirely. Detect that case and just unregister.
+    if(!pop.isConnected){document.removeEventListener('mousedown',dismiss);return;}
     if(pop.contains(e.target))return;
     pop.remove();_pendingPaste=null;document.removeEventListener('mousedown',dismiss);
     // Abandoning the choice (clicking away instead of picking a format) used to just drop the
@@ -16214,7 +16257,8 @@ function _showPasteChoice(rect,id){
     // was lost on the next re-render. The popup blocked the box's own mousedown from reaching
     // it (line above), so the real blur already fired and was suppressed — re-dispatching one
     // now that the popup is gone lets that same handler's own save logic run normally.
-    if(ed)ed.dispatchEvent(new Event('blur'));
+    // isConnected guards the same stale-element write: never blur an editor already torn down.
+    if(ed&&ed.isConnected)ed.dispatchEvent(new Event('blur'));
   };
   setTimeout(()=>document.addEventListener('mousedown',dismiss),0);
 }
@@ -16913,7 +16957,16 @@ function renderMeetingNotesTab(notes){
     </div>`;
 }
 function wsMeetingNoteStartNew(){wsMeetingNoteEditingId='new';wsMeetingNoteExpandedId=null;renderView('workspace');setTimeout(()=>document.getElementById('mn-title')?.focus(),40);}
-function wsMeetingNoteCancel(){wsMeetingNoteEditingId=null;renderView('workspace');}
+// Cancel has to drop the draft too. Drafts are restored unconditionally whenever one exists
+// (an edit in progress on an existing note starts pre-filled, so "restore only if empty"
+// would never fire), and only the SAVE paths cleared them — so cancelling an edit left the
+// abandoned text behind, and the next time that note was opened it silently replaced the real
+// saved body, ready to be written over it on the next save. Select-all + delete + Cancel
+// stored an empty draft and blanked the note the same way.
+function wsMeetingNoteCancel(){
+  clearTextareaDraft(wsMeetingNoteEditingId==='new'?'mn-body':'mn-edit-body-'+wsMeetingNoteEditingId);
+  wsMeetingNoteEditingId=null;renderView('workspace');
+}
 function wsMeetingNoteToggle(id){wsMeetingNoteExpandedId=wsMeetingNoteExpandedId===id?null:id;renderView('workspace');}
 function wsMeetingNoteSave(){
   if(!currentWorkboard)return;
@@ -17184,9 +17237,9 @@ function wsBulkDeleteTasks(){
     const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
     const ids=new Set();[...wsSelected].forEach(id=>_collectIds(id,ids));
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
-    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     wsSelected.clear();saveDB(DB);closeConfirm();renderView('workspace');
   });
 }
@@ -17379,7 +17432,7 @@ function wsDeleteSubitem(id){
   const parentId=si?.parentTaskId;
   {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   {const _before=DB.comments;DB.comments=DB.comments.filter(c=>c.taskId!==id);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-  DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id);
+  {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
   if(parentId){
     const parent=DB.tasks.find(t=>t.id===parentId);
     if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
@@ -17481,7 +17534,7 @@ function wsDeleteGroup(groupId){
     :`Delete group "${escHtml(g.name)}"? This cannot be undone.`;
   openConfirm('Delete Group',msg,'Delete',()=>{
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));
+    {const _before=DB.checklistItems;DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
     {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.id!==groupId);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     saveDB(DB);closeConfirm();renderView('workspace');
   });
@@ -17656,9 +17709,9 @@ function wsDeleteTask(id){
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
-    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();renderView('workspace');
   };
   document.getElementById('confirm-title').textContent='Delete Task';
@@ -17706,18 +17759,25 @@ const WS_SORT_VALUE={
   progress:t=>getEffectiveTaskPct(t.id)||0,
   hours:t=>hoursForTask(t.id)||0,
   tags:t=>(t.tags||[]).join(', '),
-  attachments:t=>(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
+  attachments:t=>_wsCache?.fileCountMap.get(t.id)??(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
   deps:t=>(t.dependencies||[]).length,
 };
 function _wsOrderTasks(arr){
   const getVal=wsSort.col&&WS_SORT_VALUE[wsSort.col];
   if(getVal){
-    arr.sort((a,b)=>{
-      const va=getVal(a),vb=getVal(b);
-      if(va<vb)return wsSort.dir==='asc'?-1:1;
-      if(va>vb)return wsSort.dir==='asc'?1:-1;
-      return 0;
+    // Compute each row's sort key ONCE rather than inside the comparator. The progress,
+    // hours and attachments extractors each scan a whole collection, and a comparator runs
+    // O(n log n) times — fine in the Main Table, which builds _wsCache first, but renderGantt
+    // calls this with no cache at all, so every comparison was re-scanning DB.tasks /
+    // DB.timeEntries in full. Mutates in place: callers pass section arrays and rely on that.
+    const dir=wsSort.dir==='asc'?1:-1;
+    const keyed=arr.map((t,i)=>({t,k:getVal(t),i}));
+    keyed.sort((a,b)=>{
+      if(a.k<b.k)return -dir;
+      if(a.k>b.k)return dir;
+      return a.i-b.i;   // stable: equal keys keep their existing relative order
     });
+    for(let i=0;i<keyed.length;i++)arr[i]=keyed[i].t;
   } else {
     arr.sort((a,b)=>(a.order||0)-(b.order||0));
   }
@@ -19406,6 +19466,10 @@ function mtgUnlink(taskId){
     // Draft entries for this task go with the link; anything further along is left and flagged.
     if(_mtgEditingId){
       const locked=(DB.timeEntries||[]).filter(e=>e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)!=='draft');
+      // Deliberately NOT tombstoned, unlike every other removal in this file: these draft
+      // entries are filtered out and immediately rebuilt below, so tombstoning their ids
+      // would blacklist rows that are about to be re-added. (Safe today only because the
+      // rebuild mints fresh ids — do not "fix" this to match the others.)
       DB.timeEntries=(DB.timeEntries||[]).filter(e=>!(e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)==='draft'));
       if(locked.length)showAlert(locked.length+' timesheet entr'+(locked.length===1?'y has':'ies have')+' already been submitted or approved for that task. The link is removed, but the recorded time needs a separate adjustment in the Timesheet module.','Recorded time kept');
       saveDB(DB);
@@ -20037,7 +20101,12 @@ function renderTpMeetingNotes(task){
 let _tpNoteEditingId=null,_tpNoteExpandedId=null;
 function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}}
 function tpNoteStartNew(){_tpNoteEditingId='new';_tpNoteExpandedId=null;_tpNotesRefresh();setTimeout(()=>document.getElementById('tpn-title')?.focus(),40);}
-function tpNoteCancel(){_tpNoteEditingId=null;_tpNotesRefresh();}
+// Same as wsMeetingNoteCancel — cancelling must drop the draft, or it resurfaces over the
+// note's real content next time this note is opened for editing.
+function tpNoteCancel(){
+  clearTextareaDraft(_tpNoteEditingId==='new'?'tpn-body':'tpn-e-body-'+_tpNoteEditingId);
+  _tpNoteEditingId=null;_tpNotesRefresh();
+}
 function tpNoteToggle(id){_tpNoteExpandedId=_tpNoteExpandedId===id?null:id;_tpNotesRefresh();}
 function tpNoteStartEdit(id){_tpNoteEditingId=id;_tpNotesRefresh();}
 function tpNoteSave(taskId){
@@ -20213,7 +20282,7 @@ function tpDeleteSubitem(siId){
   const si=DB.tasks.find(t=>t.id===siId);
   const parentId=si?.parentTaskId;
   {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-  DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
+  {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
   if(parentId){
     const parent=DB.tasks.find(t=>t.id===parentId);
     if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
@@ -20457,9 +20526,9 @@ function tpDeleteTask(){
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
-    DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
+    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();closeTaskPanel();renderView(currentView);
   });
 }
