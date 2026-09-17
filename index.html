@@ -3348,7 +3348,7 @@ function getFilteredTasks(){
   if(f.dateFrom)t=t.filter(x=>!x.endDate||x.endDate>=f.dateFrom);
   if(f.dateTo)t=t.filter(x=>!x.startDate||x.startDate<=f.dateTo);
   if(f.awaitingClient)t=t.filter(x=>x.currentlyWithType==='client'||x.awaitingClient||x.currentlyWith==='client');
-  if(f.overdue){const td=new Date().toISOString().slice(0,10);t=t.filter(x=>x.endDate&&x.endDate<td&&x.status!=='done'&&x.status!=='completed'&&x.status!=='cancelled');}
+  if(f.overdue){const td=toDateStr(new Date());t=t.filter(x=>x.endDate&&x.endDate<td&&x.status!=='done'&&x.status!=='completed'&&x.status!=='cancelled');}
   if(f.hasChecklist)t=t.filter(x=>(DB.tasks||[]).some(c=>c.parentTaskId===x.id&&!c.archived));
   if(f.hasDeps)t=t.filter(x=>(DB.dependencies||[]).some(d=>d.predecessorTaskId===x.id||d.dependentTaskId===x.id));
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
@@ -6978,7 +6978,12 @@ function renderBoard(){
   const tasks=getFilteredTasks();
   // Colours come from getStatusMeta so a status recoloured in Columns > Status &
   // priority colours shows through here too; these were hardcoded and ignored it.
-  const cols=['todo','in-progress','waiting-client','review','blocked','ready-approval','done','cancelled']
+  // Was missing 5 of the 13 real statuses (ready-to-start, needs-changes, approved-client,
+  // change-requested, completed-approved) — a task moved into any of those by the client
+  // portal (cpApproveTask → approved-client, cpSubmitChanges → change-requested) simply had
+  // no column to render in and vanished from the board entirely. Same canonical list the
+  // filter panel uses (renderAdvancedFilterPanel).
+  const cols=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled']
     .map(k=>{const m=getStatusMeta(k);return{key:k,label:m.label,color:m.color};});
   return renderWbTabs('board')+renderUniversalToolbar('board')+`<div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;margin-top:12px;min-height:calc(100vh - 200px)">
   ${cols.map(col=>{
@@ -9060,6 +9065,9 @@ function logTimeFromModal(taskId){
 function deleteTaskTimeEntry(entryId,taskId){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message,'Permission');return;}
   const entry=DB.timeEntries.find(e=>e.id===entryId);
+  // Guard here too, not just on the button that calls this — an approved entry may already
+  // be on a pro forma invoice; deleting it drops those hours from the invoice on the next sync.
+  if(entry?.status==='approved'){showAlert('This entry is approved and cannot be deleted. Ask an admin to reject it first.','Locked');return;}
   if(entry)writeAuditEvent('TimeEntry',entryId,'deleted',{taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
   DB.timeEntries=DB.timeEntries.filter(e=>e.id!==entryId);
   applyHourBudgetPct(taskId);
@@ -9194,7 +9202,7 @@ const _TE_STATUS_META={
 function renderTime(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date());
   const isAdmin=currentUser.role==='admin';
   const mode=_teMode==='client'?'client':'task';
 
@@ -9296,7 +9304,11 @@ function renderTime(){
     // tsExportCSV and _tsDetailTable all read e.clientId first. So an entry whose stored
     // client differed from its task's was billed to one client and displayed against another.
     const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
-    const canDel=isAdmin||e.staffId===currentUser.id;
+    // Editing an approved entry is already blocked below (canEdit checks status) — deletion
+    // had no such check, so a staff member (or anyone) could delete their own already-approved,
+    // possibly-invoiced hours outright. To remove an approved entry now, an admin must first
+    // reject it (which is deliberately logged and requires a reason), then it can be deleted.
+    const canDel=(isAdmin||e.staffId===currentUser.id)&&e.status!=='approved';
     const canEdit=(isAdmin||e.staffId===currentUser.id)&&e.status!=='approved';
     const sm=_TE_STATUS_META[e.status]||_TE_STATUS_META.draft;
     const locMeta={remote:{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'},client_office:{label:'Client Office',bg:'#fef3c7',color:'#92400e'},office:{label:'Office',bg:'#f0fdf4',color:'#166534'}}[e.location||'remote']||{label:'Remote',bg:'#eff6ff',color:'#1d4ed8'};
@@ -10006,6 +10018,8 @@ function teQuickLogUndo(id){
 function deleteTimeEntry(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const entry=DB.timeEntries.find(e=>e.id===id);
+  // Guard here too, not just on the button that calls this (see deleteTaskTimeEntry).
+  if(entry?.status==='approved'){showAlert('This entry is approved and cannot be deleted. Ask an admin to reject it first.','Locked');return;}
   if(entry){
     writeAuditEvent('TimeEntry',id,'deleted',{taskId:entry.taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
     DB.timeEntries=DB.timeEntries.filter(e=>e.id!==id);
@@ -10146,7 +10160,7 @@ function tsGetFortnightWeeks(fortnightEndingStr){
   const w2=new Date(fortnightEndingStr+'T00:00:00Z');
   return[new Date(w2.getTime()-7*86400000).toISOString().slice(0,10),fortnightEndingStr];
 }
-function tsDefaultFortnightEnding(){return tsGetFortnightEnding(new Date().toISOString().slice(0,10));}
+function tsDefaultFortnightEnding(){return tsGetFortnightEnding(toDateStr(new Date()));}
 function tsFmtDayCol(dateStr){
   return new Date(dateStr+'T00:00:00Z').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'});
 }
@@ -10223,7 +10237,7 @@ function _tsFilterEntries(){
 // TIMESHEETS — Period presets
 // ══════════════════════════════════════════════════════════════════════════
 function tsSetPeriod(period){
-  const today=new Date().toISOString().slice(0,10);
+  const today=toDateStr(new Date());
   const d=new Date(today+'T00:00:00Z');
   const dow=d.getUTCDay();
   if(period==='today'){tsDateFrom=today;tsDateTo=today;}
@@ -10457,11 +10471,11 @@ function tsExportCSV(){
       e.note||'',e.submittedAt||'',e.approvedAt||'',approvedBy?.name||'',
       e.rejectedAt||'',rejectedBy?.name||'',e.rejectionReason||'']);
   });
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const csv=rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
-  const from=tsDateFrom||entries[0]?.date||new Date().toISOString().slice(0,10);
-  const to=tsDateTo||entries[entries.length-1]?.date||new Date().toISOString().slice(0,10);
+  const from=tsDateFrom||entries[0]?.date||toDateStr(new Date());
+  const to=tsDateTo||entries[entries.length-1]?.date||toDateStr(new Date());
   const sn=tsStaffFilter!=='all'?'_'+(getStaff(tsStaffFilter)?.name||'').replace(/\s+/g,'_'):'';
   const cn=tsClientFilter!=='all'?'_'+(DB.clients.find(c=>c.id===tsClientFilter)?.name||'').replace(/\s+/g,'_'):'';
   a.download=`Timesheets${sn}${cn}_${from}_to_${to}.csv`;a.click();
@@ -10582,7 +10596,7 @@ function tsExportXeroCSV(){
       });
     });
   });
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const csv=rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
   const sn=tsStaffFilter!=='all'?'_'+(getStaff(tsStaffFilter)?.name||'').replace(/\s+/g,'_'):'';
@@ -10952,7 +10966,15 @@ function pfiCalcTotals(inv){
   const totalHrs=(inv.lineItems||[]).filter(l=>l.billable).reduce((s,l)=>s+l.hours,0);
   // Approved hours minus billed hours: what is deliberately not being charged. Internal-only —
   // never surface this on a client-facing export, only in the editor totals.
-  const writeOff=(inv.lineItems||[]).reduce((s,l)=>s+((l.sourceHours!=null?l.sourceHours:l.hours)-l.hours),0);
+  // A line excluded entirely via the billable toggle (pfiToggleBillable/pfiBulkSetBillable)
+  // only flips `.billable` — hours/sourceHours are untouched — so it used to contribute 0 here
+  // even though 100% of its hours are unbilled: this total dropped by the excluded hours while
+  // "Not charged" stayed put. Count the full source amount as write-off when non-billable.
+  const writeOff=(inv.lineItems||[]).reduce((s,l)=>{
+    const source=l.sourceHours!=null?l.sourceHours:l.hours;
+    const billed=l.billable?l.hours:0;
+    return s+(source-billed);
+  },0);
   return{totalHrs,writeOff};
 }
 // Every time entry already claimed by a line item on ANY invoice (except excludeInvoiceId).
@@ -11212,7 +11234,7 @@ function pfiSyncAll(invId){
 // Blank editable line with no timeEntryId — never touched by re-sync or the duplicate guard.
 function pfiAddManualLine(invId){
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===invId);if(!inv)return;
-  const today=inv.dateTo||inv.dateFrom||new Date().toISOString().slice(0,10);
+  const today=inv.dateTo||inv.dateFrom||toDateStr(new Date());
   const li={id:'li'+uid(),timeEntryId:null,manual:true,date:today,day:pfiDayName(today),
     staffId:currentUser.id,staffName:currentUser.name,memberCode:currentUser.initials||'',
     taskId:null,taskTitle:'—',activity:'Ordinary Hours',activityCode:'ORD',
@@ -11338,7 +11360,7 @@ function pfiExportCSV(id){
   if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);}
   rows.push(['','','','','','','','','','','','','']);
   rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','']);
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const csv=rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
   const _csvUrl=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
   const a=document.createElement('a');a.href=_csvUrl;
   a.download=(inv.number+'_'+(client?.name||'Invoice').replace(/\s+/g,'_')+'_'+inv.dateFrom+'_'+inv.dateTo+'.csv');a.click();
@@ -11741,7 +11763,7 @@ function rptExportCSV(){
       rows.push([e.date,c.name,e.staffName,e.taskTitle,e.note||'',e.hours.toString(),(e.hours*rate).toFixed(2)]);
     }
   }
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv=rows.map(r=>r.map(_csvCell).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -12387,7 +12409,7 @@ function _qccBuild(qId,filter){
   const exact=clients.find(c=>c.name.toLowerCase()===trimmed.toLowerCase());
   if(trimmed&&!exact){
     html+=`<div
-      onmousedown="event.preventDefault();_qccCreate('${qId}','${escHtml(trimmed).replace(/'/g,"&#39;")}')"
+      onmousedown="event.preventDefault();_qccCreate('${qId}')"
       style="padding:8px 12px;cursor:pointer;font-size:13px;color:#0d6e4e;font-weight:600;border-top:1px solid #e8edf4;display:flex;align-items:center;gap:6px"
       onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -12423,8 +12445,14 @@ function _qccPick(qId,clientId){
   saveDB(DB);
   renderView('quotes');
 }
-function _qccCreate(qId,name){
-  if(!name||!name.trim())return;
+function _qccCreate(qId){
+  // Read the typed value straight from the input rather than round-tripping it through this
+  // onclick attribute — the previous version interpolated it as a quoted string argument, so
+  // a name like "O'Brien Holdings" (escHtml turns ' into an entity, but the browser's HTML
+  // parser decodes that straight back to a literal ' before this ever reaches the JS engine)
+  // broke out of the string and threw, making the whole "Create…" row silently inert.
+  const name=(_qccInp(qId)?.value||'').trim();
+  if(!name)return;
   const now=new Date().toISOString();
   const colors=['#0d6e4e','#1d6fb8','#7c3aed','#b45309','#c2410c','#0e7490','#4338ca'];
   const newClient={
@@ -15306,12 +15334,12 @@ function openTaskModal(id, defaultGroupId){
                 <span style="flex:1;color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(e.note||'—')}</span>
                 ${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 5px;border-radius:6px;font-weight:700;flex-shrink:0">Bill.</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:1px 5px;border-radius:6px;font-weight:700;flex-shrink:0">Non-bill.</span>`}
                 <span style="font-weight:700;color:#0d1c33;flex-shrink:0">${e.hours}h</span>
-                ${canEdit||currentUser.role==='admin'?`<button onclick="deleteTaskTimeEntry('${e.id}','${id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;opacity:0.7;flex-shrink:0" title="Delete entry">✕</button>`:''}
+                ${(canEdit||currentUser.role==='admin')&&e.status!=='approved'?`<button onclick="deleteTaskTimeEntry('${e.id}','${id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;opacity:0.7;flex-shrink:0" title="Delete entry">✕</button>`:''}
               </div>`;
             }).join('')}
         </div>
         ${canEdit?`<div style="display:grid;grid-template-columns:110px 68px ${currentUser.role==='admin'?'1fr ':''} 1fr auto auto;gap:6px;align-items:end">
-          <div><label class="form-label">Date</label><input id="tte-date" type="date" class="form-input" value="${new Date().toISOString().slice(0,10)}"/></div>
+          <div><label class="form-label">Date</label><input id="tte-date" type="date" class="form-input" value="${toDateStr(new Date())}"/></div>
           <div><label class="form-label">Hours</label><input id="tte-hours" type="number" step="0.25" min="0.25" class="form-input" value="1"/></div>
           ${currentUser.role==='admin'?`<div><label class="form-label">Staff</label><select id="tte-staff" class="form-input">${DB.staff.map(s=>`<option value="${s.id}"${s.id===currentUser.id?' selected':''}>${escHtml(s.name)}</option>`).join('')}</select></div>`:''}
           <div><label class="form-label">Note <span style="color:#ef4444">*</span></label><textarea id="tte-note" class="form-input" placeholder="What did you work on?" rows="2" style="resize:vertical;min-height:56px;line-height:1.4"></textarea></div>
@@ -15803,18 +15831,37 @@ function addComment(taskId){
 // ═══════════════════════════════════════════════════════════
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  let msg=`Are you sure you want to delete this ${type}? This cannot be undone.`;
   if(type==='task'){
-    // Collect the task and all its subitems recursively
+    // This used to delete immediately, bypassing the confirm modal below entirely — one
+    // misclick on the bare ✕ permanently removed the task, every subitem recursively, and
+    // all of its comments/checklist items/time entries (including any already approved and
+    // on a pro forma invoice), with no prompt and no undo.
     const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
     const ids=_collectIds(id);
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
-    DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
-    DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));
-    DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));
-    saveDB(DB);closeTaskModal();closeGenericModal();renderView(currentView);
-    return;
+    const subCount=ids.size-1;
+    const entries=DB.timeEntries.filter(e=>ids.has(e.taskId));
+    const approvedCount=entries.filter(e=>e.status==='approved').length;
+    const parts=[];
+    if(subCount)parts.push(`${subCount} subitem${subCount!==1?'s':''}`);
+    if(entries.length)parts.push(`${entries.length} time ${entries.length!==1?'entries':'entry'}${approvedCount?` (${approvedCount} already approved)`:''}`);
+    const commentCount=DB.comments.filter(c=>ids.has(c.taskId)).length;
+    if(commentCount)parts.push(`${commentCount} comment${commentCount!==1?'s':''}`);
+    msg=parts.length
+      ?`Delete this task? This also permanently deletes ${parts.join(', ')}. This cannot be undone.`
+      :'Delete this task? This cannot be undone.';
   }
   confirmCallback=()=>{
+    if(type==='task'){
+      const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
+      const ids=_collectIds(id);
+      DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+      DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
+      DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));
+      DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));
+      saveDB(DB);closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
+      return;
+    }
     if(type==='client'){
       const clientGroupIds=DB.groups.filter(g=>g.clientId===id).map(g=>g.id);
       DB.groups=DB.groups.filter(g=>g.clientId!==id);
@@ -15828,7 +15875,7 @@ function confirmDelete(type, id){
     closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
   };
   document.getElementById('confirm-title').textContent='Confirm Delete';
-  document.getElementById('confirm-msg').textContent=`Are you sure you want to delete this ${type}? This cannot be undone.`;
+  document.getElementById('confirm-msg').textContent=msg;
   document.getElementById('confirm-ok-btn').onclick=confirmCallback;
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
@@ -15917,6 +15964,16 @@ function renderWbTabs(activeView){
 // ═══════════════════════════════════════════════════════════
 // Escapes for both text content and attribute values (& must be first)
 function escHtml(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');}
+// Shared CSV cell formatter for every CSV export in the app. The "" quoting was already
+// correct (commas/quotes/newlines were safe), but nothing guarded a leading =, +, - or @ —
+// Excel/Sheets treats a cell starting with one of those as a formula to evaluate on open, so
+// a task name or timesheet note beginning e.g. "=HYPERLINK(...)" would execute. Prefixing
+// with a bare quote is the standard mitigation: it forces the cell to be read as literal text.
+function _csvCell(v){
+  let s=v==null?'':String(v);
+  if(/^[=+\-@]/.test(s))s="'"+s;
+  return'"'+s.replace(/"/g,'""')+'"';
+}
 function _fileTypeIcon(type,name,url){const ext=(name||'').split('.').pop().toLowerCase();const _badge=(bg,color,label)=>`<span style="background:${bg};color:${color};font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:0.04em;flex-shrink:0">${label}</span>`;if(type==='link'){const isSP=(url||'').toLowerCase().includes('sharepoint');return isSP?_badge('#deecf9','#0078d4','SP'):_badge('#e0f2fe','#0369a1','LINK');}if(type&&type.startsWith('image/'))return _badge('#dbeafe','#1d4ed8','IMG');if(type==='application/pdf'||ext==='pdf')return _badge('#fee2e2','#dc2626','PDF');if((type&&(type.includes('word')||type.includes('msword')))||ext==='doc'||ext==='docx')return _badge('#dbeafe','#1e40af','DOC');if((type&&(type.includes('excel')||type.includes('spreadsheet')))||ext==='xls'||ext==='xlsx'||ext==='csv')return _badge('#dcfce7','#15803d','XLS');if((type&&(type.includes('powerpoint')||type.includes('presentation')))||ext==='ppt'||ext==='pptx')return _badge('#ffedd5','#c2410c','PPT');if(type&&type.startsWith('video/'))return _badge('#f3e8ff','#7e22ce','VID');if(type&&type.startsWith('audio/'))return _badge('#fce7f3','#be185d','AUD');if((type&&type.includes('zip'))||ext==='zip'||ext==='rar'||ext==='gz'||ext==='7z')return _badge('#fef9c3','#854d0e','ZIP');if((type&&type.startsWith('text/'))||ext==='txt'||ext==='md')return _badge('#f0fdf4','#166534','TXT');return _badge('#f1f5f9','#64748b','FILE');}
 // ── Rich text description editor ────────────────────────────
 function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s)||/&[a-z#][a-z0-9]+;/i.test(s))return _descSanitize(s);return escHtml(s).replace(/\n/g,'<br>');}
@@ -16194,7 +16251,7 @@ function _wsBuildNewTask(opts){
     name:opts.name,status:opts.status||'todo',priority:opts.priority||'med',ownerId,
     currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),
     currentlyWithUserId:cwith==='client'?null:ownerId||null,
-    percentComplete:opts.pct||0,startDate:opts.startDate||new Date().toISOString().slice(0,10),endDate:opts.endDate||'',
+    percentComplete:opts.pct||0,startDate:opts.startDate||toDateStr(new Date()),endDate:opts.endDate||'',
     hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
 }
 function wsSaveInlineTask(){
@@ -16229,7 +16286,7 @@ function wsHandlePasteMultiline(e){
   const wbId=currentWorkboard?.id||DB.workboards[0]?.id||'';
   lines.forEach(name=>{
     const _now=new Date().toISOString();
-    const _t={id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||new Date().toISOString().slice(0,10),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+    const _t={id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||toDateStr(new Date()),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
     DB.tasks.push(_t);
     notifyTaskCreated(_t);
   });
@@ -17532,17 +17589,32 @@ const WS_COL_DEFS=[
 // (`order`, written by _wsApplyRowDrop). Every task defaults to order:0, so the manual branch
 // is a no-op on a board nobody has dragged — a stable sort keeps the existing array order.
 // Shared by the Main Table and the Gantt so both agree on row order.
+// Value extractor per sortable column — matches what that column actually displays
+// (renderWsRow). Previously only 6 of the Sort menu's 12 columns were handled here; picking
+// any other one (ID, With, Progress, Hours, Tags, Files, Deps) left va/vb both undefined, so
+// every comparison returned 0 — a silent no-op sort that ALSO skipped the manual-order
+// fallback below, discarding the board's drag order for the rest of that render.
+const WS_SORT_VALUE={
+  status:t=>t.status||'',
+  priority:t=>({crit:0,high:1,med:2,low:3})[t.priority]??99,
+  owner:t=>getStaff(t.ownerId)?.name||'',
+  duedate:t=>t.endDate||'9999',
+  timeline:t=>t.endDate||'9999',
+  name:t=>t.name||'',
+  client:t=>getTaskClient(t)?.name||'',
+  ref:t=>t.refNumber||0,
+  cwith:t=>(t.currentlyWith==='client'?'Client':t.currentlyWith==='approver'?'Approver':getStaff(t.currentlyWith||t.currentlyWithUserId)?.name)||'',
+  progress:t=>getEffectiveTaskPct(t.id)||0,
+  hours:t=>hoursForTask(t.id)||0,
+  tags:t=>(t.tags||[]).join(', '),
+  attachments:t=>(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
+  deps:t=>(t.dependencies||[]).length,
+};
 function _wsOrderTasks(arr){
-  if(wsSort.col){
-    const PO={crit:0,high:1,med:2,low:3};
+  const getVal=wsSort.col&&WS_SORT_VALUE[wsSort.col];
+  if(getVal){
     arr.sort((a,b)=>{
-      let va,vb;
-      if(wsSort.col==='status'){va=a.status||'';vb=b.status||'';}
-      else if(wsSort.col==='priority'){va=PO[a.priority]??99;vb=PO[b.priority]??99;}
-      else if(wsSort.col==='owner'){va=getStaff(a.ownerId)?.name||'';vb=getStaff(b.ownerId)?.name||'';}
-      else if(wsSort.col==='duedate'||wsSort.col==='timeline'){va=a.endDate||'9999';vb=b.endDate||'9999';}
-      else if(wsSort.col==='name'){va=a.name||'';vb=b.name||'';}
-      else if(wsSort.col==='client'){va=getTaskClient(a)?.name||'';vb=getTaskClient(b)?.name||'';}
+      const va=getVal(a),vb=getVal(b);
       if(va<vb)return wsSort.dir==='asc'?-1:1;
       if(va>vb)return wsSort.dir==='asc'?1:-1;
       return 0;
@@ -17576,15 +17648,24 @@ if(wsGroupBy==='group'){
     sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
   });
 } else if(wsGroupBy==='owner'){
+  // A task with no owner, or an owner since removed from staff, matched none of these
+  // sections and simply never rendered anywhere — while the toolbar's item count still
+  // included it, so the header total didn't match what was actually on screen.
+  const staffIds=new Set(DB.staff.map(s=>s.id));
   DB.staff.forEach(s=>{
     sections.push({id:s.id,label:s.name,sub:s.role,color:s.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.ownerId===s.id)});
   });
+  const unowned=tasks.filter(t=>!t.ownerId||!staffIds.has(t.ownerId));
+  if(unowned.length)sections.push({id:'__none',label:'No Owner',sub:'',color:'#8da2b2',defGrp:wbDefGrp,tasks:unowned});
 } else if(wsGroupBy==='priority'){
   const PL={crit:'Critical',high:'High',med:'Medium',low:'Low'};
   const PC={crit:'#b91c1c',high:'#c2410c',med:'#b45309',low:'#475569'};
   ['crit','high','med','low'].forEach(p=>{
     sections.push({id:p,label:PL[p],sub:'',color:PC[p],defGrp:wbDefGrp,tasks:tasks.filter(t=>t.priority===p)});
   });
+  // Same fallback as owner grouping above — a task with no/unrecognised priority was dropped.
+  const noPriority=tasks.filter(t=>!['crit','high','med','low'].includes(t.priority));
+  if(noPriority.length)sections.push({id:'__none',label:'No Priority',sub:'',color:'#8da2b2',defGrp:wbDefGrp,tasks:noPriority});
 }
 
 // When searching, drop empty sections to keep the view clean
@@ -20963,7 +21044,7 @@ function wsBuildDropdownHtml(taskId,field){
         const href=isLink?f.url:_getFileData(f.id);
         const subLabel=isLink?(f.url||'').replace(/^https?:\/\//i,'').split('/')[0]:`${(f.size/1024).toFixed(0)} KB`;
         return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px">
-          <button onclick="event.stopPropagation();${isLink?`window.open('${escHtml(f.url||'')}','_blank','noopener')`:(href?`wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')`:`showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device')`)}" title="${isLink?'Open link':'Open file'}" style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;background:none;border:none;padding:0;margin:0;text-align:left;cursor:pointer;font-family:inherit" onmouseover="this.querySelector('.ws-file-name').style.color='#0d6e4e'" onmouseout="this.querySelector('.ws-file-name').style.color='#1a2940'">
+          <button onclick="event.stopPropagation();${isLink?`window.open('${escHtml(f.url||'')}','_blank','noopener')`:(href?`wsPreviewFile('${f.id}')`:`showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device')`)}" title="${isLink?'Open link':'Open file'}" style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;background:none;border:none;padding:0;margin:0;text-align:left;cursor:pointer;font-family:inherit" onmouseover="this.querySelector('.ws-file-name').style.color='#0d6e4e'" onmouseout="this.querySelector('.ws-file-name').style.color='#1a2940'">
             ${_fileTypeIcon(f.type,f.name,f.url)}
             <div style="min-width:0">
               <div class="ws-file-name" style="font-size:12px;font-weight:600;color:#1a2940;transition:color 0.12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">${escHtml(f.name)}</div>
@@ -20971,7 +21052,7 @@ function wsBuildDropdownHtml(taskId,field){
             </div>
           </button>
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
-            ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}','${escHtml(f.name).replace(/'/g,'&#39;')}','${escHtml(f.type||'')}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
+            ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
             ${!isLink?(href?_iconBtn(href,'Download',_dlSvg,escHtml(f.name)):_iconBtnDim(_dlSvg)):''}
             <button onclick="wsDeleteAttachment('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;cursor:pointer;color:#d0d8e4;padding:3px 5px;border-radius:4px;line-height:1" onmouseover="this.style.color='#dc2626';this.style.borderColor='#fee2e2'" onmouseout="this.style.color='#d0d8e4';this.style.borderColor='transparent'" title="Remove">${_xSvg}</button>
           </div>
@@ -21537,12 +21618,20 @@ function _previewMessage(msg,href,name){
     (href?'<a href="'+href+'" download="'+escHtml(name||'file')+'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;text-decoration:none;padding:8px 18px;border-radius:7px">Download instead</a>':'')+
   '</div>';
 }
-function wsPreviewFile(id,name,type){
+function wsPreviewFile(id){
   const data=_getFileData(id);
   if(!data){
     showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device');
     return;
   }
+  // name/type used to be passed in as string-interpolated onclick arguments — escHtml already
+  // turns a ' into an entity, so the browser's HTML parser decodes it straight back to a
+  // literal ' before this ever reaches the JS engine, breaking out of the quoted string and
+  // throwing a SyntaxError. A filename like "Client's brief.pdf" made the whole row inert with
+  // no visible error. Looking the record up here avoids putting untrusted text in an attribute
+  // that gets parsed as code at all.
+  const f=(DB.taskFiles||[]).find(x=>x.id===id);
+  const name=f?.name||'', type=f?.type||'';
   const lower=String(name||'').toLowerCase();
   const ext=(lower.match(/\.([a-z0-9]+)$/)||[])[1]||'';
   const isImg=(type&&type.startsWith('image/'))||['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext);
@@ -22387,7 +22476,7 @@ function cpBarColor(broadLabel){
 
 // ── Overview page ─────────────────────────────────────────
 function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date());
   // tasks are already pre-filtered (no archived) by sanitizeTaskForClient pipeline
   const activeTasks=tasks;
   const awaitingTasks=activeTasks.filter(t=>t.awaitingClient);
@@ -22671,7 +22760,7 @@ function cpSetTaskSearch(q){_cpTaskSearch=q.toLowerCase();const el=document.getE
 // ── Tasks tab ────────────────────────────────────────────
 function renderCpTasks(clientId,tasks,boards,boardIdx){
   _cpTaskSearch='';
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date());
   const isDone=s=>['done','completed','approved-client','completed-approved','cancelled'].includes(s);
   const isAwaitingEtcher=s=>s==='change-requested';
   const isUnderReview=s=>['review','waiting-review','waiting-client'].includes(s);
@@ -22811,7 +22900,7 @@ function cpOpenTaskModal(taskId){
   if(!rawTask||!canViewTask(currentUser,rawTask))return;
   const t=sanitizeTaskForClient(rawTask);
   const bs=cpBroadStatus(t.status);
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=toDateStr(new Date());
   const overdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&t.status!=='completed';
   const drParts=[];
   if(t.startDate&&t.endDate)drParts.push(`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`);
