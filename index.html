@@ -1684,8 +1684,16 @@ function _migrateDB(data){
   if(!data.deletedClientIds)   data.deletedClientIds    = [];
   if(!data.deletedNoteSectionIds) data.deletedNoteSectionIds = [];
   if(!data.deletedDependencyIds)  data.deletedDependencyIds  = [];
+  if(!data.deletedTaskIds)        data.deletedTaskIds        = [];
+  if(!data.deletedGroupIds)       data.deletedGroupIds       = [];
+  if(!data.deletedCommentIds)     data.deletedCommentIds     = [];
+  if(!data.deletedTimeEntryIds)   data.deletedTimeEntryIds   = [];
   // Apply tombstones — ensure deleted clients never reappear after migration
   if(data.deletedClientIds.length)data.clients=(data.clients||[]).filter(c=>!data.deletedClientIds.includes(c.id));
+  if(data.deletedTaskIds.length)data.tasks=(data.tasks||[]).filter(t=>!data.deletedTaskIds.includes(t.id));
+  if(data.deletedGroupIds.length)data.groups=(data.groups||[]).filter(g=>!data.deletedGroupIds.includes(g.id));
+  if(data.deletedCommentIds.length)data.comments=(data.comments||[]).filter(c=>!data.deletedCommentIds.includes(c.id));
+  if(data.deletedTimeEntryIds.length)data.timeEntries=(data.timeEntries||[]).filter(e=>!data.deletedTimeEntryIds.includes(e.id));
   if(!data.deletedWorkRequestIds) data.deletedWorkRequestIds = [];
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Apply tombstones — ensure deleted work requests never reappear after migration
@@ -2191,6 +2199,18 @@ function _syncToSupabase(data){
     }
   });
 }
+// Records which ids just vanished from a collection into DB[tombstoneKey], so a peer who
+// hasn't synced this deletion yet — and still has those exact records — doesn't resurrect
+// them the next time their save merges with the server (mergeById only ever adds, never
+// removes). Pass the array reference from BEFORE the filter and the one it was reassigned
+// to; diffing by id this way works uniformly at every delete site regardless of what that
+// site's own filter predicate looks like, so it's used verbatim rather than re-derived at
+// each call site (26 of them, across tasks/groups/comments/timeEntries).
+function _tombstoneRemoved(beforeArr,afterArr,tombstoneKey){
+  const afterIds=new Set((afterArr||[]).map(x=>x.id));
+  const removed=(beforeArr||[]).filter(x=>!afterIds.has(x.id)).map(x=>x.id);
+  if(removed.length)(DB[tombstoneKey]=DB[tombstoneKey]||[]).push(...removed);
+}
 // Smart merge: combine local DB with incoming blob without clobbering concurrent edits.
 // - Tasks/work requests: merge by ID, newer updatedAt wins (two users editing different tasks both survive)
 // - Comments/notifications: union by ID (never lose an entry)
@@ -2287,6 +2307,15 @@ function _mergeDB(current, incoming){
   // Carried the same way (these are plain string arrays, so the generic loop skips them and
   // would otherwise leave only the incoming side's list).
   merged.deletedNoteSectionIds=[...new Set([...(current.deletedNoteSectionIds||[]),...(incoming.deletedNoteSectionIds||[])])];
+  // Same gap as dependencies above, for the four collections it's most disruptive to
+  // resurrect: a task, group, comment or time entry deleted here reappears the moment a
+  // peer who hasn't synced that deletion yet merges — every delete site for these four now
+  // records into the matching tombstone via _tombstoneRemoved.
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds']]){
+    const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
+    merged[key]=[...gone];
+    if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
+  }
   if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
   // staff/users and workboards/boards are ALIASES of one array (_applyCompatAliases), but every
   // merge above rebuilds each key into its OWN array, so DB.workboards!==DB.boards afterwards.
@@ -5522,8 +5551,8 @@ function deleteWorkboard(id){
     // Update the canonical array (boards) then re-alias workboards to it
     DB.boards=DB.boards.filter(w=>w.id!==id);
     DB.workboards=DB.boards;
-    DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);
-    DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
+    {const _before=DB.groups;DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     DB.boardViews=(DB.boardViews||[]).filter(v=>v.boardId!==id);
     writeAuditEvent('WorkBoard',id,'deleted',{name:_wbToDelete.name,taskCount:_taskCount},null);
     saveDB(DB);closeConfirm();
@@ -9069,7 +9098,7 @@ function deleteTaskTimeEntry(entryId,taskId){
   // be on a pro forma invoice; deleting it drops those hours from the invoice on the next sync.
   if(entry?.status==='approved'){showAlert('This entry is approved and cannot be deleted. Ask an admin to reject it first.','Locked');return;}
   if(entry)writeAuditEvent('TimeEntry',entryId,'deleted',{taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
-  DB.timeEntries=DB.timeEntries.filter(e=>e.id!==entryId);
+  {const _before=DB.timeEntries;DB.timeEntries=DB.timeEntries.filter(e=>e.id!==entryId);_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
   applyHourBudgetPct(taskId);
   saveDB(DB);
   openTaskModal(taskId);
@@ -10022,7 +10051,7 @@ function deleteTimeEntry(id){
   if(entry?.status==='approved'){showAlert('This entry is approved and cannot be deleted. Ask an admin to reject it first.','Locked');return;}
   if(entry){
     writeAuditEvent('TimeEntry',id,'deleted',{taskId:entry.taskId,staffId:entry.staffId,date:entry.date,hours:entry.hours},null);
-    DB.timeEntries=DB.timeEntries.filter(e=>e.id!==id);
+    {const _before=DB.timeEntries;DB.timeEntries=DB.timeEntries.filter(e=>e.id!==id);_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     if(entry.taskId)applyHourBudgetPct(entry.taskId);
   }
   saveDB(DB);
@@ -14371,8 +14400,8 @@ function permanentDeleteWorkboard(id){
   openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks. This CANNOT be undone.','Delete Forever',()=>{
     DB.boards=DB.boards.filter(w=>w.id!==id);
     DB.workboards=DB.boards;
-    DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);
-    DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
+    {const _before=DB.groups;DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     DB.boardViews=(DB.boardViews||[]).filter(v=>v.boardId!==id);
     saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('archive');
   });
@@ -14383,8 +14412,8 @@ function permanentDeleteAllArchived(){
   openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks? This CANNOT be undone.`,'Delete All Forever',()=>{
     DB.boards=DB.boards.filter(b=>!ids.has(b.id));
     DB.workboards=DB.boards;
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.boardId||t.workboardId));
-    DB.groups=DB.groups.filter(g=>!ids.has(g.boardId||g.workboardId));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.boardId||t.workboardId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
+    {const _before=DB.groups;DB.groups=DB.groups.filter(g=>!ids.has(g.boardId||g.workboardId));_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     DB.boardViews=(DB.boardViews||[]).filter(v=>!ids.has(v.boardId));
     saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('archive');
   });
@@ -14398,7 +14427,7 @@ function permanentDeleteTask(id){
     const ids=new Set();
     function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
     collect(id);
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
     DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
@@ -14409,7 +14438,7 @@ function permanentDeleteAllArchivedTasks(){
   const ids=new Set(DB.tasks.filter(t=>t.archived).map(t=>t.id));
   if(!ids.size)return;
   openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`,'Delete All Forever',()=>{
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
     DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
@@ -15723,7 +15752,7 @@ function tmDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const si=DB.tasks.find(t=>t.id===siId);
   const parentId=si?.parentTaskId;
-  DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);
+  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
   saveDB(DB);
   if(parentId)openTaskModal(parentId);
@@ -15831,7 +15860,27 @@ function addComment(taskId){
 // ═══════════════════════════════════════════════════════════
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  // Deleting a client cascades to every one of its groups and tasks (and everything under
+  // those tasks) — far more destructive than deleting a mere work request, which already
+  // requires admin. This didn't.
+  if(type==='client'&&currentUser.role!=='admin'){showAlert('Only admins can delete clients.');return;}
   let msg=`Are you sure you want to delete this ${type}? This cannot be undone.`;
+  if(type==='client'){
+    const client=DB.clients.find(c=>c.id===id);
+    const clientGroupIds=new Set(DB.groups.filter(g=>g.clientId===id).map(g=>g.id));
+    const topTasks=DB.tasks.filter(t=>clientGroupIds.has(t.groupId));
+    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
+    const ids=new Set();topTasks.forEach(t=>_collectIds(t.id,ids));
+    const entries=DB.timeEntries.filter(e=>ids.has(e.taskId));
+    const approvedCount=entries.filter(e=>e.status==='approved').length;
+    const parts=[];
+    if(clientGroupIds.size)parts.push(`${clientGroupIds.size} group${clientGroupIds.size!==1?'s':''}`);
+    if(ids.size)parts.push(`${ids.size} task${ids.size!==1?'s':''}`);
+    if(entries.length)parts.push(`${entries.length} time ${entries.length!==1?'entries':'entry'}${approvedCount?` (${approvedCount} already approved)`:''}`);
+    msg=parts.length
+      ?`Delete "${client?.name||'this client'}"? This also permanently deletes ${parts.join(', ')}. This cannot be undone.`
+      :`Delete "${client?.name||'this client'}"? This cannot be undone.`;
+  }
   if(type==='task'){
     // This used to delete immediately, bypassing the confirm modal below entirely — one
     // misclick on the bare ✕ permanently removed the task, every subitem recursively, and
@@ -15855,17 +15904,17 @@ function confirmDelete(type, id){
     if(type==='task'){
       const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
       const ids=_collectIds(id);
-      DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+      {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
       DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
-      DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));
-      DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));
+      {const _before=DB.comments;DB.comments=DB.comments.filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+      {const _before=DB.timeEntries;DB.timeEntries=DB.timeEntries.filter(e=>!ids.has(e.taskId));_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
       saveDB(DB);closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
       return;
     }
     if(type==='client'){
       const clientGroupIds=DB.groups.filter(g=>g.clientId===id).map(g=>g.id);
-      DB.groups=DB.groups.filter(g=>g.clientId!==id);
-      DB.tasks=DB.tasks.filter(t=>!clientGroupIds.includes(t.groupId));
+      {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.clientId!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
+      {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!clientGroupIds.includes(t.groupId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
       DB.clients=DB.clients.filter(c=>c.id!==id);
       // Track deleted client IDs so realtime merge can't restore them
       (DB.deletedClientIds=DB.deletedClientIds||[]).push(id);
@@ -16346,7 +16395,7 @@ function wsQuickAddSave(){
   showToast(`Added "${name}"`,'success',5000,{label:'Undo',onClick:`wsQuickAddUndo('${task.id}')`});
 }
 function wsQuickAddUndo(id){
-  DB.tasks=DB.tasks.filter(t=>t.id!==id);
+  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   saveDB(DB);
   if(currentView==='workspace')renderView('workspace');
 }
@@ -17084,7 +17133,7 @@ function wsBulkDeleteTasks(){
   openConfirm('Delete Tasks',`Delete ${n} task${n!==1?'s':''}? This cannot be undone.`,'Delete',()=>{
     const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
     const ids=new Set();[...wsSelected].forEach(id=>_collectIds(id,ids));
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));
     DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
@@ -17278,8 +17327,8 @@ function wsInlineSubitemPaste(e){
 function wsDeleteSubitem(id){
   const si=DB.tasks.find(t=>t.id===id);
   const parentId=si?.parentTaskId;
-  DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);
-  DB.comments=DB.comments.filter(c=>c.taskId!==id);
+  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
+  {const _before=DB.comments;DB.comments=DB.comments.filter(c=>c.taskId!==id);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
   DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id);
   if(parentId){
     const parent=DB.tasks.find(t=>t.id===parentId);
@@ -17381,9 +17430,9 @@ function wsDeleteGroup(groupId){
     ?`Delete group "${escHtml(g.name)}" and its ${taskCount} task${taskCount!==1?'s':''}? This cannot be undone.`
     :`Delete group "${escHtml(g.name)}"? This cannot be undone.`;
   openConfirm('Delete Group',msg,'Delete',()=>{
-    DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));
-    DB.groups=DB.groups.filter(g=>g.id!==groupId);
+    {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.id!==groupId);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     saveDB(DB);closeConfirm();renderView('workspace');
   });
 }
@@ -17556,7 +17605,7 @@ function wsDeleteTask(id){
   confirmCallback=()=>{
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
     DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
@@ -20107,7 +20156,7 @@ function tpDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const si=DB.tasks.find(t=>t.id===siId);
   const parentId=si?.parentTaskId;
-  DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);
+  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);
   if(parentId){
     const parent=DB.tasks.find(t=>t.id===parentId);
@@ -20171,7 +20220,7 @@ function tpAddComment(){
 
 function tpDeleteComment(commentId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  DB.comments=DB.comments.filter(c=>c.id!==commentId);
+  {const _before=DB.comments;DB.comments=DB.comments.filter(c=>c.id!==commentId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
   saveDB(DB);
   tpShowTab('details');
 }
@@ -20351,7 +20400,7 @@ function tpDeleteTask(){
   openConfirm('Delete Task',hasChildren?'Delete this task and all its subitems? This cannot be undone.':'Delete this task? This cannot be undone.','Delete',()=>{
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
-    DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));
+    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));
     DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));
     DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId));
