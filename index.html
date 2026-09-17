@@ -1652,6 +1652,11 @@ function loadDB(){
   }
   // No v3 data — start fresh from SEED
   const data=JSON.parse(JSON.stringify(SEED));
+  // Marks a DB that is nothing but bundled demo data and has never been reconciled with the
+  // server. The load paths MUST take the server copy wholesale rather than merging into this:
+  // mergeById only ever adds, so merging would union every demo user, client and task into
+  // the real blob and then upload it — on every incognito window, cleared cache or new device.
+  data._seedOnly=true;
   _migrateDB(data);
   _applyCompatAliases(data);
   saveDB(data);
@@ -1677,6 +1682,8 @@ function _migrateDB(data){
   if(!data.personalChecklist)  data.personalChecklist   = [];
   if(!data.migrationFlags)     data.migrationFlags      = {};
   if(!data.deletedClientIds)   data.deletedClientIds    = [];
+  if(!data.deletedNoteSectionIds) data.deletedNoteSectionIds = [];
+  if(!data.deletedDependencyIds)  data.deletedDependencyIds  = [];
   // Apply tombstones — ensure deleted clients never reappear after migration
   if(data.deletedClientIds.length)data.clients=(data.clients||[]).filter(c=>!data.deletedClientIds.includes(c.id));
   if(!data.deletedWorkRequestIds) data.deletedWorkRequestIds = [];
@@ -2193,8 +2200,16 @@ function _mergeDB(current, incoming){
     const map=new Map((curr||[]).map(x=>[x.id,x]));
     for(const item of (inc||[])){
       const ex=map.get(item.id);
-      const incNewer=tsField&&item[tsField]&&ex?.[tsField]?item[tsField]>ex[tsField]:!ex;
-      if(!ex||incNewer)map.set(item.id,item);
+      if(!ex){map.set(item.id,item);continue;}
+      if(!tsField)continue;                       // nothing to compare on — keep what we have
+      const a=item[tsField],b=ex[tsField];
+      // When only ONE side carries the timestamp, that side is the newer one: a record that
+      // has been stamped was edited after stamping existed, while an unstamped copy predates
+      // it. Treating that case as "not newer" (the old behaviour) meant a rename made on one
+      // machine could never reach a peer holding an unstamped copy — it lost every merge,
+      // forever, and the peer's next save pushed the stale name back over it.
+      const incNewer=a&&b?a>b:(!!a&&!b);
+      if(incNewer)map.set(item.id,item);
     }
     return[...map.values()];
   }
@@ -2210,12 +2225,16 @@ function _mergeDB(current, incoming){
   // side had added or edited. Merge sections by their OWN id/updatedAt instead, so a section
   // added on one side survives regardless of which side's note object is picked.
   function _mergeClientNotes(curr,inc){
+    // Sections are unioned by id, and a union can only ever add — so a section deleted here
+    // is re-added by any peer that still has it. Honour the tombstones from both sides.
+    const gone=new Set([...(current.deletedNoteSectionIds||[]),...(incoming.deletedNoteSectionIds||[])]);
+    const drop=secs=>gone.size?(secs||[]).filter(s=>!gone.has(s.id)):(secs||[]);
     const byClient=new Map();
-    (curr||[]).forEach(n=>byClient.set(n.clientId,{...n}));
+    (curr||[]).forEach(n=>byClient.set(n.clientId,{...n,sections:drop(n.sections)}));
     (inc||[]).forEach(n=>{
       const ex=byClient.get(n.clientId);
-      if(!ex){byClient.set(n.clientId,{...n});return;}
-      byClient.set(n.clientId,{...ex,sections:mergeById(ex.sections,n.sections,'updatedAt')});
+      if(!ex){byClient.set(n.clientId,{...n,sections:drop(n.sections)});return;}
+      byClient.set(n.clientId,{...ex,sections:drop(mergeById(ex.sections,n.sections,'updatedAt'))});
     });
     return[...byClient.values()];
   }
@@ -2265,6 +2284,9 @@ function _mergeDB(current, incoming){
   const deletedDependencyIds=new Set([...(current.deletedDependencyIds||[]),...(incoming.deletedDependencyIds||[])]);
   merged.deletedDependencyIds=[...deletedDependencyIds];
   if(deletedDependencyIds.size)merged.dependencies=(merged.dependencies||[]).filter(d=>!deletedDependencyIds.has(d.id));
+  // Carried the same way (these are plain string arrays, so the generic loop skips them and
+  // would otherwise leave only the incoming side's list).
+  merged.deletedNoteSectionIds=[...new Set([...(current.deletedNoteSectionIds||[]),...(incoming.deletedNoteSectionIds||[])])];
   if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
   // staff/users and workboards/boards are ALIASES of one array (_applyCompatAliases), but every
   // merge above rebuilds each key into its OWN array, so DB.workboards!==DB.boards afterwards.
@@ -2615,7 +2637,8 @@ async function _supabaseRestoreSession(session){
           // Dropping the pending-save timer is safe: its data is the live DB, it survives the
           // merge below, and the force-sync after _supabaseSyncEnabled=true uploads the result.
           clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
-          const merged=_mergeDB(DB,fresh);
+          // Same guard as _startApp: never merge bundled demo data into the real blob.
+          const merged=DB._seedOnly===true?fresh:_mergeDB(DB,fresh);
           for(const k in DB)delete DB[k];Object.assign(DB,merged);
           _safeSaveLocal(JSON.stringify(DB));
         }
@@ -8921,7 +8944,7 @@ async function saveClient(id){
   const shortCode=document.getElementById('cm-code').value.trim().toUpperCase();
   const color=document.getElementById('cm-color').value;
   if(id){
-    const c=DB.clients.find(x=>x.id===id);
+    let c=DB.clients.find(x=>x.id===id);
     // Validate + apply any password change BEFORE touching name/colour/logo/portal below —
     // this used to mutate all of those first, so a failed password update left them applied
     // in memory but never saved: the admin saw the new name/logo in the UI, closed the modal,
@@ -8943,6 +8966,10 @@ async function saveClient(id){
         return;
       }
     }
+    // A realtime merge landing during the await above can rebuild DB.clients from the incoming
+    // snapshot, leaving the `c` captured earlier detached from the live array — writing to it
+    // would update an orphan that nothing ever saves. Re-resolve before mutating.
+    c=DB.clients.find(x=>x.id===id)||c;
     c.name=name;c.shortCode=shortCode;
     const now=new Date().toISOString();
     if(color!==c.color){
@@ -14773,6 +14800,8 @@ function deleteNoteSection(sectionId){
   const noteObj=DB.clientNotes.find(n=>n.clientId===selectedNoteClientId);
   if(!noteObj)return;
   noteObj.sections=noteObj.sections.filter(s=>s.id!==sectionId);
+  // Tombstone it, or a peer who still holds this section re-adds it on the next merge.
+  (DB.deletedNoteSectionIds=DB.deletedNoteSectionIds||[]).push(sectionId);
   if(selectedNoteSectionId===sectionId)selectedNoteSectionId=noteObj.sections[0]?.id||null;
   saveDB(DB);renderNotes();
 }
@@ -14901,7 +14930,7 @@ async function saveStaff(id){
     // below. This used to mutate those fields first, so a rejected password update (too
     // short, or no linked Supabase account) left them applied in memory but never saved —
     // reverted the next time this browser synced.
-    const s=DB.staff.find(x=>x.id===id);
+    let s=DB.staff.find(x=>x.id===id);
     const pw=(document.getElementById('sm-pw')?.value||'').trim();
     if(pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
@@ -14926,6 +14955,9 @@ async function saveStaff(id){
       }
       _savePw(s.id,pw);
     }
+    // Same detached-object hazard as saveClient: a merge during the await can rebuild DB.users,
+    // so re-resolve before writing rather than mutating a copy that is no longer in the array.
+    s=DB.staff.find(x=>x.id===id)||s;
     s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
     s.updatedAt=new Date().toISOString();
     saveDB(DB);closeGenericModal();renderView('staff');
@@ -15517,16 +15549,21 @@ function saveTask(){
       t.dependencies=_selectedDeps;
       // Keep DB.dependencies entity list in sync (Dependency model)
       if(!DB.dependencies) DB.dependencies=[];
-      // Remove old deps for this task as the dependent — tombstone each one removed, or a
-      // peer who hasn't synced yet still has it and resurrects it on the next merge.
-      const _removedDeps=DB.dependencies.filter(d=>d.dependentTaskId===t.id);
-      if(_removedDeps.length){
+      // Only touch what actually changed. Deleting every dependency and recreating them all
+      // with fresh ids on each save churned ids constantly and pushed a tombstone for each one
+      // every time — the tombstone list is never pruned and lives in a blob with a ~5MB ceiling.
+      const _sel=new Set(_selectedDeps);
+      const _existing=DB.dependencies.filter(d=>d.dependentTaskId===t.id);
+      const _removed=_existing.filter(d=>!_sel.has(d.predecessorTaskId));
+      if(_removed.length){
+        // Tombstone genuinely removed ones, or a peer who hasn't synced re-adds them on merge.
         if(!DB.deletedDependencyIds)DB.deletedDependencyIds=[];
-        DB.deletedDependencyIds.push(..._removedDeps.map(d=>d.id));
+        DB.deletedDependencyIds.push(..._removed.map(d=>d.id));
+        const _rmIds=new Set(_removed.map(d=>d.id));
+        DB.dependencies=DB.dependencies.filter(d=>!_rmIds.has(d.id));
       }
-      DB.dependencies=DB.dependencies.filter(d=>d.dependentTaskId!==t.id);
-      // Add new deps
-      _selectedDeps.forEach(predId=>{
+      const _alreadyLinked=new Set(_existing.filter(d=>_sel.has(d.predecessorTaskId)).map(d=>d.predecessorTaskId));
+      _selectedDeps.filter(predId=>!_alreadyLinked.has(predId)).forEach(predId=>{
         DB.dependencies.push({
           id:'dep'+uid(),
           predecessorTaskId:predId,
@@ -23275,12 +23312,15 @@ document.addEventListener('keydown',e=>{
           // can include an edit whose Supabase upload never finished before the last reload —
           // a blind overwrite from the server snapshot discarded that edit outright. _mergeDB
           // is the same merge the realtime path already trusts for exactly this conflict.
-          const merged=_mergeDB(DB,fresh);
+          // A DB still carrying _seedOnly is bundled demo data that has never met the server —
+          // take the server copy outright, or the merge unions every demo record into production.
+          const seedOnly=DB._seedOnly===true;
+          const merged=seedOnly?fresh:_mergeDB(DB,fresh);
           // Compare against _mergeDB(fresh,fresh), not raw fresh — _mergeDB normalises a few
           // named collections (e.g. clientComments) to [] even when the source lacked the key
           // at all, so a raw diff against fresh would flag that cosmetic gap on every single
           // load. Diffing against fresh normalised the same way isolates real local-only content.
-          const recoveredLocalEdit=JSON.stringify(merged)!==JSON.stringify(_mergeDB(fresh,fresh));
+          const recoveredLocalEdit=!seedOnly&&JSON.stringify(merged)!==JSON.stringify(_mergeDB(fresh,fresh));
           for(const k in DB)delete DB[k];Object.assign(DB,merged);
           _safeSaveLocal(JSON.stringify(DB));
           window._appStateLoaded=true;clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
