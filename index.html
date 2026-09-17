@@ -1689,13 +1689,35 @@ function _migrateDB(data){
   if(!data.deletedCommentIds)     data.deletedCommentIds     = [];
   if(!data.deletedTimeEntryIds)   data.deletedTimeEntryIds   = [];
   if(!data.deletedChecklistItemIds) data.deletedChecklistItemIds = [];
-  // Apply tombstones — ensure deleted clients never reappear after migration
-  if(data.deletedClientIds.length)data.clients=(data.clients||[]).filter(c=>!data.deletedClientIds.includes(c.id));
-  if(data.deletedTaskIds.length)data.tasks=(data.tasks||[]).filter(t=>!data.deletedTaskIds.includes(t.id));
-  if(data.deletedGroupIds.length)data.groups=(data.groups||[]).filter(g=>!data.deletedGroupIds.includes(g.id));
-  if(data.deletedCommentIds.length)data.comments=(data.comments||[]).filter(c=>!data.deletedCommentIds.includes(c.id));
-  if(data.deletedTimeEntryIds.length)data.timeEntries=(data.timeEntries||[]).filter(e=>!data.deletedTimeEntryIds.includes(e.id));
-  if(data.deletedChecklistItemIds.length)data.checklistItems=(data.checklistItems||[]).filter(c=>!data.deletedChecklistItemIds.includes(c.id));
+  if(!data.deletedBoardIds)       data.deletedBoardIds       = [];
+  if(!data.deletedUserIds)        data.deletedUserIds        = [];
+  // Apply tombstones so nothing deleted reappears after a migration/merge.
+  // Set, not .includes(): this runs on EVERY load and every incoming realtime payload, and
+  // .includes() made each pass O(tasks × tombstones) — at a few thousand of each that is
+  // millions of string compares per payload, on the main thread. _mergeDB already does the
+  // identical filtering with a Set; this is the same work, so use the same complexity.
+  const _tomb=(key,coll,idOf)=>{
+    const ids=data[key];
+    if(!ids||!ids.length)return;
+    const set=new Set(ids);
+    data[coll]=(data[coll]||[]).filter(x=>!set.has(idOf?idOf(x):x.id));
+  };
+  _tomb('deletedClientIds','clients');
+  _tomb('deletedTaskIds','tasks');
+  _tomb('deletedGroupIds','groups');
+  _tomb('deletedCommentIds','comments');
+  _tomb('deletedTimeEntryIds','timeEntries');
+  _tomb('deletedChecklistItemIds','checklistItems');
+  // Boards and users had no tombstone at all, so their CASCADE was protected while the root
+  // was not: deleting a board let a stale peer resurrect an empty zombie board (tasks
+  // correctly gone) into every sidebar, and a removed staff member came back as a selectable
+  // assignee. Board views go with their board.
+  _tomb('deletedBoardIds','boards');
+  _tomb('deletedBoardIds','boardViews',v=>v.boardId);
+  _tomb('deletedUserIds','users');
+  // dependencies and note sections were filtered only in _mergeDB — asymmetric, so a
+  // local-only load (no merge) brought them back.
+  _tomb('deletedDependencyIds','dependencies');
   if(!data.deletedWorkRequestIds) data.deletedWorkRequestIds = [];
   if(!data.clientWorkRequests) data.clientWorkRequests  = [];
   // Apply tombstones — ensure deleted work requests never reappear after migration
@@ -1716,8 +1738,10 @@ function _migrateDB(data){
     if(t.coOwnerId&&!t.assigneeIds.includes(t.coOwnerId))t.assigneeIds.push(t.coOwnerId);
     t.coOwnerId=t.assigneeIds[0]||null;
   });
-  // Seed Etcher Solutions as internal client (c0) if missing
-  if(!(data.clients||[]).find(c=>c.id==='c0')){
+  // Seed Etcher Solutions as internal client (c0) if missing — but never if it has been
+  // deliberately deleted, or this undoes the tombstone filter a few lines above and
+  // resurrects it on every single load (then _mergeDB strips it again, so it flickers).
+  if(!(data.deletedClientIds||[]).includes('c0')&&!(data.clients||[]).find(c=>c.id==='c0')){
     (data.clients=data.clients||[]).unshift({id:'c0',name:'Etcher Solutions',contactName:'Bruna Canto',contactEmail:'b.canto@etchersolutions.com',portalEnabled:false,loginEmail:'',loginPassword:'',archived:false,color:'#0d6e4e',shortCode:'ETR',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'});
   }
   if(!data.errorLog)           data.errorLog            = [];
@@ -2313,10 +2337,18 @@ function _mergeDB(current, incoming){
   // resurrect: a task, group, comment or time entry deleted here reappears the moment a
   // peer who hasn't synced that deletion yet merges — every delete site for these four now
   // records into the matching tombstone via _tombstoneRemoved.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds']]){
+  // NB both halves of each alias pair must be filtered: the alias reconciliation further down
+  // unions boards with workboards (and users with staff), so filtering only one half lets a
+  // tombstoned board walk straight back in through its alias.
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
+  }
+  // boardViews hang off a board rather than carrying its id, so they need the board's list.
+  {
+    const goneBoards=new Set(merged.deletedBoardIds||[]);
+    if(goneBoards.size)merged.boardViews=(merged.boardViews||[]).filter(v=>!goneBoards.has(v.boardId));
   }
   if(current._savedAt&&incoming._savedAt&&current._savedAt>incoming._savedAt)merged._savedAt=current._savedAt;
   // staff/users and workboards/boards are ALIASES of one array (_applyCompatAliases), but every
@@ -2516,8 +2548,10 @@ function saveDB(data){
     // into localStorage and never cleared, so it survived into sessions holding REAL work,
     // and the load path then discarded that work. A genuine save by a signed-in user means
     // this is no longer untouched demo data, so drop the marker before it's persisted below.
-    // `data===DB` excludes the detached-object write loadDB does when it first seeds, and
-    // requiring a logged-in user stops a pre-login startup error (which routes through
+    // The real guard here is `currentUser`, not `data===DB`: loadDB RETURNS the object it
+    // passed, and `let DB = loadDB()` binds that same object, so by the time this deferred
+    // callback runs `data===DB` is true even for the initial seed write. Requiring a
+    // logged-in user is what stops a pre-login startup error (which routes through
     // _logAppError → saveDB) clearing it before the first server load has had its chance.
     // NB: this must stay inside the debounce — saveDB is called from loadDB, i.e. while
     // `let DB = loadDB()` is still evaluating, so touching DB/currentUser synchronously up
@@ -2534,6 +2568,10 @@ function _flushDB(){
   clearTimeout(_saveDebounceTimer);
   _saveDebounceTimer=null;
   if(_applyPendingRemote())_repaintAfterMerge();
+  // Same marker clearing as saveDB — a client or board delete flushes straight through here,
+  // so without this a delete as the session's first action left _seedOnly set and the next
+  // load would discard the local copy.
+  if(DB._seedOnly&&currentUser)delete DB._seedOnly;
   const safe=_stripPasswords(DB);
   _safeSaveLocal(JSON.stringify(safe));
   _syncToSupabase(safe);
@@ -2558,8 +2596,16 @@ window.addEventListener('beforeunload',e=>{
 
 // ── Error logging ──────────────────────────────────────────────────────
 function _logAppError(detail){
-  const entry={id:'ERR-'+Date.now().toString(36).toUpperCase(),at:new Date().toISOString(),view:typeof currentView!=='undefined'?currentView:'unknown',userId:typeof currentUser!=='undefined'?currentUser?.id:null,...detail};
-  try{if(typeof DB!=='undefined'&&DB){(DB.errorLog=DB.errorLog||[]).unshift(entry);if(DB.errorLog.length>100)DB.errorLog.splice(100);saveDB(DB);}}catch(_){}
+  // `typeof x` does NOT protect a let/const in its temporal dead zone — it throws, same as a
+  // bare reference. currentView, currentUser and DB are all `let`, so an error thrown while
+  // `let DB = loadDB()` is still evaluating used to make THIS handler throw too, replacing
+  // the real cause with a wall of "Cannot access 'currentView' before initialization". Read
+  // them inside a try so the actual error still gets reported.
+  let view='unknown',userId=null;
+  try{view=currentView||'unknown';}catch(_){}
+  try{userId=currentUser?.id??null;}catch(_){}
+  const entry={id:'ERR-'+Date.now().toString(36).toUpperCase(),at:new Date().toISOString(),view,userId,...detail};
+  try{if(DB){(DB.errorLog=DB.errorLog||[]).unshift(entry);if(DB.errorLog.length>100)DB.errorLog.splice(100);saveDB(DB);}}catch(_){}
   console.error('[AppError]',detail.type||'error',detail.message||detail);
   if(detail.type!=='render')showToast('Something went wrong. Use "Report Issue" in the topbar if this keeps happening.','error',7000);
   return entry.id;
@@ -2826,7 +2872,10 @@ function _showSetPasswordForm(session){
 // silently discarded it. Covered the same way textareas already are.
 document.addEventListener('input',function(e){
   const ta=e.target;
-  if(ta.tagName==='TEXTAREA'&&ta.id){
+  // data-selfsave marks a field that persists itself (tp-title saves on blur). A draft for
+  // one of those is never "unsaved work", but it lingered forever and beforeunload — which
+  // now scans the whole document — then prompted "Leave site?" on every single reload.
+  if(ta.tagName==='TEXTAREA'&&ta.id&&!ta.hasAttribute('data-selfsave')){
     try{sessionStorage.setItem('_draft_'+ta.id,ta.value);}catch(_){}
   }else if(ta.id&&ta.classList&&ta.classList.contains('rich-desc-editor')&&ta.closest('.rich-note')){
     try{sessionStorage.setItem('_draft_'+ta.id,ta.innerHTML);}catch(_){}
@@ -5585,7 +5634,7 @@ function deleteWorkboard(id){
   const _taskCount=DB.tasks.filter(t=>(t.boardId||t.workboardId)===id).length;
   confirmCallback=()=>{
     // Update the canonical array (boards) then re-alias workboards to it
-    DB.boards=DB.boards.filter(w=>w.id!==id);
+    {const _before=DB.boards;DB.boards=DB.boards.filter(w=>w.id!==id);_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.groups;DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
@@ -10657,7 +10706,14 @@ function tsExportXeroCSV(){
   if(!isAdmin)entries=entries.filter(e=>e.staffId===currentUser?.id);
   entries=entries.filter(e=>tsStaffFilter==='all'||e.staffId===tsStaffFilter);
   const rows=[['Employee','Employee Email','Timesheet Status','Fortnight Ending','Week Ending','Earnings Rate','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Hours','Notes']];
-  const staffInScope=DB.staff.filter(s=>entries.some(e=>e.staffId===s.id));
+  // Scoping by surviving staff records silently dropped any entry whose staff member has
+  // since been removed — including approved entries deliberately retained as payroll records
+  // through that removal, which is the exact opposite of why they were kept. Build the scope
+  // from the ENTRIES, and synthesise a placeholder for a staffId that no longer resolves so
+  // the hours still reach the payroll file rather than vanishing from it.
+  const staffInScope=[...new Set(entries.map(e=>e.staffId))].map(sid=>
+    DB.staff.find(s=>s.id===sid)||{id:sid,name:'(removed staff member)',email:''}
+  );
   staffInScope.forEach(staff=>{
     const staffEntries=entries.filter(e=>e.staffId===staff.id);
     const allStatuses=staffEntries.map(e=>e.status||'draft');
@@ -14446,7 +14502,7 @@ function renderArchiveBin(){
 
 function permanentDeleteWorkboard(id){
   openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks. This CANNOT be undone.','Delete Forever',()=>{
-    DB.boards=DB.boards.filter(w=>w.id!==id);
+    {const _before=DB.boards;DB.boards=DB.boards.filter(w=>w.id!==id);_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.groups;DB.groups=DB.groups.filter(g=>(g.boardId||g.workboardId)!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
@@ -14458,7 +14514,7 @@ function permanentDeleteAllArchived(){
   const ids=new Set((DB.workboards||[]).filter(wb=>wb.archived).map(wb=>wb.id));
   if(!ids.size)return;
   openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks? This CANNOT be undone.`,'Delete All Forever',()=>{
-    DB.boards=DB.boards.filter(b=>!ids.has(b.id));
+    {const _before=DB.boards;DB.boards=DB.boards.filter(b=>!ids.has(b.id));_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.boardId||t.workboardId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.groups;DB.groups=DB.groups.filter(g=>!ids.has(g.boardId||g.workboardId));_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
@@ -15018,7 +15074,7 @@ function deleteStaff(id){
     });
     DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);
     {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
-    DB.users=DB.users.filter(x=>x.id!==id);
+    {const _before=DB.users;DB.users=DB.users.filter(x=>x.id!==id);_tombstoneRemoved(_before,DB.users,'deletedUserIds');}
     DB.staff=DB.users;
     saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
   });
@@ -15799,11 +15855,22 @@ function tmAddSubitem(taskId){
 function tmDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const si=DB.tasks.find(t=>t.id===siId);
-  const parentId=si?.parentTaskId;
-  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-  {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-  saveDB(DB);
-  if(parentId)openTaskModal(parentId);
+  if(!si)return;
+  const parentId=si.parentTaskId;
+  // A subitem is a full task record with its own comments and time entries, so deleting one
+  // used to destroy all of that with no prompt — and, because it only removed tasks and
+  // comments, left the subitem's time entries behind pointing at a now-tombstoned task, i.e.
+  // permanent orphans. Confirm first, then cascade through the shared helper like every
+  // other task delete so the set of things removed can't drift again.
+  const ids=_collectTaskIds(siId);
+  const c=_taskCascadeCounts(ids);
+  const extra=[];
+  if(c.tasks>1)extra.push(`${c.tasks-1} sub-item${c.tasks-1!==1?'s':''}`);
+  openConfirm('Delete Sub-item',_cascadeSentence(`Delete "${si.name||si.title||'this sub-item'}"?`,extra,c),'Delete',()=>{
+    _cascadeDeleteTasks(ids);
+    saveDB(DB);closeConfirm();
+    if(parentId)openTaskModal(parentId);
+  },true);
 }
 // Legacy no-ops
 function addChecklist(taskId){tmAddSubitem(taskId);}
@@ -15951,30 +16018,47 @@ function confirmDelete(type, id){
   // requires admin. This didn't.
   if(type==='client'&&currentUser.role!=='admin'){showAlert('Only admins can delete clients.');return;}
   let msg=`Are you sure you want to delete this ${type}? This cannot be undone.`;
-  let ids=null;
+  // Resolves the affected task ids for this delete. Called once to build the message and
+  // AGAIN inside the callback — a realtime merge landing while the dialog sits open can add
+  // a subitem, and a set snapshotted at open time would leave it behind as an orphan.
+  const resolveIds=()=>{
+    if(type==='task')return _collectTaskIds(id);
+    if(type==='client'){
+      const gids=new Set(DB.groups.filter(g=>g.clientId===id).map(g=>g.id));
+      const out=new Set();
+      DB.tasks.filter(t=>gids.has(t.groupId)).forEach(t=>_collectTaskIds(t.id,out));
+      return out;
+    }
+    return new Set();
+  };
   if(type==='client'){
     const client=DB.clients.find(c=>c.id===id);
     const clientGroupIds=new Set(DB.groups.filter(g=>g.clientId===id).map(g=>g.id));
-    ids=new Set();
-    DB.tasks.filter(t=>clientGroupIds.has(t.groupId)).forEach(t=>_collectTaskIds(t.id,ids));
-    const c=_taskCascadeCounts(ids);
+    const c=_taskCascadeCounts(resolveIds());
     const lead=`Delete "${client?.name||'this client'}"?`;
     const extra=[];
     if(clientGroupIds.size)extra.push(`${clientGroupIds.size} group${clientGroupIds.size!==1?'s':''}`);
     if(c.tasks)extra.push(`${c.tasks} task${c.tasks!==1?'s':''}`);
     msg=_cascadeSentence(lead,extra,c);
+    // Don't claim these stay usable: invoicing and client reports both key off an existing
+    // client record, so once it's gone the retained entries can't be billed or reported —
+    // they survive as raw data only. Say that rather than "kept as billing records".
+    if(c.entriesKept){
+      msg=msg.replace(/ \d+ approved time entr(?:y|ies) will be kept as billing record(?:s)?\./,
+        ` ${c.entriesKept} approved time ${c.entriesKept!==1?'entries':'entry'} will be kept, but with the client gone they can no longer be invoiced or reported against.`);
+    }
   }
   if(type==='task'){
     // This used to delete immediately, bypassing the confirm modal below entirely — one
     // misclick on the bare ✕ permanently removed the task, every subitem recursively, and
     // all of its comments/checklist items/time entries, with no prompt and no undo.
-    ids=_collectTaskIds(id);
-    const c=_taskCascadeCounts(ids);
+    const c=_taskCascadeCounts(resolveIds());
     const extra=[];
-    if(c.tasks>1)extra.push(`${c.tasks-1} subitem${c.tasks-1!==1?'s':''}`);
+    if(c.tasks>1)extra.push(`${c.tasks-1} sub-item${c.tasks-1!==1?'s':''}`);
     msg=_cascadeSentence('Delete this task?',extra,c);
   }
   confirmCallback=()=>{
+    const ids=resolveIds();
     if(type==='task'){
       _cascadeDeleteTasks(ids);
       saveDB(DB);closeConfirm();closeTaskModal();closeGenericModal();renderView(currentView);
@@ -17233,13 +17317,14 @@ function wsBulkArchiveTasks(){
 }
 function wsBulkDeleteTasks(){
   const n=wsSelected.size;
-  openConfirm('Delete Tasks',`Delete ${n} task${n!==1?'s':''}? This cannot be undone.`,'Delete',()=>{
-    const _collectIds=(tid,out=new Set())=>{out.add(tid);DB.tasks.filter(t=>t.parentTaskId===tid).forEach(c=>_collectIds(c.id,out));return out;};
-    const ids=new Set();[...wsSelected].forEach(id=>_collectIds(id,ids));
-    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(ci=>!ids.has(ci.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
-    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
+  // Same drift as wsDeleteTask: "Delete N tasks?" said nothing about the subitems, comments
+  // and time entries going with them, nor that approved entries are kept.
+  const ids=new Set();[...wsSelected].forEach(id=>_collectTaskIds(id,ids));
+  const c=_taskCascadeCounts(ids);
+  const extra=[];
+  if(c.tasks>n)extra.push(`${c.tasks-n} sub-item${c.tasks-n!==1?'s':''}`);
+  openConfirm('Delete Tasks',_cascadeSentence(`Delete ${n} task${n!==1?'s':''}?`,extra,c),'Delete',()=>{
+    _cascadeDeleteTasks(ids);
     wsSelected.clear();saveDB(DB);closeConfirm();renderView('workspace');
   });
 }
@@ -17428,16 +17513,23 @@ function wsInlineSubitemPaste(e){
   renderView('workspace');
 }
 function wsDeleteSubitem(id){
+  // This one also had no permission check at all, unlike its two siblings.
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   const si=DB.tasks.find(t=>t.id===id);
-  const parentId=si?.parentTaskId;
-  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==id&&t.parentTaskId!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-  {const _before=DB.comments;DB.comments=DB.comments.filter(c=>c.taskId!==id);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-  {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.taskId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
-  if(parentId){
-    const parent=DB.tasks.find(t=>t.id===parentId);
-    if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
-  }
-  saveDB(DB);renderView('workspace');
+  if(!si)return;
+  const parentId=si.parentTaskId;
+  const ids=_collectTaskIds(id);
+  const c=_taskCascadeCounts(ids);
+  const extra=[];
+  if(c.tasks>1)extra.push(`${c.tasks-1} sub-item${c.tasks-1!==1?'s':''}`);
+  openConfirm('Delete Sub-item',_cascadeSentence(`Delete "${si.name||si.title||'this sub-item'}"?`,extra,c),'Delete',()=>{
+    _cascadeDeleteTasks(ids);
+    if(parentId){
+      const parent=DB.tasks.find(t=>t.id===parentId);
+      if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
+    }
+    saveDB(DB);closeConfirm();renderView('workspace');
+  },true);
 }
 function wsSetGroupBy(val){wsGroupBy=val;document.getElementById('ws-gb-menu')?.classList.add('hidden');renderView('workspace');}
 function wsAddGroup(){
@@ -17533,8 +17625,14 @@ function wsDeleteGroup(groupId){
     ?`Delete group "${escHtml(g.name)}" and its ${taskCount} task${taskCount!==1?'s':''}? This cannot be undone.`
     :`Delete group "${escHtml(g.name)}"? This cannot be undone.`;
   openConfirm('Delete Group',msg,'Delete',()=>{
-    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.groupId!==groupId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    {const _before=DB.checklistItems;DB.checklistItems=DB.checklistItems.filter(ci=>!DB.tasks.some(t=>t.id===ci.taskId&&t.groupId===groupId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
+    // Collect the ids FIRST. The checklist filter used to run after the tasks were already
+    // removed and tested `t.groupId===groupId` against the survivors — a condition that can
+    // never be true once they're gone, so it deleted nothing and tombstoned nothing. Going
+    // through the shared cascade also picks up the group's comments and time entries, which
+    // this path never touched at all (and keeps approved entries, like every other cascade).
+    const ids=new Set();
+    DB.tasks.filter(t=>t.groupId===groupId).forEach(t=>_collectTaskIds(t.id,ids));
+    _cascadeDeleteTasks(ids);
     {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.id!==groupId);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
     saveDB(DB);closeConfirm();renderView('workspace');
   });
@@ -17705,19 +17803,20 @@ function _wsNewGroupDrop(e){
     },false);
 }
 function wsDeleteTask(id){
-  confirmCallback=()=>{
-    function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
-    const ids=new Set(collectIds(id));
-    {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-    {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
-    {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
+  // Was a hand-rolled copy of the cascade with hardcoded text that had drifted from what it
+  // actually does: it claimed only "all subitems" (even for a task with none) while silently
+  // deleting comments and time entries and silently keeping approved ones. Uses the same
+  // helpers as every other task delete now, so the wording comes from the real counts.
+  const t=DB.tasks.find(x=>x.id===id);
+  if(!t)return;
+  const ids=_collectTaskIds(id);
+  const c=_taskCascadeCounts(ids);
+  const extra=[];
+  if(c.tasks>1)extra.push(`${c.tasks-1} sub-item${c.tasks-1!==1?'s':''}`);
+  openConfirm('Delete Task',_cascadeSentence(`Delete "${t.name||t.title||'this task'}"?`,extra,c),'Delete',()=>{
+    _cascadeDeleteTasks(ids);
     saveDB(DB);closeConfirm();renderView('workspace');
-  };
-  document.getElementById('confirm-title').textContent='Delete Task';
-  document.getElementById('confirm-msg').textContent='Are you sure? This will also delete all subitems.';
-  document.getElementById('confirm-ok-btn').onclick=confirmCallback;
-  document.getElementById('confirm-modal').classList.remove('hidden');
+  },true);
 }
 
 // The Main Table's fixed columns. Shared with the export so the spreadsheet carries the
@@ -17759,7 +17858,9 @@ const WS_SORT_VALUE={
   progress:t=>getEffectiveTaskPct(t.id)||0,
   hours:t=>hoursForTask(t.id)||0,
   tags:t=>(t.tags||[]).join(', '),
-  attachments:t=>_wsCache?.fileCountMap.get(t.id)??(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
+  // `?? fallback` defeated the cache for the common case: fileCountMap has no entry for a
+  // task with zero attachments, so every such row fell through to a full DB.taskFiles scan.
+  attachments:t=>_wsCache?.fileCountMap?(_wsCache.fileCountMap.get(t.id)||0):(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
   deps:t=>(t.dependencies||[]).length,
 };
 function _wsOrderTasks(arr){
@@ -18417,7 +18518,11 @@ function openTaskPanel(taskId,tab){
   // renderTaskPanel() already renders the Details tab (with tp-desc) by default when no
   // tab is passed, but never wires up the save/debounce listeners for it — only tpShowTab
   // does that. Without this, typed descriptions silently never save.
-  else{_tpActiveTab='details';setTimeout(()=>{_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
+  // The draft restore also has to happen here, not only on the tpShowTab('details') path:
+  // opening the panel fresh rebuilt these boxes empty while their drafts sat in
+  // sessionStorage, so an unsent comment looked lost AND kept triggering the
+  // unsaved-work prompt on reload.
+  else{_tpActiveTab='details';setTimeout(()=>{restoreTextareaDraft('tp-comment-input');restoreTextareaDraft('tp-ccomm-input');_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
   panel.style.display='flex';
   overlay.style.display='block';
   requestAnimationFrame(()=>{
@@ -18436,6 +18541,17 @@ function closeTaskPanel(){
   // on blur (tpSaveField bails out if !_tpCurrentTask) — closing via Escape used to null it
   // first, so the blur that followed (focus leaving, or the panel hiding) found no current
   // task to save into and silently dropped whatever was being typed.
+  // The title is committed explicitly rather than via the blur below, because the Escape
+  // path runs wsCellClose() first and that can move focus out of the panel — leaving the
+  // blur to fire late, against a field the panel has already rebuilt from the PRE-edit
+  // value, so the edit was written to the model but shown nowhere and overwritten by the
+  // next keystroke. Its draft is dropped here too: the field saves itself, so a leftover
+  // draft is not unsaved work, and beforeunload would otherwise prompt on every reload.
+  const _tpTitleEl=document.getElementById('tp-title');
+  if(_tpTitleEl&&_tpCurrentTask&&_tpTitleEl.value.trim()!==(_tpCurrentTask.name||'')){
+    tpSaveField('name',_tpTitleEl.value.trim());
+  }
+  clearTextareaDraft('tp-title');
   if(document.activeElement&&panel.contains(document.activeElement))document.activeElement.blur();
   panel.style.transform='translateX(100%)';
   setTimeout(()=>{
@@ -18456,7 +18572,7 @@ function renderTaskPanel(task){
   return `<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;position:relative">
     <div style="padding:16px 20px 12px;border-bottom:1px solid #e2eaf2;flex-shrink:0;background:#fff">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-        <textarea id="tp-title" rows="1" style="flex:1;font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;border:none;background:transparent;resize:none;outline:none;line-height:1.3;padding:0;overflow:hidden" onblur="tpSaveField('name',this.value.trim())" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escHtml(task.name)}</textarea>
+        <textarea id="tp-title" rows="1" data-selfsave="1" style="flex:1;font-family:'Jost',sans-serif;font-size:17px;font-weight:700;color:#0d1c33;border:none;background:transparent;resize:none;outline:none;line-height:1.3;padding:0;overflow:hidden" onblur="tpSaveField('name',this.value.trim());clearTextareaDraft('tp-title')" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${escHtml(task.name)}</textarea>
         <button onclick="tpOpenMoreMenu(event)" title="More actions" style="width:28px;height:28px;border:none;background:none;cursor:pointer;color:#8da2b2;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'"><svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg></button>
         <button onclick="closeTaskPanel()" style="width:28px;height:28px;border:none;background:none;cursor:pointer;color:#8da2b2;font-size:20px;line-height:1;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">&#215;</button>
       </div>
@@ -19466,11 +19582,14 @@ function mtgUnlink(taskId){
     // Draft entries for this task go with the link; anything further along is left and flagged.
     if(_mtgEditingId){
       const locked=(DB.timeEntries||[]).filter(e=>e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)!=='draft');
-      // Deliberately NOT tombstoned, unlike every other removal in this file: these draft
-      // entries are filtered out and immediately rebuilt below, so tombstoning their ids
-      // would blacklist rows that are about to be re-added. (Safe today only because the
-      // rebuild mints fresh ids — do not "fix" this to match the others.)
-      DB.timeEntries=(DB.timeEntries||[]).filter(e=>!(e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)==='draft'));
+      // Tombstoned like every other removal. This was previously excluded on the belief that
+      // the entries were "rebuilt below" — they are not: drop() filters, alerts, saves and
+      // repaints, and the rebuild (mtgSyncTimesheets) is a separate user action that mints
+      // fresh ids anyway. Leaving it out made this the ONE untombstoned timeEntries delete,
+      // so unlinking a task from a meeting resurrected its draft entries on the next merge,
+      // attached to a link that no longer exists and with no UI left to remove them.
+      // Only 'draft' entries are touched; submitted/approved ones are kept and flagged below.
+      {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!(e.meetingId===_mtgEditingId&&e.taskId===taskId&&_mtgEntryState(e)==='draft'));_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
       if(locked.length)showAlert(locked.length+' timesheet entr'+(locked.length===1?'y has':'ies have')+' already been submitted or approved for that task. The link is removed, but the recorded time needs a separate adjustment in the Timesheet module.','Recorded time kept');
       saveDB(DB);
     }
@@ -20280,15 +20399,21 @@ function tpSubitemPaste(e,taskId){
 function tpDeleteSubitem(siId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const si=DB.tasks.find(t=>t.id===siId);
-  const parentId=si?.parentTaskId;
-  {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==siId&&t.parentTaskId!==siId);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
-  {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>c.taskId!==siId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-  if(parentId){
-    const parent=DB.tasks.find(t=>t.id===parentId);
-    if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
-  }
-  saveDB(DB);
-  tpShowTab('subtasks');
+  if(!si)return;
+  const parentId=si.parentTaskId;
+  const ids=_collectTaskIds(siId);
+  const c=_taskCascadeCounts(ids);
+  const extra=[];
+  if(c.tasks>1)extra.push(`${c.tasks-1} sub-item${c.tasks-1!==1?'s':''}`);
+  openConfirm('Delete Sub-item',_cascadeSentence(`Delete "${si.name||si.title||'this sub-item'}"?`,extra,c),'Delete',()=>{
+    _cascadeDeleteTasks(ids);
+    if(parentId){
+      const parent=DB.tasks.find(t=>t.id===parentId);
+      if(parent){parent.percentComplete=getEffectiveTaskPct(parentId);parent.updatedAt=new Date().toISOString();}
+    }
+    saveDB(DB);closeConfirm();
+    tpShowTab('subtasks');
+  },true);
 }
 function tpRenameSubitem(siId){
   const nameEl=document.getElementById('si-name-'+siId);
