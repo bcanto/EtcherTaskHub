@@ -2528,7 +2528,11 @@ function _flushDB(){
 window.addEventListener('beforeunload',e=>{
   if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));_syncToSupabase(safe);}
   let hasUnsaved=false;
-  document.querySelectorAll('#view-container textarea[id]').forEach(ta=>{
+  // #task-panel and #generic-modal are siblings of #view-container, not nested inside it, so
+  // scoping this scan to #view-container meant this warning could essentially never fire for
+  // a draft sitting in the task panel or any modal — scan the whole document instead. Include
+  // the rich-note contenteditable drafts too, now that those are tracked the same way.
+  document.querySelectorAll('textarea[id], .rich-note .rich-desc-editor[id]').forEach(ta=>{
     try{if(sessionStorage.getItem('_draft_'+ta.id)!==null)hasUnsaved=true;}catch(_){}
   });
   if(hasUnsaved){e.preventDefault();e.returnValue='';}
@@ -2802,12 +2806,30 @@ function _showSetPasswordForm(session){
 // / the Supabase refresh token expires (live).
 
 // ── Comment / form draft auto-save to sessionStorage ──────────────────
+// Meeting-note bodies (.rich-desc-editor, contenteditable) used to be excluded entirely —
+// they save on a button rather than on blur, with nothing else backing up what's typed in
+// between, so switching task-panel tabs mid-edit (which tears down and rebuilds #tp-body)
+// silently discarded it. Covered the same way textareas already are.
 document.addEventListener('input',function(e){
-  const ta=e.target;if(ta.tagName!=='TEXTAREA'||!ta.id)return;
-  try{sessionStorage.setItem('_draft_'+ta.id,ta.value);}catch(_){}
+  const ta=e.target;
+  if(ta.tagName==='TEXTAREA'&&ta.id){
+    try{sessionStorage.setItem('_draft_'+ta.id,ta.value);}catch(_){}
+  }else if(ta.id&&ta.classList&&ta.classList.contains('rich-desc-editor')&&ta.closest('.rich-note')){
+    try{sessionStorage.setItem('_draft_'+ta.id,ta.innerHTML);}catch(_){}
+  }
 });
 function restoreTextareaDraft(id){
   try{const v=sessionStorage.getItem('_draft_'+id);const el=document.getElementById(id);if(el&&v&&!el.value){el.value=v;return true;}}catch(_){}
+  return false;
+}
+// Same idea as restoreTextareaDraft, for a contenteditable rich-note body: unlike a plain
+// textarea (where "not yet touched" just means empty), an edit-existing-note box starts
+// pre-filled with the note's last SAVED content — so restoring only-when-empty would never
+// catch the case this exists for (a real edit in progress that never got saved). A draft
+// only ever exists here because of a genuine keystroke (see the input listener above), so
+// its presence alone is enough to prefer it over whatever was just rendered.
+function restoreNoteDraft(id){
+  try{const v=sessionStorage.getItem('_draft_'+id);const el=document.getElementById(id);if(el&&v!=null){el.innerHTML=v;return true;}}catch(_){}
   return false;
 }
 function clearTextareaDraft(id){
@@ -10435,6 +10457,9 @@ function tsToggleAllSelected(checked){
   renderView('reports');
 }
 function tsBulkApproveForStaff(staffId,fortnightEnding){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  // Same lock as the single-entry tsApproveEntry — this bulk version never had it.
+  if(currentUser.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
   const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
   const allDays=[...tsGetWeekDates(w1),...tsGetWeekDates(w2)];
   const now=new Date().toISOString();let count=0;
@@ -10464,6 +10489,9 @@ function openTsBulkRejectForStaff(staffId,fortnightEnding){
   setTimeout(()=>document.getElementById('ts-staff-reject-reason')?.focus(),40);
 }
 function tsBulkRejectForStaff(staffId,fortnightEnding){
+  try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
+  // Same lock as the single-entry tsRejectEntry — this bulk version never had it.
+  if(currentUser.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
   const reason=(document.getElementById('ts-staff-reject-reason')?.value||'').trim();
   if(!reason){showAlert('Please enter a rejection reason.');return;}
   const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
@@ -10607,7 +10635,13 @@ function tsExportXeroCSV(){
   const[w1,w2]=tsGetFortnightWeeks(fe);
   const week1Days=tsGetWeekDates(w1);const week2Days=tsGetWeekDates(w2);
   const allDays=[...week1Days,...week2Days];
-  const entries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date)&&(tsStaffFilter==='all'||e.staffId===tsStaffFilter));
+  // _tsXeroView (the on-screen version of this same fortnight) restricts a non-admin to their
+  // own entries before rendering — this export, triggered by a button inside that same view,
+  // had no such restriction, so a non-admin could download every staff member's hours.
+  const isAdmin=currentUser?.role==='admin';
+  let entries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date));
+  if(!isAdmin)entries=entries.filter(e=>e.staffId===currentUser?.id);
+  entries=entries.filter(e=>tsStaffFilter==='all'||e.staffId===tsStaffFilter);
   const rows=[['Employee','Employee Email','Timesheet Status','Fortnight Ending','Week Ending','Earnings Rate','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Hours','Notes']];
   const staffInScope=DB.staff.filter(s=>entries.some(e=>e.staffId===s.id));
   staffInScope.forEach(staff=>{
@@ -16116,6 +16150,9 @@ function _initNoteEditors(){
     el.dataset.noteReady='1';
     el.addEventListener('paste',e=>_handleDescPaste(e,el.id));
     el.addEventListener('input',()=>_descInitOverflow(el.id));
+    // One-time, right when this editor instance first appears — restores anything typed
+    // here before a tab switch (or similar rebuild) tore the old element down.
+    if(el.id)restoreNoteDraft(el.id);
     _descInitOverflow(el.id);
   });
 }
@@ -16167,7 +16204,18 @@ function _showPasteChoice(rect,id){
   if(left+w>window.innerWidth-8)left=window.innerWidth-w-8;
   if(left<8)left=8;
   pop.style.top=top+'px';pop.style.left=left+'px';pop.style.visibility='visible';
-  const dismiss=(e)=>{if(!pop.contains(e.target)){pop.remove();_pendingPaste=null;document.removeEventListener('mousedown',dismiss);}};
+  const dismiss=(e)=>{
+    if(pop.contains(e.target))return;
+    pop.remove();_pendingPaste=null;document.removeEventListener('mousedown',dismiss);
+    // Abandoning the choice (clicking away instead of picking a format) used to just drop the
+    // popup and stop there — every blur handler on this kind of editor (note boxes,
+    // descriptions) deliberately skips saving while the popup is up, so whatever was in the
+    // box before the paste, PLUS the paste itself never having been applied, went unsaved and
+    // was lost on the next re-render. The popup blocked the box's own mousedown from reaching
+    // it (line above), so the real blur already fired and was suppressed — re-dispatching one
+    // now that the popup is gone lets that same handler's own save logic run normally.
+    if(ed)ed.dispatchEvent(new Event('blur'));
+  };
   setTimeout(()=>document.addEventListener('mousedown',dismiss),0);
 }
 function _applyPaste(id,mode){
@@ -16878,6 +16926,7 @@ function wsMeetingNoteSave(){
   const note={id:'mn'+uid(),boardId:currentWorkboard.id,title,body,date,authorId:currentUser.id,createdAt:now,updatedAt:now};
   DB.meetingNotes.push(note);
   saveDB(DB);
+  clearTextareaDraft('mn-body');
   wsMeetingNoteEditingId=null;wsMeetingNoteExpandedId=note.id;
   renderView('workspace');
 }
@@ -16892,6 +16941,7 @@ function wsMeetingNoteSaveEdit(id){
   n.body=_noteEditorValue('mn-edit-body-'+id);
   n.updatedAt=new Date().toISOString();
   saveDB(DB);
+  clearTextareaDraft('mn-edit-body-'+id);
   wsMeetingNoteEditingId=null;wsMeetingNoteExpandedId=id;
   renderView('workspace');
 }
@@ -18294,6 +18344,10 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
 function openTaskPanel(taskId,tab){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return;
+  // A notification (e.g. "you were assigned to...") can point at a task on a board the
+  // current user no longer has (or never had) access to — every cp* client-portal mutator
+  // already re-checks this before acting, but this, the staff-side equivalent, did not.
+  if(!canViewTask(currentUser,task))return;
   _tpCurrentTask=task;
   const panel=document.getElementById('task-panel');
   const overlay=document.getElementById('task-panel-overlay');
@@ -18879,7 +18933,7 @@ function tpShowTab(tabName){
   if(el)el.classList.add('active');
   const body=document.getElementById('tp-body');
   if(!body)return;
-  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
+  if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');restoreTextareaDraft('tp-ccomm-input');_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
   else if(tabName==='notes'){body.innerHTML=renderTpMeetingNotes(task);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}
@@ -19998,6 +20052,7 @@ function tpNoteSave(taskId){
     authorId:currentUser.id,createdAt:now,updatedAt:now};
   DB.meetingNotes.push(note);
   saveDB(DB);
+  clearTextareaDraft('tpn-body');
   _tpNoteEditingId=null;_tpNoteExpandedId=note.id;
   if(_tpCurrentTask){const p=document.getElementById('task-panel');if(p)p.innerHTML=renderTaskPanel(_tpCurrentTask);}
   tpShowTab('notes');
@@ -20012,6 +20067,7 @@ function tpNoteSaveEdit(id){
   n.body=_noteEditorValue('tpn-e-body-'+id);
   n.updatedAt=new Date().toISOString();
   saveDB(DB);
+  clearTextareaDraft('tpn-e-body-'+id);
   _tpNoteEditingId=null;_tpNoteExpandedId=id;_tpNotesRefresh();
 }
 function tpNoteDelete(id){
