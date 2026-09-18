@@ -2213,9 +2213,33 @@ function _showSyncError(msg){
   el.innerHTML='⚠ Sync failed: '+escHtml(msg)+' — <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">reload to reconnect</a>';
   clearTimeout(el._t);el._t=setTimeout(()=>el.remove(),12000);
 }
-function _syncToSupabase(data){
+// Two people saving within one network round-trip used to silently lose one of them. This
+// sent the WHOLE database as a blob and blind-upserted it, so whichever request reached
+// Postgres second replaced the row outright — and BOTH clients got a success response, with
+// the realtime broadcast that would have warned them arriving only after the write. All the
+// reconciliation _mergeDB does is client-side, against whatever that client happened to be
+// holding, so it never protected the write itself.
+// Now a compare-and-swap: read the row, merge this payload into what is actually stored, and
+// write only if nobody else has written since that read. If someone has, re-read and
+// re-merge. `updated_at` is the version token — it is already written on every save.
+let _syncInFlight=false,_syncQueued=false;
+function _syncToSupabase(data,opts){
   if(!window._supabase||!_supabaseSyncEnabled)return;
-  window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{
+  // beforeunload cannot await anything — a read/merge round-trip certainly will not finish —
+  // so that one path stays a single best-effort blind write.
+  if(opts&&opts.blind){_syncBlindUpsert(data);return;}
+  // Never run two of these at once: they would read the same row and race each other.
+  if(_syncInFlight){_syncQueued=true;return;}
+  _syncInFlight=true;
+  _syncMergeWrite(data)
+    .catch(e=>{console.warn('[sync]',e&&e.message);})
+    .then(()=>{
+      _syncInFlight=false;
+      if(_syncQueued){_syncQueued=false;_syncToSupabase(_stripPasswords(DB));}
+    });
+}
+function _syncBlindUpsert(data){
+  return window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{
     if(error){
       _syncFailCount++;
       console.warn('[sync] Save failed (attempt '+_syncFailCount+'):', error.message, '| code:', error.code);
@@ -2224,6 +2248,38 @@ function _syncToSupabase(data){
       _syncFailCount=0;
     }
   });
+}
+async function _syncMergeWrite(payload){
+  const sb=window._supabase;
+  for(let attempt=0;attempt<4;attempt++){
+    const{data:rows,error:readErr}=await sb.from('app_state').select('data,updated_at').eq('id',1).limit(1);
+    if(readErr)break;                    // can't read — fall through to the blind write
+    const row=rows&&rows[0];
+    // No row yet, or no version to compare against: the blind upsert below creates/stamps it,
+    // and every write after that is protected.
+    if(!row||!row.updated_at)break;
+    let outgoing=payload;
+    if(row.data){
+      const fresh=JSON.parse(JSON.stringify(row.data));
+      _migrateDB(fresh);_applyCompatAliases(fresh);
+      outgoing=_mergeDB(payload,fresh);   // local wins per-record where newer; both sides survive
+    }
+    let stamp=new Date().toISOString();
+    if(stamp===row.updated_at)stamp=new Date(Date.now()+1).toISOString(); // keep it strictly moving
+    const{data:written,error}=await sb.from('app_state')
+      .update({data:outgoing,updated_at:stamp})
+      .eq('id',1).eq('updated_at',row.updated_at)
+      .select('id');
+    if(error)break;
+    if(written&&written.length){_syncFailCount=0;return;}
+    // Zero rows updated means the precondition failed: somebody wrote between our read and
+    // our write. Their data is on the server now, so re-read and merge on top of it.
+    await new Promise(r=>setTimeout(r,60*(attempt+1)));
+  }
+  // Safety valve. Whatever went wrong — unreadable row, missing version, or four lost races —
+  // never leave someone unable to save. This is exactly the old behaviour, so the worst case
+  // here is what already shipped, not a dead save path.
+  return _syncBlindUpsert(payload);
 }
 // Records which ids just vanished from a collection into DB[tombstoneKey], so a peer who
 // hasn't synced this deletion yet — and still has those exact records — doesn't resurrect
@@ -2578,7 +2634,7 @@ function _flushDB(){
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));_syncToSupabase(safe);}
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));_syncToSupabase(safe,{blind:true});}
   let hasUnsaved=false;
   // #task-panel and #generic-modal are siblings of #view-container, not nested inside it, so
   // scoping this scan to #view-container meant this warning could essentially never fire for
