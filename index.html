@@ -16333,6 +16333,19 @@ function _initNoteEditors(){
     _descInitOverflow(el.id);
   });
 }
+// mtg-summary/mtg-actions live-sync into _mtgDraft on every keystroke the same way the old
+// oninput="mtgField()" textareas did — that attribute doesn't apply to _noteEditorHtml's
+// generated markup, so it needs wiring up here instead, alongside _initNoteEditors (which
+// only knows about generic paste/overflow handling, not the meeting draft).
+function _mtgWireRichFields(){
+  if(!_mtgDraft)return;
+  [_mtgFieldId('summary'),_mtgFieldId('actions')].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el||el.dataset.mtgWired==='1')return;
+    el.dataset.mtgWired='1';
+    el.addEventListener('input',mtgField);
+  });
+}
 // Read a rich editor's contents back out, normalised and sanitised.
 function _noteEditorValue(id){
   const el=document.getElementById(id);
@@ -19168,7 +19181,7 @@ function tpShowTab(tabName){
   if(tabName==='details'){body.innerHTML=renderTpDetails(task);setTimeout(()=>{restoreTextareaDraft('tp-comment-input');restoreTextareaDraft('tp-ccomm-input');_initDescEditor('tp-desc',v=>tpSaveField('description',v));_clampInit();},0);}
   else if(tabName==='subtasks')body.innerHTML=renderTpSubtasks(task.id);
   else if(tabName==='dependencies')body.innerHTML=renderTpDependencies(task);
-  else if(tabName==='notes'){body.innerHTML=renderTpMeetingNotes(task);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}
+  else if(tabName==='notes'){body.innerHTML=renderTpMeetingNotes(task);setTimeout(()=>{_clampInit();_initNoteEditors();_mtgWireRichFields();},0);}
   else if(tabName==='activity')body.innerHTML=renderTpActivity(task);
   else if(tabName==='recurrence')body.innerHTML=renderTpRecurrence(task);
 }
@@ -19273,6 +19286,11 @@ function mtgLockedEntries(m){return mtgEntries(m).filter(e=>_mtgEntryState(e)!==
 // ── draft state for the form ──────────────────────────────────
 let _mtgDraft=null;      // the meeting being written or edited
 let _mtgEditingId=null;  // id when editing an existing one
+// mtg-summary/mtg-actions are rendered under a fixed id shared by every meeting, unlike
+// mn-edit-body-<id> which is unique per note — without this, an abandoned draft from
+// editing meeting A (never saved or cancelled, e.g. the tab closing mid-edit) would restore
+// into meeting B's summary the next time ANY meeting was opened for editing.
+function _mtgFieldId(field){return 'mtg-'+field+(_mtgEditingId?('-'+_mtgEditingId):'-new');}
 let _mtgPicker=null;     // {sel:Set, q:'', filters:{}}
 let _mtgStatusOpen=null; // meeting id whose timesheet breakdown is open
 
@@ -19291,7 +19309,14 @@ function mtgEdit(id){
   _tpNoteExpandedId=null;
   _tpNotesRefresh();
 }
-function mtgCancel(){_mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesRefresh();}
+function mtgCancel(){
+  // mtg-summary/mtg-actions are rich editors now, so — same as wsMeetingNoteCancel/
+  // tpNoteCancel — a draft left in sessionStorage would silently resurface over the real
+  // saved content next time this meeting is reopened for editing. Compute the id BEFORE
+  // _mtgEditingId is reset below, or _mtgFieldId resolves to the wrong ("-new") key.
+  clearTextareaDraft(_mtgFieldId('summary'));clearTextareaDraft(_mtgFieldId('actions'));
+  _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesRefresh();
+}
 
 function mtgField(){mtgSync();}                       // cheap: no re-render
 function mtgStruct(){mtgSync();_tpNotesRefresh();}    // structure changed: redraw
@@ -19548,12 +19573,17 @@ function mtgDurInput(v){
 function mtgSync(){
   const d=_mtgDraft;if(!d)return;
   const v=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
+  // mtg-summary/mtg-actions are contenteditable rich editors now (so a paste can keep its
+  // formatting), not plain textareas — they have no .value, so they need _noteEditorValue's
+  // innerHTML-based read instead. Undefined when the element isn't rendered mirrors v()'s own
+  // behaviour, so `set` still leaves the draft alone rather than blanking it.
+  const rv=id=>{const el=document.getElementById(id);return el?_noteEditorValue(id):undefined;};
   const c=id=>{const el=document.getElementById(id);return el?el.checked:undefined;};
   const set=(k,val)=>{if(val!==undefined)d[k]=val;};
   set('title',v('mtg-title'));set('date',v('mtg-date'));
   set('meetingType',v('mtg-type'));set('location',v('mtg-location'));
   set('startTime',v('mtg-start'));set('endTime',v('mtg-end'));
-  set('body',v('mtg-summary'));set('actions',v('mtg-actions'));
+  set('body',rv(_mtgFieldId('summary')));set('actions',rv(_mtgFieldId('actions')));
   set('tsCategory',v('mtg-cat'));set('billing',v('mtg-billing'));
   const on=c('mtg-tson');if(on!==undefined)d.createTs=on;
   const dv=v('mtg-dur');if(dv!==undefined){const n=mtgParseDur(dv);if(n)d.durationMin=n;}
@@ -19702,6 +19732,8 @@ function mtgSave(alsoTimesheets){
   }
   delete rec._ui;
   saveDB(DB);
+  // Same ordering note as mtgCancel: compute the id before _mtgEditingId is reset below.
+  clearTextareaDraft(_mtgFieldId('summary'));clearTextareaDraft(_mtgFieldId('actions'));
   const res=alsoTimesheets?mtgApplyTimesheets(rec):null;
   _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_mtgAttPicker=null;
   _tpNoteExpandedId=rec.id;
@@ -19818,8 +19850,6 @@ function mtgMakePrimary(taskId){
 }
 function mtgSetTsOn(on){mtgSync();_mtgDraft.createTs=!!on;_tpNotesRefresh();}
 // Grow the one-line Actions field on focus without a re-render, so typing is never lost.
-function mtgGrow(el){el.rows=4;el.style.height='auto';el.style.height=Math.max(76,el.scrollHeight)+'px';}
-function mtgShrink(el){if(!el.value.trim()){el.rows=1;el.style.height='';}}
 function mtgFocusFirstOverAlloc(){
   const d=_mtgDraft;if(!d)return;
   const first=mtgLinks(d).map(l=>l.taskId).find(id=>mtgAllocFor(d,id)>0);
@@ -19863,12 +19893,10 @@ function mtgFormHtml(){
     <div class="mtg-f"><label class="mtg-lbl" for="mtg-date">Date <span class="mtg-req">*</span></label>
       <input id="mtg-date" type="date" class="form-input mtg-in" value="${d.date||''}" onchange="mtgField()"/></div>
     ${timeRow}
-    <div class="mtg-f"><label class="mtg-lbl" for="mtg-summary">Meeting summary</label>
-      <textarea id="mtg-summary" class="form-input mtg-in" rows="3" oninput="mtgField()" placeholder="What was discussed?">${escHtml(d.body||'')}</textarea></div>
-    <div class="mtg-f"><label class="mtg-lbl" for="mtg-actions">Actions and outcomes</label>
-      <textarea id="mtg-actions" class="form-input mtg-in mtg-grow" rows="${String(d.actions||'').trim()?4:1}" oninput="mtgField()"
-        onfocus="mtgGrow(this)" onblur="mtgShrink(this)"
-        placeholder="What was decided, and who is responsible?">${escHtml(d.actions||'')}</textarea></div>
+    <div class="mtg-f"><label class="mtg-lbl">Meeting summary</label>
+      ${_noteEditorHtml(_mtgFieldId('summary'),d.body||'','What was discussed? Paste a formatted summary and the formatting is kept')}</div>
+    <div class="mtg-f"><label class="mtg-lbl">Actions and outcomes</label>
+      ${_noteEditorHtml(_mtgFieldId('actions'),d.actions||'','What was decided, and who is responsible?')}</div>
     <button type="button" class="mtg-disc" aria-expanded="${moreOpen}" aria-controls="mtg-more" onclick="mtgToggleMore()">More meeting options ${moreOpen?'▴':'▾'}</button>
     <div id="mtg-more" ${moreOpen?'':'hidden'}>
       <div class="mtg-row2">
@@ -20084,8 +20112,8 @@ function mtgCardHtml(m,viewTaskId,expanded){
     <div class="mtg-bsec">Attendees</div>
     ${atts?`<ul class="mtg-ul">${(m.attendees||[]).map(a=>`<li>${escHtml(a.name||'Attendee')} · ${mtgFmtMins(mtgAttMinutes(m,a))}${a.external?' · Not included in timesheet':''}</li>`).join('')}</ul>`:`<div class="mtg-none">None recorded.</div>`}
 
-    ${m.body?`<div class="mtg-bsec">Summary</div><div class="mtg-text">${escHtml(m.body)}</div>`:''}
-    ${m.actions?`<div class="mtg-bsec">Actions and outcomes</div><div class="mtg-text">${escHtml(m.actions)}</div>`:''}
+    ${m.body?`<div class="mtg-bsec">Summary</div><div class="mtg-text rich-text">${_descToHtml(m.body)}</div>`:''}
+    ${m.actions?`<div class="mtg-bsec">Actions and outcomes</div><div class="mtg-text rich-text">${_descToHtml(m.actions)}</div>`:''}
 
     <div class="mtg-bsec">Tasks discussed</div>
     ${links.length?`<ul class="mtg-ul">${links.map(({task})=>`<li><span class="mtg-ref">${escHtml(taskRef(task))}</span> ${escHtml(task.name||task.title||'')}</li>`).join('')}</ul>`:`<div class="mtg-none">None linked.</div>`}
@@ -20274,7 +20302,7 @@ function renderTpMeetingNotes(task){
 }
 
 let _tpNoteEditingId=null,_tpNoteExpandedId=null;
-function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(()=>{_clampInit();_initNoteEditors();},0);}}
+function _tpNotesRefresh(){const b=document.getElementById('tp-body');if(b&&_tpCurrentTask){b.innerHTML=renderTpMeetingNotes(_tpCurrentTask);setTimeout(()=>{_clampInit();_initNoteEditors();_mtgWireRichFields();},0);}}
 function tpNoteStartNew(){_tpNoteEditingId='new';_tpNoteExpandedId=null;_tpNotesRefresh();setTimeout(()=>document.getElementById('tpn-title')?.focus(),40);}
 // Same as wsMeetingNoteCancel — cancelling must drop the draft, or it resurfaces over the
 // note's real content next time this note is opened for editing.
