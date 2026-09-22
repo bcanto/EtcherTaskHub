@@ -19315,6 +19315,7 @@ function mtgCancel(){
   // saved content next time this meeting is reopened for editing. Compute the id BEFORE
   // _mtgEditingId is reset below, or _mtgFieldId resolves to the wrong ("-new") key.
   clearTextareaDraft(_mtgFieldId('summary'));clearTextareaDraft(_mtgFieldId('actions'));
+  clearTimeout(_mtgTimeChangeTimer);_mtgTimeChangeTimer=null;
   _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_tpNotesRefresh();
 }
 
@@ -19333,6 +19334,7 @@ function mtgAttTimeChanged(i){
 
 // Moving the meeting drags along every attendee who was still sitting on the old times.
 // Anyone given their own start or finish is left exactly where they are.
+let _mtgTimeChangeTimer=null;
 function mtgTimeChanged(){
   const d=_mtgDraft;if(!d)return;
   const oldS=d.startTime,oldE=d.endTime;
@@ -19343,7 +19345,16 @@ function mtgTimeChanged(){
     const untouched=!a.timeTouched&&((!a.start&&!a.end)||(a.start===oldS&&a.end===oldE));
     if(untouched){a.start=d.startTime||'';a.end=d.endTime||'';}
   });
-  _tpNotesRefresh();
+  // mtg-start/mtg-end already hold a complete value (mtgBlank() prefills sensible defaults),
+  // so editing just one segment of this <input type="time"> produces a new complete value on
+  // EVERY keystroke — the browser fires 'change' per digit typed, not just once on blur. A
+  // synchronous _tpNotesRefresh() here rebuilds the whole panel via innerHTML on each of those,
+  // destroying and recreating the input mid-edit — stealing focus every keystroke, which is
+  // what made it feel impossible to type a new time at all. Debounce the repaint so it only
+  // happens once typing actually pauses; mtgSync() above still runs immediately every time,
+  // so the draft itself never falls behind, only the visible refresh does.
+  clearTimeout(_mtgTimeChangeTimer);
+  _mtgTimeChangeTimer=setTimeout(_tpNotesRefresh,350);
 }
 function mtgSetMethod(v){mtgSync();_mtgDraft.timeMethod=v;_tpNotesRefresh();}
 
@@ -19734,6 +19745,7 @@ function mtgSave(alsoTimesheets){
   saveDB(DB);
   // Same ordering note as mtgCancel: compute the id before _mtgEditingId is reset below.
   clearTextareaDraft(_mtgFieldId('summary'));clearTextareaDraft(_mtgFieldId('actions'));
+  clearTimeout(_mtgTimeChangeTimer);_mtgTimeChangeTimer=null;
   const res=alsoTimesheets?mtgApplyTimesheets(rec):null;
   _mtgDraft=null;_mtgEditingId=null;_mtgPicker=null;_mtgAttPicker=null;
   _tpNoteExpandedId=rec.id;
