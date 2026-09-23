@@ -22233,7 +22233,8 @@ function _xlCell(t,key){
       return plain(sd&&ed?(sd+' – '+ed):(sd||ed||''));
     }
     case 'progress':return{v:(getEffectiveTaskPct(t.id)||0)/100,pct:true,center:true};
-    case 'hours':   return{v:hoursForTask(t.id)||0,center:true};
+    // '0.##' so 7 reads as "7" and 7.25 as "7.25", rather than Excel's raw float rendering.
+    case 'hours':   return{v:hoursForTask(t.id)||0,center:true,numFmt:'0.##'};
     case 'client':  return plain(getTaskClient(t)?.name||'');
     case 'tags':    return plain((t.tags||[]).join(', '));
     case 'attachments':{
@@ -22244,6 +22245,11 @@ function _xlCell(t,key){
       const n=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id).length;
       return{v:n||'',center:true};
     }
+    // Descriptions can hold rich-text HTML (the paste-as-formatted-text editor) — a spreadsheet
+    // cell wants the plain-text reading, not raw markup. Wraps, since a description is the one
+    // column here that is routinely a paragraph rather than a value.
+    case 'description':
+      return{v:String(t.description||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&[a-z#0-9]+;/gi,' ').replace(/\s+/g,' ').trim(),wrap:true};
     default: return plain('');
   }
 }
@@ -22260,7 +22266,12 @@ function _xlWrite(ws,rowIdx,startCol,cells,opts){
     const fill=c.bg||o.bg;
     if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:_argb(fill,'ffffff')}};
     if(c.pct)cell.numFmt='0%';
-    cell.alignment={vertical:'middle',horizontal:c.center||o.center?'center':'left',wrapText:false};
+    else if(c.numFmt)cell.numFmt=c.numFmt;
+    // A wrapped cell is almost always the tall one in its row (a description), and a tall row
+    // reads wrong when everything beside it floats in the vertical middle — top-align the
+    // whole row's worth of cells in that case.
+    const wrap=!!(c.wrap||o.wrap);
+    cell.alignment={vertical:wrap||o.top?'top':'middle',horizontal:c.center||o.center?'center':'left',wrapText:wrap};
     if(o.border!==false)cell.border={
       top:{style:'thin',color:{argb:'FFE2EAF2'}},bottom:{style:'thin',color:{argb:'FFE2EAF2'}},
       left:{style:'thin',color:{argb:'FFE2EAF2'}},right:{style:'thin',color:{argb:'FFE2EAF2'}}};
@@ -22278,7 +22289,13 @@ function _wsMtExportNow(){
   wbk.creator='Etcher Task Hub';
   wbk.created=new Date();
   const boardName=(currentWorkboard&&currentWorkboard.name)||'Tasks';
-  const ws=wbk.addWorksheet(boardName.slice(0,28).replace(/[\\/*?:\[\]]/g,'-'));
+  const ws=wbk.addWorksheet(boardName.slice(0,28).replace(/[\\/*?:\[\]]/g,'-'),{
+    // Every table here draws its own borders, so Excel's own grid just adds noise underneath.
+    views:[{showGridLines:false}],
+    properties:{tabColor:{argb:_argb(currentWorkboard&&currentWorkboard.color,'0d1c33')}},
+    pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,
+      margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.3,footer:0.3}},
+  });
 
   // the same columns, order and grouping the board is showing
   const cols=wsColumns;
@@ -22288,7 +22305,12 @@ function _wsMtExportNow(){
     return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const vis=defs.filter(c=>cols[c.key]);
   const custCols=mtGetBoardCustomCols();
-  const itemCols=[{key:'name',label:'Name'},...vis,...custCols.map(c=>({key:'cc_'+c.id,label:c.name,cc:c}))];
+  // Description is never one of the board's own toggleable columns (WS_COL_DEFS) — it lives in
+  // the task panel, not the table — but an exported spreadsheet is exactly the place someone
+  // wants the full text without opening every task, so it always goes out with the export
+  // regardless of which columns are currently shown on screen.
+  const DESC_COL={key:'description',label:'Description'};
+  const itemCols=[{key:'name',label:'Name'},...vis,...custCols.map(c=>({key:'cc_'+c.id,label:c.name,cc:c})),DESC_COL];
 
   const subOrder=_wsGetColOrder('sub')||_WS_DEFAULT_SUB_COL_ORDER;
   const subDefs=[...SUB_COL_DEFS].sort((a,b)=>{
@@ -22296,14 +22318,19 @@ function _wsMtExportNow(){
     return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const subVis=subDefs.filter(c=>wsSubColumns[c.key]);
   const subCust=custCols.filter(cc=>mtColAppliesTo(cc,true));
-  const subCols=[{key:'name',label:'Name'},...subVis,...subCust.map(c=>({key:'cc_'+c.id,label:c.name,cc:c}))];
+  const subCols=[{key:'name',label:'Name'},...subVis,...subCust.map(c=>({key:'cc_'+c.id,label:c.name,cc:c})),DESC_COL];
 
   const val=(t,c)=>c.cc?{v:mtGetCustomVal(t.id,c.cc.id)||''}:_xlCell(t,c.key);
 
   let r=1;
-  // title
+  // title, then a quiet subtitle line — a board export gets emailed around and read out of
+  // context, so it should say which client it belongs to and when it was taken.
   _xlWrite(ws,r,1,[{v:boardName,bold:true}],{border:false});
   ws.getRow(r).getCell(1).font={name:'Calibri',size:14,bold:true,color:{argb:'FF0D1C33'}};
+  r++;
+  const _bClient=currentWorkboard?(DB.clients||[]).find(c=>c.id===currentWorkboard.clientId):null;
+  _xlWrite(ws,r,1,[{v:(_bClient?_bClient.name+'  ·  ':'')+'Exported '+formatDate(toDateStr(new Date()))}],{border:false});
+  ws.getRow(r).getCell(1).font={name:'Calibri',size:10,color:{argb:'FF8DA2B2'}};
   r+=2;
 
   const sections=_wsBuildSections(getFilteredTasks());
@@ -22312,8 +22339,10 @@ function _wsMtExportNow(){
     _xlWrite(ws,r,1,[{v:sec.label+(sec.sub?'  ·  '+sec.sub:''),bold:true,fg:sec.color}],{border:false});
     ws.getRow(r).height=20;
     r++;
-    // item header
-    _xlWrite(ws,r,1,itemCols.map(c=>({v:c.label})),{bold:true,bg:'#f4f7fc',fg:'#4a6572'});
+    // item header — the board's own navy, so the header reads as a header at a glance
+    // instead of as another pale row among the data.
+    _xlWrite(ws,r,1,itemCols.map(c=>({v:c.label})),{bold:true,bg:'#0d1c33',fg:'#ffffff'});
+    ws.getRow(r).height=18;
     r++;
     sec.tasks.forEach(t=>{
       _xlWrite(ws,r,1,itemCols.map(c=>val(t,c)));
@@ -22333,12 +22362,21 @@ function _wsMtExportNow(){
     r++;     // blank row between groups
   });
 
-  // sensible widths: the name column is wide, the rest sized to their label
-  const widest=Math.max(itemCols.length,subCols.length+1);
-  for(let i=1;i<=widest;i++){
-    const c=ws.getColumn(i);
-    c.width=i===1?38:(i===2?30:16);
-  }
+  // Widths follow what each column actually holds rather than a flat 16 for everything —
+  // "Files" and "Deps" are single digits, a Timeline is two dates, a description is a
+  // paragraph. Item rows start at col 1 and subitem rows are indented to col 2, so a sheet
+  // column can carry a different field in each table; take the widest claim on it.
+  const WIDTH_BY_KEY={name:38,description:52,ref:13,status:16,priority:14,owner:18,cwith:16,
+    duedate:24,progress:12,hours:9,client:18,tags:22,attachments:8,deps:8};
+  const claim={};
+  const stake=(colList,startCol)=>colList.forEach((c,i)=>{
+    const idx=startCol+i;
+    const w=c.cc?20:(WIDTH_BY_KEY[c.key]||16);
+    claim[idx]=Math.max(claim[idx]||0,w);
+  });
+  stake(itemCols,1);
+  stake(subCols,2);
+  Object.keys(claim).forEach(idx=>{ws.getColumn(+idx).width=claim[idx];});
 
   wbk.xlsx.writeBuffer().then(buf=>{
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
