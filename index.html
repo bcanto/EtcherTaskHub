@@ -9085,22 +9085,34 @@ function openClientModal(id){
       <div style="border-top:1px solid #e8eef4;padding-top:14px">
         <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:10px">Client Portal Access</div>
         <div style="display:grid;gap:10px">
-          <div style="display:flex;align-items:flex-end;gap:8px">
-            <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com" ${id?'readonly style="opacity:0.6"':''}/></div>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;padding-bottom:8px;white-space:nowrap">
-              <input type="checkbox" id="cm-portal-enabled" ${c.portalEnabled?'checked':''}/> Enabled
-            </label>
-          </div>
-          ${id
-            ?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"/></div>
-                <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
-              </div>`
-            :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 8 characters"/></div>
-                <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+          ${(()=>{
+            // A client only has a real login identity once /api/invite-user has actually
+            // created it (c.supabaseUserId). Locking the email field on `id` alone — as this
+            // used to — meant a client saved WITHOUT portal access (very common: created
+            // without an email at all) could never have it added later: the field was
+            // permanently readonly with no way to type into it and no explanation why,
+            // reading exactly like a bug rather than the "already has a live login, changing
+            // this would desync it" restriction it was meant to be.
+            const hasAccount=!!(id&&c.supabaseUserId);
+            return`<div style="display:flex;align-items:flex-end;gap:8px">
+              <div style="flex:1"><label class="form-label">Portal Email</label><input id="cm-email" class="form-input" value="${escHtml(c.loginEmail||'')}" placeholder="client@example.com" ${hasAccount?'readonly style="opacity:0.6"':''}/>
+                ${hasAccount?`<div style="font-size:10px;color:#94a3b8;margin-top:3px">This client already has a portal login — the email can’t be changed here, only the password below.</div>`:''}
               </div>
-              <div style="font-size:11px;color:#8da2b2">Leave password blank to create client without portal access.</div>`}
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;padding-bottom:8px;white-space:nowrap">
+                <input type="checkbox" id="cm-portal-enabled" ${c.portalEnabled?'checked':''}/> Enabled
+              </label>
+            </div>
+            ${hasAccount
+              ?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"/></div>
+                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+                </div>`
+              :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 8 characters"/></div>
+                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+                </div>
+                <div style="font-size:11px;color:#8da2b2">${id?'Add an email and password to grant this client portal access.':'Leave password blank to create client without portal access.'}</div>`}`;
+          })()}
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
@@ -9120,16 +9132,41 @@ async function saveClient(id){
   const color=document.getElementById('cm-color').value;
   if(id){
     let c=DB.clients.find(x=>x.id===id);
-    // Validate + apply any password change BEFORE touching name/colour/logo/portal below —
-    // this used to mutate all of those first, so a failed password update left them applied
-    // in memory but never saved: the admin saw the new name/logo in the UI, closed the modal,
-    // and lost every one of those edits on reload once the abandoned mutation was overwritten.
+    // Validate + apply any password/account change BEFORE touching name/colour/logo/portal
+    // below — this used to mutate all of those first, so a failed password update left them
+    // applied in memory but never saved: the admin saw the new name/logo in the UI, closed
+    // the modal, and lost every one of those edits on reload once the abandoned mutation was
+    // overwritten.
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
-    if(pw){
+    let newAccountResult=null;
+    if(!c.supabaseUserId){
+      // No portal account yet — this is the ADD case, not a change. cm-email is only
+      // rendered editable here in the first place (see openClientModal); previously this
+      // path only ever produced "Create a new client instead", a dead end for a client that
+      // already has tasks/history attached and just needs portal access added later.
+      const email=(document.getElementById('cm-email')?.value||'').trim();
+      if(email||pw){
+        if(!email){showAlert('Enter a portal email to go with that password.','Validation');return;}
+        if(!pw){showAlert('Enter a password to go with that portal email.','Validation');return;}
+        if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
+        if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
+        const btn=document.getElementById('cm-save-btn');
+        if(btn){btn.disabled=true;btn.textContent='Saving…';}
+        try{
+          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:id,password:pw})});
+          const result=await resp.json();
+          if(!resp.ok)throw new Error(result.error||'Failed to create portal account');
+          newAccountResult=result;
+        }catch(e){
+          showAlert(e.message,'Portal Access Failed');
+          if(btn){btn.disabled=false;btn.textContent='Save';}
+          return;
+        }
+      }
+    }else if(pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
-      if(!c.supabaseUserId){showAlert('No Supabase account linked to this client. Create a new client with a password instead.','Error');return;}
       const btn=document.getElementById('cm-save-btn');
       if(btn){btn.disabled=true;btn.textContent='Saving…';}
       try{
@@ -9156,6 +9193,15 @@ async function saveClient(id){
     if(enabledEl)c.portalEnabled=enabledEl.checked;
     const logoEl=document.getElementById('cm-logo-b64');
     if(logoEl)c.logo=logoEl.value||null;
+    if(newAccountResult){
+      // Must win over the Enabled checkbox above: it defaults unchecked for a client with no
+      // account yet (nobody thinks to tick it when they're just typing an email/password for
+      // the first time), so reading it first would create a real Supabase account and then
+      // immediately set portalEnabled back to false — a login that silently can't be used.
+      c.loginEmail=(document.getElementById('cm-email')?.value||'').trim();
+      c.supabaseUserId=newAccountResult.id;
+      c.portalEnabled=true;
+    }
     c.updatedAt=now;
     saveDB(DB);closeGenericModal();renderView('clients');
   }else{
