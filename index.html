@@ -48,6 +48,13 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── Sidebar ── */
 #sidebar{width:215px;height:100vh;background:#0d1c33;display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;border-right:1px solid rgba(255,255,255,0.05);overflow:hidden}
 #app-shell{display:flex;min-height:100vh}
+/* #offline-mode-banner is bottom:14px;left:14px (set in JS) — on the internal shell that sits
+   directly on top of the sidebar's Sign Out button. Only the internal shell has a 215px fixed
+   sidebar there, so push the banner clear of it whenever #app-shell is visible. Scoped to
+   desktop width so it never fights the <768px override, which makes the banner full-width. */
+@media(min-width:769px){
+  #app-shell:not(.hidden) ~ #offline-mode-banner{left:229px!important}
+}
 /* min-width:0 stops a wide view (the Gantt at day scale) from stretching the whole shell:
    a flex item defaults to min-width:auto, so main-content grew to its content's width, the
    page scrolled sideways instead of the view's own scroller, and anything pinned inside —
@@ -480,7 +487,7 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
    MOBILE SHELL — additive only. Nothing here changes desktop (>768px)
    layout, permissions, or which functions save data; see PLAN-mobile.md.
    ═══════════════════════════════════════════════════════════════════════ */
-#mobile-menu-btn,#mobile-scrim,#mobile-tabbar,.ws-photo-btn{display:none}
+#mobile-menu-btn,#mobile-scrim,#mobile-tabbar,.ws-photo-btn,.mobile-fab{display:none}
 .mobile-sheet-wrap{display:none}
 @media(max-width:768px){
   /* Sidebar becomes an off-canvas drawer instead of permanent 215px furniture —
@@ -1310,6 +1317,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <nav style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
+    <!-- Named 'workboard', not 'board' — 'board' is already an internal renderView route name
+         and sits in the client role's _acBlockedViews set; reusing it here would be one string
+         meaning two different things, which is how the wrong one gets wired up later. -->
+    <div class="cp-nav-tab" data-section="workboard" onclick="cpNavigate('workboard')">Board</div>
     <div class="cp-nav-tab" data-section="schedule" onclick="cpNavigate('schedule')">Schedule</div>
     <div class="cp-nav-tab" data-section="requests" onclick="cpNavigate('requests')">Request Work</div>
     <div class="cp-nav-tab" data-section="notifications" onclick="cpNavigate('notifications')" style="display:flex;align-items:center;gap:6px">Notifications<span id="cp-notif-badge" style="display:none;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;line-height:1.4"></span></div>
@@ -1647,6 +1658,7 @@ function loadDB(){
     const data=JSON.parse(raw);
     _migrateDB(data);
     _applyCompatAliases(data);
+    _reconcileActionRequests(data);
     saveDB(data); // persist any migrations (password updates, schema additions) back to localStorage
     return data;
   }
@@ -1676,6 +1688,7 @@ function _migrateDB(data){
   if(!data.wbComms)       data.wbComms       = [];
   if(!data.labelConfig)   data.labelConfig   = {statuses:{},priorities:{}};
   if(!data.taskFiles)     data.taskFiles     = [];
+  if(!data.actionRequests) data.actionRequests = [];
   if(!data.scheduleEvents)data.scheduleEvents= [];
   if(!data.auditLog)      data.auditLog      = [];
   if(!data.boardShares)         data.boardShares         = [];
@@ -2046,6 +2059,29 @@ function _migrateDB(data){
     if(!n.createdAt) n.createdAt=n.timestamp||new Date().toISOString();
   });
 
+}
+
+// Self-healing pass for the client-action-request handoff. actionRequests and tasks are
+// SEPARATE collections deliberately (see PLAN-client-board-and-actions.md §3.1) so a client's
+// response can never be discarded by the tasks-merge picking the other side's whole record —
+// but that also means the two can end up briefly disagreeing: the request reads 'done' while
+// the task still reads currentlyWithType:'client', if the write that flips the task lost a
+// concurrent tasks-merge. Idempotent — safe to call after every load and every merge.
+function _reconcileActionRequests(target){
+  const db=target||DB;
+  (db.actionRequests||[]).forEach(r=>{
+    if(r.status!=='done'||!r.respondedAt)return;
+    const t=(db.tasks||[]).find(x=>x.id===r.taskId);
+    if(!t||t.currentlyWithType!=='client')return;
+    // A later deliberate edit (updatedAt newer than the response) wins — this never fights a
+    // staff member who has since put the task back with the client on purpose.
+    if((t.updatedAt||'')>r.respondedAt)return;
+    t.currentlyWithType='staff';
+    t.currentlyWith=r.returnToUserId||t.ownerId||'';
+    t.currentlyWithUserId=r.returnToUserId||t.ownerId||null;
+    t.awaitingClient=false;
+    t.updatedAt=new Date().toISOString();
+  });
 }
 
 function _applyCompatAliases(data){
@@ -2457,7 +2493,7 @@ function _startRealtimeSync(){
       // still wins on local edits (newer updatedAt), without losing theirs.
       if(_saveDebounceTimer){_pendingRemote=fresh;return;}
       const merged=_mergeDB(DB,fresh);
-      for(const k in DB)delete DB[k];Object.assign(DB,merged);
+      for(const k in DB)delete DB[k];Object.assign(DB,merged);_reconcileActionRequests();
       _safeSaveLocal(JSON.stringify(DB));
       // saveDB was the only caller of _vcClear, so a merge from another user left the cached
       // views (gantt/capacity/schedule/dashboard/staff) re-serving pre-merge HTML for up to
@@ -2565,7 +2601,7 @@ function _applyPendingRemote(){
   if(!_pendingRemote)return false;
   const fresh=_pendingRemote;_pendingRemote=null;
   const merged=_mergeDB(DB,fresh);
-  for(const k in DB)delete DB[k];Object.assign(DB,merged);
+  for(const k in DB)delete DB[k];Object.assign(DB,merged);_reconcileActionRequests();
   _vcClear();
   return true;
 }
@@ -2590,6 +2626,9 @@ function _safeSaveLocal(json){
   }
 }
 function saveDB(data){
+  // A client portal slice is never persisted or synced — it's a read model of the server's
+  // data; changes go through /api/portal-action instead (_portalAction).
+  if(data&&data._portalSlice)return;
   _assignTaskRefs(data);
   _vcClear(); // invalidate render cache whenever data changes
   data._savedAt=new Date().toISOString(); // timestamp for conflict detection
@@ -2711,6 +2750,83 @@ function _touchSession(){
 }
 ['click','keydown'].forEach(ev=>document.addEventListener(ev,_touchSession,true));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')_touchSession();});
+// The account-management endpoints (/api/invite-user, /api/set-password) verify the caller
+// server-side now — they need this browser's own Supabase access token to do that. Local/
+// offline auth (no window._supabase) has no such token; those endpoints already 500 with
+// "Server not configured" in that mode (no SUPABASE_URL/keys either), so an empty object is
+// the correct, harmless result there rather than something to special-case.
+async function _adminApiAuthHeaders(){
+  if(!window._supabase)return{};
+  try{
+    const{data}=await window._supabase.auth.getSession();
+    const token=data&&data.session&&data.session.access_token;
+    return token?{'Authorization':'Bearer '+token}:{};
+  }catch(_){return{};}
+}
+// ── Client portal ↔ server (see .agents/PLAN-server-enforcement.md) ───────────────────────
+// With Supabase configured, a client session's DB is a server-built slice of that client's own
+// data, never the app_state blob. Every change goes through /api/portal-action, which validates
+// it server-side (api/_portal.js). Offline/local (no window._supabase) the portal keeps working
+// directly on the local DB, exactly as before — that's what the .agents suites exercise.
+function _portalServerMode(){return !!window._supabase&&currentUser?.role==='client';}
+// Collections shared helpers may read — present, and empty, in a portal slice.
+const _PORTAL_EMPTY=['dependencies','checklistItems','comments','timeEntries','auditLog','boardViews','customColumns',
+  'customColumnValues','scheduleEvents','internalComms','meetingNotes','wbComms','boardShares','personalChecklist'];
+function _applyPortalSlice(slice){
+  // NOT _migrateDB: it seeds defaults into whatever it's given — an internal client, the SEED
+  // staff (with their default passwords), earnings rates, digests — none of which a client
+  // session should ever hold. _applyCompatAliases only normalises field names, so it's safe.
+  for(const k of _PORTAL_EMPTY)if(!Array.isArray(slice[k]))slice[k]=[];
+  if(!slice.labelConfig)slice.labelConfig={statuses:{},priorities:{}};
+  _applyCompatAliases(slice);
+  for(const k in DB)delete DB[k];Object.assign(DB,slice);
+  DB._portalSlice=true;
+}
+async function _portalLoad(){
+  const r=await fetch('/api/portal-data',{headers:await _adminApiAuthHeaders(),cache:'no-store'});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.slice)throw new Error(j.error||'Could not load your portal.');
+  _applyPortalSlice(j.slice);
+}
+// Resolves true on success (DB is then the refreshed slice), false after showing the reason.
+// In-flight guard is per action type: it stops a double-click posting twice, without a
+// background call (the silent read-flag write) swallowing an unrelated click.
+const _portalBusy=new Set();
+async function _portalAction(type,payload,opts){
+  if(_portalBusy.has(type))return false;
+  _portalBusy.add(type);
+  try{
+    const r=await fetch('/api/portal-action',{method:'POST',
+      headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},
+      body:JSON.stringify({...(payload||{}),type})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){if(!opts?.silent)showAlert(j.error||'Could not save. Please try again.','Not saved');return false;}
+    _applyPortalSlice(j.slice);
+    updateCpNotifBadge();
+    return true;
+  }catch(e){if(!opts?.silent)showAlert('Could not reach Etcher. Check your connection and try again.','Not saved');return false;}
+  finally{_portalBusy.delete(type);}
+}
+// Clients can't subscribe to app_state realtime any more, so refresh the slice on focus and
+// every 60 s — but never under someone's hands: not while a modal is open or they're typing,
+// and never on the Request Work form or Notifications tab (re-rendering those would wipe a
+// half-written request or re-fire the mark-read write).
+let _portalRefreshTimer=null;
+function _startPortalRefresh(){
+  if(_portalRefreshTimer)return;
+  const tick=()=>{
+    if(!_portalServerMode()||_portalBusy.size)return;
+    _portalLoad().then(()=>{
+      updateCpNotifBadge();
+      const busy=!document.getElementById('cp-task-modal')?.classList.contains('hidden')
+        ||!document.getElementById('generic-modal')?.classList.contains('hidden')
+        ||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
+      if(!busy&&!['requests','notifications'].includes(cpSection))cpNavigate(cpSection);
+    }).catch(e=>console.warn('[portal refresh]',e.message));
+  };
+  _portalRefreshTimer=setInterval(tick,60000);
+  window.addEventListener('focus',tick);
+}
 function _saveSession(){
   if(!currentUser)return;
   // Supabase Auth handles its own persistence — only write localStorage when
@@ -2756,16 +2872,19 @@ async function _supabaseRestoreSession(session){
     const p=profileData;
     const isClient=p.role==='client';
     if(isClient){
-      // Look up client from app_state (Supabase clients table is not used as source of truth)
+      // Client sessions no longer touch app_state at all: they get a server-built slice of their
+      // own data (/api/portal-data) and change things only through /api/portal-action. They used
+      // to download and re-upload the whole blob, so any client could read — or overwrite —
+      // everyone's data from devtools. See .agents/PLAN-server-enforcement.md.
+      try{await _portalLoad();}catch(e){console.warn('[portal]',e.message);return false;}
+      // A previous version of the app cached the WHOLE blob in this browser; don't leave it here.
+      try{localStorage.removeItem('etcher_taskhub_v4');}catch(_){}
       const clientData=DB.clients.find(c=>c.id===p.client_id);
       if(!clientData||!clientData.portalEnabled){return false;}
       currentUser={id:p.id,name:p.name,role:'client',type:'client',clientId:p.client_id,
         initials:p.initials||clientData.shortCode||'CL',color:p.display_color||clientData.color||'#64748b'};
-      // Client sessions never set this, so _syncToSupabase bailed on every client write: work
-      // requests, portal comments and change requests were saved to that browser's localStorage
-      // and never uploaded — the client saw a success message, staff never received anything.
-      _supabaseSyncEnabled=true;
-      _startRealtimeSync();
+      _supabaseSyncEnabled=false; // nothing a client session holds is ever uploaded
+      _startPortalRefresh();      // replaces realtime (clients can't read app_state to subscribe to it)
       launchClientView();
     } else {
       currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
@@ -2788,7 +2907,7 @@ async function _supabaseRestoreSession(session){
           clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
           // Same guard as _startApp: never merge bundled demo data into the real blob.
           const merged=DB._seedOnly===true?fresh:_mergeDB(DB,fresh);
-          for(const k in DB)delete DB[k];Object.assign(DB,merged);
+          for(const k in DB)delete DB[k];Object.assign(DB,merged);_reconcileActionRequests();
           _safeSaveLocal(JSON.stringify(DB));
         }
       }catch(stateErr){console.warn('[app_state load]',stateErr.message);}
@@ -3801,6 +3920,12 @@ function _showOfflineBanner(){
   // sheet's Save button with no way to reach it while offline. 850 still clears ordinary
   // page content but no longer outranks the sheets (900) or sits over the tab bar's tap
   // targets; the position is lifted clear of the tab bar under 768px in the mobile shell CSS.
+  // left:14px is correct on the login screen, the client portal, and the share page — none
+  // of those have a left sidebar. It only collides with the Sign Out button on the internal
+  // shell, which has a 215px fixed sidebar with its footer pinned to the same bottom-left
+  // corner. Rather than hardcode 229px here (which would misplace the banner everywhere
+  // else), the `#app-shell:not(.hidden) ~ #offline-mode-banner` rule near #sidebar's CSS
+  // shifts it only while that sidebar is actually on screen.
   el.style.cssText='position:fixed;bottom:14px;left:14px;z-index:850;background:#7c2d12;color:#fff;font-family:Jost,sans-serif;font-size:11px;font-weight:600;padding:8px 12px;border-radius:7px;box-shadow:0 4px 16px rgba(13,28,51,0.25);display:flex;align-items:center;gap:7px;max-width:320px;line-height:1.45';
   el.innerHTML='<span style="font-size:13px;flex-shrink:0">⚠</span><span>Offline mode — changes stay in this browser and are not synced.</span>';
   document.body.appendChild(el);
@@ -4452,6 +4577,7 @@ function _wsGrpDragLeave(e){
   if(!row.contains(e.relatedTarget))row.classList.remove('ws-grp-drop-above','ws-grp-drop-below');
 }
 function _wsGrpDrop(e,targetGid){
+  try{requireInternalUser(currentUser);}catch(err){return;}
   e.preventDefault();e.stopPropagation();
   const before=e.currentTarget.classList.contains('ws-grp-drop-above');
   document.querySelectorAll('.ws-grp-drop-above,.ws-grp-drop-below').forEach(el=>el.classList.remove('ws-grp-drop-above','ws-grp-drop-below'));
@@ -5266,6 +5392,18 @@ function _taskBoardId(t){
   }
   return null;
 }
+// A task hidden from the client, or a subtask of one — checked in both getClientTasks (the
+// listing) and canViewTask (the gate every client-portal action goes through), so a client
+// can't reach a hidden task by guessing its id even though the listing already excludes it.
+function _cpTaskHidden(t){
+  if(!t)return true;
+  if(t.clientHidden)return true;
+  if(t.parentTaskId){
+    const p=(DB.tasks||[]).find(x=>x.id===t.parentTaskId);
+    if(p&&(p.clientHidden||_cpTaskHidden(p)))return true;
+  }
+  return false;
+}
 function canViewTask(user,task){
   if(!user||!task)return false;
   if(user.role==='admin')return true;
@@ -5279,6 +5417,7 @@ function canViewTask(user,task){
     return true;
   }
   if(user.role==='client'){
+    if(_cpTaskHidden(task))return false;
     const taskClientId=task.clientId||(()=>{
       const g=(DB.groups||[]).find(g=>g.id===task.groupId);
       return g?.clientId||null;
@@ -5312,8 +5451,12 @@ function _acBlockedViews(user){
   if(!user)return new Set(['*']);
   if(user.role==='admin')return new Set();
   if(user.role==='client')
+    // 'archive' was missing here — every other internal-only view is blocked for clients,
+    // but Archive & Bin (permanent delete, across every client's archived boards/tasks) was
+    // reachable by calling renderView('archive') directly, bypassing the sidebar which never
+    // renders that nav item for a client in the first place.
     return new Set(['schedule','workspace','board','list','gantt',
-                    'capacity','clients','time','reports','notes','staff','audit','notifications']);
+                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive']);
   if(user.role==='staff')   return _STAFF_BLOCKED;
   if(user.role==='restricted') return _RESTRICTED_BLOCKED;
   return new Set(['*']);
@@ -5590,6 +5733,7 @@ function selectWbColor(c){
   if(sw){sw.style.outline='2px solid #97bcbd';sw.style.transform='scale(1.25)';}
 }
 function submitCreateWb(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('new-wb-name')?.value||'').trim();
   if(!name)return;
   const visibility=document.getElementById('new-wb-visibility')?.value||'all_internal';
@@ -8779,18 +8923,29 @@ function deleteWorkRequest(id){
   },true);
 }
 function wrUpdateStatus(requestId, status, note){
+  // Staff-only (Clients view) but unguarded — a client session could restatus its own requests.
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
   if(!r)return;
   const prevStatus=r.status;
   const prevNote=r.adminNote||'';
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
-  const _clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===r.clientId&&u.active!==false);
+  // Client logins never live in DB.users — see _clientRecipientId.
+  const _rcp=_clientRecipientId(r.clientId);
+  const _clientUser=_rcp?{id:_rcp}:null;
   if(_clientUser){if(!DB.notifications)DB.notifications=[];}
   // Notify client when status meaningfully changes
   if(status&&status!==prevStatus){
-    const _statusMsg={approved:'Your work request has been approved',rejected:'Your work request has been declined',
-      'in-progress':'Work has started on your request: "'+r.title+'"',completed:'Your work request has been completed: "'+r.title+'"'};
+    // Was keyed to approved/rejected/in-progress/completed — a vocabulary this function has
+    // never actually written (the staff dropdown above only ever passes pending/reviewing/
+    // scoped/declined, the same set the portal's reqStatusMeta already expects). r.status was
+    // always stored correctly; only this lookup was stale, so every status-change notification
+    // to the client silently never fired (_msg was always undefined).
+    const _statusMsg={pending:'Your work request is being reviewed: "'+r.title+'"',
+      reviewing:'Your work request is under review: "'+r.title+'"',
+      scoped:'Your work request has been scoped and added to the board: "'+r.title+'"',
+      declined:'Your work request will not be progressing: "'+r.title+'"'};
     const _msg=_statusMsg[status];
     if(_msg&&_clientUser)DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:_msg,createdAt:new Date().toISOString()});
   }
@@ -9104,12 +9259,19 @@ function openClientModal(id){
             </div>
             ${hasAccount
               ?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                  <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Leave blank to keep current"/></div>
-                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+                  <!-- type="text" + -webkit-text-security, not type="password": Chrome's own
+                       password manager treats a same-form password + confirm-password pair as
+                       a "set new password" form and silently clears the first field once the
+                       second gains focus (a long-standing Chrome bug, not this app's doing —
+                       verified live: the DOM value is untouched by our own JS the whole time).
+                       Masking visually with CSS instead of type=password sidesteps Chrome's
+                       autofill heuristics entirely, since they key off the input type. -->
+                  <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Leave blank to keep current"/></div>
+                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Repeat password"/></div>
                 </div>`
               :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                  <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="password" autocomplete="new-password" placeholder="Min 8 characters"/></div>
-                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
+                  <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Min 8 characters"/></div>
+                  <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Repeat password"/></div>
                 </div>
                 <div style="font-size:11px;color:#8da2b2">${id?'Add an email and password to grant this client portal access.':'Leave password blank to create client without portal access.'}</div>`}`;
           })()}
@@ -9126,6 +9288,10 @@ function openClientModal(id){
   if(c.logo)_extractLogoColors(c.logo,colors=>_cmApplyLogoColors(colors,id||''));
 }
 async function saveClient(id){
+  // Route-level guard already blocks non-admins from the Clients view (_STAFF_BLOCKED /
+  // _acBlockedViews), but this function itself had no check — callable from the console by
+  // any logged-in session, and it can create real Supabase accounts and set passwords.
+  try{requireAdmin(currentUser);}catch(e){showAlert(e.message);return;}
   const name=document.getElementById('cm-name').value.trim();
   if(!name){showAlert('Client name is required.','Validation');return;}
   const shortCode=document.getElementById('cm-code').value.trim().toUpperCase();
@@ -9154,7 +9320,7 @@ async function saveClient(id){
         const btn=document.getElementById('cm-save-btn');
         if(btn){btn.disabled=true;btn.textContent='Saving…';}
         try{
-          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:id,password:pw})});
+          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:id,password:pw})});
           const result=await resp.json();
           if(!resp.ok)throw new Error(result.error||'Failed to create portal account');
           newAccountResult=result;
@@ -9170,7 +9336,7 @@ async function saveClient(id){
       const btn=document.getElementById('cm-save-btn');
       if(btn){btn.disabled=true;btn.textContent='Saving…';}
       try{
-        const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:c.supabaseUserId,password:pw})});
+        const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({userId:c.supabaseUserId,password:pw})});
         if(!resp.ok){const r=await resp.json();throw new Error(r.error||'Failed to update password');}
       }catch(e){
         showAlert(e.message,'Password Update Failed');
@@ -9216,7 +9382,7 @@ async function saveClient(id){
       const btn=document.getElementById('cm-save-btn');
       if(btn){btn.disabled=true;btn.textContent='Creating…';}
       try{
-        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,clientId:cid,password:pw})});
+        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:cid,password:pw})});
         const result=await resp.json();
         if(!resp.ok)throw new Error(result.error||'Failed to create account');
         DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
@@ -14603,6 +14769,7 @@ function renderArchiveBin(){
 }
 
 function permanentDeleteWorkboard(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks. This CANNOT be undone.','Delete Forever',()=>{
     {const _before=DB.boards;DB.boards=DB.boards.filter(w=>w.id!==id);_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
@@ -14613,6 +14780,7 @@ function permanentDeleteWorkboard(id){
   });
 }
 function permanentDeleteAllArchived(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const ids=new Set((DB.workboards||[]).filter(wb=>wb.archived).map(wb=>wb.id));
   if(!ids.size)return;
   openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks? This CANNOT be undone.`,'Delete All Forever',()=>{
@@ -14625,10 +14793,12 @@ function permanentDeleteAllArchived(){
   });
 }
 function permanentRestoreTask(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const t=DB.tasks.find(x=>x.id===id);
   if(t){t.archived=false;t.updatedAt=new Date().toISOString();saveDB(DB);}
 }
 function permanentDeleteTask(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   openConfirm('Delete Task Forever','Permanently delete this task? This CANNOT be undone.','Delete Forever',()=>{
     const ids=new Set();
     function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
@@ -14641,6 +14811,7 @@ function permanentDeleteTask(id){
   });
 }
 function permanentDeleteAllArchivedTasks(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const ids=new Set(DB.tasks.filter(t=>t.archived).map(t=>t.id));
   if(!ids.size)return;
   openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`,'Delete All Forever',()=>{
@@ -15182,6 +15353,9 @@ function deleteStaff(id){
   });
 }
 async function saveStaff(id){
+  // Same gap as saveClient — route-level guard blocks non-admins from the Staff view, but
+  // this function had no check of its own and can create real Supabase accounts/passwords.
+  try{requireAdmin(currentUser);}catch(e){showAlert(e.message);return;}
   const name=document.getElementById('sm-name').value.trim();
   const email=document.getElementById('sm-email').value.trim();
   if(!name||!email){showAlert('Name and email are required.','Validation');return;}
@@ -15208,7 +15382,7 @@ async function saveStaff(id){
         const btn=document.getElementById('sm-save-btn');
         if(btn){btn.disabled=true;btn.textContent='Saving…';}
         try{
-          const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:_uid,password:pw})});
+          const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({userId:_uid,password:pw})});
           if(!resp.ok){const r=await resp.json().catch(()=>({}));throw new Error(r.error||'Failed to update password');}
         }catch(e){
           showAlert(e.message,'Password Update Failed');
@@ -15233,7 +15407,7 @@ async function saveStaff(id){
     const btn=document.getElementById('sm-save-btn');
     if(btn){btn.disabled=true;btn.textContent='Creating…';}
     try{
-      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role,color,initials,password:pw})});
+      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,role,color,initials,password:pw})});
       const result=await resp.json();
       if(!resp.ok)throw new Error(result.error||'Failed to create account');
       DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
@@ -15267,6 +15441,8 @@ const NOTIF_TYPES={
   client_comment:       {label:'Client Message',        color:'#3b82f6',icon:icon('chat',12)},
   client_comment_reply: {label:'Etcher Reply',          color:'#0d6e4e',icon:'↩'},
   assigned:             {label:'Assigned',              color:'#8b5cf6',icon:'⇒'},
+  client_action_requested:{label:'Sent to Client',      color:'#f59e0b',icon:'⚡'},
+  client_action_completed:{label:'Client Action Done',  color:'#10b981',icon:'✓'},
 };
 
 // Central notification creator — never self-notifies.
@@ -15280,10 +15456,16 @@ function notify(recipientId, taskId, type, message){
   if(_emailTypes.includes(type)){
     const _rec=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
     if(_rec?.email){
-      fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json'},
+      // notify-email now requires caller auth (api/_authAdmin.js requireAuthedCaller) — any
+      // signed-in session, not just admin, since a client session hits this same 'currently_with'
+      // type too (the return-to-owner ping after an action-request response). Reuse the same
+      // bearer-token helper the admin endpoints use; it resolves to {} with no session/offline,
+      // same as every other caller — the endpoint then 500s server-side rather than silently
+      // no-op'ing, matching how invite-user/set-password already behave unconfigured.
+      _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
         body:JSON.stringify({to:_rec.email,recipientName:_rec.name,type,message,
           senderName:currentUser?.name||'Etcher Team',taskId})
-      }).catch(()=>{});
+      }).catch(()=>{}));
     }
   }
 }
@@ -15434,6 +15616,21 @@ function tmBuildAssigneesHtml(ownerId,selectedIds){
 }
 // Owner select changed — rebuild the assignee checkbox list so the new owner
 // can't also appear as a checkbox, while keeping other checked boxes checked.
+// Setting Currently With → Client on an EXISTING task from this (older, dashboard/kanban/list/
+// capacity) modal goes through the same handoff composer as the main table's With cell —
+// revert the visible select and hand off to wsHandoffToClient instead of letting saveTask()
+// commit it silently with no ask attached. A brand-new task being created with With=Client
+// preset is left alone (editingTaskId is null then): there's no task row yet to compose an ask
+// against, and it's a rare/edge path, not the main flow this feature targets.
+function tmCwChanged(sel){
+  if(sel.value!=='client'||!editingTaskId)return;
+  const t=DB.tasks.find(x=>x.id===editingTaskId);
+  if(!t||t.currentlyWith==='client')return; // already with client — nothing to intercept
+  sel.value=t.currentlyWith||'';
+  const tid=editingTaskId;
+  closeTaskModal();
+  wsHandoffToClient(tid);
+}
 function tmOwnerChanged(newOwnerId){
   const box=document.getElementById('tm-assignees-box');
   if(!box)return;
@@ -15501,7 +15698,7 @@ function openTaskModal(id, defaultGroupId){
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Currently With</label><select id="tm-cw" class="form-input" ${canEdit?'':' disabled'}>${currentlyWithOptions}</select></div>
+        <div><label class="form-label">Currently With</label><select id="tm-cw" class="form-input" ${canEdit?'':' disabled'} onchange="tmCwChanged(this)">${currentlyWithOptions}</select></div>
       </div>`:(t.currentlyWithType==='client'||t.status==='waiting-client'?`<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;font-weight:600">⏳ Awaiting your response</div>`:'')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="form-label">Start Date</label><input id="tm-start" type="date" class="form-input" value="${t.startDate||''}" ${canEdit?'':' disabled'}/></div>
@@ -16595,6 +16792,7 @@ function _wsBuildNewTask(opts){
     hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
 }
 function wsSaveInlineTask(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('ws-inline-name')?.value||'').trim();
   if(!name){wsCancelInlineAdd();return;}
   const status=document.getElementById('ws-inline-status')?.value||'todo';
@@ -16671,6 +16869,7 @@ function wsQuickAddOpen(){
 }
 function wsQuickAddClose(){document.getElementById('ws-quickadd-wrap')?.classList.remove('open');}
 function wsQuickAddSave(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('qa-name')?.value||'').trim();
   if(!name){document.getElementById('qa-name')?.focus();return;}
   const groupId=document.getElementById('qa-group')?.value||'';
@@ -16686,6 +16885,7 @@ function wsQuickAddSave(){
   showToast(`Added "${name}"`,'success',5000,{label:'Undo',onClick:`wsQuickAddUndo('${task.id}')`});
 }
 function wsQuickAddUndo(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>t.id!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   saveDB(DB);
   if(currentView==='workspace')renderView('workspace');
@@ -16693,6 +16893,7 @@ function wsQuickAddUndo(id){
 
 // ── Inline add group ──
 function wsSaveInlineGroup(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('ws-inline-group-name')?.value||'').trim();
   if(!name){document.getElementById('ws-inline-group-name')?.focus();return;}
   const wbId=currentWorkboard?.id;
@@ -16737,6 +16938,7 @@ function wsCancelInlineGroup(){wsAddGroupInline=false;renderView('workspace');}
 function wsOpenComms(){wsCommsOpen=true;renderView('workspace');setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);}
 function wsCloseComms(){wsCommsOpen=false;wsCommsFiles=[];wsMeetingNoteEditingId=null;renderView('workspace');}
 async function wsSendComms(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const input=document.getElementById('comms-input');
   const body=(input?.value||'').trim();
   if(!body&&wsCommsFiles.length===0)return;
@@ -16770,6 +16972,7 @@ function wsRefreshFileList(){
   </span>`).join('');
 }
 function wsDeleteComms(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   DB.internalComms=(DB.internalComms||[]).filter(m=>m.id!==id);
   saveDB(DB);renderView('workspace');setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);
 }
@@ -17168,6 +17371,7 @@ function wsMeetingNoteCancel(){
 }
 function wsMeetingNoteToggle(id){wsMeetingNoteExpandedId=wsMeetingNoteExpandedId===id?null:id;renderView('workspace');}
 function wsMeetingNoteSave(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!currentWorkboard)return;
   const title=(document.getElementById('mn-title')?.value||'').trim();
   if(!title){showAlert('Please enter a meeting title.');return;}
@@ -17184,6 +17388,7 @@ function wsMeetingNoteSave(){
 }
 function wsMeetingNoteStartEdit(id){wsMeetingNoteEditingId=id;renderView('workspace');}
 function wsMeetingNoteSaveEdit(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const n=(DB.meetingNotes||[]).find(x=>x.id===id);if(!n)return;
   if(n.authorId!==currentUser.id&&currentUser.role!=='admin')return;
   const title=(document.getElementById('mn-edit-title-'+id)?.value||'').trim();
@@ -17198,6 +17403,7 @@ function wsMeetingNoteSaveEdit(id){
   renderView('workspace');
 }
 function wsMeetingNoteDelete(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const n=(DB.meetingNotes||[]).find(x=>x.id===id);if(!n)return;
   if(n.authorId!==currentUser.id&&currentUser.role!=='admin')return;
   // openConfirm sets the message with textContent, so pass raw text — escaping here
@@ -17305,6 +17511,7 @@ function _wsToggleExpandInPlace(id,expanding){
   }catch(_){return false;}
 }
 function wsToggleDone(id,checked){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   const _was=t.status;
   t.status=checked?'done':'todo';
@@ -17382,6 +17589,7 @@ function updateBulkBar(){
   </div>`;
 }
 function wsBulkSetStatus(status){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!status)return;
   [...wsSelected].forEach(id=>{
     const t=DB.tasks.find(x=>x.id===id);
@@ -17396,6 +17604,7 @@ function wsBulkSetStatus(status){
 // Move the selected tasks into another group. Subitems follow their parent, the same way
 // tpSaveField('groupId') cascades them — otherwise they orphan in the client portal.
 function wsBulkMoveToGroup(groupId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!groupId)return;
   const g=(DB.groups||[]).find(x=>x.id===groupId);
   if(!g)return;
@@ -17413,6 +17622,7 @@ function wsBulkMoveToGroup(groupId){
   showToast(n?`Moved ${n} task${n===1?'':'s'} to “${g.name}”`:'Nothing to move — already in that group','success',3000);
 }
 function wsBulkAssignTo(staffId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!staffId)return;
   [...wsSelected].forEach(id=>{
     const t=DB.tasks.find(x=>x.id===id);
@@ -17421,6 +17631,7 @@ function wsBulkAssignTo(staffId){
   saveDB(DB);renderView('workspace');
 }
 function wsBulkArchiveTasks(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const n=wsSelected.size;
   openConfirm('Archive Tasks',`Archive ${n} task${n!==1?'s':''}? They will be hidden from all views but can be restored.`,'Archive',()=>{
     [...wsSelected].forEach(id=>{
@@ -17431,6 +17642,7 @@ function wsBulkArchiveTasks(){
   });
 }
 function wsBulkDeleteTasks(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const n=wsSelected.size;
   // Same drift as wsDeleteTask: "Delete N tasks?" said nothing about the subitems, comments
   // and time entries going with them, nor that approved entries are kept.
@@ -17489,6 +17701,7 @@ function wsCopyRef(taskId,el){
   else done();
 }
 function wsCycleStatus(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const CYCLE=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','ready-approval','approved-client','change-requested','completed-approved','done','blocked','cancelled'];
   const t=DB.tasks.find(x=>x.id===id);if(!t)return;
   const idx=CYCLE.indexOf(t.status);
@@ -17560,6 +17773,7 @@ function wsStartInlineSubitem(taskId){
   setTimeout(()=>document.getElementById('ws-inline-subtask-input')?.focus(),40);
 }
 function wsSaveInlineSubitem(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const text=(document.getElementById('ws-inline-subtask-input')?.value||'').trim();
   if(!text){document.getElementById('ws-inline-subtask-input')?.focus();return;}
   const parentId=wsInlineAddSubtaskId;
@@ -17708,6 +17922,7 @@ function agSyncColor(select){
 }
 
 function saveNewGroup(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const clientId=boardClientId(currentWorkboard); // groups follow the board
   const name=(document.getElementById('ag-name')?.value||'').trim();
   const color=document.getElementById('ag-color')?.value||'#97bcbd';
@@ -17733,6 +17948,7 @@ function saveNewGroup(){
   renderView('workspace');
 }
 function wsDeleteGroup(groupId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   const taskCount=DB.tasks.filter(t=>t.groupId===groupId).length;
@@ -17769,6 +17985,7 @@ function wsStartRenameGroup(secId){
   input.focus();input.select();
 }
 function wsCommitRenameGroup(groupId,name){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!name)return renderView('workspace');
   const g=DB.groups.find(x=>x.id===groupId);
   if(g&&g.name!==name){g.name=name;g.updatedAt=new Date().toISOString();saveDB(DB);}
@@ -17856,6 +18073,7 @@ function _wsRowDrop(e,targetTaskId){
   _wsApplyRowDrop(draggedId,targetTaskId,before);
 }
 function _wsApplyRowDrop(draggedId,targetTaskId,before){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const dragged=DB.tasks.find(t=>t.id===draggedId);
   const target=DB.tasks.find(t=>t.id===targetTaskId);
   if(!dragged||!target)return;
@@ -17892,6 +18110,7 @@ function _wsNewGroupLeave(e){
   if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('active');
 }
 function _wsNewGroupDrop(e){
+  try{requireInternalUser(currentUser);}catch(err){return;}
   e.preventDefault();e.stopPropagation();
   e.currentTarget.classList.remove('active');
   const id=_wsRowDragId;_wsRowDragId=null;
@@ -17918,6 +18137,7 @@ function _wsNewGroupDrop(e){
     },false);
 }
 function wsDeleteTask(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   // Was a hand-rolled copy of the cascade with hardcoded text that had drifted from what it
   // actually does: it claimed only "all subitems" (even for a task with none) while silently
   // deleting comments and time entries and silently keeping approved ones. Uses the same
@@ -18407,6 +18627,7 @@ function renderSubRow(t,visSub,subCust){
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:12px;cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:#4a5568'}"
           title="${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
+        ${t.clientHidden?`<span title="Hidden from the client portal" style="flex-shrink:0;color:#b45309;display:inline-flex"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>`:''}
       </div>
     </td>
     ${visSub.map(c=>{
@@ -18512,6 +18733,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         <span class="ws-task-name-span" ondblclick="event.stopPropagation();wsInlineEditName('${t.id}',this)"
           style="font-size:${isSubitem?12:13}px;font-weight:${isSubitem?400:500};cursor:text;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${isDone?'text-decoration:line-through;color:#b0bec5':'color:'+(isSubitem?'#4a5568':'#1a2940')}"
           title="Double-click to rename — ${escHtml(t.name)}">${wsHighlightName(t.name)}</span>
+        ${t.clientHidden?`<span title="Hidden from the client portal" style="flex-shrink:0;color:#b45309;display:inline-flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>`:''}
         ${hasChildren&&!isSubitem?`<button onclick="event.stopPropagation();wsToggleExpand('${t.id}')" title="${childTasks.length} subitem${childTasks.length!==1?'s':''} — click to expand" style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#97bcbd'"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span style="font-size:10px;font-weight:700">${childTasks.length}</span></button>`:''}
         ${commentCount?`<button onclick="event.stopPropagation();openTaskPanel('${t.id}','comments')" title="${commentCount} comment${commentCount!==1?'s':''} — click to open"
           style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:2px;color:#97bcbd;padding:2px 3px;border-radius:4px;flex-shrink:0"
@@ -18922,6 +19144,15 @@ function renderTpDetails(task){
         <span class="tp-prop-txt" title="One client per board \u2014 change it on the board">${escHtml(_tpCli?clientDisplayTitle(_tpCli):'\u2014 None \u2014')}</span>
       </div>
     </div>
+    ${_tpCli?`<div class="tp-prop">
+      <span class="tp-prop-lbl">Portal Visibility</span>
+      <div class="tp-prop-val">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568" title="Off by default \u2014 every task is client-visible unless hidden here">
+          <input type="checkbox" ${task.clientHidden?'checked':''} onchange="tpSaveField('clientHidden',this.checked);this.nextElementSibling.textContent=this.checked?'Hidden from client':'Visible to client';this.nextElementSibling.style.color=this.checked?'#b45309':'#4a5568';"/>
+          <span style="color:${task.clientHidden?'#b45309':'#4a5568'}">${task.clientHidden?'Hidden from client':'Visible to client'}</span>
+        </label>
+      </div>
+    </div>`:''}
     <div class="tp-prop">
       <span class="tp-prop-lbl">Progress</span>
       <div class="tp-prop-val tp-prog">
@@ -18967,6 +19198,7 @@ function renderTpDetails(task){
     ${tpSection('props','Properties',props,{peek:peopleNames||dateLabel})}
     ${tpSection('desc','Description',_descEditorHtml('tp-desc',task.description),{peek:descPeek})}
     ${tpSection('comments','Comments',renderTpComments(task.id),{count:cmtCount||''})}
+    ${tpSection('actionreq','Client Action',renderTpActionRequests(task.id),{count:(DB.actionRequests||[]).filter(r=>r.taskId===task.id&&r.status==='open').length||''})}
     ${tpSection('client','Client Thread',renderClientCommsThread(task.id,false),{count:clientMsgCount||''})}
     <div style="margin-top:6px;padding-top:12px;border-top:1px solid #f0f4f8;font-size:10px;color:#a0b4c7">
       Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
@@ -20624,6 +20856,33 @@ function tpReplyToComment(authorName){
   inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
   inp.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
+// History of every "With: Client" ask made on this task — newest first, open one on top
+// (it's always the most recent since a new ask is only ever raised once the last one closed
+// out via §7.3's approve/changes hooks, or is still open).
+function renderTpActionRequests(taskId){
+  const reqs=(DB.actionRequests||[]).filter(r=>r.taskId===taskId).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  if(!reqs.length)return`<div style="text-align:center;padding:14px 0;color:#b0bec5;font-size:13px">No client action requested yet — set "With" to Client to send one.</div>`;
+  const kindLabel=k=>(_AR_KIND_META[k]||{}).label||k;
+  return reqs.map(r=>{
+    const isOpen=r.status==='open';
+    const bg=isOpen?'#fffbeb':(r.status==='done'?'#f0fdf4':'#f8fafb');
+    const border=isOpen?'#fde68a':(r.status==='done'?'#bbf7d0':'#e8eef4');
+    const statusLabel=isOpen?'Open':(r.status==='done'?'Done':'Cancelled');
+    const statusColor=isOpen?'#b45309':(r.status==='done'?'#15803d':'#8da2b2');
+    return`<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${statusColor};background:#fff;border:1px solid ${border};padding:2px 8px;border-radius:10px">${statusLabel}</span>
+        <span style="font-size:11px;color:#8da2b2">${escHtml(kindLabel(r.kind))}</span>
+        <span style="font-size:10px;color:#a0b4c7;margin-left:auto">${r.createdAt?new Date(r.createdAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''}</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#0d1c33;margin-bottom:2px">${escHtml(r.title||'')}</div>
+      <div style="font-size:12.5px;color:#4a5568;line-height:1.6;white-space:pre-wrap">${escHtml(r.body||'')}</div>
+      ${r.dueDate?`<div style="font-size:11px;color:#8da2b2;margin-top:4px">By ${formatDate(r.dueDate)}</div>`:''}
+      ${r.status==='done'&&r.responseNote?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid ${border};font-size:12.5px;color:#15803d"><strong>Client response:</strong> ${escHtml(r.responseNote)}</div>`:''}
+      ${isOpen?`<button onclick="wsCancelActionRequest('${r.id}')" style="margin-top:8px;background:none;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;color:#8da2b2;cursor:pointer;padding:3px 10px">Cancel request</button>`:''}
+    </div>`;
+  }).join('');
+}
 function renderClientCommsThread(taskId,isClientView){
   if(!DB.clientComments)DB.clientComments=[];
   const comments=DB.clientComments.filter(c=>c.taskId===taskId).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
@@ -20692,7 +20951,8 @@ function tpAddClientComment(){
   const now=new Date().toISOString();
   DB.clientComments.push({id:'cc'+uid(),taskId:_tpCurrentTask.id,authorId:currentUser.id,authorName:currentUser.name,authorRole:currentUser.role==='admin'?'admin':'staff',body,createdAt:now,timestamp:now});
   const clientId=_tpCurrentTask.clientId||(DB.groups||[]).find(g=>g.id===_tpCurrentTask.groupId)?.clientId;
-  if(clientId){const clientUser=(DB.users||[]).find(u=>u.role==='client'&&u.clientId===clientId&&u.active!==false);if(clientUser){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:clientUser.id,taskId:_tpCurrentTask.id,type:'client_comment_reply',read:false,message:currentUser.name+' replied on: '+(_tpCurrentTask.name||_tpCurrentTask.title),createdAt:now});updateNotifBadge();}}
+  // _clientRecipientId, not a DB.users lookup — client logins never live in DB.users.
+  if(clientId){const _rcp=_clientRecipientId(clientId);if(_rcp){if(!DB.notifications)DB.notifications=[];DB.notifications.push({id:'n'+uid(),recipientId:_rcp,taskId:_tpCurrentTask.id,type:'client_comment_reply',read:false,message:currentUser.name+' replied on: '+(_tpCurrentTask.name||_tpCurrentTask.title),createdAt:now});updateNotifBadge();}}
   if(inp)inp.value='';
   saveDB(DB);
   _tpRepaintBody();
@@ -20704,6 +20964,15 @@ function cpPostClientComment(taskId){
   const inp=document.getElementById('cp-ccomm-input-'+taskId);
   const body=(inp?inp.value:'').trim();
   if(!body)return;
+  if(_portalServerMode()){
+    _portalAction('postComment',{taskId,body}).then(ok=>{
+      if(!ok)return;
+      if(inp)inp.value='';
+      const commDiv=document.getElementById('cp-ccomm-'+taskId);
+      if(commDiv)commDiv.innerHTML=renderClientCommsThread(taskId,true);
+    });
+    return;
+  }
   if(!DB.clientComments)DB.clientComments=[];
   const now=new Date().toISOString();
   DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body,createdAt:now,timestamp:now});
@@ -21291,6 +21560,7 @@ function _excludedBoardIds(){
   return new Set((DB.workboards||[]).filter(w=>w.excludeFromReports&&!w.archived).map(w=>w.id));
 }
 function wsSetGroupColor(groupId,color){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   g.color=color;
@@ -21299,6 +21569,7 @@ function wsSetGroupColor(groupId,color){
   renderView('workspace');
 }
 function wsSetGroupClient(groupId,clientId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const g=DB.groups.find(x=>x.id===groupId);
   if(!g)return;
   g.clientId=clientId||'';
@@ -21307,6 +21578,7 @@ function wsSetGroupClient(groupId,clientId){
   renderView('workspace');
 }
 function archiveWorkboard(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const _wb=DB.workboards.find(w=>w.id===id);
   if(!_wb)return;
   const restoring=!!_wb.archived;
@@ -21322,6 +21594,7 @@ function archiveWorkboard(id){
 }
 
 function duplicateWorkboard(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const wb=DB.workboards.find(w=>w.id===id);
   if(!wb)return;
   const newId='wb_'+uid();
@@ -21346,6 +21619,7 @@ function duplicateWorkboard(id){
 }
 
 function restoreWorkboard(id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const wb=DB.workboards.find(w=>w.id===id);
   if(wb){wb.archived=false;saveDB(DB);}
   renderSidebarWorkboards();
@@ -21430,7 +21704,12 @@ function wsBuildDropdownHtml(taskId,field){
   } else if(field==='cwith'){
     const cwVal=task.currentlyWith||(task.currentlyWithType==='approver'?'approver':'');
     html=`<div class="ws-cell-dd-item${!cwVal||cwVal==='none'?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','')"><span style="font-size:12px;color:#8da2b2">— None</span></div>`;
-    html+=`<div class="ws-cell-dd-item${cwVal==='client'?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','client')"><span style="width:22px;height:22px;border-radius:50%;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">CL</span><span style="font-size:12px">Client</span></div>`;
+    // Setting With=Client goes through the handoff composer instead of straight to wsCellSave —
+    // it's what lets us write down what we actually need the client to do (and notifies them).
+    // wsCellSave itself is untouched: wsSendClientAction below calls it once the ask is sent, so
+    // every existing side effect (type/userId sync, audit event, re-render) still lives in one
+    // place, and any programmatic caller of wsCellSave keeps working exactly as before.
+    html+=`<div class="ws-cell-dd-item${cwVal==='client'?' ws-dd-active':''}" onclick="wsHandoffToClient('${taskId}')"><span style="width:22px;height:22px;border-radius:50%;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">CL</span><span style="font-size:12px">Client</span></div>`;
     html+=`<div class="ws-cell-dd-item${cwVal==='approver'?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','approver')"><span style="width:22px;height:22px;border-radius:50%;background:#b45309;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">AP</span><span style="font-size:12px">Approver</span></div>`;
     html+=`<div class="ws-dd-sep"></div>`;
     html+=(DB.users||DB.staff).map(s=>`<div class="ws-cell-dd-item${cwVal===s.id?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','${s.id}')">${avatarHtml(s,22)}<span style="font-size:12px">${escHtml(s.name)}</span></div>`).join('');
@@ -21476,16 +21755,21 @@ function wsBuildDropdownHtml(taskId,field){
     const _eyeSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const _dlSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
     const _xSvg=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const _iconBtn=(href,title,svg,dl)=>`<a href="${href}" ${dl?`download="${dl}"`:'target="_blank" rel="noopener noreferrer"'} style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;background:#fff;line-height:1" onmouseover="this.style.color='#fff';this.style.background='${dl?'#0d1c33':'#0d6e4e'}';this.style.borderColor='${dl?'#0d1c33':'#0d6e4e'}'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="${title}">${svg}</a>`;
+    // href escaped: link URLs can come from a client (cpAddActionLink), and a raw `"` here broke
+    // out of the attribute and ran script in the staff session.
+    const _iconBtn=(href,title,svg,dl)=>`<a href="${escHtml(href)}" ${dl?`download="${dl}"`:'target="_blank" rel="noopener noreferrer"'} style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;background:#fff;line-height:1" onmouseover="this.style.color='#fff';this.style.background='${dl?'#0d1c33':'#0d6e4e'}';this.style.borderColor='${dl?'#0d1c33':'#0d6e4e'}'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="${title}">${svg}</a>`;
     const _iconBtnDim=(svg,why)=>`<span title="${why||'This file is not available on this device'}" style="display:inline-flex;align-items:center;justify-content:center;color:#b0bec5;padding:5px 7px;border-radius:5px;border:1px dashed #dde5ee;background:#fafcfe;line-height:1;cursor:not-allowed">${svg}</span>`;
     html=`<div style="min-width:240px">
       ${files.length===0?`<div style="padding:8px 14px;font-size:12px;color:#8da2b2;font-style:italic">No files attached</div>`:''}
       ${files.map(f=>{
         const isLink=f.type==='link';
         const href=isLink?f.url:_getFileData(f.id);
+        // The URL rides in data-url, not inside the onclick JS string: the browser HTML-decodes
+        // an attribute before running it, so escHtml's &#x27; turned back into a real quote and
+        // a crafted link could close the string and run its own code.
         const subLabel=isLink?(f.url||'').replace(/^https?:\/\//i,'').split('/')[0]:`${(f.size/1024).toFixed(0)} KB`;
         return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px">
-          <button onclick="event.stopPropagation();${isLink?`window.open('${escHtml(f.url||'')}','_blank','noopener')`:(href?`wsPreviewFile('${f.id}')`:`showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device')`)}" title="${isLink?'Open link':'Open file'}" style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;background:none;border:none;padding:0;margin:0;text-align:left;cursor:pointer;font-family:inherit" onmouseover="this.querySelector('.ws-file-name').style.color='#0d6e4e'" onmouseout="this.querySelector('.ws-file-name').style.color='#1a2940'">
+          <button data-url="${isLink?escHtml(f.url||''):''}" onclick="event.stopPropagation();${isLink?`window.open(this.dataset.url,'_blank','noopener')`:(href?`wsPreviewFile('${f.id}')`:`showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device')`)}" title="${isLink?'Open link':'Open file'}" style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;background:none;border:none;padding:0;margin:0;text-align:left;cursor:pointer;font-family:inherit" onmouseover="this.querySelector('.ws-file-name').style.color='#0d6e4e'" onmouseout="this.querySelector('.ws-file-name').style.color='#1a2940'">
             ${_fileTypeIcon(f.type,f.name,f.url)}
             <div style="min-width:0">
               <div class="ws-file-name" style="font-size:12px;font-weight:600;color:#1a2940;transition:color 0.12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">${escHtml(f.name)}</div>
@@ -21495,6 +21779,9 @@ function wsBuildDropdownHtml(taskId,field){
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
             ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
             ${!isLink?(href?_iconBtn(href,'Download',_dlSvg,escHtml(f.name)):_iconBtnDim(_dlSvg)):''}
+            ${f.uploadedByClientId
+              ?`<span style="font-size:9px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:2px 6px;border-radius:10px;flex-shrink:0;white-space:nowrap" title="Uploaded by the client">Client</span>`
+              :`<button onclick="event.stopPropagation();wsToggleAttachmentShare('${f.id}')" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${f.internalOnly?'#e2eaf2':'#bbf7d0'};background:${f.internalOnly?'#f4f7fc':'#dcfce7'};color:${f.internalOnly?'#8da2b2':'#15803d'};cursor:pointer;flex-shrink:0;white-space:nowrap;font-family:'Jost',sans-serif" title="${f.internalOnly?'Internal only — click to share with the client':'Visible to the client — click to make internal'}">${f.internalOnly?'Internal':'Shared'}</button>`}
             <button onclick="wsDeleteAttachment('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;cursor:pointer;color:#d0d8e4;padding:3px 5px;border-radius:4px;line-height:1" onmouseover="this.style.color='#dc2626';this.style.borderColor='#fee2e2'" onmouseout="this.style.color='#d0d8e4';this.style.borderColor='transparent'" title="Remove">${_xSvg}</button>
           </div>
         </div>`;}).join('')}
@@ -21623,6 +21910,7 @@ function wsDepsFilterTasks(taskId){
 }
 
 function wsDepsAdd(taskId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const predId=document.getElementById('wsDepsTask')?.value;
   const lag=parseInt(document.getElementById('wsDepsLag')?.value)||0;
   const errEl=document.getElementById('wsDepsErr');
@@ -21637,6 +21925,7 @@ function wsDepsAdd(taskId){
 }
 
 function wsDepsRemove(depId,taskId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   removeDependency(depId);
   const body=document.getElementById('ws-cell-dd-body');
   if(body)body.innerHTML=wsBuildDepsHtml(taskId);
@@ -21720,6 +22009,193 @@ function wsCellSave(taskId,field,value,keepOpen){
   if(!keepOpen)wsCellClose();
   renderView('workspace');
 }
+
+// ═══════════════════════════════════════════════════════════
+// CLIENT ACTION REQUESTS — the "With: Client" handoff composer
+// See .agents/PLAN-client-board-and-actions.md for the full design.
+// ═══════════════════════════════════════════════════════════
+// Every attachment link is now also typed by clients (cpAddActionLink), so it is untrusted
+// input that ends up in staff sessions. Normalise at write time: https:// when no scheme,
+// parse with URL, http(s) only. Rendering escapes it as well (see the attachment dropdown and
+// cpOpenTaskModal) — both layers, because rows written before this existed are not normalised.
+function _normalizeLinkUrl(raw){
+  let s=String(raw||'').trim();
+  if(!s)return null;
+  if(!/^https?:\/\//i.test(s))s='https://'+s;
+  try{
+    const u=new URL(s);
+    if(u.protocol!=='http:'&&u.protocol!=='https:')return null;
+    return u.href;
+  }catch(e){return null;}
+}
+// Who a notification for a client's portal must be addressed to. A production client session
+// is currentUser.id = the Supabase auth uid (clients[].supabaseUserId) — client logins are never
+// added to DB.users, so the old `DB.users.find(u=>u.role==='client'…)` lookup found nobody and
+// every notification meant for a client was silently dropped. Falls back to the client's own id,
+// which is what the legacy local client session used.
+function _clientRecipientId(clientId){
+  const c=(DB.clients||[]).find(x=>x.id===clientId);
+  if(!c||c.portalEnabled===false)return null;
+  return c.supabaseUserId||c.id;
+}
+const _AR_KIND_META={
+  review: {label:'Review',            verb:'review'},
+  approve:{label:'Approve',           verb:'approve'},
+  supply: {label:'Supply information/documents', verb:'supply information for'},
+  decide: {label:'Decide',            verb:'decide on'},
+  info:   {label:'FYI — no action needed', verb:'see'},
+};
+function wsHandoffToClient(taskId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task)return;
+  wsCellClose(); // dismiss the With-cell popover this was opened from, if any
+  const returnToOptions=`<option value="">— No one in particular (notify all staff) —</option>`+
+    (DB.staff||[]).map(s=>`<option value="${s.id}" ${task.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
+  const kindOptions=Object.entries(_AR_KIND_META).map(([k,m])=>`<option value="${k}">${escHtml(m.label)}</option>`).join('');
+  // openGenericModal sets the title via textContent — escaping it here would show "&amp;".
+  openGenericModal(`Send to Client — ${task.name||task.title||'Task'}`,`
+    <div style="display:grid;gap:14px">
+      <div>
+        <label class="form-label">What kind of action</label>
+        <select id="wsh-kind" class="form-input">${kindOptions}</select>
+      </div>
+      <div>
+        <label class="form-label">Title (shown on their board)</label>
+        <input id="wsh-title" class="form-input" placeholder="e.g. Review the draft SWMS" value="${escHtml(task.name||task.title||'')}"/>
+      </div>
+      <div>
+        <label class="form-label">What we need <span style="color:#ef4444">*</span></label>
+        <textarea id="wsh-body" class="form-input" rows="4" placeholder="Describe what you'd like the client to do…"></textarea>
+        <div id="wsh-body-err" style="display:none;color:#dc2626;font-size:11px;margin-top:4px">Please describe what you need — or use "Send without a note".</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">By (optional)</label><input id="wsh-due" type="date" class="form-input"/></div>
+        <div><label class="form-label">Return to when done</label><select id="wsh-return" class="form-input">${returnToOptions}</select></div>
+      </div>
+      <div>
+        <label class="form-label">Document link (SharePoint, etc. — optional)</label>
+        <input id="wsh-link" type="url" class="form-input" placeholder="https://…"/>
+      </div>
+      <div>
+        <label class="form-label">Or attach a file (optional, max 500 KB)</label>
+        <input id="wsh-file" type="file" class="form-input"/>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="wsSendClientAction('${taskId}',true)" class="btn btn-ghost" style="color:#6b8399" title="Sends the handoff even with no note — never gets blocked by this form">Send without a note</button>
+        <button onclick="wsSendClientAction('${taskId}',false)" class="btn" style="background:#0d6e4e;color:#fff;border:none">Send request</button>
+      </div>
+    </div>
+  `,'520px');
+}
+function wsSendClientAction(taskId,skipNoteRequired){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task)return;
+  const kind=document.getElementById('wsh-kind')?.value||'review';
+  const title=(document.getElementById('wsh-title')?.value||'').trim()||task.name||task.title||'Action needed';
+  let body=(document.getElementById('wsh-body')?.value||'').trim();
+  if(!body&&!skipNoteRequired){
+    const errEl=document.getElementById('wsh-body-err');if(errEl)errEl.style.display='block';
+    const ta=document.getElementById('wsh-body');if(ta){ta.style.borderColor='#dc2626';ta.focus();}
+    return;
+  }
+  if(!body)body='Please review and let us know when this is done.';
+  const dueDate=document.getElementById('wsh-due')?.value||null;
+  // '' is a real choice ("no one in particular → notify all staff") — only fall back to the
+  // owner when the select isn't on the page at all. `value||task.ownerId` used to override it.
+  const _rtEl=document.getElementById('wsh-return');
+  const returnToUserId=_rtEl?(_rtEl.value||null):(task.ownerId||null);
+  const rawLink=(document.getElementById('wsh-link')?.value||'').trim();
+  const linkUrl=rawLink?_normalizeLinkUrl(rawLink):null;
+  if(rawLink&&!linkUrl){showAlert('That link is not a valid web address (http or https).','Invalid Link');return;}
+  const fileInput=document.getElementById('wsh-file');
+
+  const clientId=task.clientId||(DB.groups||[]).find(g=>g.id===task.groupId)?.clientId||null;
+  const now=new Date().toISOString();
+  const reqId='ar'+uid();
+  if(!DB.actionRequests)DB.actionRequests=[];
+  // One open ask per task. A new one supersedes whatever is still open — otherwise the client
+  // sees (and answers) the oldest, the newest stays open, and the task flips back to staff
+  // while the portal still says "Action needed".
+  DB.actionRequests.filter(r=>r.taskId===taskId&&r.status==='open').forEach(r=>{
+    r.status='cancelled';r.responseNote='(superseded by a newer request)';r.updatedAt=now;
+  });
+  DB.actionRequests.push({
+    id:reqId,taskId,boardId:_taskBoardId(task),clientId,
+    kind,title,body,dueDate:dueDate||null,
+    askedByUserId:currentUser.id,askedByName:currentUser.name,
+    returnToUserId:returnToUserId||null,
+    status:'open',respondedAt:null,respondedByUserId:null,responseNote:null,
+    createdAt:now,updatedAt:now,
+  });
+
+  // Optional link, tagged to this request so the client sees it as "the documents to review"
+  // rather than lost in the task's general attachment list.
+  if(linkUrl){
+    let url=linkUrl;
+    if(!/^https?:\/\//i.test(url))url='https://'+url;
+    if(!DB.taskFiles)DB.taskFiles=[];
+    DB.taskFiles.push({id:uid(),taskId,name:url.replace(/^https?:\/\//i,'').split('/')[0],size:0,type:'link',url,addedAt:now,internalOnly:false,actionRequestId:reqId});
+  }
+
+  // wsCellSave(...,'currentlyWith','client') is the SAME existing, unchanged path a plain
+  // With-cell click uses — every side effect (type/userId sync, audit event, re-render) stays
+  // in exactly one place. The extra bookkeeping below (the request row's own audit event, the
+  // client notification) is on top of that, not instead of it.
+  const finishHandoff=()=>{
+    // wsCellSave ends with renderView('workspace'). From the older task modal (dashboard,
+    // kanban, list, capacity) that would paint the Main Table over whatever view is showing,
+    // so put the current view back afterwards.
+    const _view=currentView;
+    wsCellSave(taskId,'currentlyWith','client');
+    if(_view!=='workspace')renderView(_view);
+    writeAuditEvent('Task',taskId,'client_action_requested',{},{kind,title,dueDate});
+    const recipient=_clientRecipientId(clientId);
+    if(recipient){
+      if(!DB.notifications)DB.notifications=[];
+      DB.notifications.push({id:'n'+uid(),recipientId:recipient,taskId,type:'client_action_requested',read:false,
+        message:`Etcher needs you to ${(_AR_KIND_META[kind]||_AR_KIND_META.review).verb}: ${title}`,createdAt:now});
+    }
+    // wsCellSave already saved once above; this second save persists the audit event and the
+    // client notification just pushed, which came after it.
+    saveDB(DB);
+    closeGenericModal();
+    if(_tpCurrentTask&&_tpCurrentTask.id===taskId)_tpRepaintBody();
+  };
+
+  if(fileInput&&fileInput.files&&fileInput.files.length){
+    const f=fileInput.files[0];
+    const MAX=500*1024;
+    if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was not attached — the request was still sent.`,'File Too Large');finishHandoff();return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const fid=uid();
+      if(_saveFileData(fid,e.target.result)){
+        DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:now,internalOnly:false,actionRequestId:reqId});
+      }else{
+        showAlert('"'+f.name+'" could not be saved — this browser\'s storage is full. The request was still sent without it.','Storage Full');
+      }
+      finishHandoff();
+    };
+    reader.onerror=()=>{showAlert(`Failed to read "${f.name}" — the request was still sent without it.`,'File Error');finishHandoff();};
+    reader.readAsDataURL(f);
+  }else{
+    finishHandoff();
+  }
+}
+function wsCancelActionRequest(reqId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const r=(DB.actionRequests||[]).find(x=>x.id===reqId);
+  if(!r||r.status!=='open')return;
+  r.status='cancelled';
+  r.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  if(_tpCurrentTask&&_tpCurrentTask.id===r.taskId)_tpRepaintBody();
+  renderView(currentView); // the task panel can be open over views other than the Main Table
+}
+
 // A Timeline range needs two dates. Keep the popover up while only one end is filled in,
 // so the second can be set without reopening the cell; close once the range is complete.
 // Which month the inline calendar is showing, and the first end of a range that is
@@ -21900,6 +22376,7 @@ document.addEventListener('click',()=>document.querySelectorAll('[id^="wr-sm-"]'
 
 // ── Label customisation ──
 function wsLabelColor(fieldType,key,newColor){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.labelConfig)DB.labelConfig={statuses:{},priorities:{}};
   const ns=fieldType==='status'?'statuses':'priorities';
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
@@ -21910,6 +22387,7 @@ function wsLabelColor(fieldType,key,newColor){
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
 }
 function wsLabelRename(fieldType,key,newLabel){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.labelConfig)DB.labelConfig={statuses:{},priorities:{}};
   const ns=fieldType==='status'?'statuses':'priorities';
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
@@ -21918,6 +22396,7 @@ function wsLabelRename(fieldType,key,newLabel){
   saveDB(DB);
 }
 function wsAddCustomLabel(fieldType){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const isSt=fieldType==='status';
   const lbl=document.getElementById(`ws-dd-new-${fieldType}`);
   const clrEl=document.getElementById(`ws-dd-new-${fieldType}-color`);
@@ -21934,6 +22413,7 @@ function wsAddCustomLabel(fieldType){
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
 }
 function wsDeleteCustomLabel(fieldType,key){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const ns=fieldType==='status'?'statuses':'priorities';
   if(DB.labelConfig?.[ns])delete DB.labelConfig[ns][key];
   saveDB(DB);
@@ -21955,6 +22435,7 @@ function wsInlineEditName(taskId,span){
   span.replaceWith(inp);inp.focus();inp.select();
 }
 function wsCommitInlineName(taskId,inp){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const name=inp.value.trim();
   const task=DB.tasks.find(t=>t.id===taskId);
   if(task&&name){task.name=name;task.updatedAt=new Date().toISOString();saveDB(DB);}
@@ -21963,6 +22444,7 @@ function wsCommitInlineName(taskId,inp){
 
 // ── Attachments ──
 function wsAddAttachment(taskId,input){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.taskFiles)DB.taskFiles=[];
   const MAX=500*1024;
   const process=arr=>{
@@ -21978,7 +22460,12 @@ function wsAddAttachment(taskId,input){
         showAlert('"'+f.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
         process(rest);return;
       }
-      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString()});
+      // internalOnly written explicitly (was never set before this feature — every prior
+      // internal upload defaulted to `undefined`, and the portal's `!f.internalOnly` filter
+      // reads that as visible, so every past attachment on a client's task was already client-
+      // visible whether staff meant it or not). New uploads default to internal; share it
+      // deliberately via the toggle next to each file below.
+      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),internalOnly:true});
       saveDB(DB);
       const body=document.getElementById('ws-cell-dd-body');
       if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
@@ -22149,7 +22636,21 @@ function _previewSheet(id,idx){
     b.style.color=on?'#fff':'#4a6572';
   });
 }
+function wsToggleAttachmentShare(fileId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const f=(DB.taskFiles||[]).find(x=>x.id===fileId);
+  if(!f||f.uploadedByClientId)return; // never toggle a client's own upload — they already have it
+  // internalOnly was never written before this feature, so a legacy row reads as `undefined`
+  // (=== not true), which the label below already shows as "Shared" — flipping it here means
+  // "make it internal", matching what the label just told them.
+  f.internalOnly=!(f.internalOnly===true);
+  saveDB(DB);
+  const body=document.getElementById('ws-cell-dd-body');
+  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
+  renderView('workspace');
+}
 function wsDeleteAttachment(attId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   _deleteFileData(attId);
   DB.taskFiles=(DB.taskFiles||[]).filter(f=>f.id!==attId);
   saveDB(DB);
@@ -22163,15 +22664,17 @@ function _wsToggleAttachLink(){
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
 }
 function wsAddAttachmentLink(taskId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const urlEl=document.getElementById('ws-link-url');
   const nameEl=document.getElementById('ws-link-name');
   const rawUrl=(urlEl?urlEl.value:'').trim();
   if(!rawUrl)return;
-  let url=rawUrl;
-  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  const url=_normalizeLinkUrl(rawUrl);
+  if(!url){showAlert('That link is not a valid web address (http or https).','Invalid Link');return;}
   const displayName=(nameEl?nameEl.value.trim():'')||rawUrl.replace(/^https?:\/\//i,'').split('/')[0];
   if(!DB.taskFiles)DB.taskFiles=[];
-  DB.taskFiles.push({id:uid(),taskId,name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString()});
+  // internalOnly:true by default — same reasoning as wsAddAttachment above.
+  DB.taskFiles.push({id:uid(),taskId,name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString(),internalOnly:true});
   saveDB(DB);
   _wsShowLinkInput=false;
   const body=document.getElementById('ws-cell-dd-body');
@@ -22279,6 +22782,7 @@ function _xlWrite(ws,rowIdx,startCol,cells,opts){
   return row;
 }
 function wsMtExport(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   _ensureExcelJs(()=>{
     try{ _wsMtExportNow(); }
     catch(e){ console.error(e); showAlert('The export could not be built: '+e.message,'Export failed'); }
@@ -22403,6 +22907,7 @@ function mtGetCustomVal(taskId,colId){
   return(DB.customColumnValues||[]).find(v=>v.taskId===taskId&&v.columnId===colId)?.value||'';
 }
 function mtSetCustomVal(taskId,colId,value){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.customColumnValues)DB.customColumnValues=[];
   const idx=DB.customColumnValues.findIndex(v=>v.taskId===taskId&&v.columnId===colId);
   // No updatedAt meant the merge (mergeById falls back to "local always wins" with no
@@ -22415,6 +22920,7 @@ function mtSetCustomVal(taskId,colId,value){
   renderView('workspace');
 }
 function mtAddCustomCol(type,name,level){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.customColumns)DB.customColumns=[];
   const boardId=currentWorkboard?.id;if(!boardId)return;
   const existing=mtGetBoardCustomCols();
@@ -22430,12 +22936,14 @@ function mtColAppliesTo(cc,isSubitem){
   return lv==='both'||(isSubitem?lv==='subitem':lv==='parent');
 }
 function mtSetCustomColLevel(colId,level){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);
   if(!cc)return;
   cc.level=level;
   saveDB(DB);renderView('workspace');
 }
 function mtDeleteCustomCol(colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   openConfirm('Delete Column','Delete this column and all its data? This cannot be undone.','Delete',()=>{
     DB.customColumns=(DB.customColumns||[]).filter(c=>c.id!==colId);
     DB.customColumnValues=(DB.customColumnValues||[]).filter(v=>v.columnId!==colId);
@@ -22443,6 +22951,7 @@ function mtDeleteCustomCol(colId){
   });
 }
 function mtRenameCustomCol(colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const col=(DB.customColumns||[]).find(c=>c.id===colId);if(!col)return;
   showPrompt('Rename Column',col.name,val=>{if(val){col.name=val;saveDB(DB);renderView('workspace');}});
 }
@@ -22552,24 +23061,28 @@ function _mtLabelRefresh(cc){
   if(l)l.innerHTML=mtLabelEditorRows(cc);
 }
 function mtSetLabelText(colId,optId,text){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
   const o=(cc.options||[]).find(x=>x.id===optId);if(!o)return;
   o.label=String(text||'').trim()||o.label;
   saveDB(DB);_mtLabelRefresh(cc);
 }
 function mtSetLabelColor(colId,optId,color){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
   const o=(cc.options||[]).find(x=>x.id===optId);if(!o)return;
   o.color=color;
   saveDB(DB);_mtLabelRefresh(cc);
 }
 function mtAddLabelOption(colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
   cc.options=cc.options||[];
   cc.options.push({id:'l'+uid(),label:'New label',color:LABEL_SWATCHES[cc.options.length%LABEL_SWATCHES.length]});
   saveDB(DB);_mtLabelRefresh(cc);
 }
 function mtDeleteLabelOption(colId,optId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
   cc.options=(cc.options||[]).filter(o=>o.id!==optId);
   // Any cell still pointing at the deleted option falls back to empty rather than
@@ -22839,6 +23352,13 @@ function sanitizeTaskForClient(task){
   // Whitelist only — never spread the raw task object.
   // clientApproval is a snapshot: only status/note/at — no internal fields.
   const ca=task.clientApproval;
+  // The open action request, sanitised the same way — never the whole DB.actionRequests row,
+  // which carries askedByUserId and returnToUserId (both internal staff ids).
+  // Only while the task is actually with the client: if staff take it back (With → someone
+  // else) without cancelling the ask, the client must not still see "Action needed" and be
+  // able to Mark Done — that would flip With away from whoever staff just gave it to.
+  const _ar=task.currentlyWithType==='client'?(DB.actionRequests||[]).find(r=>r.taskId===task.id&&r.status==='open'):null;
+  const _grp=(DB.groups||[]).find(g=>g.id===task.groupId);
   return{
     id:              task.id,
     title:           task.title||task.name||'Untitled',
@@ -22854,6 +23374,10 @@ function sanitizeTaskForClient(task){
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
     attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
     parentId:        task.parentTaskId||null,
+    // Board-view-only additions — still whitelisted one field at a time, never the raw task.
+    boardId:         _taskBoardId(task),
+    groupName:       _grp?.name||null,
+    openRequest:     _ar?{id:_ar.id,kind:_ar.kind,title:_ar.title,body:_ar.body,dueDate:_ar.dueDate||null,createdAt:_ar.createdAt}:null,
   };
 }
 
@@ -22865,7 +23389,7 @@ function getClientTasks(clientId){
   // Tasks may have clientId directly (legacy/demo) or only via their group's clientId (normal creation path).
   const clientGroupIds=new Set((DB.groups||[]).filter(g=>g.clientId===clientId).map(g=>g.id));
   return DB.tasks
-    .filter(t=>!t.archived&&(t.clientId===clientId||clientGroupIds.has(t.groupId)))
+    .filter(t=>!t.archived&&!_cpTaskHidden(t)&&(t.clientId===clientId||clientGroupIds.has(t.groupId)))
     .map(sanitizeTaskForClient);
 }
 
@@ -22881,12 +23405,16 @@ function updateCpNotifBadge(){
 function renderCpNotifications(){
   const notifs=[...(DB.notifications||[]).filter(n=>n.recipientId===currentUser.id)]
     .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-  // Mark all as read when viewing
+  // Mark all as read when viewing. Server mode: the local flip is just for this render (the
+  // slice is never saved); the server records it, and only when there was something unread.
+  const _hadUnread=notifs.some(n=>!n.read);
   notifs.forEach(n=>n.read=true);
-  saveDB(DB);updateCpNotifBadge();
+  if(_portalServerMode()){if(_hadUnread)_portalAction('markNotificationsRead',{},{silent:true});}
+  else saveDB(DB);
+  updateCpNotifBadge();
   if(!notifs.length)return`<div style="text-align:center;padding:60px 0;color:#8da2b2;font-size:14px">No notifications yet</div>`;
-  const typeIcon={work_request:'⊞',client_comment_reply:'↩',client_comment:icon('chat',12),client_approved:'✓',client_changes_requested:'↩'};
-  const typeColor={work_request:'#f59e0b',client_comment_reply:'#0d6e4e',client_comment:'#3b82f6',client_approved:'#10b981',client_changes_requested:'#f59e0b'};
+  const typeIcon={work_request:'⊞',client_comment_reply:'↩',client_comment:icon('chat',12),client_approved:'✓',client_changes_requested:'↩',client_action_requested:'⚡'};
+  const typeColor={work_request:'#f59e0b',client_comment_reply:'#0d6e4e',client_comment:'#3b82f6',client_approved:'#10b981',client_changes_requested:'#f59e0b',client_action_requested:'#b45309'};
   return`<div style="display:grid;gap:10px;max-width:700px">
     ${notifs.map(n=>{
       const icon=typeIcon[n.type]||'●';
@@ -22932,6 +23460,7 @@ function cpNavigate(section){
   if(!body)return;
   if(section==='schedule')          body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
   else if(section==='tasks')        body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  else if(section==='workboard')    body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
   else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
   else if(section==='notifications')body.innerHTML=renderCpNotifications();
   else                              body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
@@ -23234,7 +23763,86 @@ function cpPriorityMeta(p){
 }
 
 let _cpTaskSearch='';
+let _cpShowLinkInput=false; // toggled per open task modal — reset when a different task opens
 function cpSetTaskSearch(q){_cpTaskSearch=q.toLowerCase();const el=document.getElementById('cp-tasks-body');if(!el)return;const all=el.querySelectorAll('[data-task-title]');all.forEach(r=>{const match=!_cpTaskSearch||r.dataset.taskTitle.toLowerCase().includes(_cpTaskSearch);r.style.display=match?'':'none';});el.querySelectorAll('[data-section-wrap]').forEach(sec=>{const visible=[...sec.querySelectorAll('[data-task-title]')].some(r=>r.style.display!=='none');sec.style.display=visible?'':'none';});}
+
+// ── Board tab — a purpose-built, read-only, structural view of the client's boards. ──
+// Deliberately NOT a reuse of the internal renderWorkspace/renderWsRow: that renderer carries
+// the Hours column, opens the internal task panel, and shows the internal comment badge, so
+// gating it for clients would mean ~30 conditional call sites that must all keep working for
+// staff too — one missed gate and the internal markup leaks straight to the browser. Building
+// this separately means a missed gate here leaks nothing, because none of that internal markup
+// is ever generated in the first place. Takes only sanitised tasks — resolves nothing from
+// DB.staff, so there is no staff name or avatar anywhere in this view to leak by accident.
+function renderCpBoard(clientId,tasks,boards,boardIdx){
+  if(!boards.length)return`<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No boards yet.</div>`;
+  const subMap=new Map();
+  tasks.filter(t=>t.parentId).forEach(t=>{if(!subMap.has(t.parentId))subMap.set(t.parentId,[]);subMap.get(t.parentId).push(t);});
+
+  const boardSections=boards.map(b=>{
+    const ids=boardIdx.get(b.id)||new Set();
+    const topTasks=tasks.filter(t=>ids.has(t.id)&&!t.parentId);
+    if(!topTasks.length)return'';
+    // Group by groupName — tasks with no resolvable group name fall into one "Other" bucket.
+    const byGroup=new Map();
+    topTasks.forEach(t=>{
+      const key=t.groupName||'Other';
+      if(!byGroup.has(key))byGroup.set(key,[]);
+      byGroup.get(key).push(t);
+    });
+    const groupBlocks=[...byGroup.entries()].map(([groupName,gTasks])=>`<div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;padding-left:2px">${escHtml(groupName)}</div>
+        ${gTasks.map(t=>cpBoardRow(t,subMap.get(t.id)||[])).join('')}
+      </div>`).join('');
+    return`<div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="width:10px;height:10px;border-radius:3px;background:${b.color||'#94a3b8'};flex-shrink:0"></span>
+        <span style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${escHtml(b.name)}</span>
+      </div>
+      ${groupBlocks}
+    </div>`;
+  }).join('');
+
+  return boardSections||`<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No tasks on your boards yet.</div>`;
+}
+function cpBoardRow(t,subs){
+  const bs=cpBroadStatus(t.status);
+  const dateStr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:'—';
+  // "With" is deliberately just You/Etcher, never a staff name — sanitizeTaskForClient never
+  // sends currentlyWithUserId to the client in the first place, so there is nothing here that
+  // could resolve into one even by mistake.
+  // A finished task isn't "with" anyone — seed/legacy data can leave With=Client on done work.
+  const finished=['done','completed','approved-client','completed-approved','cancelled'].includes(t.status);
+  const withLabel=finished?'—':t.awaitingClient?'You':'Etcher';
+  const withColor=!finished&&t.awaitingClient?'#7c3aed':'#8da2b2';
+  return`<div class="cp-task-list-row" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')" style="padding:9px 14px 9px 0;min-height:unset;align-items:center;flex-wrap:wrap">
+    <div style="width:4px;min-height:36px;border-radius:2px;flex-shrink:0;align-self:stretch;background:${t.openRequest?'#f59e0b':bs.color}"></div>
+    <div style="flex:1;min-width:160px;padding-left:12px;display:flex;align-items:center;gap:10px;overflow:hidden">
+      <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.title)}</span>
+      ${subs.length?`<span style="font-size:10px;color:#97bcbd;white-space:nowrap;background:#f0f4f8;border-radius:10px;padding:2px 7px">▸ ${subs.length}</span>`:''}
+      ${t.openRequest?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:20px;white-space:nowrap">⚡ Action needed</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;margin-left:8px">
+      <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
+      <span style="font-size:11px;color:#b0bec5;white-space:nowrap">${dateStr}</span>
+      <span style="display:flex;align-items:center;gap:5px">
+        <span style="width:20px;height:6px;border-radius:3px;background:#e8eef4;overflow:hidden;display:inline-block"><span style="display:block;height:100%;width:${t.percentComplete}%;background:${bs.color}"></span></span>
+        <span style="font-size:10px;color:#8da2b2">${t.percentComplete}%</span>
+      </span>
+      <span style="font-size:11px;font-weight:600;color:${withColor};white-space:nowrap">${withLabel}</span>
+    </div>
+  </div>`;
+}
+
+// Whether the portal should offer Approve / Request Changes for a task that's with the client.
+// awaitingClient is true for ANY With=Client task, but an open action request that asks the
+// client to review, supply information or decide is not an approval — offering Approve there
+// both competes with the ask's own Mark Done and, if clicked, moves the task's status to
+// approved-client, which is exactly the Etcher-owned field a plain ask must not touch.
+// A genuine approval status (ready-approval) always keeps the approval buttons.
+function _cpIsApprovalAsk(t){
+  return t.status==='ready-approval'||!t.openRequest||t.openRequest.kind==='approve';
+}
 
 // ── Tasks tab ────────────────────────────────────────────
 function renderCpTasks(clientId,tasks,boards,boardIdx){
@@ -23276,7 +23884,9 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
         ${hasChanges&&!showActions?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">↩ Changes Sent</span>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px" onclick="event.stopPropagation()">
-        ${showActions&&!hasApproved?`
+        ${showActions&&!hasApproved&&!_cpIsApprovalAsk(t)?`
+          <button onclick="event.stopPropagation();cpOpenTaskModal('${t.id}')" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">⚡ View request</button>
+        `:showActions&&!hasApproved?`
           <button onclick="event.stopPropagation();cpApproveTask('${t.id}')" style="font-size:11px;font-weight:700;color:#fff;background:#0d6e4e;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#0d6e4e'">✓ Approve</button>
           <button onclick="event.stopPropagation();cpOpenChangesModal('${t.id}')" style="font-size:11px;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">↩ Request Review</button>
         `:`<span class="cp-badge" style="background:${bs.bg};color:${bs.color};white-space:nowrap">${bs.label}</span>`}
@@ -23314,7 +23924,9 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
   </div>`;
 
   const sections=[
-    mkSection('Awaiting Your Approval',awaiting,{amber:true,actions:true}),
+    // "Waiting on You", not "Awaiting Your Approval" — this bucket now also holds action
+    // requests that aren't approvals (review, supply information, decide).
+    mkSection('Waiting on You',awaiting,{amber:true,actions:true}),
     mkSection('Awaiting Etcher Response',awaitingEtcher,{etcher:true}),
     mkSection('Under Review',underReview,{}),
     mkSection('In Scope',inScope,{}),
@@ -23347,12 +23959,30 @@ function cpOpenChangesModal(taskId){
   document.getElementById('generic-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('cp-changes-notes')?.focus(),50);
 }
+// Closes any open action request on a task — used by every client-side path that already
+// flips the task back to staff (approve, request changes) so an ask never sits "open" after
+// the task has visibly moved on without it. An open request left behind would otherwise fight
+// _reconcileActionRequests, which re-flips With back to Client based only on request status.
+function _closeOpenActionRequest(taskId,reason){
+  const req=(DB.actionRequests||[]).find(r=>r.taskId===taskId&&r.status==='open');
+  if(!req)return;
+  const now=new Date().toISOString();
+  req.status='done';
+  req.respondedAt=now;
+  req.respondedByUserId=currentUser?.id||null;
+  req.responseNote=reason||null;
+  req.updatedAt=now;
+}
 function cpSubmitChangesRequest(taskId){
   if(currentUser?.role!=='client')return;
   const notes=(document.getElementById('cp-changes-notes')?.value||'').trim();
   if(!notes){showAlert('Please describe the changes needed.','Required');return;}
   const task=DB.tasks.find(x=>x.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
+  if(_portalServerMode()){
+    _portalAction('requestChanges',{taskId,note:notes}).then(ok=>{if(ok){closeGenericModal();cpNavigate(cpSection);}});
+    return;
+  }
   const now=new Date().toISOString();
   task.clientApproval={status:'changes-requested',note:notes,at:now};
   const _wasCR=task.status;
@@ -23366,6 +23996,7 @@ function cpSubmitChangesRequest(taskId){
   // Post as a client comment so the team sees it
   if(!DB.clientComments)DB.clientComments=[];
   DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',body:'**Changes requested:**\n'+notes,createdAt:now,timestamp:now});
+  _closeOpenActionRequest(taskId,'(closed — client requested changes)');
   _notifyAllStaff('client_changes_requested',`Changes requested on "${task.name||task.title||'task'}" by ${(DB.clients.find(c=>c.id===currentUser.clientId)||{}).name||'Client'}: ${notes.slice(0,80)}`,task.id);
   saveDB(DB);
   closeGenericModal();
@@ -23378,6 +24009,7 @@ function cpOpenTaskModal(taskId){
   const rawTask=DB.tasks.find(t=>t.id===taskId);
   if(!rawTask||!canViewTask(currentUser,rawTask))return;
   const t=sanitizeTaskForClient(rawTask);
+  const hasOpenRequest=!!t.openRequest;
   const bs=cpBroadStatus(t.status);
   const todayStr=toDateStr(new Date());
   const overdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&t.status!=='completed';
@@ -23390,9 +24022,10 @@ function cpOpenTaskModal(taskId){
   const rawSubs=DB.tasks.filter(s=>s.parentTaskId===taskId&&!s.archived&&canViewTask(currentUser,s));
   const subs=rawSubs.map(sanitizeTaskForClient);
 
-  // Approval / changes section
+  // Approval / changes section — not for a non-approval action request (see _cpIsApprovalAsk);
+  // that task gets the actionSection's Mark Done instead.
   let approvalSection='';
-  if(t.awaitingClient&&t.clientApproval?.status!=='approved'){
+  if(t.awaitingClient&&t.clientApproval?.status!=='approved'&&_cpIsApprovalAsk(t)){
     approvalSection=`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
       <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">⚡ Action Required — Awaiting Your Approval</div>
       <p style="font-size:13px;color:#6b8399;margin-bottom:18px;line-height:1.6">${t.approvalType?`We are requesting your approval for: <strong>${escHtml({scope:'Scope',quote:'Quote',proposal:'Proposal',work:'Work',final:'Final Delivery',change:'Change',other:'Other'}[t.approvalType]||t.approvalType)}</strong>. `:''}Please review and either approve or let us know what changes are needed.</p>
@@ -23437,20 +24070,55 @@ function cpOpenTaskModal(taskId){
     </div>`;
   }
 
-  // Attachments section
+  // Attachments section. Gated on awaitingClient OR an open action request — a plain approval
+  // ask (awaitingClient) already let the client upload; an open action request (e.g. "supply
+  // information") is exactly the same kind of moment and must not be blocked just because it
+  // didn't happen to also be an approval.
+  const canAttach=t.awaitingClient||hasOpenRequest;
   const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
     <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
     ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
-      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${t.awaitingClient?12:0}px">${attachments.map(f=>{const fd=_getFileData(f.id);return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?`<a href="${fd}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a><a href="${fd}" download="${escHtml(f.name)}" style="display:inline-flex;color:#97bcbd;text-decoration:none;margin-left:3px" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>`:''}</div></div>`;}).join('')}</div>`}
-    ${t.awaitingClient?`<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-top:${attachments.length?8:0}px">
-      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        Upload document
-      </span>
-      <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" style="display:none"/>
-    </label>
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:_getFileData(f.id);const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a><a href="${escHtml(fd)}" download="${escHtml(f.name)}" style="display:inline-flex;color:#97bcbd;text-decoration:none;margin-left:3px" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>`):''}</div></div>`;}).join('')}</div>`}
+    ${canAttach?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:${attachments.length?8:0}px">
+      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          Upload document
+        </span>
+        <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" style="display:none"/>
+      </label>
+      <button onclick="_cpToggleLinkInput('${taskId}')" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${_cpShowLinkInput?'#0078d4':'#97bcbd'};padding:5px 13px;border:1.5px ${_cpShowLinkInput?'solid #0078d4':'dashed #c8d4e0'};border-radius:6px;background:${_cpShowLinkInput?'#deecf9':'transparent'};cursor:pointer;transition:all 0.12s">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        SharePoint / link
+      </button>
+    </div>
+    ${_cpShowLinkInput?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;max-width:340px">
+      <input id="cp-link-url-${taskId}" type="url" placeholder="SharePoint or document URL" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 9px;border:1px solid #c8d4e0;border-radius:5px;outline:none;font-family:'Jost',sans-serif;color:#0d1c33" onkeydown="if(event.key==='Enter')cpAddActionLink('${taskId}')"/>
+      <button onclick="cpAddActionLink('${taskId}')" style="align-self:flex-start;font-size:12px;font-weight:600;padding:5px 14px;background:#0078d4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#0062ad'" onmouseout="this.style.background='#0078d4'">Add link</button>
+    </div>`:''}
     <div style="font-size:10px;color:#b0bec5;margin-top:5px">Max 1 MB per file · Visible to Etcher team</div>`:''}
   </div>`;
+
+  // What we actually asked the client to do — separate from, and shown above, the generic
+  // "awaiting approval" banner below, since a task can carry an open action request without
+  // being an approval at all (e.g. "supply information").
+  const actionSection=hasOpenRequest?`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#b45309;background:#fef3c7;padding:3px 10px;border-radius:10px">${escHtml((_AR_KIND_META[t.openRequest.kind]||{}).label||'Review')}</span>
+        <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">📌 ${escHtml(t.openRequest.title)}</div>
+      </div>
+      <p style="font-size:13px;color:#6b8399;margin-bottom:${t.openRequest.dueDate?4:14}px;line-height:1.6;white-space:pre-wrap">${escHtml(t.openRequest.body)}</p>
+      ${t.openRequest.dueDate?`<div style="font-size:11px;font-weight:600;color:#b45309;margin-bottom:14px">By ${formatDate(t.openRequest.dueDate)}</div>`:''}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:20px">
+        <button class="cp-action-btn approve" onclick="cpRespondToAction('${t.openRequest.id}','${taskId}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Mark Done
+        </button>
+        <button onclick="document.getElementById('cp-ccomm-input-${taskId}')?.focus();document.getElementById('cp-ccomm-input-${taskId}')?.scrollIntoView({behavior:'smooth',block:'center'})" class="cp-action-btn changes">
+          Ask a Question
+        </button>
+      </div>
+    </div>`:'';
 
   const body=`
   <div>
@@ -23461,7 +24129,7 @@ function cpOpenTaskModal(taskId){
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${drParts.length||t.percentComplete>0?18:0}px">
         <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
-        ${t.awaitingClient&&t.clientApproval?.status!=='approved'?`<span class="cp-badge" style="background:#fef3c7;color:#b45309;font-weight:700">⚡ Approval Needed</span>`:''}
+        ${t.awaitingClient&&t.clientApproval?.status!=='approved'?`<span class="cp-badge" style="background:#fef3c7;color:#b45309;font-weight:700">${_cpIsApprovalAsk(t)?'⚡ Approval Needed':'⚡ Action Needed'}</span>`:''}
         ${t.priority&&t.priority!=='med'&&t.priority!=='medium'?`<span class="cp-badge" style="background:${prioMeta.bg};color:${prioMeta.color}">${prioMeta.label} Priority</span>`:''}
         ${overdue?`<span class="cp-badge" style="background:#fee2e2;color:#b91c1c">Overdue</span>`:''}
       </div>
@@ -23471,6 +24139,7 @@ function cpOpenTaskModal(taskId){
       </div>`:''}
       ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;white-space:pre-wrap;word-break:break-word">${escHtml(t.description)}</div>`:''}
     </div>
+    ${actionSection}
     ${subs.length?`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
       <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Subtasks (${subs.length})</div>
       ${subs.map(s=>{const sbs=cpBroadStatus(s.status);const pct=s.percentComplete;return`<div onclick="cpOpenTaskModal('${s.id}')" role="button" tabindex="0" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${s.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;background:#f8fafb;border:1px solid #e8eef4;transition:background 0.12s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#f8fafb'">
@@ -23498,6 +24167,110 @@ function cpOpenTaskModal(taskId){
 
 function cpCloseTaskModal(){
   document.getElementById('cp-task-modal')?.classList.add('hidden');
+  _cpShowLinkInput=false;
+}
+function _cpToggleLinkInput(taskId){
+  _cpShowLinkInput=!_cpShowLinkInput;
+  cpOpenTaskModal(taskId); // whole-modal re-render, same pattern the rest of the app uses
+}
+function cpAddActionLink(taskId){
+  if(currentUser?.role!=='client')return;
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!rawTask||!canViewTask(currentUser,rawTask))return;
+  const t=sanitizeTaskForClient(rawTask);
+  if(!t.awaitingClient&&!t.openRequest)return; // same gate as the upload button above
+  const urlEl=document.getElementById('cp-link-url-'+taskId);
+  const rawUrl=(urlEl?urlEl.value:'').trim();
+  if(!rawUrl)return;
+  const url=_normalizeLinkUrl(rawUrl);
+  if(!url){showAlert('That link is not a valid web address (http or https).','Invalid Link');return;}
+  if(_portalServerMode()){
+    _portalAction('addLink',{taskId,url}).then(ok=>{if(ok){_cpShowLinkInput=false;cpOpenTaskModal(taskId);}});
+    return;
+  }
+  if(!DB.taskFiles)DB.taskFiles=[];
+  DB.taskFiles.push({
+    id:uid(),taskId,name:url.replace(/^https?:\/\//i,'').split('/')[0],size:0,type:'link',url,
+    addedAt:new Date().toISOString(),internalOnly:false,uploadedByClientId:currentUser.clientId,
+    ...(t.openRequest?{actionRequestId:t.openRequest.id}:{}),
+  });
+  _cpNotifyStaffOnUpload(rawTask,[url.replace(/^https?:\/\//i,'').split('/')[0]]);
+  saveDB(DB);
+  _cpShowLinkInput=false;
+  cpOpenTaskModal(taskId);
+}
+function cpRespondToAction(requestId,taskId){
+  if(currentUser?.role!=='client')return;
+  const req=(DB.actionRequests||[]).find(r=>r.id===requestId);
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!req||!rawTask||req.taskId!==taskId||req.status!=='open')return;
+  // Same rule as sanitizeTaskForClient: a request only counts while the task is with them.
+  if(rawTask.currentlyWithType!=='client'){showAlert('Etcher has already picked this task back up — no action is needed from you right now.','Already Updated');cpCloseTaskModal();_cpRefreshCurrentSection();return;}
+  if(!canViewTask(currentUser,rawTask))return;
+  try{assertClientCanAccessClientData(currentUser,req.clientId);}catch(e){return;}
+  document.getElementById('generic-modal-title').textContent='Mark as Done';
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#92400e">
+        <strong style="font-family:'Jost',sans-serif">${escHtml(req.title||'')}</strong>
+      </div>
+      <div>
+        <label class="form-label">Anything Etcher should know? (optional)</label>
+        <textarea id="cp-ar-note" class="form-input" rows="3" placeholder="Add a note for the team…" style="resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="cpSendActionResponse('${requestId}','${taskId}')" class="btn" style="background:#0d6e4e;color:#fff;border:none">Confirm Done</button>
+      </div>
+    </div>`;
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+function cpSendActionResponse(requestId,taskId){
+  if(currentUser?.role!=='client')return;
+  const req=(DB.actionRequests||[]).find(r=>r.id===requestId);
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!req||!rawTask||req.taskId!==taskId||req.status!=='open')return;
+  // Same rule as sanitizeTaskForClient: a request only counts while the task is with them.
+  if(rawTask.currentlyWithType!=='client'){showAlert('Etcher has already picked this task back up — no action is needed from you right now.','Already Updated');cpCloseTaskModal();_cpRefreshCurrentSection();return;}
+  if(!canViewTask(currentUser,rawTask))return;
+  try{assertClientCanAccessClientData(currentUser,req.clientId);}catch(e){return;}
+  const note=(document.getElementById('cp-ar-note')?.value||'').trim();
+  if(_portalServerMode()){
+    _portalAction('markActionDone',{requestId,taskId,note}).then(ok=>{
+      if(!ok)return;
+      closeGenericModal();cpCloseTaskModal();cpOpenTaskModal(taskId);_cpRefreshCurrentSection();
+    });
+    return;
+  }
+  const now=new Date().toISOString();
+  req.status='done';
+  req.respondedAt=now;
+  req.respondedByUserId=currentUser.id;
+  req.responseNote=note||null;
+  req.updatedAt=now;
+  // Flip the task back to whoever should pick it up — deliberately does NOT touch task.status:
+  // "the client did the thing we asked" says nothing about whether the task is now in
+  // progress, in review or done. That stays Etcher's call, made from the notification below.
+  const returnTo=req.returnToUserId||rawTask.ownerId||null;
+  rawTask.currentlyWithType='staff';
+  rawTask.currentlyWith=returnTo||'';
+  rawTask.currentlyWithUserId=returnTo||null;
+  rawTask.awaitingClient=false;
+  rawTask.updatedAt=now;
+  if(!DB.clientComments)DB.clientComments=[];
+  DB.clientComments.push({id:'cc'+uid(),taskId,authorId:currentUser.id,authorName:currentUser.name,authorRole:'client',
+    body:`**Marked done:** ${req.title}${note?`\n\n${note}`:''}`,createdAt:now,timestamp:now});
+  if(returnTo){
+    notify(returnTo,taskId,'currently_with',`Client marked "${req.title}" done on: ${rawTask.name||rawTask.title}`);
+  }else{
+    _notifyAllStaff('client_action_completed',`Client marked "${req.title}" done on: ${rawTask.name||rawTask.title}`,taskId);
+  }
+  writeAuditEvent('Task',taskId,'client_action_completed',{},{requestId,note});
+  saveDB(DB);
+  closeGenericModal();
+  cpCloseTaskModal();
+  cpOpenTaskModal(taskId);
+  _cpRefreshCurrentSection();
 }
 
 function cpApproveTask(taskId){
@@ -23505,6 +24278,7 @@ function cpApproveTask(taskId){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
   if(!confirm(`Approve "${task.name||task.title||'this task'}"? This confirms the work is complete to your satisfaction.`))return;
+  if(_portalServerMode()){_portalAction('approve',{taskId}).then(ok=>{if(ok)_cpAfterApprove();});return;}
   task.clientApproval={status:'approved',note:null,at:new Date().toISOString(),approvedBy:currentUser.name||'Client'};
   // Final delivery approvals go straight to completed-approved; all others go to approved-client (Incoming Approvals)
   const isFinalDelivery=task.approvalType==='final';
@@ -23516,8 +24290,12 @@ function cpApproveTask(taskId){
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
   task.updatedAt=new Date().toISOString();
+  _closeOpenActionRequest(taskId,'(closed — client approved)');
   _notifyAllStaff('client_approved',`Client approved: "${task.name||task.title||'task'}" — ${(DB.clients.find(c=>c.id===currentUser.clientId)||{}).name||'Client'}`,task.id);
   saveDB(DB);
+  _cpAfterApprove();
+}
+function _cpAfterApprove(){
   cpCloseTaskModal();
   // Show confirmation message
   const portal=document.getElementById('client-portal');
@@ -23542,6 +24320,7 @@ function cpSubmitChanges(taskId){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task||!canViewTask(currentUser,task))return;
   if(!task.awaitingClient&&task.currentlyWithType!=='client'&&task.status!=='ready-approval'&&task.status!=='waiting-client')return;
+  if(_portalServerMode()){_portalAction('requestChanges',{taskId,note}).then(ok=>{if(ok)_cpAfterChangesRequested();});return;}
   task.clientApproval={status:'changes-requested',note,at:new Date().toISOString()};
   const _wasCR=task.status;
   task.status='change-requested';
@@ -23550,8 +24329,12 @@ function cpSubmitChanges(taskId){
   task.currentlyWith=task.ownerId||'';
   task.currentlyWithUserId=task.ownerId||null;
   task.updatedAt=new Date().toISOString();
+  _closeOpenActionRequest(taskId,'(closed — client requested changes)');
   if(task.ownerId)notify(task.ownerId,task.id,'client_changes_requested',`Client requested changes on: ${task.name||task.title}`);
   saveDB(DB);
+  _cpAfterChangesRequested();
+}
+function _cpAfterChangesRequested(){
   cpCloseTaskModal();
   const msg=document.createElement('div');
   msg.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a2940;color:#fff;font-size:13px;font-weight:600;padding:12px 24px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.18);z-index:99999;pointer-events:none;font-family:Lato,sans-serif;text-align:center;max-width:400px;line-height:1.5';
@@ -23561,8 +24344,27 @@ function cpSubmitChanges(taskId){
   _cpRefreshCurrentSection();
 }
 
+// Shared by cpUploadToTask and cpAddActionLink — a client adding a document used to notify
+// no one; staff only ever found out by opening the task. Reuses the 'client_comment' notif
+// type (already wired into NOTIF_TYPES as "Client Message") rather than inventing a new one
+// for what is, to the recipient, the same kind of "the client did something on this task" ping.
+function _cpNotifyStaffOnUpload(rawTask,fileNames){
+  if(!rawTask||!fileNames.length)return;
+  const clientName=(DB.clients.find(c=>c.id===currentUser.clientId)||{}).name||'Client';
+  const label=fileNames.length===1?`"${fileNames[0]}"`:`${fileNames.length} files`;
+  const msg=`${clientName} uploaded ${label} on: ${rawTask.name||rawTask.title||'a task'}`;
+  const notified=new Set();
+  const pushN=rid=>{if(rid&&!notified.has(rid)){notified.add(rid);notify(rid,rawTask.id,'client_comment',msg);}};
+  pushN(rawTask.ownerId);
+  pushN(rawTask.currentlyWithUserId);
+  if(!notified.size)_notifyAllStaff('client_comment',msg,rawTask.id);
+  updateNotifBadge();
+}
 function cpUploadToTask(taskId,input){
   if(currentUser?.role!=='client')return;
+  const rawTask=DB.tasks.find(t=>t.id===taskId);
+  if(!rawTask||!canViewTask(currentUser,rawTask))return;
+  const _openAr=(DB.actionRequests||[]).find(r=>r.taskId===taskId&&r.status==='open');
   const files=Array.from(input.files||[]);
   if(!files.length)return;
   const blockedFiles=files.filter(f=>_BLOCKED_MIME.has(f.type)||f.name.match(/\.(svg|html?|xml)$/i));
@@ -23573,18 +24375,31 @@ function cpUploadToTask(taskId,input){
   const valid=sizeOk.filter(f=>f.size<=1048576);
   if(!valid.length){input.value='';return;}
   let done=0;
+  const uploadedNames=[];
   // saveDB used to fire only from the success branch of whichever file finished LAST — so if
   // that particular file hit the storage-full or read-error branch instead, every OTHER file
   // that had already succeeded (bytes written, record pushed to DB.taskFiles) was never saved
   // at all: it looked uploaded until the next reload, then quietly vanished. Route every
   // completion path (success, storage-full, read-error) through one shared finish() so the
   // save always happens once all files are accounted for, regardless of which one finishes last.
+  // Server mode: bytes still go to this browser's local file store (unchanged — Supabase
+  // Storage is a separate item), but the file RECORD goes through /api/portal-action, which
+  // validates it server-side. On failure the local bytes are removed again.
+  const serverMeta=[];
   const finish=()=>{
     if(done!==valid.length)return;
+    const reopen=()=>{input.value='';cpCloseTaskModal();cpOpenTaskModal(taskId);};
+    if(_portalServerMode()){
+      if(!serverMeta.length){reopen();return;}
+      _portalAction('uploadFile',{taskId,files:serverMeta}).then(ok=>{
+        if(!ok)serverMeta.forEach(m=>_deleteFileData(m.id));
+        reopen();
+      });
+      return;
+    }
+    if(uploadedNames.length)_cpNotifyStaffOnUpload(rawTask,uploadedNames);
     saveDB(DB);
-    input.value='';
-    cpCloseTaskModal();
-    cpOpenTaskModal(taskId);
+    reopen();
   };
   valid.forEach(file=>{
     const reader=new FileReader();
@@ -23597,13 +24412,19 @@ function cpUploadToTask(taskId,input){
         showAlert('"'+file.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
         done++;finish();return;
       }
+      if(_portalServerMode()){
+        serverMeta.push({id:fid,name:file.name,type:file.type,size:file.size});
+        done++;finish();return;
+      }
       DB.taskFiles.push({
         id:fid,
         taskId,name:file.name,type:file.type,size:file.size,
         uploadedAt:new Date().toISOString(),
         uploadedByClientId:currentUser.clientId,
         internalOnly:false,
+        ...(_openAr?{actionRequestId:_openAr.id}:{}),
       });
+      uploadedNames.push(file.name);
       done++;
       finish();
     };
@@ -23630,6 +24451,7 @@ function _cpRefreshCurrentSection(){
   const body=document.getElementById('cp-body');
   if(!body)return;
   if(cpSection==='tasks')body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  else if(cpSection==='workboard')body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
   else if(cpSection==='overview'){const client=DB.clients.find(c=>c.id===clientId);body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);}
 }
 
@@ -23745,6 +24567,17 @@ function cpSubmitRequest(_unused){
   const priority=document.getElementById('cp-req-priority')?.value||'normal';
 
   function persist(attachments){
+    if(_portalServerMode()){
+      _portalAction('submitWorkRequest',{title,description:desc,priority,attachments}).then(ok=>{
+        if(!ok)return;
+        _cpReqFiles=[];
+        const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
+        if(t)t.value='';if(d)d.value='';if(fl)fl.innerHTML='';
+        const success=document.getElementById('cp-req-success');
+        if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate('requests');},3200);}
+      });
+      return;
+    }
     if(!DB.clientWorkRequests)DB.clientWorkRequests=[];
     DB.clientWorkRequests.push({
       id:'wr-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
@@ -23825,18 +24658,20 @@ document.addEventListener('keydown',e=>{
     const tick=()=>{if(window._supabase!==undefined||Date.now()-t>2000)return resolve();setTimeout(tick,50);};
     tick();
   });
-  // Load shared DB from Supabase — validate token FIRST, only populate global DB if valid
+  // The server validates the token and returns only what this one link shows (/api/share-view).
+  // This used to read the whole app_state blob anonymously — RLS refuses that, so it silently
+  // fell back to the VISITOR's own localStorage: the link worked for the staff member who made
+  // it (their browser had the data) and showed "Link not found" to everyone else.
   let _shareData=null;
   if(window._supabase){
     try{
-      const{data:stateRow}=await window._supabase.from('app_state').select('data').eq('id',1).single();
-      if(stateRow?.data&&(stateRow.data.shareLinks?.length>0||stateRow.data.tasks?.length>0)){
-        _shareData=stateRow.data;
-      }
-    }catch(e){console.warn('[share] Supabase load failed:',e.message);}
+      const r=await fetch('/api/share-view?token='+encodeURIComponent(token),{cache:'no-store'});
+      if(r.ok)_shareData=(await r.json()).slice||null;
+    }catch(e){console.warn('[share] load failed:',e.message);}
   }
-  // Validate token against fetched data — never write to global DB for invalid tokens
-  const _shareLinks=(_shareData?.shareLinks)||DB.shareLinks||[];
+  // Validate the token against what came back — never populate DB for an invalid one. The
+  // local-storage fallback is for offline/local dev only (no Supabase configured).
+  const _shareLinks=(_shareData?.shareLinks)||(window._supabase?[]:(DB.shareLinks||[]));
   const link=_shareLinks.find(l=>l.token===token&&!l.revoked);
   if(!link){
     document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px">
@@ -23846,12 +24681,9 @@ document.addEventListener('keydown',e=>{
     </div>`;
     return;
   }
-  // Token is valid — now safe to populate DB for rendering
-  if(_shareData){
-    _migrateDB(_shareData);
-    for(const k in DB)delete DB[k];
-    Object.assign(DB,_shareData);
-  }
+  // Token is valid — now safe to populate DB for rendering. Same minimal shaping as the client
+  // portal slice (never _migrateDB, which seeds demo staff and defaults), and never saved.
+  if(_shareData)_applyPortalSlice(_shareData);
   document.getElementById('share-page-body').innerHTML=renderSharePage(link);
 })();
 
@@ -23872,7 +24704,19 @@ document.addEventListener('keydown',e=>{
     });
     await _waitForSupabase();
     if(window._supabase){
+      // A client-portal session must never receive app_state — it is the whole company's data
+      // (every client's tasks, time entries, rates, invoices, client notes). It used to be
+      // downloaded here for EVERY session and hidden only by rendering. Check the persisted
+      // session's role first; client sessions load their own server-built slice instead
+      // (_portalLoad, from _supabaseRestoreSession). See .agents/PLAN-server-enforcement.md.
+      // With no session at all there's nothing to load either — anonymous reads of app_state
+      // are refused by RLS, and the staff login path loads it itself after sign-in.
+      let _skipBlobLoad=true;
       try{
+        const{data:{session:_s}}=await window._supabase.auth.getSession();
+        if(_s){const{data:_p}=await window._supabase.from('profiles').select('role').eq('id',_s.user.id).single();_skipBlobLoad=!_p||_p.role==='client';}
+      }catch(_){}
+      if(!_skipBlobLoad)try{
         const{data:row,error}=await window._supabase.from('app_state').select('data').eq('id',1).single();
         if(!error&&row?.data){
           const fresh=row.data;_migrateDB(fresh);_applyCompatAliases(fresh);
@@ -23889,7 +24733,7 @@ document.addEventListener('keydown',e=>{
           // at all, so a raw diff against fresh would flag that cosmetic gap on every single
           // load. Diffing against fresh normalised the same way isolates real local-only content.
           const recoveredLocalEdit=!seedOnly&&JSON.stringify(merged)!==JSON.stringify(_mergeDB(fresh,fresh));
-          for(const k in DB)delete DB[k];Object.assign(DB,merged);
+          for(const k in DB)delete DB[k];Object.assign(DB,merged);_reconcileActionRequests();
           _safeSaveLocal(JSON.stringify(DB));
           window._appStateLoaded=true;clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
           // Push the healed state back right away, or the recovered edit sits only in this
