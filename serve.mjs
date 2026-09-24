@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3001;
@@ -24,13 +25,18 @@ try {
   // .env not found — Supabase features will be disabled until credentials are added
 }
 
-const SUPABASE_URL      = _env.SUPABASE_URL      || process.env.SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = _env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+// `node serve.mjs --offline` (or TASKHUB_OFFLINE=1) ignores the Supabase credentials in .env so
+// the app runs on local seed data. With a .env present, localhost otherwise talks to the LIVE
+// project — and the .agents regression suites log in and delete boards/tasks, so they must only
+// ever run offline (.agents/gate.sh refuses to start unless /api/config reports no Supabase).
+const OFFLINE = process.argv.includes('--offline') || process.env.TASKHUB_OFFLINE === '1';
+const SUPABASE_URL      = OFFLINE ? '' : (_env.SUPABASE_URL      || process.env.SUPABASE_URL      || '');
+const SUPABASE_ANON_KEY = OFFLINE ? '' : (_env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '');
 
 if (SUPABASE_URL) {
-  console.log(`  Supabase: ${SUPABASE_URL}`);
+  console.log(`  Supabase: ${SUPABASE_URL}  ← LIVE project`);
 } else {
-  console.log('  Supabase: not configured (add .env to enable)');
+  console.log(OFFLINE ? '  Supabase: OFFLINE mode (local seed data)' : '  Supabase: not configured (add .env to enable)');
 }
 
 const MIME = {
@@ -105,6 +111,44 @@ let _intakeQueue = [];
 try { _intakeQueue = JSON.parse(fs.readFileSync(_INTAKE_PATH, 'utf-8')); } catch (_) {}
 function _saveIntakeQueue() {
   try { fs.writeFileSync(_INTAKE_PATH, JSON.stringify(_intakeQueue, null, 2)); } catch (_) {}
+}
+
+// ── Local runner for the Vercel functions in api/*.js ────────────────────────
+// They are CommonJS (module.exports = async (req, res) => …) and rely on Vercel's helpers:
+// a parsed req.body, res.status(), res.json(). Provide those, plus the .env values they read
+// from process.env (never in --offline mode).
+const _require = createRequire(import.meta.url);
+if (!OFFLINE) for (const [k, v] of Object.entries(_env)) if (process.env[k] === undefined) process.env[k] = v;
+const _API_DIR = path.join(__dirname, 'api') + path.sep;
+
+function _readBodyLimit(req, limit) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > limit) reject(new Error('body too large')); });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+async function _runApiHandler(file, req, res) {
+  // Fresh require every call, so edits to api/*.js apply without restarting the server.
+  for (const k of Object.keys(_require.cache)) if (k.startsWith(_API_DIR)) delete _require.cache[k];
+  const sendJson = (code, obj) => {
+    if (!res.headersSent) { res.statusCode = code; res.setHeader('Content-Type', 'application/json; charset=utf-8'); for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v); }
+    res.end(JSON.stringify(obj));
+  };
+  let handler;
+  try { handler = _require(file); } catch (e) { return sendJson(500, { error: 'API module failed to load: ' + e.message }); }
+  let raw = '';
+  try { raw = await _readBodyLimit(req, 6e6); } catch (_) { return sendJson(413, { error: 'Request too large' }); }
+  const ct = String(req.headers['content-type'] || '');
+  if (raw && ct.includes('application/json')) { try { req.body = JSON.parse(raw); } catch (_) { req.body = {}; } }
+  else req.body = raw || undefined;
+  res.status = code => { res.statusCode = code; return res; };
+  res.json = obj => { sendJson(res.statusCode || 200, obj); return res; };
+  try { await handler(req, res); }
+  catch (e) { console.error('[api]', path.basename(file), e); if (!res.writableEnded) sendJson(500, { error: 'Handler crashed: ' + e.message }); }
+  if (!res.writableEnded) res.end();
 }
 
 // Helper: read entire request body as string
@@ -217,6 +261,21 @@ http.createServer(async (req, res) => {
       ...SECURITY_HEADERS,
     });
     res.end(payload);
+    return;
+  }
+
+  // Every other /api/* path is a Vercel serverless function in api/<name>.js — run it here too,
+  // so local dev exercises the same code production does (portal-data, portal-action,
+  // invite-user, …). Before this the path fell through to the static handler, 404'd as plain
+  // text, and the frontend's resp.json() threw "Unexpected non-whitespace character after JSON
+  // at position 4". Files starting with "_" are shared modules, never routes (same rule Vercel
+  // applies). In --offline mode the handlers get no Supabase env and answer "Server not configured".
+  if (urlPath.startsWith('/api/')) {
+    const name = urlPath.slice('/api/'.length);
+    const file = path.join(__dirname, 'api', name + '.js');
+    if (/^[a-z0-9-]+$/.test(name) && fs.existsSync(file)) return _runApiHandler(file, req, res);
+    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8', ...SECURITY_HEADERS });
+    res.end(JSON.stringify({ error: `No API route ${urlPath}` }));
     return;
   }
 
