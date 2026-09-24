@@ -1,5 +1,8 @@
+const { requireAdminCaller } = require('./_authAdmin');
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  if (!(await requireAdminCaller(req, res))) return;
 
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
