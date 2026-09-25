@@ -96,6 +96,10 @@ function pick(obj, fields) {
 
 function sliceTask(blob, t) {
   const s = pick(t, TASK_FIELDS);
+  // The task description is shown to the client unless staff ticked "Hide description from
+  // client" on it (clientDescriptionHidden). Rich-text HTML: the portal sanitises it on render.
+  delete s.clientDescription;
+  s.description = t.clientDescriptionHidden ? null : (String(t.clientDescription || t.description || '').slice(0, 20000) || null);
   s.clientId = taskClientId(blob, t);
   const bid = taskBoardId(blob, t);
   s.boardId = bid; s.workboardId = bid;
@@ -392,6 +396,30 @@ function applyPortalAction(blob, ctx, action) {
       const msg = `Changes requested on "${taskName(task)}" by ${clientName}: ${note.slice(0, 80)}`;
       if (task.ownerId && activeStaff(blob).some(u => u.id === task.ownerId)) rec.notify(task.ownerId, task.id, 'client_changes_requested', msg);
       else rec.notifyAllStaff('client_changes_requested', msg, task.id);
+      return ok({ modify: { tasks: [task.id], actionRequests: closed ? [closed] : [] }, append: ['clientComments', 'notifications'] });
+    }
+
+    case 'decline': {
+      // The client turns the work down (a quote, scope, proposal...). Same gate as approve: only
+      // an approval ask can be declined. A reason is required so the owner knows what to do next.
+      const task = visibleTask(a.taskId);
+      if (!task) return fail('Task not found.', 404);
+      if (!awaitingClient(task) || !isApprovalAsk(blob, task)) return fail('This task is not waiting on your approval.', 409);
+      if (task.clientApproval && task.clientApproval.status === 'approved') return fail('Already approved.', 409);
+      const note = String(a.note || '').trim();
+      if (!note) return fail('Please tell us why you are declining.');
+      if (note.length > 2000) return fail('That note is too long.');
+      task.clientApproval = { status: 'declined', note, at: ctx.now, declinedBy: ctx.userName || 'Client' };
+      const was = task.status;
+      task.status = 'declined-client';
+      applyStatusProgress(task, 'declined-client', was, ctx.now);
+      rec.returnToOwner(task, task.ownerId || null);
+      task.updatedAt = ctx.now;
+      rec.clientComment(task.id, '**Declined:**\n' + note);
+      const closed = rec.closeOpenRequest(task.id, '(closed — client declined)');
+      const msg = `Declined by ${clientName}: "${taskName(task)}" — ${note.slice(0, 80)}`;
+      if (task.ownerId && activeStaff(blob).some(u => u.id === task.ownerId)) rec.notify(task.ownerId, task.id, 'client_declined', msg);
+      else rec.notifyAllStaff('client_declined', msg, task.id);
       return ok({ modify: { tasks: [task.id], actionRequests: closed ? [closed] : [] }, append: ['clientComments', 'notifications'] });
     }
 

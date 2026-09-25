@@ -245,6 +245,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-section-title{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px}
 .cp-task-row{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease),transform 0.2s var(--ease)}
 .cp-task-row:hover{border-color:#97bcbd;box-shadow:0 2px 6px rgba(13,28,51,0.08),0 8px 20px rgba(13,28,51,0.07);transform:translateY(-1px)}
+.cp-desc{font-size:13px;color:#4a5568;line-height:1.7}.cp-desc>*:first-child{margin-top:0}.cp-desc>*:last-child{margin-bottom:0}.cp-desc p,.cp-desc div{margin:0 0 6px}.cp-desc ul,.cp-desc ol{margin:4px 0 8px;padding-left:20px}.cp-desc li{margin:2px 0}.cp-desc a{color:#0d6e4e;text-decoration:underline}.cp-desc a:hover{color:#0a5a40}.cp-desc a:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:2px}.cp-desc a:active{color:#08452f}
 .cp-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;font-family:'Jost',sans-serif}
 /* ── Client Portal: new components ── */
 .cp-task-list-row{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.18s var(--ease),box-shadow 0.18s var(--ease);outline:none}
@@ -257,6 +258,12 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-action-btn.approve:hover{background:#0a5a3e}
 .cp-action-btn.changes{background:#fef3c7;color:#b45309;border:1.5px solid #fde68a}
 .cp-action-btn.changes:hover{background:#fde68a}
+.cp-action-btn.decline{background:#fff;color:#b91c1c;border:1.5px solid #fecaca}
+.cp-action-btn.decline:hover{background:#fef2f2;border-color:#fca5a5}
+.cp-action-btn.decline:active{background:#fee2e2}
+.cp-action-btn.decline:focus-visible{outline:2px solid #fca5a5;outline-offset:2px}
+.cp-link-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#8da2b2;padding:8px 12px;border-radius:6px}
+.cp-link-btn:hover{background:#f8fafb;color:#4a5568}.cp-link-btn:active{background:#eef2f6}.cp-link-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
 .cp-req-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:18px 22px;margin-bottom:10px;box-shadow:0 1px 3px rgba(13,28,51,0.06),0 4px 12px rgba(13,28,51,0.04);transition:box-shadow 0.15s var(--ease),transform 0.15s var(--ease)}
 .cp-req-card:hover{box-shadow:0 2px 6px rgba(13,28,51,0.08),0 8px 20px rgba(13,28,51,0.07);transform:translateY(-1px)}
 .cp-form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;display:block}
@@ -3811,7 +3818,7 @@ function renderUniversalToolbar(view,opts){
 function renderAdvancedFilterPanel(view){
   const f=_filtersFor(view);
   const isCapacity=view==='capacity';
-  const STATUSES=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'];
+  const STATUSES=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'];
   const cwithOpts=`<option value="all"${f.cwithId==='all'?' selected':''}>Anyone</option><option value="client"${f.cwithId==='client'?' selected':''}>Client</option>${DB.staff.map(s=>`<option value="${s.id}"${f.cwithId===s.id?' selected':''}>${escHtml(s.name)}</option>`).join('')}`;
   const pmin=typeof f.pctMin==='number'?f.pctMin:0;
   const pmax=typeof f.pctMax==='number'?f.pctMax:100;
@@ -4637,7 +4644,7 @@ function statusMixOf(tasks){
   });
   // Order segments so the bar reads left-to-right as progress toward done.
   const ORDER=['todo','not-started','ready-to-start','in-progress','waiting-client','review',
-    'waiting-review','needs-changes','change-requested','blocked','ready-approval',
+    'waiting-review','needs-changes','change-requested','declined-client','blocked','ready-approval',
     'approved-client','completed-approved','done','completed','cancelled'];
   const segments=[...counts.entries()]
     .sort((a,b)=>{const ai=ORDER.indexOf(a[0]),bi=ORDER.indexOf(b[0]);return(ai===-1?99:ai)-(bi===-1?99:bi);})
@@ -4722,6 +4729,7 @@ const STATUS_META = {
   'ready-approval':   { label: 'Sent for Approval',    color: '#0d6e4e', bg: '#d1fae5', dot: '#34d399' },
   'approved-client':  { label: 'Client Approved',      color: '#065f46', bg: '#a7f3d0', dot: '#10b981' },
   'change-requested': { label: 'Change Requested by Client', color: '#92400e', bg: '#fef3c7', dot: '#f59e0b' },
+  'declined-client':  { label: 'Declined by Client',  color: '#b91c1c', bg: '#fee2e2', dot: '#f87171' },
   'completed-approved':{ label: 'Completed & Approved', color: '#065f46', bg: '#6ee7b7', dot: '#10b981' },
   'ready-to-start':   { label: 'Ready to Start',       color: '#1d4ed8', bg: '#dbeafe', dot: '#60a5fa' },
   'needs-changes':    { label: 'Needs Changes',         color: '#b45309', bg: '#fef3c7', dot: '#fbbf24' },
@@ -4731,7 +4739,7 @@ const STATUS_META = {
 };
 function hexToRgba(hex,a){if(!hex||hex.length<7)return`rgba(150,188,189,${a})`;const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;}
 function getStatusMeta(key){const ov=(DB?.labelConfig?.statuses||{})[key]||{};return{...(STATUS_META[key]||{label:key,color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'}),...ov};}
-function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
+function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
 function statusBadge(s){const sm=getStatusMeta(s);return`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`;}
 // ── Bright preset palette for statuses, priorities and labels ──
 // One cohesive family: each entry pairs a saturated ink with a tinted ground and a dot, so
@@ -6874,7 +6882,8 @@ function renderNeedsAttention(){
   };
   const approvals=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canView(t));
   const changeReqs=(DB.tasks||[]).filter(t=>t.status==='change-requested'&&!t.archived&&canView(t));
-  const items=[...approvals,...changeReqs];
+  const declines=(DB.tasks||[]).filter(t=>t.status==='declined-client'&&!t.archived&&canView(t));
+  const items=[...approvals,...changeReqs,...declines];
   if(!items.length)return'';
   const NEXT_APPROVAL=[
     {value:'todo',label:'Ready to Start',bg:'#dbeafe',color:'#1d4ed8'},
@@ -6893,23 +6902,32 @@ function renderNeedsAttention(){
     {value:'completed-approved',label:'Completed & Approved',bg:'#a7f3d0',color:'#065f46'},
     {value:'archived',label:'Archive',bg:'#f1f5f9',color:'#64748b'},
   ];
+  const NEXT_DECLINE=[
+    {value:'cancelled',label:'Cancel Task',bg:'#f5f5f4',color:'#57534e'},
+    {value:'in-progress',label:'Rework',bg:'#e0f2fe',color:'#0369a1'},
+    {value:'ready-approval',label:'Re-send for Approval',bg:'#fef3c7',color:'#b45309'},
+    {value:'archived',label:'Archive',bg:'#f1f5f9',color:'#64748b'},
+  ];
   const cards=items.map(t=>{
     const isChange=t.status==='change-requested';
+    const isDecline=t.status==='declined-client';
     const client=DB.clients?.find(c=>c.id===(DB.groups?.find(g=>g.id===t.groupId)?.clientId||t.clientId));
     const board=DB.workboards?.find(w=>w.id===(t.workboardId||t.boardId));
     const ca=t.clientApproval||{};
-    const atLabel=isChange?'Change Request':APPROVAL_TYPE_LABELS[t.approvalType]||'--';
+    const atLabel=isChange?'Change Request':isDecline?('Declined'+(t.approvalType?' — '+(APPROVAL_TYPE_LABELS[t.approvalType]||''):'')):APPROVAL_TYPE_LABELS[t.approvalType]||'--';
     const actionAt=ca.at?new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'--';
-    const clientNotes=ca.note?`<div style="background:${isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
+    const clientNotes=ca.note?`<div style="background:${isDecline?'#fef2f2':isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isDecline?'#fecaca':isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
     const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
-    const typeBadge=isChange
+    const typeBadge=isDecline
+      ?`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fee2e2;color:#b91c1c">Declined by Client</span>`
+      :isChange
       ?`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fef3c7;color:#92400e">Change Requested</span>`
       :`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d1fae5;color:#065f46">Client Approved</span>`;
-    const borderColor=isChange?'#fde68a':'#d1fae5';
-    const shadowColor=isChange?'rgba(245,158,11,0.08)':'rgba(16,185,129,0.08)';
-    const actions=isChange?NEXT_CHANGE:NEXT_APPROVAL;
-    const byLabel=isChange?'Submitted by':'Approved by';
-    const atLabelKey=isChange?'Date submitted':'Date approved';
+    const borderColor=isDecline?'#fecaca':isChange?'#fde68a':'#d1fae5';
+    const shadowColor=isDecline?'rgba(239,68,68,0.08)':isChange?'rgba(245,158,11,0.08)':'rgba(16,185,129,0.08)';
+    const actions=isDecline?NEXT_DECLINE:isChange?NEXT_CHANGE:NEXT_APPROVAL;
+    const byLabel=isDecline?'Declined by':isChange?'Submitted by':'Approved by';
+    const atLabelKey=isDecline?'Date declined':isChange?'Date submitted':'Date approved';
     return`<div style="background:#fff;border:1.5px solid ${borderColor};border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px ${shadowColor}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
         <div style="flex:1;min-width:0">
@@ -6923,7 +6941,7 @@ function renderNeedsAttention(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:12px;color:#4b5c6e;margin-bottom:10px">
         <div><span style="color:#97bcbd;font-weight:600">Type</span><br/>${escHtml(atLabel)}</div>
-        <div><span style="color:#97bcbd;font-weight:600">${byLabel}</span><br/>${escHtml(ca.approvedBy||'Client')}</div>
+        <div><span style="color:#97bcbd;font-weight:600">${byLabel}</span><br/>${escHtml(ca.approvedBy||ca.declinedBy||'Client')}</div>
         <div><span style="color:#97bcbd;font-weight:600">${atLabelKey}</span><br/>${actionAt}</div>
         ${attachCount?`<div><span style="color:#97bcbd;font-weight:600">Attachments</span><br/>${attachCount} file${attachCount!==1?'s':''}</div>`:'<div></div>'}
       </div>
@@ -7308,7 +7326,7 @@ function renderBoard(){
   // portal (cpApproveTask → approved-client, cpSubmitChanges → change-requested) simply had
   // no column to render in and vanished from the board entirely. Same canonical list the
   // filter panel uses (renderAdvancedFilterPanel).
-  const cols=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled']
+  const cols=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled']
     .map(k=>{const m=getStatusMeta(k);return{key:k,label:m.label,color:m.color};});
   return renderWbTabs('board')+renderUniversalToolbar('board')+`<div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;margin-top:12px;min-height:calc(100vh - 200px)">
   ${cols.map(col=>{
@@ -7460,7 +7478,7 @@ function ganttBarColor(task,colorBy){
   if(colorBy==='priority'){
     return{low:'#94a3b8',med:'#f59e0b',high:'#f97316',crit:'#dc2626'}[task.priority]||'#94a3b8';
   }
-  const map={'todo':'#94a3b8','not-started':'#94a3b8','ready-to-start':'#94a3b8','in-progress':'#f59e0b','waiting-client':'#f59e0b','change-requested':'#f59e0b','needs-changes':'#f59e0b','review':'#a855f7','waiting-review':'#a855f7','blocked':'#ef4444','ready-approval':'#22c55e','approved-client':'#22c55e','done':'#10b981','completed':'#10b981','completed-approved':'#10b981','cancelled':'#78716c'};
+  const map={'todo':'#94a3b8','not-started':'#94a3b8','ready-to-start':'#94a3b8','in-progress':'#f59e0b','waiting-client':'#f59e0b','change-requested':'#f59e0b','declined-client':'#ef4444','needs-changes':'#f59e0b','review':'#a855f7','waiting-review':'#a855f7','blocked':'#ef4444','ready-approval':'#22c55e','approved-client':'#22c55e','done':'#10b981','completed':'#10b981','completed-approved':'#10b981','cancelled':'#78716c'};
   // Overdue outranks the status colour — a task past its end date and not finished reads red
   // regardless of what it claims to be. _TASK_DONE_STATUSES is the app-wide "finished" list.
   // toDateStr (local date), not toISOString (UTC) — every Australian timezone is ahead of UTC,
@@ -15449,6 +15467,7 @@ const NOTIF_TYPES={
   work_request:         {label:'Work Request',         color:'#f59e0b',icon:'⊞'},
   client_approved:      {label:'Client Approved',      color:'#10b981',icon:'✓'},
   client_changes_requested:{label:'Changes Requested', color:'#f59e0b',icon:'↩'},
+  client_declined:         {label:'Client Declined',   color:'#ef4444',icon:'✕'},
   client_comment:       {label:'Client Message',        color:'#3b82f6',icon:icon('chat',12)},
   client_comment_reply: {label:'Etcher Reply',          color:'#0d6e4e',icon:'↩'},
   assigned:             {label:'Assigned',              color:'#8b5cf6',icon:'⇒'},
@@ -16493,8 +16512,10 @@ function _csvCell(v){
 function _fileTypeIcon(type,name,url){const ext=(name||'').split('.').pop().toLowerCase();const _badge=(bg,color,label)=>`<span style="background:${bg};color:${color};font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:0.04em;flex-shrink:0">${label}</span>`;if(type==='link'){const isSP=(url||'').toLowerCase().includes('sharepoint');return isSP?_badge('#deecf9','#0078d4','SP'):_badge('#e0f2fe','#0369a1','LINK');}if(type&&type.startsWith('image/'))return _badge('#dbeafe','#1d4ed8','IMG');if(type==='application/pdf'||ext==='pdf')return _badge('#fee2e2','#dc2626','PDF');if((type&&(type.includes('word')||type.includes('msword')))||ext==='doc'||ext==='docx')return _badge('#dbeafe','#1e40af','DOC');if((type&&(type.includes('excel')||type.includes('spreadsheet')))||ext==='xls'||ext==='xlsx'||ext==='csv')return _badge('#dcfce7','#15803d','XLS');if((type&&(type.includes('powerpoint')||type.includes('presentation')))||ext==='ppt'||ext==='pptx')return _badge('#ffedd5','#c2410c','PPT');if(type&&type.startsWith('video/'))return _badge('#f3e8ff','#7e22ce','VID');if(type&&type.startsWith('audio/'))return _badge('#fce7f3','#be185d','AUD');if((type&&type.includes('zip'))||ext==='zip'||ext==='rar'||ext==='gz'||ext==='7z')return _badge('#fef9c3','#854d0e','ZIP');if((type&&type.startsWith('text/'))||ext==='txt'||ext==='md')return _badge('#f0fdf4','#166534','TXT');return _badge('#f1f5f9','#64748b','FILE');}
 // ── Rich text description editor ────────────────────────────
 function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s)||/&[a-z#][a-z0-9]+;/i.test(s))return _descSanitize(s);return escHtml(s).replace(/\n/g,'<br>');}
-function _descSanitize(html){try{const d=document.createElement('div');d.innerHTML=html;d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta').forEach(e=>e.remove());// Unwrap font/span tags that only carry colour/size (common from Word/Notion)
-d.querySelectorAll('font').forEach(e=>{const f=document.createDocumentFragment();while(e.firstChild)f.appendChild(e.firstChild);e.replaceWith(f);});d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','rel','target']);[...e.attributes].forEach(a=>{if(!keep.has(a.name)||/^(javascript:|data:|vbscript:)/i.test(a.value))e.removeAttribute(a.name);});if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
+// Parsed with DOMParser, which is inert: a live element starts loading <img> etc. the moment
+// innerHTML is set. The portal renders staff-written descriptions through this for clients.
+function _descSanitize(html){try{const d=new DOMParser().parseFromString(String(html),'text/html').body;d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta,img,svg,math,video,audio,base').forEach(e=>e.remove());// Unwrap font/span tags that only carry colour/size (common from Word/Notion)
+d.querySelectorAll('font').forEach(e=>{const f=document.createDocumentFragment();while(e.firstChild)f.appendChild(e.firstChild);e.replaceWith(f);});d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','rel','target']);[...e.attributes].forEach(a=>{if(!keep.has(a.name)||/^(javascript:|data:|vbscript:)/i.test(a.value.replace(/[\s\u0000-\u001f]/g,'')))e.removeAttribute(a.name);});if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
 function _descEditorHtml(id,content,cls,placeholder){const html=_descToHtml(content);return`<div class="rich-desc-wrap${cls?' '+cls:''}"><div class="rich-desc-toolbar"><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button><span class="rdt-sep"></span><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">• list</button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="1. list">1. list</button></div><div id="${id}" contenteditable="true" class="rich-desc-editor" data-placeholder="${escHtml(placeholder||'Add a description…')}">${html}</div><button type="button" class="rich-desc-expand-btn" id="${id}-expand" onclick="_descToggleExpand('${id}')">Show more</button></div>`;}
 let _pendingPaste=null;
 // Show/hide the "Show more" toggle depending on whether the (collapsed) editor actually overflows.
@@ -18251,7 +18272,7 @@ if(wsGroupBy==='group'){
       sections.push({id:c.id,label:c.name,sub:c.shortCode,color:c.color,defGrp:wbGroups.find(g=>g.clientId===c.id)?.id||wbDefGrp,tasks:ct});
   });
 } else if(wsGroupBy==='status'){
-  ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','completed-approved','done','cancelled'].forEach(s=>{
+  ['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'].forEach(s=>{
     const sm=getStatusMeta(s);
     sections.push({id:s,label:sm.label,sub:'',color:sm.color,defGrp:wbDefGrp,tasks:tasks.filter(t=>t.status===s||(s==='todo'&&t.status==='not-started'))});
   });
@@ -19163,6 +19184,10 @@ function renderTpDetails(task){
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568" title="Off by default \u2014 every task is client-visible unless hidden here">
           <input type="checkbox" ${task.clientHidden?'checked':''} onchange="tpSaveField('clientHidden',this.checked);this.nextElementSibling.textContent=this.checked?'Hidden from client':'Visible to client';this.nextElementSibling.style.color=this.checked?'#b45309':'#4a5568';"/>
           <span style="color:${task.clientHidden?'#b45309':'#4a5568'}">${task.clientHidden?'Hidden from client':'Visible to client'}</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;margin-top:4px" title="Clients see the task description in the portal. Tick for tasks whose description holds internal notes.">
+          <input type="checkbox" ${task.clientDescriptionHidden?'checked':''} onchange="tpSaveField('clientDescriptionHidden',this.checked);this.nextElementSibling.textContent=this.checked?'Description hidden from client':'Description shown to client';this.nextElementSibling.style.color=this.checked?'#b45309':'#4a5568';"/>
+          <span style="color:${task.clientDescriptionHidden?'#b45309':'#4a5568'}">${task.clientDescriptionHidden?'Description hidden from client':'Description shown to client'}</span>
         </label>
       </div>
     </div>`:''}
@@ -23346,6 +23371,7 @@ function cpBroadStatus(key){
     'ready-approval':   {label:'Awaiting Your Approval',bg:'#fef3c7',color:'#b45309'},
     'approved-client':  {label:'Approved',              bg:'#a7f3d0',color:'#065f46'},
     'change-requested': {label:'Change Requested – Awaiting Etcher Response',bg:'#fef3c7',color:'#92400e'},
+    'declined-client':  {label:'Declined',bg:'#fee2e2',color:'#b91c1c'},
     'completed-approved':{label:'Completed & Approved', bg:'#a7f3d0',color:'#065f46'},
     'done':             {label:'Completed',             bg:'#dcfce7',color:'#15803d'},
     'completed':        {label:'Completed',             bg:'#dcfce7',color:'#15803d'},
@@ -23383,7 +23409,8 @@ function sanitizeTaskForClient(task){
     approvalType:    task.approvalType||null,
     // Additional safe fields
     priority:        task.priority||'med',
-    description:     task.clientDescription||null,
+    // Same rule as api/_portal.js sliceTask: the task description, unless hidden from the client.
+    description:     task.clientDescriptionHidden?null:(task.clientDescription||task.description||null),
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
     attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
     parentId:        task.parentTaskId||null,
@@ -23864,7 +23891,7 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
   _cpTaskSearch='';
   const todayStr=toDateStr(new Date());
   const isDone=s=>['done','completed','approved-client','completed-approved','cancelled'].includes(s);
-  const isAwaitingEtcher=s=>s==='change-requested';
+  const isAwaitingEtcher=s=>s==='change-requested'||s==='declined-client';
   const isUnderReview=s=>['review','waiting-review','waiting-client'].includes(s);
   const isInScope=s=>['todo','not-started','ready-to-start','blocked'].includes(s);
   const isInProgress=s=>['in-progress','needs-changes'].includes(s);
@@ -24043,7 +24070,7 @@ function cpOpenTaskModal(taskId){
   if(t.awaitingClient&&t.clientApproval?.status!=='approved'&&_cpIsApprovalAsk(t)){
     approvalSection=`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
       <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">⚡ Action Required — Awaiting Your Approval</div>
-      <p style="font-size:13px;color:#6b8399;margin-bottom:18px;line-height:1.6">${t.approvalType?`We are requesting your approval for: <strong>${escHtml({scope:'Scope',quote:'Quote',proposal:'Proposal',work:'Work',final:'Final Delivery',change:'Change',other:'Other'}[t.approvalType]||t.approvalType)}</strong>. `:''}Please review and either approve or let us know what changes are needed.</p>
+      <p style="font-size:13px;color:#6b8399;margin-bottom:18px;line-height:1.6">${t.approvalType?`We are requesting your approval for: <strong>${escHtml({scope:'Scope',quote:'Quote',proposal:'Proposal',work:'Work',final:'Final Delivery',change:'Change',other:'Other'}[t.approvalType]||t.approvalType)}</strong>. `:''}Please review and approve, request changes, or decline.</p>
       <div id="cp-changes-form" class="hidden" style="margin-bottom:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px">
         <label class="cp-form-label" style="margin-bottom:8px">Describe the changes you'd like</label>
         <textarea id="cp-changes-note" class="cp-form-input" rows="4" placeholder="e.g. Please adjust the timeline, include X, change Y…" style="resize:vertical;min-height:90px;margin-bottom:12px"></textarea>
@@ -24055,6 +24082,17 @@ function cpOpenTaskModal(taskId){
           <button onclick="document.getElementById('cp-changes-form').classList.add('hidden');document.getElementById('cp-approval-btns').classList.remove('hidden')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#8da2b2;padding:8px 12px;border-radius:6px" onmouseover="this.style.background='#f8fafb'" onmouseout="this.style.background='none'">Cancel</button>
         </div>
       </div>
+      <div id="cp-decline-form" class="hidden" style="margin-bottom:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px">
+        <label class="cp-form-label" style="margin-bottom:8px">Why are you declining?</label>
+        <textarea id="cp-decline-note" class="cp-form-input" rows="3" placeholder="e.g. Not proceeding this quarter, over budget, no longer needed…" style="resize:vertical;min-height:80px;margin-bottom:12px"></textarea>
+        <div style="display:flex;gap:10px">
+          <button class="cp-action-btn decline" onclick="cpDeclineTask('${taskId}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Confirm Decline
+          </button>
+          <button class="cp-link-btn" onclick="document.getElementById('cp-decline-form').classList.add('hidden');document.getElementById('cp-approval-btns').classList.remove('hidden')">Cancel</button>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:20px" id="cp-approval-btns">
         <button class="cp-action-btn approve" onclick="cpApproveTask('${taskId}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -24063,6 +24101,10 @@ function cpOpenTaskModal(taskId){
         <button class="cp-action-btn changes" onclick="document.getElementById('cp-changes-form').classList.remove('hidden');document.getElementById('cp-approval-btns').classList.add('hidden');setTimeout(()=>document.getElementById('cp-changes-note')?.focus(),50)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Request Changes
+        </button>
+        <button class="cp-action-btn decline" onclick="document.getElementById('cp-decline-form').classList.remove('hidden');document.getElementById('cp-approval-btns').classList.add('hidden');setTimeout(()=>document.getElementById('cp-decline-note')?.focus(),50)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Decline
         </button>
       </div>
     </div>`;
@@ -24082,6 +24124,15 @@ function cpOpenTaskModal(taskId){
       </div>
       ${t.clientApproval.note?`<div style="font-size:13px;color:#78350f;line-height:1.6;font-style:italic;border-left:3px solid #fde68a;padding-left:12px">"${escHtml(t.clientApproval.note)}"</div>`:''}
       <div style="font-size:11px;color:#d97706;margin-top:8px">Your feedback has been sent to the Etcher team.</div>
+    </div>`;
+  }else if(t.clientApproval?.status==='declined'){
+    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin-bottom:0">
+      <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        You declined this
+      </div>
+      ${t.clientApproval.note?`<div style="font-size:13px;color:#7f1d1d;line-height:1.6;font-style:italic;border-left:3px solid #fecaca;padding-left:12px">"${escHtml(t.clientApproval.note)}"</div>`:''}
+      <div style="font-size:11px;color:#dc2626;margin-top:8px">The Etcher team has been notified.</div>
     </div>`;
   }
 
@@ -24152,7 +24203,7 @@ function cpOpenTaskModal(taskId){
         ${drParts.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Timeline</div><div style="font-size:13px;font-weight:600;color:#1a2940">${drParts[0]}</div></div>`:''}
         ${t.percentComplete>0||t.status==='done'||t.status==='completed'?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Progress</div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:#e8eef4;border-radius:3px;overflow:hidden"><div style="height:100%;width:${t.percentComplete}%;background:#0d6e4e;border-radius:3px"></div></div><span style="font-size:12px;font-weight:700;color:#0d1c33;flex-shrink:0">${t.percentComplete}%</span></div></div>`:''}
       </div>`:''}
-      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;white-space:pre-wrap;word-break:break-word">${escHtml(t.description)}</div>`:''}
+      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;word-break:break-word"><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Description</div><div class="cp-desc">${_descToHtml(t.description)}</div></div>`:''}
     </div>
     ${actionSection}
     ${subs.length?`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
@@ -24348,6 +24399,42 @@ function cpSubmitChanges(taskId){
   if(task.ownerId)notify(task.ownerId,task.id,'client_changes_requested',`Client requested changes on: ${task.name||task.title}`);
   saveDB(DB);
   _cpAfterChangesRequested();
+}
+// Decline: the client turns the work down. Same gate as approve (approval asks only); a
+// reason is required so the owner knows what to do next. Server mode validates it again.
+function cpDeclineTask(taskId){
+  if(currentUser?.role!=='client')return;
+  const inp=document.getElementById('cp-decline-note');
+  const note=(inp?.value||'').trim();
+  if(!note){if(inp){inp.style.borderColor='#dc2626';inp.focus();setTimeout(()=>inp.style.borderColor='',1600);}return;}
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task||!canViewTask(currentUser,task))return;
+  if(!task.awaitingClient&&task.currentlyWithType!=='client'&&task.status!=='ready-approval'&&task.status!=='waiting-client')return;
+  if(_portalServerMode()){_portalAction('decline',{taskId,note}).then(ok=>{if(ok)_cpAfterDeclined();});return;}
+  const now=new Date().toISOString();
+  task.clientApproval={status:'declined',note,at:now,declinedBy:currentUser.name||'Client'};
+  const _was=task.status;
+  task.status='declined-client';
+  _applyStatusProgress(task,'declined-client',_was);
+  task.awaitingClient=false;
+  task.currentlyWithType='staff';
+  task.currentlyWith=task.ownerId||'';
+  task.currentlyWithUserId=task.ownerId||null;
+  task.updatedAt=now;
+  _closeOpenActionRequest(taskId,'(closed — client declined)');
+  const _msg=`Declined by client: "${task.name||task.title||'task'}" — ${note.slice(0,80)}`;
+  if(task.ownerId)notify(task.ownerId,task.id,'client_declined',_msg);else _notifyAllStaff('client_declined',_msg,task.id);
+  saveDB(DB);
+  _cpAfterDeclined();
+}
+function _cpAfterDeclined(){
+  cpCloseTaskModal();
+  const msg=document.createElement('div');
+  msg.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a2940;color:#fff;font-size:13px;font-weight:600;padding:12px 24px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.18);z-index:9999';
+  msg.textContent='Declined. The Etcher team has been notified.';
+  document.body.appendChild(msg);
+  setTimeout(()=>msg.remove(),5000);
+  _cpRefreshCurrentSection();
 }
 function _cpAfterChangesRequested(){
   cpCloseTaskModal();
