@@ -258,6 +258,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-action-btn.approve:hover{background:#0a5a3e}
 .cp-action-btn.changes{background:#fef3c7;color:#b45309;border:1.5px solid #fde68a}
 .cp-action-btn.changes:hover{background:#fde68a}
+.cp-file-btn{display:inline-flex;align-items:center;background:none;border:none;padding:2px;margin:0;border-radius:4px;color:#97bcbd;cursor:pointer}
+.cp-file-btn:hover{color:#0d6e4e;background:#e6f0ee}.cp-file-btn:active{background:#d5e6e2}.cp-file-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
 .cp-action-btn.decline{background:#fff;color:#b91c1c;border:1.5px solid #fecaca}
 .cp-action-btn.decline:hover{background:#fef2f2;border-color:#fca5a5}
 .cp-action-btn.decline:active{background:#fee2e2}
@@ -3100,6 +3102,47 @@ function clearTextareaDraft(id){
 
 // ── Separate file-data store: keeps base64 blobs out of the main DB JSON ──
 const _FILE_STORE_KEY='etcher_files_v4';
+// ── Task file storage (Supabase Storage bucket 'task-files', see migration 006) ──
+// Staff upload and open files directly (the bucket is internal-only); clients go through
+// /api/portal-action and /api/portal-file. A record with storagePath lives in the bucket; one
+// without it is a legacy upload whose bytes are only in the uploader's browser (_getFileData).
+const _FILE_BUCKET='task-files';
+function _staffStorageOn(){return !!window._supabase&&_supabaseSyncEnabled&&!!currentUser&&currentUser.role!=='client';}
+// Resolves the storage path, or null if storage is unavailable (bucket not set up, offline) —
+// callers then fall back to the old in-browser store.
+async function _storageUpload(taskId,fid,file){
+  if(!_staffStorageOn())return null;
+  const path=`tasks/${taskId}/${fid}`;
+  try{
+    const {error}=await window._supabase.storage.from(_FILE_BUCKET).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});
+    if(error)throw error;
+    return path;
+  }catch(e){console.warn('[storage upload]',e&&e.message||e);return null;}
+}
+async function _storageSignedUrl(path,downloadName){
+  const {data,error}=await window._supabase.storage.from(_FILE_BUCKET).createSignedUrl(path,120,downloadName?{download:downloadName}:undefined);
+  if(error)throw error;
+  return data.signedUrl;
+}
+function _storageRemove(path){try{window._supabase?.storage.from(_FILE_BUCKET).remove([path]).catch(()=>{});}catch(_){}}
+// The file as a data URL, from this browser if it has it, else from storage.
+async function _fileDataUrl(f){
+  const local=_getFileData(f.id);if(local)return local;
+  if(!f.storagePath||!window._supabase)return null;
+  const blob=await (await fetch(await _storageSignedUrl(f.storagePath))).blob();
+  return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob);});
+}
+// A signed storage link carries ?download= so it saves; the new-tab target is a fallback so a link
+// that ever renders inline opens beside the app instead of replacing it.
+function _clickDownload(href,name){const a=document.createElement('a');a.href=href;if(name)a.download=name;else a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();}
+async function _downloadTaskFile(id){
+  const f=(DB.taskFiles||[]).find(x=>x.id===id);if(!f)return;
+  const local=_getFileData(id);
+  if(local){_clickDownload(local,f.name);return;}
+  if(!f.storagePath){showAlert('This file was uploaded on another device or browser before file storage was set up, so only that device can open it.','File not on this device');return;}
+  try{_clickDownload(await _storageSignedUrl(f.storagePath,f.name));}
+  catch(e){showAlert('Could not download the file. Please try again.','Download failed');}
+}
 function _saveFileData(id,url){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');s[id]=url;localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));return true;}catch(e){console.warn('File store write failed',e);return false;}}
 function _getFileData(id){try{return JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}')[id]||null;}catch(e){return null;}}
 function _deleteFileData(id){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');delete s[id];localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));}catch(e){}}
@@ -19215,6 +19258,10 @@ function renderTpDetails(task){
           <input type="checkbox" role="switch" ${!task.clientDescriptionHidden?'checked':''} onchange="tpSaveField('clientDescriptionHidden',!this.checked);const t=this.parentNode.querySelector('.tp-switch-txt');t.textContent=this.checked?'Description shown':'Description hidden';t.classList.toggle('off',!this.checked);"/>
           <span class="tp-switch-txt${!task.clientDescriptionHidden?'':' off'}">${!task.clientDescriptionHidden?'Description shown':'Description hidden'}</span>
         </label>
+        <label class="tp-switch" title="Clients see the task's shared files and links. Switch off to keep them all internal (a single file can also be marked Internal in the attachments list).">
+          <input type="checkbox" role="switch" ${!task.clientAttachmentsHidden?'checked':''} onchange="tpSaveField('clientAttachmentsHidden',!this.checked);const t=this.parentNode.querySelector('.tp-switch-txt');t.textContent=this.checked?'Attachments shown':'Attachments hidden';t.classList.toggle('off',!this.checked);"/>
+          <span class="tp-switch-txt${!task.clientAttachmentsHidden?'':' off'}">${!task.clientAttachmentsHidden?'Attachments shown':'Attachments hidden'}</span>
+        </label>
       </div>
     </div>`:''}
     <div class="tp-prop">
@@ -21827,7 +21874,7 @@ function wsBuildDropdownHtml(taskId,field){
       ${files.length===0?`<div style="padding:8px 14px;font-size:12px;color:#8da2b2;font-style:italic">No files attached</div>`:''}
       ${files.map(f=>{
         const isLink=f.type==='link';
-        const href=isLink?f.url:_getFileData(f.id);
+        const href=isLink?f.url:(_getFileData(f.id)||(f.storagePath?'#stored':null));
         // The URL rides in data-url, not inside the onclick JS string: the browser HTML-decodes
         // an attribute before running it, so escHtml's &#x27; turned back into a real quote and
         // a crafted link could close the string and run its own code.
@@ -21842,7 +21889,7 @@ function wsBuildDropdownHtml(taskId,field){
           </button>
           <div style="display:flex;align-items:center;gap:3px;flex-shrink:0" onclick="event.stopPropagation()">
             ${isLink?(href?_iconBtn(href,'Open link',_eyeSvg,false):_iconBtnDim(_eyeSvg)):(href?`<button onclick="event.stopPropagation();wsPreviewFile('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Preview">${_eyeSvg}</button>`:_iconBtnDim(_eyeSvg))}
-            ${!isLink?(href?_iconBtn(href,'Download',_dlSvg,escHtml(f.name)):_iconBtnDim(_dlSvg)):''}
+            ${!isLink?(href?`<button onclick="event.stopPropagation();_downloadTaskFile('${f.id}')" style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;line-height:1;background:#fff;cursor:pointer" onmouseover="this.style.color='#fff';this.style.background='#0d6e4e';this.style.borderColor='#0d6e4e'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="Download">${_dlSvg}</button>`:_iconBtnDim(_dlSvg)):''}
             ${f.uploadedByClientId
               ?`<span style="font-size:9px;font-weight:700;color:#0369a1;background:#e0f2fe;padding:2px 6px;border-radius:10px;flex-shrink:0;white-space:nowrap" title="Uploaded by the client">Client</span>`
               :`<button onclick="event.stopPropagation();wsToggleAttachmentShare('${f.id}')" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${f.internalOnly?'#e2eaf2':'#bbf7d0'};background:${f.internalOnly?'#f4f7fc':'#dcfce7'};color:${f.internalOnly?'#8da2b2':'#15803d'};cursor:pointer;flex-shrink:0;white-space:nowrap;font-family:'Jost',sans-serif" title="${f.internalOnly?'Internal only — click to share with the client':'Visible to the client — click to make internal'}">${f.internalOnly?'Internal':'Shared'}</button>`}
@@ -22232,6 +22279,15 @@ function wsSendClientAction(taskId,skipNoteRequired){
   if(fileInput&&fileInput.files&&fileInput.files.length){
     const f=fileInput.files[0];
     const MAX=500*1024;
+    if(_staffStorageOn()&&f.size<=10*1048576){
+      const fid=uid();
+      _storageUpload(taskId,fid,f).then(path=>{
+        if(path)DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:now,internalOnly:false,actionRequestId:reqId});
+        else showAlert('"'+f.name+'" could not be uploaded — the request was still sent without it.','Upload failed');
+        finishHandoff();
+      });
+      return;
+    }
     if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was not attached — the request was still sent.`,'File Too Large');finishHandoff();return;}
     const reader=new FileReader();
     reader.onload=e=>{
@@ -22510,10 +22566,27 @@ function wsCommitInlineName(taskId,inp){
 function wsAddAttachment(taskId,input){
   try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.taskFiles)DB.taskFiles=[];
-  const MAX=500*1024;
-  const process=arr=>{
+  const MAX=500*1024, MAX_STORED=10*1048576;
+  const added=()=>{
+    saveDB(DB);
+    const body=document.getElementById('ws-cell-dd-body');
+    if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
+    renderView('workspace');
+  };
+  const process=async arr=>{
     if(!arr.length)return;
     const f=arr[0];const rest=arr.slice(1);
+    // File storage: anyone on the team (and the client, if shared) can open it.
+    if(_staffStorageOn()){
+      if(f.size>MAX_STORED){showAlert(`"${f.name}" exceeds the 10 MB limit and was skipped.`,'File Too Large');process(rest);return;}
+      const fid=uid();
+      const path=await _storageUpload(taskId,fid,f);
+      if(path){
+        DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:new Date().toISOString(),internalOnly:false});
+        added();process(rest);return;
+      }
+      // storage unavailable (e.g. migration 006 not run yet) — fall through to the browser store
+    }
     if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was skipped.`,'File Too Large');process(rest);return;}
     const reader=new FileReader();
     reader.onload=e=>{
@@ -22524,16 +22597,10 @@ function wsAddAttachment(taskId,input){
         showAlert('"'+f.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
         process(rest);return;
       }
-      // internalOnly written explicitly (was never set before this feature — every prior
-      // internal upload defaulted to `undefined`, and the portal's `!f.internalOnly` filter
-      // reads that as visible, so every past attachment on a client's task was already client-
-      // visible whether staff meant it or not). New uploads default to internal; share it
-      // deliberately via the toggle next to each file below.
-      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),internalOnly:true});
-      saveDB(DB);
-      const body=document.getElementById('ws-cell-dd-body');
-      if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
-      renderView('workspace');
+      // New uploads are Shared: the task's Portal Visibility switch decides whether the client
+      // sees its attachments at all, and the Internal pill next to a file hides that one file.
+      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),internalOnly:false});
+      added();
       process(rest);
     };
     reader.onerror=()=>{showAlert(`Failed to read "${f.name}" — skipped.`,'File Error');process(rest);};
@@ -22610,8 +22677,12 @@ function _previewMessage(msg,href,name){
     (href?'<a href="'+href+'" download="'+escHtml(name||'file')+'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;text-decoration:none;padding:8px 18px;border-radius:7px">Download instead</a>':'')+
   '</div>';
 }
-function wsPreviewFile(id){
-  const data=_getFileData(id);
+async function wsPreviewFile(id){
+  let data=_getFileData(id);
+  if(!data){
+    const rec=(DB.taskFiles||[]).find(x=>x.id===id);
+    if(rec&&rec.storagePath){try{data=await _fileDataUrl(rec);}catch(e){console.warn('[storage preview]',e&&e.message||e);}}
+  }
   if(!data){
     showAlert('This file was uploaded on another device or browser. File contents are stored locally, so only the device that uploaded it can open it.','File not on this device');
     return;
@@ -22716,6 +22787,8 @@ function wsToggleAttachmentShare(fileId){
 function wsDeleteAttachment(attId){
   try{requireInternalUser(currentUser);}catch(e){return;}
   _deleteFileData(attId);
+  const _rec=(DB.taskFiles||[]).find(f=>f.id===attId);
+  if(_rec&&_rec.storagePath)_storageRemove(_rec.storagePath);
   DB.taskFiles=(DB.taskFiles||[]).filter(f=>f.id!==attId);
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
@@ -22737,8 +22810,8 @@ function wsAddAttachmentLink(taskId){
   if(!url){showAlert('That link is not a valid web address (http or https).','Invalid Link');return;}
   const displayName=(nameEl?nameEl.value.trim():'')||rawUrl.replace(/^https?:\/\//i,'').split('/')[0];
   if(!DB.taskFiles)DB.taskFiles=[];
-  // internalOnly:true by default — same reasoning as wsAddAttachment above.
-  DB.taskFiles.push({id:uid(),taskId,name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString(),internalOnly:true});
+  // Shared by default — same reasoning as wsAddAttachment above.
+  DB.taskFiles.push({id:uid(),taskId,name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString(),internalOnly:false});
   saveDB(DB);
   _wsShowLinkInput=false;
   const body=document.getElementById('ws-cell-dd-body');
@@ -23438,7 +23511,7 @@ function sanitizeTaskForClient(task){
     // Same rule as api/_portal.js sliceTask: the task description, unless hidden from the client.
     description:     task.clientDescriptionHidden?null:(task.clientDescription||task.description||null),
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
-    attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.internalOnly).length,
+    attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&(f.uploadedByClientId===currentUser?.clientId||(!f.internalOnly&&!task.clientAttachmentsHidden))).length,
     parentId:        task.parentTaskId||null,
     // Board-view-only additions — still whitelisted one field at a time, never the raw task.
     boardId:         _taskBoardId(task),
@@ -24086,7 +24159,8 @@ function cpOpenTaskModal(taskId){
   else if(t.endDate)drParts.push(`Due ${formatDate(t.endDate)}`);
   else if(t.startDate)drParts.push(`From ${formatDate(t.startDate)}`);
   const prioMeta=cpPriorityMeta(t.priority||'med');
-  const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&!f.internalOnly);
+  // Same rule as api/_portal.js fileVisibleTo (server mode already receives only these).
+  const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&(f.uploadedByClientId===currentUser.clientId||(!f.internalOnly&&!rawTask.clientAttachmentsHidden)));
   const rawSubs=DB.tasks.filter(s=>s.parentTaskId===taskId&&!s.archived&&canViewTask(currentUser,s));
   const subs=rawSubs.map(sanitizeTaskForClient);
 
@@ -24170,7 +24244,7 @@ function cpOpenTaskModal(taskId){
   const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
     <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
     ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
-      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:_getFileData(f.id);const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a><a href="${escHtml(fd)}" download="${escHtml(f.name)}" style="display:inline-flex;color:#97bcbd;text-decoration:none;margin-left:3px" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>`):''}</div></div>`;}).join('')}</div>`}
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}</div></div>`;}).join('')}</div>`}
     ${canAttach?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:${attachments.length?8:0}px">
       <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
         <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
@@ -24502,6 +24576,21 @@ function cpUploadToTask(taskId,input){
   if(oversized.length){showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} the 1 MB limit and were not uploaded.`);}
   const valid=sizeOk.filter(f=>f.size<=1048576);
   if(!valid.length){input.value='';return;}
+  // Server mode: the file goes to /api/portal-action, which stores it in file storage (so Etcher
+  // can open it on any device) and records it. One file per request keeps each one small.
+  if(_portalServerMode()){
+    (async()=>{
+      for(const file of valid){
+        const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
+        if(!data){showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');continue;}
+        const fid='cf-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+        const ok=await _portalAction('uploadFile',{taskId,files:[{id:fid,name:file.name,type:file.type,size:file.size,data}]});
+        if(!ok)break;
+      }
+      input.value='';cpCloseTaskModal();cpOpenTaskModal(taskId);
+    })();
+    return;
+  }
   let done=0;
   const uploadedNames=[];
   // saveDB used to fire only from the success branch of whichever file finished LAST — so if
@@ -24510,21 +24599,10 @@ function cpUploadToTask(taskId,input){
   // at all: it looked uploaded until the next reload, then quietly vanished. Route every
   // completion path (success, storage-full, read-error) through one shared finish() so the
   // save always happens once all files are accounted for, regardless of which one finishes last.
-  // Server mode: bytes still go to this browser's local file store (unchanged — Supabase
-  // Storage is a separate item), but the file RECORD goes through /api/portal-action, which
-  // validates it server-side. On failure the local bytes are removed again.
-  const serverMeta=[];
+
   const finish=()=>{
     if(done!==valid.length)return;
     const reopen=()=>{input.value='';cpCloseTaskModal();cpOpenTaskModal(taskId);};
-    if(_portalServerMode()){
-      if(!serverMeta.length){reopen();return;}
-      _portalAction('uploadFile',{taskId,files:serverMeta}).then(ok=>{
-        if(!ok)serverMeta.forEach(m=>_deleteFileData(m.id));
-        reopen();
-      });
-      return;
-    }
     if(uploadedNames.length)_cpNotifyStaffOnUpload(rawTask,uploadedNames);
     saveDB(DB);
     reopen();
@@ -24538,10 +24616,6 @@ function cpUploadToTask(taskId,input){
       // so if the browser refuses the write the file is not added to the list at all.
       if(!_saveFileData(fid,e.target.result)){
         showAlert('"'+file.name+'" could not be saved — this browser\'s storage is full. Attachments are kept in the browser, so there is a hard limit of about 5 MB in total. Remove some attachments, or attach the document as a link instead.','Storage Full');
-        done++;finish();return;
-      }
-      if(_portalServerMode()){
-        serverMeta.push({id:fid,name:file.name,type:file.type,size:file.size});
         done++;finish();return;
       }
       DB.taskFiles.push({
@@ -24559,6 +24633,25 @@ function cpUploadToTask(taskId,input){
     reader.onerror=()=>{showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');done++;finish();};
     reader.readAsDataURL(file);
   });
+}
+
+// Opens (dl=false) or downloads (dl=true) a task file in the portal. A client in server mode
+// asks /api/portal-file, which checks the file is theirs to see and returns a 2-minute signed
+// link; the tab is opened before the await so the popup blocker allows it.
+async function cpOpenFile(id,dl){
+  const f=(DB.taskFiles||[]).find(x=>x.id===id);if(!f)return;
+  if(_portalServerMode()&&f.stored){
+    const w=dl?null:window.open('about:blank','_blank');
+    try{
+      const r=await fetch('/api/portal-file?id='+encodeURIComponent(id)+(dl?'&dl=1':''),{headers:await _adminApiAuthHeaders(),cache:'no-store'});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||!j.url)throw new Error(j.error||'Could not open the file.');
+      if(dl)_clickDownload(j.url);else if(w){w.opener=null;w.location.href=j.url;}
+    }catch(e){if(w)w.close();showAlert(e.message||'Could not open the file. Please try again.','File');}
+    return;
+  }
+  if(dl){_downloadTaskFile(id);return;}
+  wsPreviewFile(id);
 }
 
 function cpClearApproval(taskId){

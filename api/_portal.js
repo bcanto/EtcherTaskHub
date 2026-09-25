@@ -88,6 +88,16 @@ function taskVisibleTo(blob, clientId, t) {
   return !!t && !t.archived && !taskHidden(blob, t) && taskClientId(blob, t) === clientId;
 }
 // Same definition the portal uses for "this is waiting on you".
+// A task file is visible to the client when its task is, and either the client uploaded it, or
+// staff haven't switched attachments off for the task (clientAttachmentsHidden) and haven't
+// marked this one file Internal. Used by the slice and by /api/portal-file before signing a URL.
+function fileVisibleTo(blob, clientId, f) {
+  if (!f) return false;
+  const t = findTask(blob, f.taskId);
+  if (!taskVisibleTo(blob, clientId, t)) return false;
+  if (f.uploadedByClientId === clientId) return true;
+  return f.internalOnly !== true && !t.clientAttachmentsHidden;
+}
 function awaitingClient(t) {
   return t.currentlyWithType === 'client' || t.status === 'ready-approval' || t.status === 'waiting-client';
 }
@@ -167,8 +177,8 @@ function sliceForClient(blob, clientId, userId) {
     }),
     // internalOnly === true is internal. Legacy rows (undefined) stay visible — decision D1 of
     // PLAN-client-board-and-actions.md, unchanged here.
-    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && f.internalOnly !== true)
-      .map(f => pick(f, ['id', 'taskId', 'name', 'type', 'size', 'url', 'internalOnly', 'uploadedByClientId', 'actionRequestId', 'addedAt', 'uploadedAt'])),
+    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && fileVisibleTo(blob, clientId, f))
+      .map(f => ({ ...pick(f, ['id', 'taskId', 'name', 'type', 'size', 'url', 'internalOnly', 'uploadedByClientId', 'actionRequestId', 'addedAt', 'uploadedAt']), stored: !!f.storagePath })),
     actionRequests: arr(blob.actionRequests).filter(r => taskIds.has(r.taskId)).map(sliceActionRequest),
     clientWorkRequests: arr(blob.clientWorkRequests).filter(r => r.clientId === clientId).map(clone),
     notifications: arr(blob.notifications).filter(n => userId && n.recipientId === userId).map(clone),
@@ -371,32 +381,42 @@ function applyPortalAction(blob, ctx, action) {
     }
 
     case 'uploadFile': {
-      // Metadata only. The bytes stay in the uploading browser's local file store, exactly as
-      // before this change (moving them to Supabase Storage is a separate item — plan §4).
+      // The file travels as a data URL and is stored in Supabase Storage by portal-action.js
+      // (result.uploads) before the record is written, so staff on any device can open it.
+      // One request stays well under Vercel's 4.5 MB body limit: 3 files / 3 MB at most.
       const task = visibleTask(a.taskId);
       if (!task) return fail('Task not found.', 404);
       if (!awaitingClient(task)) return fail('You can add documents while a task is waiting on you.', 409);
       const files = arr(a.files);
-      if (!files.length || files.length > 10) return fail('Choose between 1 and 10 files.');
+      if (!files.length || files.length > 3) return fail('Choose between 1 and 3 files.');
+      const uploads = [];
+      let total = 0;
       for (const x of files) {
         if (!/^cf-[A-Za-z0-9-]{1,48}$/.test(String(x.id || ''))) return fail('Invalid file id.');
         const name = String(x.name || '');
         if (!name || name.length > 255) return fail('Invalid file name.');
         if (blockedFile(name, x.type)) return fail(`"${name}" cannot be uploaded (file type not allowed).`);
-        if (!(x.size > 0) || x.size > MAX_FILE_BYTES) return fail(`"${name}" exceeds the 1 MB limit.`);
+        const dm = DATA_URL_RE.exec(typeof x.data === 'string' ? x.data : '');
+        if (!dm) return fail(`"${name}" could not be read. Please try again.`);
+        if (blockedFile(name, dm[1])) return fail(`"${name}" cannot be uploaded (file type not allowed).`);
+        const bytes = Math.floor(dm[3].length * 3 / 4) - (dm[3].endsWith('==') ? 2 : dm[3].endsWith('=') ? 1 : 0);
+        if (!(bytes > 0) || bytes > MAX_FILE_BYTES) return fail(`"${name}" exceeds the 1 MB limit.`);
+        total += bytes;
+        if (total > MAX_REQUEST_ATTACH_BYTES) return fail('Upload at most 3 MB at a time.');
         if (arr(blob.taskFiles).some(f => f.id === x.id)) return fail('Duplicate file id.', 409);
+        uploads.push({ id: x.id, name, type: normaliseMime(dm[1]), size: bytes, base64: dm[3], path: `tasks/${task.id}/${x.id}` });
       }
       const open = openRequestFor(blob, task.id);
       if (!blob.taskFiles) blob.taskFiles = [];
-      files.forEach(x => {
-        const f = { id: x.id, taskId: task.id, name: String(x.name), type: String(x.type || ''), size: x.size,
+      uploads.forEach(u => {
+        const f = { id: u.id, taskId: task.id, name: u.name, type: u.type, size: u.size, storagePath: u.path,
           uploadedAt: ctx.now, uploadedByClientId: ctx.clientId, internalOnly: false };
         if (open) f.actionRequestId = open.id;
         blob.taskFiles.push(f);
       });
-      const label = files.length === 1 ? `"${files[0].name}"` : `${files.length} files`;
+      const label = uploads.length === 1 ? `"${uploads[0].name}"` : `${uploads.length} files`;
       rec.notifyTaskPeople(task, 'client_comment', `${clientName} uploaded ${label} on: ${taskName(task)}`);
-      return ok({ append: ['taskFiles', 'notifications'] });
+      return { ...ok({ append: ['taskFiles', 'notifications'] }), uploads: uploads.map(u => ({ path: u.path, type: u.type, base64: u.base64 })) };
     }
 
     case 'approve': {
@@ -550,5 +570,5 @@ function checkConfined(before, after, spec) {
 module.exports = {
   sliceForClient, sliceForShare, applyPortalAction, checkConfined,
   // exported for tests
-  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk, blockedFile, normaliseMime, DATA_URL_RE, recentActivity,
+  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk, blockedFile, normaliseMime, DATA_URL_RE, recentActivity, fileVisibleTo,
 };

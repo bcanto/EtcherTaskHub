@@ -10,6 +10,7 @@ const { requireClientCaller } = require('./_authAdmin');
 const { readBlob, casWrite } = require('./_blob');
 const { sliceForClient, applyPortalAction, checkConfined } = require('./_portal');
 const { sendNotificationEmail } = require('./_email');
+const { putObject } = require('./_storage');
 
 const rid = () => crypto.randomBytes(6).toString('hex').slice(0, 8);
 const sameIgnoringSavedAt = (a, b) => {
@@ -25,6 +26,7 @@ module.exports = async function handler(req, res) {
   if (!action || typeof action.type !== 'string') return res.status(400).json({ error: 'Missing action.' });
 
   try {
+    let stored = false;   // uploaded paths are deterministic (tasks/<task>/<file id>): upload once
     for (let attempt = 0; attempt < 4; attempt++) {
       const { data, updatedAt } = await readBlob();
       const before = JSON.parse(JSON.stringify(data));
@@ -40,6 +42,12 @@ module.exports = async function handler(req, res) {
       }
       if (sameIgnoringSavedAt(before, after)) {
         return res.status(200).json({ ok: true, slice: sliceForClient(after, caller.clientId, caller.id) });
+      }
+      // Bytes first, so a file record never points at nothing. If the write below loses the
+      // race, the retry re-applies with the same ids and the objects are already there.
+      if (!stored && result.uploads && result.uploads.length) {
+        await Promise.all(result.uploads.map(u => putObject(u.path, Buffer.from(u.base64, 'base64'), u.type)));
+        stored = true;
       }
       after._savedAt = now;
       if (await casWrite(after, updatedAt)) {
