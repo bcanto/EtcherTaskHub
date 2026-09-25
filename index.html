@@ -259,7 +259,7 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-action-btn.changes{background:#fef3c7;color:#b45309;border:1.5px solid #fde68a}
 .cp-action-btn.changes:hover{background:#fde68a}
 .cp-file-btn{display:inline-flex;align-items:center;background:none;border:none;padding:2px;margin:0;border-radius:4px;color:#97bcbd;cursor:pointer}
-.cp-file-btn:hover{color:#0d6e4e;background:#e6f0ee}.cp-file-btn:active{background:#d5e6e2}.cp-file-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.cp-file-btn:hover{color:#0d6e4e;background:#e6f0ee}.cp-file-del:hover{color:#dc2626;background:#fef2f2}.cp-file-del:active{background:#fee2e2}.cp-file-btn:active{background:#d5e6e2}.cp-file-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
 .cp-action-btn.decline{background:#fff;color:#b91c1c;border:1.5px solid #fecaca}
 .cp-action-btn.decline:hover{background:#fef2f2;border-color:#fca5a5}
 .cp-action-btn.decline:active{background:#fee2e2}
@@ -2411,7 +2411,7 @@ function _mergeDB(current, incoming){
   // Merge every remaining collection of {id} records by id instead of naming them one by
   // one — a whitelist only protects what someone remembered to add to it.
   const _named=new Set(['tasks','comments','clientComments','notifications','meetingNotes',
-    'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds','clientNotes']);
+    'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds','deletedTaskFileIds','clientNotes']);
   for(const key of new Set([...Object.keys(current||{}),...Object.keys(incoming||{})])){
     if(_named.has(key))continue;
     const cur=Array.isArray(current[key])?current[key]:null;
@@ -2435,6 +2435,11 @@ function _mergeDB(current, incoming){
   const deletedWorkRequestIds=new Set([...(current.deletedWorkRequestIds||[]),...(incoming.deletedWorkRequestIds||[])]);
   merged.deletedWorkRequestIds=[...deletedWorkRequestIds];
   if(deletedWorkRequestIds.size)merged.clientWorkRequests=(merged.clientWorkRequests||[]).filter(r=>!deletedWorkRequestIds.has(r.id));
+  // taskFiles merge by id and can only ever add, so a deleted attachment came back from the
+  // server copy on the very next save (deleted, refreshed, there again). Same tombstone scheme.
+  const deletedTaskFileIds=new Set([...(current.deletedTaskFileIds||[]),...(incoming.deletedTaskFileIds||[])]);
+  merged.deletedTaskFileIds=[...deletedTaskFileIds];
+  if(deletedTaskFileIds.size)merged.taskFiles=(merged.taskFiles||[]).filter(x=>!deletedTaskFileIds.has(x.id));
   // dependencies has no tombstone at all: mergeById only ever ADDS, so removing a predecessor
   // on one side while a stale peer still has that exact dependency record resurrects it on the
   // next merge — silently re-establishing a schedule constraint someone deliberately removed,
@@ -22646,7 +22651,7 @@ function _previewShell(name,href,inner){
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e8edf4;flex-shrink:0">'+
       '<span style="font-size:13px;font-weight:600;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">'+escHtml(name)+'</span>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">'+
-        (href?'<a href="'+href+'" download="'+escHtml(name)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#4a6572;text-decoration:none;padding:5px 12px;border:1px solid #cfdae4;border-radius:6px" onmouseover="this.style.background=\'#0d1c33\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#4a6572\'">Download</a>':'')+
+        (href?'<a href="'+escHtml(href)+'" download="'+escHtml(name)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#4a6572;text-decoration:none;padding:5px 12px;border:1px solid #cfdae4;border-radius:6px" onmouseover="this.style.background=\'#0d1c33\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'transparent\';this.style.color=\'#4a6572\'">Download</a>':'')+
         '<button onclick="_closeFilePreview()" style="background:none;border:none;cursor:pointer;color:#6b8399;font-size:22px;line-height:1;padding:2px 8px;border-radius:4px" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'none\'" title="Close">&times;</button>'+
       '</div>'+
     '</div>'+
@@ -22674,11 +22679,13 @@ function _previewMessage(msg,href,name){
   return '<div style="padding:48px 32px;text-align:center;max-width:420px">'+
     '<div style="margin-bottom:12px;color:#c8d4e0">'+icon('doc',34)+'</div>'+
     '<div style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:16px">'+escHtml(msg)+'</div>'+
-    (href?'<a href="'+href+'" download="'+escHtml(name||'file')+'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;text-decoration:none;padding:8px 18px;border-radius:7px">Download instead</a>':'')+
+    (href?'<a href="'+escHtml(href)+'" download="'+escHtml(name||'file')+'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#0d1c33;text-decoration:none;padding:8px 18px;border-radius:7px">Download instead</a>':'')+
   '</div>';
 }
-async function wsPreviewFile(id){
-  let data=_getFileData(id);
+async function wsPreviewFile(id,preData){
+  // preData: the file itself (a data: URL) when the caller already fetched it — the portal does,
+  // via a signed link. Anything else (older (id,name,type) calls) is ignored.
+  let data=(typeof preData==='string'&&preData.startsWith('data:'))?preData:_getFileData(id);
   if(!data){
     const rec=(DB.taskFiles||[]).find(x=>x.id===id);
     if(rec&&rec.storagePath){try{data=await _fileDataUrl(rec);}catch(e){console.warn('[storage preview]',e&&e.message||e);}}
@@ -22703,7 +22710,7 @@ async function wsPreviewFile(id){
   const isSheet=['xlsx','xls','csv'].includes(ext);
 
   if(isImg){
-    _previewShell(name,data,'<img src="'+data+'" style="max-width:100%;max-height:calc(85vh - 80px);object-fit:contain;display:block;border-radius:4px"/>');
+    _previewShell(name,data,'<img src="'+escHtml(data)+'" style="max-width:100%;max-height:calc(85vh - 80px);object-fit:contain;display:block;border-radius:4px"/>');
     return;
   }
   if(isPdf){
@@ -22790,6 +22797,7 @@ function wsDeleteAttachment(attId){
   const _rec=(DB.taskFiles||[]).find(f=>f.id===attId);
   if(_rec&&_rec.storagePath)_storageRemove(_rec.storagePath);
   DB.taskFiles=(DB.taskFiles||[]).filter(f=>f.id!==attId);
+  if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(attId))DB.deletedTaskFileIds.push(attId);
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
@@ -24244,7 +24252,7 @@ function cpOpenTaskModal(taskId){
   const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
     <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
     ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
-      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}</div></div>`;}).join('')}</div>`}
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}${f.uploadedByClientId&&f.uploadedByClientId===currentUser?.clientId?`<button type="button" class="cp-file-btn cp-file-del" style="margin-left:3px" onclick="cpRemoveFile('${f.id}')" title="Remove — you added this"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}</div></div>`;}).join('')}</div>`}
     ${canAttach?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:${attachments.length?8:0}px">
       <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
         <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
@@ -24637,21 +24645,42 @@ function cpUploadToTask(taskId,input){
 
 // Opens (dl=false) or downloads (dl=true) a task file in the portal. A client in server mode
 // asks /api/portal-file, which checks the file is theirs to see and returns a 2-minute signed
-// link; the tab is opened before the await so the popup blocker allows it.
+// link. View fetches the file through it and shows it in the same preview pop-up staff use.
+let _cpFileBusy=false;
 async function cpOpenFile(id,dl){
-  const f=(DB.taskFiles||[]).find(x=>x.id===id);if(!f)return;
+  const f=(DB.taskFiles||[]).find(x=>x.id===id);if(!f||_cpFileBusy)return;
   if(_portalServerMode()&&f.stored){
-    const w=dl?null:window.open('about:blank','_blank');
+    _cpFileBusy=true;document.body.style.cursor='progress';
     try{
       const r=await fetch('/api/portal-file?id='+encodeURIComponent(id)+(dl?'&dl=1':''),{headers:await _adminApiAuthHeaders(),cache:'no-store'});
       const j=await r.json().catch(()=>({}));
       if(!r.ok||!j.url)throw new Error(j.error||'Could not open the file.');
-      if(dl)_clickDownload(j.url);else if(w){w.opener=null;w.location.href=j.url;}
-    }catch(e){if(w)w.close();showAlert(e.message||'Could not open the file. Please try again.','File');}
+      if(dl){_clickDownload(j.url);return;}
+      const blob=await (await fetch(j.url)).blob();
+      const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});
+      await wsPreviewFile(id,data);
+    }catch(e){showAlert(e.message||'Could not open the file. Please try again.','File');}
+    finally{_cpFileBusy=false;document.body.style.cursor='';}
     return;
   }
   if(dl){_downloadTaskFile(id);return;}
   wsPreviewFile(id);
+}
+
+// A client removes a file or link its company added (the server refuses Etcher's files).
+function cpRemoveFile(id){
+  if(currentUser?.role!=='client')return;
+  const f=(DB.taskFiles||[]).find(x=>x.id===id);
+  if(!f||f.uploadedByClientId!==currentUser.clientId)return;
+  const taskId=f.taskId;
+  openConfirm('Remove file',`Remove "${f.name}" from this task? Etcher will be told it was removed.`,'Remove',()=>{
+    const reopen=()=>{cpCloseTaskModal();cpOpenTaskModal(taskId);};
+    if(_portalServerMode()){_portalAction('removeFile',{fileId:id}).then(ok=>{if(ok)reopen();});return;}
+    _deleteFileData(id);
+    DB.taskFiles=(DB.taskFiles||[]).filter(x=>x.id!==id);
+    if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(id))DB.deletedTaskFileIds.push(id);
+    saveDB(DB);reopen();
+  });
 }
 
 function cpClearApproval(taskId){

@@ -10,7 +10,7 @@ const { requireClientCaller } = require('./_authAdmin');
 const { readBlob, casWrite } = require('./_blob');
 const { sliceForClient, applyPortalAction, checkConfined } = require('./_portal');
 const { sendNotificationEmail } = require('./_email');
-const { putObject } = require('./_storage');
+const { putObject, removeObjects } = require('./_storage');
 
 const rid = () => crypto.randomBytes(6).toString('hex').slice(0, 8);
 const sameIgnoringSavedAt = (a, b) => {
@@ -52,6 +52,7 @@ module.exports = async function handler(req, res) {
       after._savedAt = now;
       if (await casWrite(after, updatedAt)) {
         await Promise.allSettled((result.emails || []).map(e => sendNotificationEmail(e)));
+        if (result.removals && result.removals.length) await removeObjects(result.removals);   // after the record is gone
         return res.status(200).json({ ok: true, slice: sliceForClient(after, caller.clientId, caller.id) });
       }
       await new Promise(r => setTimeout(r, 80 * (attempt + 1)));   // someone saved first — retry on their data

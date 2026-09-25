@@ -419,6 +419,19 @@ function applyPortalAction(blob, ctx, action) {
       return { ...ok({ append: ['taskFiles', 'notifications'] }), uploads: uploads.map(u => ({ path: u.path, type: u.type, base64: u.base64 })) };
     }
 
+    case 'removeFile': {
+      // A client may remove a file or link its own company added — never one from Etcher.
+      const file = arr(blob.taskFiles).find(x => x.id === a.fileId);
+      const task = file ? visibleTask(file.taskId) : null;
+      if (!file || !task || file.uploadedByClientId !== ctx.clientId) return fail('File not found.', 404);
+      blob.taskFiles = blob.taskFiles.filter(x => x.id !== file.id);
+      // Tombstone: without it a staff browser still holding the file re-adds it on its next save.
+      if (!blob.deletedTaskFileIds) blob.deletedTaskFileIds = [];
+      if (!blob.deletedTaskFileIds.includes(file.id)) blob.deletedTaskFileIds.push(file.id);
+      rec.notifyTaskPeople(task, 'client_comment', `${clientName} removed "${file.name}" from: ${taskName(task)}`);
+      return { ...ok({ remove: { taskFiles: [file.id] }, append: ['notifications', 'deletedTaskFileIds'] }), removals: file.storagePath ? [file.storagePath] : [] };
+    }
+
     case 'approve': {
       const task = visibleTask(a.taskId);
       if (!task) return fail('Task not found.', 404);
@@ -538,10 +551,18 @@ function checkConfined(before, after, spec) {
   const problems = [];
   const append = new Set((spec && spec.append) || []);
   const modify = (spec && spec.modify) || {};
+  const remove = (spec && spec.remove) || {};
   const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})]);
   keys.delete('_savedAt');
   for (const k of keys) {
-    const b = before[k], a = after[k];
+    let b = before[k];
+    const a = after[k];
+    if (remove[k]) {
+      const gone = new Set(remove[k]);
+      if (arr(b).filter(x => x && gone.has(x.id)).length !== gone.size) { problems.push(`${k}: removed id not present`); continue; }
+      if (arr(a).some(x => x && gone.has(x.id))) { problems.push(`${k}: declared removal still present`); continue; }
+      b = arr(b).filter(x => !(x && gone.has(x.id)));   // then the rest must be untouched
+    }
     if (append.has(k)) {
       const bl = arr(b), al = arr(a);
       if (al.length < bl.length) { problems.push(`${k}: items removed`); continue; }
