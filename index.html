@@ -867,6 +867,17 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tp-prop-lbl{font-size:9.5px;font-weight:700;color:#a8b8c8;text-transform:uppercase;letter-spacing:0.07em;flex-shrink:0}
 .tp-prop-val{min-width:0;font-size:13px;color:var(--text-1);display:flex;align-items:center;gap:6px;min-height:24px}
 .tp-prop-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-switches{flex-direction:column;align-items:flex-start;gap:5px;padding:2px 0}
+.tp-switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap;line-height:1.2;border-radius:6px}
+.tp-switch input{appearance:none;-webkit-appearance:none;position:relative;flex-shrink:0;width:26px;height:15px;margin:0;border-radius:999px;background:#d3dde8;cursor:pointer}
+.tp-switch input::before{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(13,28,51,0.25);transition:transform 0.22s cubic-bezier(0.34,1.4,0.64,1)}
+.tp-switch input:checked{background:#0d6e4e}
+.tp-switch input:checked::before{transform:translateX(11px)}
+.tp-switch:hover input{box-shadow:0 0 0 3px rgba(151,188,189,0.25)}
+.tp-switch input:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+.tp-switch:active input::before{transform:scale(0.9)}
+.tp-switch:active input:checked::before{transform:translateX(11px) scale(0.9)}
+.tp-switch-txt.off{color:#b45309}
 /* Editable controls read as fields on hover rather than carrying a border at rest. */
 .tp-prop-val select,.tp-prop-val input[type=date]{border:none;background:transparent;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);cursor:pointer;padding:3px 4px;border-radius:6px;max-width:100%;transition:background 0.12s}
 .tp-prop-val select{width:100%;margin-left:-4px}
@@ -19190,14 +19201,14 @@ function renderTpDetails(task){
     </div>
     ${_tpCli?`<div class="tp-prop">
       <span class="tp-prop-lbl">Portal Visibility</span>
-      <div class="tp-prop-val">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568" title="Off by default \u2014 every task is client-visible unless hidden here">
-          <input type="checkbox" ${task.clientHidden?'checked':''} onchange="tpSaveField('clientHidden',this.checked);this.nextElementSibling.textContent=this.checked?'Hidden from client':'Visible to client';this.nextElementSibling.style.color=this.checked?'#b45309':'#4a5568';"/>
-          <span style="color:${task.clientHidden?'#b45309':'#4a5568'}">${task.clientHidden?'Hidden from client':'Visible to client'}</span>
+      <div class="tp-prop-val tp-switches">
+        <label class="tp-switch" title="Every task is client-visible unless switched off here">
+          <input type="checkbox" role="switch" ${!task.clientHidden?'checked':''} onchange="tpSaveField('clientHidden',!this.checked);const t=this.parentNode.querySelector('.tp-switch-txt');t.textContent=this.checked?'Visible to client':'Hidden from client';t.classList.toggle('off',!this.checked);"/>
+          <span class="tp-switch-txt${!task.clientHidden?'':' off'}">${!task.clientHidden?'Visible to client':'Hidden from client'}</span>
         </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568;margin-top:4px" title="Clients see the task description in the portal. Tick for tasks whose description holds internal notes.">
-          <input type="checkbox" ${task.clientDescriptionHidden?'checked':''} onchange="tpSaveField('clientDescriptionHidden',this.checked);this.nextElementSibling.textContent=this.checked?'Description hidden from client':'Description shown to client';this.nextElementSibling.style.color=this.checked?'#b45309':'#4a5568';"/>
-          <span style="color:${task.clientDescriptionHidden?'#b45309':'#4a5568'}">${task.clientDescriptionHidden?'Description hidden from client':'Description shown to client'}</span>
+        <label class="tp-switch" title="Switch off for tasks whose description holds internal notes">
+          <input type="checkbox" role="switch" ${!task.clientDescriptionHidden?'checked':''} onchange="tpSaveField('clientDescriptionHidden',!this.checked);const t=this.parentNode.querySelector('.tp-switch-txt');t.textContent=this.checked?'Description shown':'Description hidden';t.classList.toggle('off',!this.checked);"/>
+          <span class="tp-switch-txt${!task.clientDescriptionHidden?'':' off'}">${!task.clientDescriptionHidden?'Description shown':'Description hidden'}</span>
         </label>
       </div>
     </div>`:''}
