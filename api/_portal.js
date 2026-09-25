@@ -18,8 +18,28 @@
 'use strict';
 
 const DONE_STATUSES = ['done', 'completed', 'completed-approved'];
-const BLOCKED_MIME = new Set(['image/svg+xml', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml']);
-const BLOCKED_EXT = /\.(svg|html?|xml)$/i;
+// Types a browser could render or run. Checked after normaliseMime (lower-case, no parameters),
+// so "TEXT/HTML", "text/html;charset=utf-8" or a non-string type no longer slip past.
+const BLOCKED_MIME = new Set(['image/svg+xml', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml',
+  'text/javascript', 'application/javascript', 'application/ecmascript', 'text/ecmascript', 'text/x-component',
+  'application/hta', 'message/rfc822', 'multipart/related', 'application/x-shockwave-flash']);
+const BLOCKED_EXT = /\.(svgz?|html?|xhtml?|xht|shtml|mht|mhtml|xml|xsl|xslt|hta|js|mjs|jse|vbs|vbe|wsf|scr|lnk|php)$/i;
+function normaliseMime(t) { return String(t == null ? '' : t).toLowerCase().split(';')[0].trim(); }
+// Trailing dots/spaces are dropped by Windows when saving, so "a.html. " is an .html file.
+function blockedFile(name, type) {
+  return BLOCKED_MIME.has(normaliseMime(type)) || BLOCKED_EXT.test(String(name).replace(/[.\s]+$/, ''));
+}
+// A work-request attachment is stored and later used as a link href, so accept only exactly what
+// FileReader.readAsDataURL produces: data:<type>/<subtype>[;params];base64,<base64>. No quotes,
+// brackets or spaces can get through, and the embedded type is checked like the declared one.
+const DATA_URL_RE = /^data:([a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+)((?:;[a-z0-9_.+-]+=[a-z0-9_.+-]+)*);base64,([A-Za-z0-9+/]*={0,2})$/i;
+// Abuse limits. Counted from timestamps the data already carries (see recentActivity), so no
+// extra state is stored and nothing needs resetting.
+const RATE_PER_MINUTE = 20;
+const RATE_PER_DAY = 500;
+const MAX_OPEN_WORK_REQUESTS = 10;
+const MAX_OPEN_REQUEST_ATTACH_CHARS = Math.ceil(6 * 1048576 * 4 / 3);   // ~6 MB of files, base64
+const MAX_BLOB_CHARS_FOR_FILES = 10 * 1048576;  // company record size past which new files are refused
 const MAX_FILE_BYTES = 1048576;           // same 1 MB cap as the portal upload
 // A work request carries its files inline as base64 (+33%). Vercel rejects request bodies over
 // 4.5 MB before the handler runs, so cap the total well under that — the portal checks too.
@@ -266,6 +286,19 @@ function makeRecorder(blob, ctx) {
   return { emails, notify, notifyTaskPeople, notifyAllStaff, audit, clientComment, closeOpenRequest, returnToOwner };
 }
 
+// How many things this client login (comments, responses) or client company (files, links,
+// work requests) has created in the last `ms`. Items without a parseable timestamp don't count.
+function recentActivity(blob, ctx, ms) {
+  const since = Date.parse(ctx.now) - ms;
+  const recent = v => { const t = Date.parse(v); return t >= since; };
+  let n = 0;
+  for (const c of arr(blob.clientComments)) if (c.authorRole === 'client' && c.authorId === ctx.userId && recent(c.createdAt)) n++;
+  for (const f of arr(blob.taskFiles)) if (f.uploadedByClientId === ctx.clientId && recent(f.uploadedAt || f.addedAt)) n++;
+  for (const r of arr(blob.clientWorkRequests)) if (r.clientId === ctx.clientId && recent(r.submittedAt)) n++;
+  for (const r of arr(blob.actionRequests)) if (r.respondedByUserId && r.respondedByUserId === ctx.userId && recent(r.respondedAt)) n++;
+  return n;
+}
+
 // ── Actions ──────────────────────────────────────────────────────────────────────────────
 // applyPortalAction(blob, ctx, action) mutates `blob` in place and returns
 //   { ok:true, spec, emails }   spec = exactly what the action was allowed to touch, checked
@@ -281,6 +314,11 @@ function applyPortalAction(blob, ctx, action) {
   const fail = (error, status = 400) => ({ error, status });
   const visibleTask = id => { const t = findTask(blob, id); return taskVisibleTo(blob, ctx.clientId, t) ? t : null; };
   const ok = spec => ({ ok: true, spec, emails: rec.emails });
+
+  if (a.type !== 'markNotificationsRead') {
+    if (recentActivity(blob, ctx, 60 * 1000) >= RATE_PER_MINUTE) return fail('You are doing that too quickly. Please wait a minute and try again.', 429);
+    if (recentActivity(blob, ctx, 24 * 3600 * 1000) >= RATE_PER_DAY) return fail('Daily limit reached. Please contact Etcher.', 429);
+  }
 
   switch (a.type) {
     case 'postComment': {
@@ -344,7 +382,7 @@ function applyPortalAction(blob, ctx, action) {
         if (!/^cf-[A-Za-z0-9-]{1,48}$/.test(String(x.id || ''))) return fail('Invalid file id.');
         const name = String(x.name || '');
         if (!name || name.length > 255) return fail('Invalid file name.');
-        if (BLOCKED_MIME.has(x.type) || BLOCKED_EXT.test(name)) return fail(`"${name}" cannot be uploaded (file type not allowed).`);
+        if (blockedFile(name, x.type)) return fail(`"${name}" cannot be uploaded (file type not allowed).`);
         if (!(x.size > 0) || x.size > MAX_FILE_BYTES) return fail(`"${name}" exceeds the 1 MB limit.`);
         if (arr(blob.taskFiles).some(f => f.id === x.id)) return fail('Duplicate file id.', 409);
       }
@@ -436,13 +474,22 @@ function applyPortalAction(blob, ctx, action) {
       for (const x of atts) {
         const name = String(x.name || '');
         if (!name || name.length > 255) return fail('Invalid file name.');
-        if (BLOCKED_MIME.has(x.type) || BLOCKED_EXT.test(name)) return fail(`"${name}" cannot be attached (file type not allowed).`);
-        const data = String(x.data || '');
-        if (!/^data:[^,]*,/.test(data)) return fail(`"${name}" could not be read.`);
+        if (blockedFile(name, x.type)) return fail(`"${name}" cannot be attached (file type not allowed).`);
+        const data = typeof x.data === 'string' ? x.data : '';
+        const dm = DATA_URL_RE.exec(data);
+        if (!dm) return fail(`"${name}" could not be read.`);
+        if (blockedFile(name, dm[1])) return fail(`"${name}" cannot be attached (file type not allowed).`);
         if (data.length > Math.ceil(MAX_FILE_BYTES * 4 / 3) + 200) return fail(`"${name}" exceeds the 1 MB limit.`);
         total += data.length;
         if (total > Math.ceil(MAX_REQUEST_ATTACH_BYTES * 4 / 3)) return fail('Attachments can total at most 3 MB.');
-        attachments.push({ name, type: String(x.type || ''), size: Number(x.size) || 0, data });
+        attachments.push({ name, type: normaliseMime(x.type), size: Number(x.size) || 0, data });
+      }
+      const openReqs = arr(blob.clientWorkRequests).filter(r => r.clientId === ctx.clientId && (!r.status || r.status === 'pending' || r.status === 'reviewing'));
+      if (openReqs.length >= MAX_OPEN_WORK_REQUESTS) return fail(`You have ${openReqs.length} requests waiting for Etcher. Please wait for those to be reviewed before sending more.`, 429);
+      if (attachments.length) {
+        const stored = openReqs.reduce((n, r) => n + arr(r.attachments).reduce((m, x) => m + String(x.data || '').length, 0), 0);
+        if (stored + total > MAX_OPEN_REQUEST_ATTACH_CHARS) return fail('Your open requests already hold the maximum amount of attachments. Please send files as SharePoint links, or wait for Etcher to review your open requests.', 429);
+        if (JSON.stringify(blob).length + total > MAX_BLOB_CHARS_FOR_FILES) return fail('File storage is full right now. Please send files as SharePoint links, or contact Etcher.', 507);
       }
       if (!blob.clientWorkRequests) blob.clientWorkRequests = [];
       blob.clientWorkRequests.push({ id: 'wr-' + ctx.rid() + ctx.rid(), clientId: ctx.clientId, title, description, priority,
@@ -503,5 +550,5 @@ function checkConfined(before, after, spec) {
 module.exports = {
   sliceForClient, sliceForShare, applyPortalAction, checkConfined,
   // exported for tests
-  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk,
+  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk, blockedFile, normaliseMime, DATA_URL_RE, recentActivity,
 };

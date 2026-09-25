@@ -82,7 +82,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https://placehold.co https://*.supabase.co",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "connect-src 'self' https://wowwiafaqzovlfwzyktj.supabase.co wss://wowwiafaqzovlfwzyktj.supabase.co",
   "object-src 'none'",
   // The PDF preview frames the file as a blob: URL; data: iframes are refused and
   // without frame-src this falls back to default-src 'self' and blocks the preview.
