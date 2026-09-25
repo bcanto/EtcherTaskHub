@@ -54,6 +54,7 @@ window._supabaseReady = (async function _initSupabase() {
       if (event === 'TOKEN_REFRESHED') return; // silent, no UI change needed
       if (event === 'SIGNED_OUT') {
         if (window._shareRouteActive) return; // share page — no auth UI to touch
+        if (window._portalLoggingOut) return; // doLogout already running (it calls signOut)
         const loginVisible = !document.getElementById('login-screen')?.classList.contains('hidden');
         if (!loginVisible && typeof doLogout === 'function') doLogout();
         return;

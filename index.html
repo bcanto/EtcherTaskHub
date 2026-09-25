@@ -4090,7 +4090,17 @@ function doLogout(){
     const signOut=window._supabase.auth.signOut().catch(()=>{});
     // A client session holds a server-built slice, not the company data. Reload once the JWT
     // is cleared so a staff login in this tab starts clean instead of merging the slice.
-    if(DB._portalSlice){signOut.finally(()=>location.replace(location.pathname));return;}
+    // signOut fires SIGNED_OUT, and supabase-client.js answers that with doLogout() while the
+    // login screen is hidden — so show it now and refuse re-entry, or the two call each other
+    // hundreds of times a second and every new reload cancels the last (sign-out hung).
+    if(DB._portalSlice){
+      if(window._portalLoggingOut)return;
+      window._portalLoggingOut=true;
+      document.getElementById('client-portal')?.classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      Promise.race([signOut,new Promise(r=>setTimeout(r,3000))]).then(()=>location.replace(location.pathname));
+      return;
+    }
   }
   currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
   const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
