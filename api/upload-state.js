@@ -1,6 +1,8 @@
 const handler = async function(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  if (req.headers['x-upload-secret'] !== process.env.UPLOAD_SECRET)
+  // An unset secret must refuse everyone: undefined !== undefined is false, so without this a
+  // server missing UPLOAD_SECRET (e.g. local dev with .env) accepted a blob overwrite from anyone.
+  if (!process.env.UPLOAD_SECRET || req.headers['x-upload-secret'] !== process.env.UPLOAD_SECRET)
     return res.status(401).json({ error: 'unauthorized' });
 
   const resp = await fetch(`${process.env.SUPABASE_URL}/rest/v1/app_state`, {

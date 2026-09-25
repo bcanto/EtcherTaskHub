@@ -2793,7 +2793,11 @@ async function _portalLoad(){
 // background call (the silent read-flag write) swallowing an unrelated click.
 const _portalBusy=new Set();
 async function _portalAction(type,payload,opts){
-  if(_portalBusy.has(type))return false;
+  if(_portalBusy.has(type)){
+    // Callers treat false as "not saved" (an upload deletes its local bytes), so say so.
+    if(!opts?.silent)showAlert('Still saving your previous change. Please try again in a moment.','Not saved');
+    return false;
+  }
   _portalBusy.add(type);
   try{
     const r=await fetch('/api/portal-action',{method:'POST',
@@ -2906,7 +2910,9 @@ async function _supabaseRestoreSession(session){
           // merge below, and the force-sync after _supabaseSyncEnabled=true uploads the result.
           clearTimeout(_saveDebounceTimer);_saveDebounceTimer=null;
           // Same guard as _startApp: never merge bundled demo data into the real blob.
-          const merged=DB._seedOnly===true?fresh:_mergeDB(DB,fresh);
+          // Nor a client-portal slice left over from a client login in this tab: it holds stripped
+          // tasks (no owner, description, budget), and merging them would win ties and erase fields.
+          const merged=(DB._seedOnly===true||DB._portalSlice)?fresh:_mergeDB(DB,fresh);
           for(const k in DB)delete DB[k];Object.assign(DB,merged);_reconcileActionRequests();
           _safeSaveLocal(JSON.stringify(DB));
         }
@@ -4073,7 +4079,12 @@ function launchClientView(){
 function doLogout(){
   _clearSession();
   // Sign out of Supabase Auth when configured (clears the JWT from storage)
-  if(window._supabase){window._supabase.auth.signOut().catch(()=>{});}
+  if(window._supabase){
+    const signOut=window._supabase.auth.signOut().catch(()=>{});
+    // A client session holds a server-built slice, not the company data. Reload once the JWT
+    // is cleared so a staff login in this tab starts clean instead of merging the slice.
+    if(DB._portalSlice){signOut.finally(()=>location.replace(location.pathname));return;}
+  }
   currentUser=null;currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
   const ctx=document.getElementById('wb-context');const mn=document.getElementById('main-nav');
   if(ctx){ctx.style.display='none';ctx.innerHTML='';}if(mn)mn.style.display='';
@@ -15456,11 +15467,9 @@ function notify(recipientId, taskId, type, message){
   if(_emailTypes.includes(type)){
     const _rec=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
     if(_rec?.email){
-      // notify-email now requires caller auth (api/_authAdmin.js requireAuthedCaller) — any
-      // signed-in session, not just admin, since a client session hits this same 'currently_with'
-      // type too (the return-to-owner ping after an action-request response). Reuse the same
-      // bearer-token helper the admin endpoints use; it resolves to {} with no session/offline,
-      // same as every other caller — the endpoint then 500s server-side rather than silently
+      // notify-email is staff-only (api/_authAdmin.js requireStaffCaller). A client session never
+      // gets here: its slice holds no users, and portal emails are sent by portal-action.js.
+      // _adminApiAuthHeaders resolves to {} with no session/offline; the endpoint then refuses.
       // no-op'ing, matching how invite-user/set-password already behave unconfigured.
       _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
         body:JSON.stringify({to:_rec.email,recipientName:_rec.name,type,message,
@@ -15628,7 +15637,11 @@ function tmCwChanged(sel){
   if(!t||t.currentlyWith==='client')return; // already with client — nothing to intercept
   sel.value=t.currentlyWith||'';
   const tid=editingTaskId;
-  closeTaskModal();
+  // Save the rest of the form first (with the old holder): closing it outright threw away any
+  // other edits typed before picking Client. saveTask closes the modal on success; if it is
+  // still open, validation failed and it has already said why — stay put.
+  saveTask();
+  if(editingTaskId)return;
   wsHandoffToClient(tid);
 }
 function tmOwnerChanged(newOwnerId){
@@ -23529,7 +23542,9 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
           ${dateStr?`<span style="font-size:11px;color:${overdue?'#dc2626':'#b0bec5'};white-space:nowrap;flex-shrink:0">${overdue?'⚠ ':''}${dateStr}</span>`:''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px" onclick="event.stopPropagation()">
-          ${!hasApproved?`
+          ${!hasApproved&&!_cpIsApprovalAsk(t)?`
+            <button onclick="event.stopPropagation();cpOpenTaskModal('${t.id}')" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">⚡ View request</button>
+          `:!hasApproved?`
             <button onclick="event.stopPropagation();cpApproveTask('${t.id}')" style="font-size:11px;font-weight:700;color:#fff;background:#0d6e4e;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#0d6e4e'">✓ Approve</button>
             <button onclick="event.stopPropagation();cpOpenChangesModal('${t.id}')" style="font-size:11px;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">↩ Request Review</button>
           `:`<span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:3px 10px;border-radius:20px">✓ Approved</span>`}
@@ -24087,7 +24102,7 @@ function cpOpenTaskModal(taskId){
         </span>
         <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" style="display:none"/>
       </label>
-      <button onclick="_cpToggleLinkInput('${taskId}')" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${_cpShowLinkInput?'#0078d4':'#97bcbd'};padding:5px 13px;border:1.5px ${_cpShowLinkInput?'solid #0078d4':'dashed #c8d4e0'};border-radius:6px;background:${_cpShowLinkInput?'#deecf9':'transparent'};cursor:pointer;transition:all 0.12s">
+      <button onclick="_cpToggleLinkInput('${taskId}')" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${_cpShowLinkInput?'#0078d4':'#97bcbd'};padding:5px 13px;border:1.5px ${_cpShowLinkInput?'solid #0078d4':'dashed #c8d4e0'};border-radius:6px;background:${_cpShowLinkInput?'#deecf9':'transparent'};cursor:pointer;transition:border-color 0.12s">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         SharePoint / link
       </button>
@@ -24547,8 +24562,14 @@ function renderCpRequests(clientId){
 function cpReqFileChanged(input){
   const incoming=Array.from(input.files||[]);
   const oversized=incoming.filter(f=>f.size>1048576);
-  if(oversized.length)showAlert(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} 1 MB and were not added.`);
-  _cpReqFiles=[..._cpReqFiles,...incoming.filter(f=>f.size<=1048576)];
+  const msgs=[];
+  if(oversized.length)msgs.push(`${oversized.map(f=>f.name).join(', ')} exceed${oversized.length===1?'s':''} 1 MB and ${oversized.length===1?'was':'were'} not added.`);
+  // Files travel inline with the request, and the server refuses more than 3 MB in total
+  // (the hosting limit on one request is 4.5 MB, and base64 adds a third).
+  let total=_cpReqFiles.reduce((n,f)=>n+f.size,0);const overTotal=[];
+  incoming.filter(f=>f.size<=1048576).forEach(f=>{if(total+f.size>3*1048576||_cpReqFiles.length>=10){overTotal.push(f.name);return;}total+=f.size;_cpReqFiles.push(f);});
+  if(overTotal.length)msgs.push(`${overTotal.join(', ')} would take the attachments over the limit (10 files, 3 MB in total) and ${overTotal.length===1?'was':'were'} not added.`);
+  if(msgs.length)showAlert(msgs.join(' '));
   const list=document.getElementById('cp-req-file-list');
   if(list)list.innerHTML=_cpReqFiles.map((f,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4a5568;border:1px solid #e2eaf2">${escHtml(f.name)}<button onclick="event.preventDefault();_cpReqFiles.splice(${i},1);cpReqFileChanged({files:[]});" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:0 2px 0 4px;font-size:13px;line-height:1">×</button></span>`).join('');
   input.value='';

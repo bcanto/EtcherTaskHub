@@ -21,6 +21,9 @@ const DONE_STATUSES = ['done', 'completed', 'completed-approved'];
 const BLOCKED_MIME = new Set(['image/svg+xml', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml']);
 const BLOCKED_EXT = /\.(svg|html?|xml)$/i;
 const MAX_FILE_BYTES = 1048576;           // same 1 MB cap as the portal upload
+// A work request carries its files inline as base64 (+33%). Vercel rejects request bodies over
+// 4.5 MB before the handler runs, so cap the total well under that — the portal checks too.
+const MAX_REQUEST_ATTACH_BYTES = 3 * 1048576;
 const EMAIL_TYPES = new Set(['mention', 'task_assigned', 'owner_changed', 'currently_with']);
 const KIND_VERB = { review: 'review', approve: 'approve', supply: 'supply information for', decide: 'decide on', info: 'see' };
 
@@ -70,6 +73,12 @@ function awaitingClient(t) {
 }
 function openRequestFor(blob, taskId) {
   return arr(blob.actionRequests).find(r => r.taskId === taskId && r.status === 'open') || null;
+}
+// Same rule as the portal's _cpIsApprovalAsk: Approve / Request changes only answer an approval
+// ask. A "review X" or "send us Y" request is answered with Mark done, never by approving the task.
+function isApprovalAsk(blob, t) {
+  const open = openRequestFor(blob, t.id);
+  return t.status === 'ready-approval' || !open || open.kind === 'approve';
 }
 
 // ── The slice ────────────────────────────────────────────────────────────────────────────
@@ -159,7 +168,7 @@ function sliceForShare(blob, token) {
   if (link.type === 'workboard') {
     const wb = arr(blob.boards).find(b => b.id === link.targetId);
     if (!wb) return base;                      // renders "Board not found", as before
-    const tasks = arr(blob.tasks).filter(t => (t.workboardId || t.boardId) === wb.id && !t.archived);
+    const tasks = arr(blob.tasks).filter(t => (t.workboardId || t.boardId) === wb.id && !t.archived && !taskHidden(blob, t));
     const gids = new Set(tasks.map(t => t.groupId));
     base.boards = [pick(wb, ['id', 'name', 'color'])];
     base.workboards = base.boards.map(b => ({ ...b }));
@@ -351,7 +360,7 @@ function applyPortalAction(blob, ctx, action) {
     case 'approve': {
       const task = visibleTask(a.taskId);
       if (!task) return fail('Task not found.', 404);
-      if (!awaitingClient(task)) return fail('This task is not waiting on your approval.', 409);
+      if (!awaitingClient(task) || !isApprovalAsk(blob, task)) return fail('This task is not waiting on your approval.', 409);
       if (task.clientApproval && task.clientApproval.status === 'approved') return fail('Already approved.', 409);
       task.clientApproval = { status: 'approved', note: null, at: ctx.now, approvedBy: ctx.userName || 'Client' };
       const was = task.status;
@@ -368,6 +377,7 @@ function applyPortalAction(blob, ctx, action) {
       const task = visibleTask(a.taskId);
       if (!task) return fail('Task not found.', 404);
       if (!awaitingClient(task)) return fail('This task is not waiting on you.', 409);
+      if (!isApprovalAsk(blob, task)) return fail('This request is answered with Mark done, not by requesting changes.', 409);
       const note = String(a.note || '').trim();
       if (!note) return fail('Please describe the changes needed.');
       if (note.length > 2000) return fail('That note is too long.');
@@ -394,6 +404,7 @@ function applyPortalAction(blob, ctx, action) {
       const atts = arr(a.attachments);
       if (atts.length > 10) return fail('Attach at most 10 files.');
       const attachments = [];
+      let total = 0;
       for (const x of atts) {
         const name = String(x.name || '');
         if (!name || name.length > 255) return fail('Invalid file name.');
@@ -401,6 +412,8 @@ function applyPortalAction(blob, ctx, action) {
         const data = String(x.data || '');
         if (!/^data:[^,]*,/.test(data)) return fail(`"${name}" could not be read.`);
         if (data.length > Math.ceil(MAX_FILE_BYTES * 4 / 3) + 200) return fail(`"${name}" exceeds the 1 MB limit.`);
+        total += data.length;
+        if (total > Math.ceil(MAX_REQUEST_ATTACH_BYTES * 4 / 3)) return fail('Attachments can total at most 3 MB.');
         attachments.push({ name, type: String(x.type || ''), size: Number(x.size) || 0, data });
       }
       if (!blob.clientWorkRequests) blob.clientWorkRequests = [];
@@ -462,5 +475,5 @@ function checkConfined(before, after, spec) {
 module.exports = {
   sliceForClient, sliceForShare, applyPortalAction, checkConfined,
   // exported for tests
-  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient,
+  taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk,
 };
