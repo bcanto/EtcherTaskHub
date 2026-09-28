@@ -18,8 +18,15 @@ const sameIgnoringSavedAt = (a, b) => {
   return JSON.stringify(x) === JSON.stringify(y);
 };
 
+// Only requests carrying a token-shaped header start the early read, so anonymous junk
+// requests are refused before any data is fetched.
+const _looksLikeJwt = req => /^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(String((req.headers && req.headers.authorization) || ''));
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  // Read the blob while the login is checked (two independent round trips); nothing from it is
+  // used or returned unless the caller turns out to be a valid client.
+  let first = _looksLikeJwt(req) ? readBlob() : null; if (first) first.catch(() => {});
   const caller = await requireClientCaller(req, res);
   if (!caller) return;
   const action = req.body && typeof req.body === 'object' ? req.body : null;
@@ -29,7 +36,8 @@ module.exports = async function handler(req, res) {
   try {
     let stored = false;   // uploaded paths are deterministic (tasks/<task>/<file id>): upload once
     for (let attempt = 0; attempt < 4; attempt++) {
-      const { data, updatedAt } = await readBlob();
+      const { data, updatedAt } = await (first || readBlob());
+      first = null;
       const before = JSON.parse(JSON.stringify(data));
       const after = JSON.parse(JSON.stringify(data));
       const now = new Date().toISOString();

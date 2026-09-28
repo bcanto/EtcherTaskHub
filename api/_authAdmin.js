@@ -125,7 +125,9 @@ async function requireClientCaller(req, res) {
     res.status(403).json({ error: 'Client portal access required' });
     return null;
   }
-  return { id: caller.id, name: p.name || 'Client', clientId: p.client_id };
+  // The name is shown to staff in notifications and comments; a user can edit their own, so cap it.
+  const name = String(p.name || 'Client').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 100) || 'Client';
+  return { id: caller.id, name, clientId: p.client_id };
 }
 
 // Internal staff only — the same roles as the database helper public.is_internal()

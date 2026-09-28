@@ -454,6 +454,14 @@ button.cp-band-cell:focus-visible{outline:2px solid #e7a94b;outline-offset:-3px}
 .cp-m-state.warn{background:#fffaf1;border-color:#f1dcb4}
 .cp-m-state.bad{background:#fdf3f2;border-color:#f6cfcb}
 .cp-m-upload{position:relative;display:inline-flex;cursor:pointer}
+.cp-uploading-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cp-file-chip.uploading{opacity:1!important;background:#f5f9fb;border-style:dashed!important}
+.cp-up-name{font-size:12px;color:#0d1c33;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-up-state{font-size:11px;color:#6b8399}
+.cp-spin{width:12px;height:12px;border-radius:50%;border:2px solid #cfe0e0;border-top-color:#0d6e4e;animation:cpSpin 0.8s linear infinite;flex-shrink:0}
+@keyframes cpSpin{to{transform:rotate(360deg)}}
+.cp-file-chip.removing{opacity:0!important;transform:scale(0.92);transition:opacity 0.18s,transform 0.18s;pointer-events:none}
+.cp-m-upload.busy{opacity:0.5;pointer-events:none}
 .cp-m-file{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .cp-m-file::-webkit-file-upload-button{cursor:pointer}
 .cp-m-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid #d6e0ea;border-radius:9px;background:#fff;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:600;color:#33495c;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.4,0.64,1)}
@@ -24537,10 +24545,10 @@ function cpOpenTaskModal(taskId){
   // information") is exactly the same kind of moment and must not be blocked just because it
   // didn't happen to also be an approval.
   const canAttach=t.awaitingClient||hasOpenRequest;
-  const attachSection=`<div class="cp-m-sec">
+  const attachSection=`<div class="cp-m-sec" id="cp-m-attach">
     <div class="cp-m-label">Attachments${attachments.length?` <span class="cp-m-count">${attachments.length}</span>`:''}</div>
     ${attachments.length===0?`<p class="cp-m-empty">No files or links yet.</p>`
-      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}${f.uploadedByClientId&&f.uploadedByClientId===currentUser?.clientId?`<button type="button" class="cp-file-btn cp-file-del" style="margin-left:3px" onclick="cpRemoveFile('${f.id}')" title="Remove — you added this"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}</div></div>`;}).join('')}</div>`}
+      :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div class="cp-file-chip" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}${f.uploadedByClientId&&f.uploadedByClientId===currentUser?.clientId?`<button type="button" class="cp-file-btn cp-file-del" style="margin-left:3px" onclick="cpRemoveFile('${f.id}',this)" title="Remove — you added this" aria-label="Remove ${escHtml(f.name)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}</div></div>`;}).join('')}</div>`}
     ${canAttach?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:${attachments.length?8:0}px">
       <label class="cp-m-upload">
         <span class="cp-m-btn">
@@ -24871,6 +24879,12 @@ function cpUploadToTask(taskId,input){
   // Server mode: the file goes to /api/portal-action, which stores it in file storage (so Etcher
   // can open it on any device) and records it. One file per request keeps each one small.
   if(_portalServerMode()){
+    // Show the files at once — the server round trip is ~1 s each and there was no feedback.
+    const sec=document.getElementById('cp-m-attach');
+    const pending=document.createElement('div');pending.className='cp-uploading-list';
+    pending.innerHTML=valid.map(v=>`<div class="cp-file-chip uploading"><span class="cp-spin" aria-hidden="true"></span><span class="cp-up-name">${escHtml(v.name)}</span><span class="cp-up-state">Uploading…</span></div>`).join('');
+    if(sec){sec.querySelector('.cp-m-empty')?.remove();const lbl=sec.querySelector('.cp-m-label');lbl?lbl.after(pending):sec.prepend(pending);}
+    const upBtn=sec&&sec.querySelector('.cp-m-upload');if(upBtn)upBtn.classList.add('busy');input.disabled=true;
     (async()=>{
       for(const file of valid){
         const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
@@ -24952,19 +24966,21 @@ async function cpOpenFile(id,dl){
 }
 
 // A client removes a file or link its company added (the server refuses Etcher's files).
-function cpRemoveFile(id){
+// One click, no dialog: the chip disappears at once and comes back, with the reason, if the
+// server refuses.
+function cpRemoveFile(id,btn){
   if(currentUser?.role!=='client')return;
   const f=(DB.taskFiles||[]).find(x=>x.id===id);
   if(!f||f.uploadedByClientId!==currentUser.clientId)return;
   const taskId=f.taskId;
-  openConfirm('Remove file',`Remove "${f.name}" from this task? Etcher will be told it was removed.`,'Remove',()=>{
-    const reopen=()=>{cpCloseTaskModal();cpOpenTaskModal(taskId);};
-    if(_portalServerMode()){_portalAction('removeFile',{fileId:id}).then(ok=>{if(ok)reopen();});return;}
-    _deleteFileData(id);
-    DB.taskFiles=(DB.taskFiles||[]).filter(x=>x.id!==id);
-    if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(id))DB.deletedTaskFileIds.push(id);
-    saveDB(DB);reopen();
-  });
+  const chip=btn&&btn.closest('.cp-file-chip');
+  if(chip){if(chip.dataset.removing)return;chip.dataset.removing='1';chip.classList.add('removing');}
+  const reopen=()=>{if(!document.getElementById('cp-task-modal')?.classList.contains('hidden')){cpCloseTaskModal();cpOpenTaskModal(taskId);}};
+  if(_portalServerMode()){_portalAction('removeFile',{fileId:id}).then(()=>reopen());return;}
+  _deleteFileData(id);
+  DB.taskFiles=(DB.taskFiles||[]).filter(x=>x.id!==id);
+  if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(id))DB.deletedTaskFileIds.push(id);
+  saveDB(DB);reopen();
 }
 
 function cpClearApproval(taskId){

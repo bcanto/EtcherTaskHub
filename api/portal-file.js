@@ -6,15 +6,22 @@ const { readBlob } = require('./_blob');
 const { fileVisibleTo } = require('./_portal');
 const { signedUrl } = require('./_storage');
 
+// Only requests carrying a token-shaped header start the early read, so anonymous junk
+// requests are refused before any data is fetched.
+const _looksLikeJwt = req => /^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(String((req.headers && req.headers.authorization) || ''));
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  // Read the blob while the login is checked (two independent round trips); nothing from it is
+  // used or returned unless the caller turns out to be a valid client.
+  const blobP = _looksLikeJwt(req) ? readBlob() : null; if (blobP) blobP.catch(() => {});
   const caller = await requireClientCaller(req, res);
   if (!caller) return;
   const q = new URL(req.url, 'http://x').searchParams;   // the local dev server has no req.query
   const id = String(q.get('id') || (req.query && req.query.id) || '');
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return res.status(400).json({ error: 'Invalid file.' });
   try {
-    const { data } = await readBlob();
+    const { data } = await (blobP || readBlob());
     const f = (data.taskFiles || []).find(x => x.id === id);
     // Same answer for "no such file" and "not yours", so ids can't be probed.
     if (!f || !fileVisibleTo(data, caller.clientId, f) || !f.storagePath) return res.status(404).json({ error: 'File not found.' });
