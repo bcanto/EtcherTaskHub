@@ -271,6 +271,221 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;display:block}
 .cp-form-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s;box-sizing:border-box}
 .cp-form-input:focus{border-color:#0d6e4e;box-shadow:0 0 0 3px rgba(13,110,78,0.1)}
+/* ── Client portal: page body + empty states ── */
+.cp-body{flex:1;padding:28px 32px 40px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box}
+.cp-body.cp-wide{max-width:1680px}
+.cp-empty{background:#fff;border:1px solid #e2eaf2;border-radius:14px;padding:56px 24px 60px;text-align:center}
+.cp-empty-icon{width:44px;height:44px;border-radius:12px;background:#eef5f4;color:#0d6e4e;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.cp-empty-title{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;letter-spacing:-0.01em}
+.cp-empty-text{font-size:13px;color:#8da2b2;margin-top:4px;line-height:1.6}
+/* ── Client portal: schedule (cpg-*) ── */
+.cpg-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.cpg-seg{display:inline-flex;background:#fff;border:1px solid #dfe7ef;border-radius:10px;padding:3px;gap:2px}
+.cpg-seg button{border:0;background:transparent;padding:6px 13px;border-radius:7px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#5b7080;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.4,0.64,1)}
+.cpg-seg button:hover{background:#f1f5f9;color:#0d1c33}
+.cpg-seg button.on{background:#0d1c33;color:#fff}
+.cpg-seg button:focus-visible,.cpg-tool:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+.cpg-seg button:active,.cpg-tool:active:not(:disabled){transform:scale(0.96)}
+.cpg-tool{border:1px solid #dfe7ef;background:#fff;padding:7px 13px;border-radius:9px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;color:#33495c;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.4,0.64,1)}
+.cpg-tool:hover:not(:disabled){border-color:#97bcbd;color:#0d1c33}
+.cpg-tool:disabled{opacity:0.45;cursor:default}
+.cpg-summary{margin-left:auto;font-size:12px;color:#8da2b2;font-variant-numeric:tabular-nums}
+.cpg-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:2px 2px 12px;font-size:11.5px;color:#5b7080}
+.cpg-legend-item{display:inline-flex;align-items:center;gap:6px}
+.cpg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.cpg{display:flex;background:#fff;border:1px solid #e2eaf2;border-radius:14px;overflow:hidden;max-height:calc(100vh - 250px);min-height:220px;box-shadow:0 1px 2px rgba(13,28,51,0.04),0 10px 28px -12px rgba(13,28,51,0.12)}
+.cpg-left{width:var(--left);flex-shrink:0;border-right:1px solid #e2eaf2;display:flex;flex-direction:column;background:#fff;z-index:2;min-height:0}
+.cpg-left-head{height:66px;box-sizing:border-box;flex-shrink:0;display:flex;align-items:flex-end;padding:0 16px 12px;border-bottom:1px solid #e2eaf2;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8da2b2;background:#fbfcfe}
+.cpg-left-body{overflow:hidden;flex:1;min-height:0}
+.cpg-right{flex:1;overflow:auto;min-width:0;position:relative}
+.cpg-head{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #e2eaf2}
+.cpg-group{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:0 12px 0 12px;border:0;border-bottom:1px solid #eef2f6;background:#f7f9fc;cursor:pointer;text-align:left;box-shadow:inset 3px 0 0 var(--c);font:inherit}
+.cpg-group:hover{background:#f1f5f9}
+.cpg-group:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px}
+.cpg-caret{font-size:10px;color:#8da2b2;width:10px;display:inline-block;transition:transform 0.22s cubic-bezier(0.34,1.4,0.64,1)}
+.cpg-caret.shut{transform:rotate(-90deg)}
+.cpg-sw{width:8px;height:8px;border-radius:2px;background:var(--c);flex-shrink:0}
+.cpg-group-name{flex:1;min-width:0;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpg-count{font-size:10.5px;color:#6b8399;background:#e9eef4;border-radius:10px;padding:1px 7px;font-variant-numeric:tabular-nums;flex-shrink:0}
+.cpg-track-group{background:#f7f9fc;border-bottom:1px solid #eef2f6}
+.cpg-row{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0 12px 0 24px;border:0;border-bottom:1px solid #f1f4f8;background:#fff;cursor:pointer;text-align:left;font:inherit}
+.cpg-row:hover{background:#f7fafb}
+.cpg-row:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px}
+.cpg-row:active{background:#eef4f4}
+.cpg-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cpg-row-name{font-size:13px;font-weight:600;color:#1a2940;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.cpg-row-name.done{color:#9aabbd;text-decoration:line-through}
+.cpg-row-date{font-size:11px;color:#8da2b2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cpg-you{flex-shrink:0;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#9a5b12;background:#fdf1dd;border-radius:6px;padding:3px 7px}
+.cpg-track{position:relative;border-bottom:1px solid #f1f4f8}
+.cpg-bar{position:absolute;top:9px;height:28px;box-sizing:border-box;border-radius:7px;background:var(--c);display:flex;align-items:center;padding:0 10px;overflow:hidden;cursor:pointer;z-index:3;box-shadow:0 1px 2px rgba(13,28,51,0.14),0 6px 14px -8px var(--c);transition:transform 0.2s cubic-bezier(0.34,1.4,0.64,1)}
+.cpg-bar:hover{transform:translateY(-1px)}
+.cpg-bar:active{transform:translateY(0) scale(0.99)}
+.cpg-bar.you{box-shadow:0 0 0 2px #fff,0 0 0 4px #e7a94b}
+.cpg-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(13,28,51,0.16);pointer-events:none}
+.cpg-bar-label{position:relative;font-size:11.5px;font-weight:600;color:var(--t,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;letter-spacing:0.01em}
+.cpg-side-label{position:absolute;top:0;height:100%;display:flex;align-items:center;font-size:11.5px;font-weight:600;color:#33495c;white-space:nowrap;pointer-events:none;z-index:3}
+.cpg-milestone{position:absolute;top:15px;width:16px;height:16px;background:var(--c);transform:rotate(45deg);border-radius:3px;cursor:pointer;z-index:3;transition:transform 0.2s cubic-bezier(0.34,1.4,0.64,1)}
+.cpg-milestone:hover{transform:rotate(45deg) scale(1.15)}
+.cpg-milestone:active{transform:rotate(45deg) scale(0.95)}
+.cpg-group:active{background:#eaf0f5}
+.cpg-today{position:absolute;top:0;width:2px;margin-left:-1px;background:#e0564f;opacity:0.55;pointer-events:none;z-index:2}
+.cpg-today-flag{position:absolute;bottom:5px;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.04em;color:#fff;background:#e0564f;border-radius:5px;padding:2px 6px;pointer-events:none;z-index:11}
+@media (max-width:720px){.cp-body{padding:18px 14px 32px}.cpg{max-height:calc(100vh - 230px)}.cpg-row{padding-left:14px}.cpg-summary{width:100%;margin-left:2px}}
+/* ── Client portal: sections, list panels, stat band ── */
+.cp-sec{margin-bottom:28px;min-width:0}
+.cp-sec-head{display:flex;align-items:center;gap:8px;margin:0 2px 10px}
+.cp-sec-title{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;letter-spacing:-0.01em;margin:0}
+.cp-sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cp-sec-count{font-size:11px;font-weight:700;color:#5b7080;background:#e6ecf2;border-radius:10px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.cp-sec-hint{margin-left:auto;font-size:11.5px;color:#8da2b2}
+.cp-list{background:#fff;border:1px solid #e2eaf2;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(13,28,51,0.04),0 10px 28px -14px rgba(13,28,51,0.12)}
+.cp-list>.cp-task-row,.cp-list>.cp-task-list-row{border:0;border-radius:0;margin:0;box-shadow:none;border-bottom:1px solid #eef2f6;transform:none}
+.cp-list>.cp-task-row:last-child,.cp-list>.cp-task-list-row:last-child,.cp-list>.cp-eng:last-child{border-bottom:0}
+.cp-list>.cp-task-row:hover,.cp-list>.cp-task-list-row:hover{background:#f8fafb;box-shadow:none;transform:none;border-color:#eef2f6}
+.cp-list>.cp-task-list-row:focus-visible{box-shadow:inset 0 0 0 2px #97bcbd}
+.cp-eng{padding:16px 20px;border-bottom:1px solid #eef2f6}
+.cp-ov-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 24px;align-items:start}
+.cp-ov-grid.single{grid-template-columns:minmax(0,1fr)}
+.cp-band{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr;background:#fff;border:1px solid #e2eaf2;border-radius:16px;overflow:hidden;margin-bottom:32px;box-shadow:0 1px 2px rgba(13,28,51,0.04),0 12px 32px -16px rgba(13,28,51,0.16)}
+.cp-band-cell{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:22px 24px;border:0;border-left:1px solid #eef2f6;background:#fff;text-align:left;font:inherit;min-width:0}
+.cp-band-cell:first-child{border-left:0}
+.cp-band-cell.lead{flex-direction:row;align-items:center;gap:18px;background:#0d1c33;background-image:radial-gradient(120% 140% at 0% 0%,rgba(151,188,189,0.18),transparent 55%),radial-gradient(90% 120% at 100% 100%,rgba(13,110,78,0.22),transparent 60%)}
+.cp-band-cell.lead .cp-band-num{color:#fff}
+.cp-band-cell.lead .cp-band-label{color:#97bcbd}
+.cp-band-num{font-family:'Jost',sans-serif;font-size:32px;font-weight:700;color:#0d1c33;line-height:1;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+.cp-band-unit{font-size:18px;font-weight:600;margin-left:1px;opacity:0.7}
+.cp-band-of{font-size:16px;font-weight:600;color:#9aabbd;letter-spacing:0}
+.cp-band-label{font-size:12px;color:#6b8399;font-weight:500}
+.cp-band-ring{flex-shrink:0;line-height:0}
+.cp-band-ring svg circle:first-of-type{stroke:rgba(255,255,255,0.12)}
+button.cp-band-cell{cursor:pointer;transition:transform 0.2s cubic-bezier(0.34,1.4,0.64,1)}
+button.cp-band-cell:hover{background:#fffaf0}
+button.cp-band-cell:active{transform:scale(0.985)}
+button.cp-band-cell:focus-visible{outline:2px solid #e7a94b;outline-offset:-3px}
+.cp-band-cell.warn .cp-band-num{color:#b9701a}
+.cp-band-cell.warn{box-shadow:inset 0 3px 0 #e7a94b}
+/* ── Client portal: search + board table ── */
+.cp-search{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #dfe7ef;border-radius:11px;padding:9px 14px;box-shadow:0 1px 2px rgba(13,28,51,0.03)}
+.cp-search:focus-within{border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.22)}
+.cp-search input{flex:1;min-width:0;border:0;outline:0;font-family:'Lato',sans-serif;font-size:13.5px;color:#1a2940;background:transparent}
+.cp-brow{display:grid;grid-template-columns:minmax(0,1fr) 170px 180px 110px 60px;align-items:center;gap:14px;padding:12px 18px 12px 20px;border-bottom:1px solid #eef2f6;background:#fff;cursor:pointer;box-shadow:inset 3px 0 0 var(--acc,transparent);outline:none}
+.cp-brow:hover{background:#f8fafb}
+.cp-brow:focus-visible{box-shadow:inset 3px 0 0 var(--acc,transparent),inset 0 0 0 2px #97bcbd}
+.cp-brow:active{background:#f1f6f6}
+.cp-bhead{cursor:default;background:#fbfcfe;box-shadow:none;padding-top:9px;padding-bottom:9px;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#8da2b2}
+.cp-bhead:hover{background:#fbfcfe}
+.cp-bgroup{display:flex;align-items:center;gap:8px;padding:8px 20px;background:#f7f9fc;border-bottom:1px solid #eef2f6;font-size:12px;font-weight:600;color:#5b7080}
+.cp-bgroup span{font-size:10.5px;color:#8da2b2;font-variant-numeric:tabular-nums}
+.cp-bcol-task{display:flex;align-items:center;gap:8px;min-width:0}
+.cp-bname{font-family:'Jost',sans-serif;font-size:13.5px;font-weight:600;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-bsubs{flex-shrink:0;font-size:10.5px;color:#6b8399;background:#eef2f6;border-radius:8px;padding:1px 7px}
+.cp-bcol-date{font-size:12px;color:#6b8399;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cp-bcol-prog{display:flex;align-items:center;gap:8px}
+.cp-bbar{flex:1;height:6px;border-radius:3px;background:#e9eef4;overflow:hidden}
+.cp-bbar>span{display:block;height:100%;border-radius:3px}
+.cp-bpct{font-size:11px;color:#6b8399;font-variant-numeric:tabular-nums;min-width:30px;text-align:right}
+.cp-bwith{font-size:12px;font-weight:600;white-space:nowrap}
+.cp-bhead .cp-bcol-date{font-size:inherit;color:inherit}
+/* ── Time log on a phone: name + hours, then the details on one compact line ── */
+.te-more{display:none}
+@media (max-width:720px){
+  .te-row{display:flex!important;flex-wrap:wrap;align-items:center;gap:5px 8px!important;padding:9px 12px!important}
+  .te-row::after{content:"";order:4;flex-basis:100%;height:0}
+  .te-row>:nth-child(1){order:1;flex:0 0 24px}
+  .te-row>:nth-child(2){order:2;flex:1 1 0;min-width:0;font-size:13px!important}
+  .te-row>:nth-child(4){order:3;flex:0 0 auto}
+  .te-row>:nth-child(3){order:5;margin-left:32px}
+  .te-row>:nth-child(6){order:6}
+  .te-row>:nth-child(7){order:7}
+  .te-row>:nth-child(8){order:8}
+  .te-row>:nth-child(9){order:9;margin-left:auto;gap:2px}
+  .te-row>:nth-child(5){order:10;flex:1 1 100%;margin-left:32px;min-width:0}
+  .te-row:not(.te-hasnote):not(.te-open)>:nth-child(5){display:none!important}
+  .te-row span[style*="border-radius:20px"]{font-size:9.5px!important;padding:2px 7px!important}
+  .te-more{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:#8da2b2;cursor:pointer}
+  .te-more:hover{background:#f1f5f9;color:#0d1c33}
+  .te-more:active{background:#e6edf4}
+  .te-more:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+  .te-row.te-open .te-more{color:#0d6e4e;background:#eaf4ee}
+}
+.cp-notifs{max-width:760px}
+.cp-notif{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid #eef2f6;background:#fff;outline:none}
+.cp-notif:last-child{border-bottom:0}
+.cp-notif.link{cursor:pointer}
+.cp-notif.link:hover{background:#f8fafb}
+.cp-notif.link:active{background:#f1f6f6}
+.cp-notif.link:focus-visible{box-shadow:inset 0 0 0 2px #97bcbd}
+.cp-notif-new{flex-shrink:0;align-self:center;font-family:'Jost',sans-serif;font-size:10px;font-weight:700;color:#0d6e4e;background:#e3f2ec;border-radius:6px;padding:2px 7px}
+/* ── Client portal: task pop-up (cp-m-*) ── */
+.cp-m-box{border-radius:18px!important;box-shadow:0 2px 6px rgba(13,28,51,0.08),0 30px 70px -20px rgba(13,28,51,0.45)!important}
+.cp-m-head{padding:26px 28px 20px}
+.cp-m-titlerow{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.cp-m-title{flex:1;margin:0;font-family:'Jost',sans-serif;font-size:21px;font-weight:700;color:#0d1c33;line-height:1.25;letter-spacing:-0.02em;text-wrap:balance}
+.cp-m-close{flex-shrink:0;width:34px;height:34px;margin:-4px -6px 0 0;border:0;border-radius:10px;background:transparent;color:#8da2b2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.4,0.64,1)}
+.cp-m-close:hover{background:#f1f5f9;color:#0d1c33}
+.cp-m-close:active{transform:scale(0.92)}
+.cp-m-close:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.cp-m-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.cp-m-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #e6edf4;border-radius:12px;overflow:hidden;background:#fbfcfe}
+.cp-m-fact{padding:12px 16px;border-left:1px solid #e6edf4;min-width:0}
+.cp-m-fact:first-child{border-left:0}
+.cp-m-fact-val{font-family:'Jost',sans-serif;font-size:15px;font-weight:600;color:#0d1c33;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-m-fact-sub{font-size:11.5px;color:#8da2b2;margin-top:1px}
+.cp-m-fact.bad .cp-m-fact-val{color:#b42318}
+.cp-m-fact.warn .cp-m-fact-val{color:#b9701a}
+.cp-m-bar{height:5px;border-radius:3px;background:#e6edf4;overflow:hidden;margin-top:8px}
+.cp-m-bar>span{display:block;height:100%;border-radius:3px;background:#0d6e4e}
+.cp-m-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cp-m-fact .cp-m-label{margin-bottom:0;font-size:10.5px}
+.cp-m-count{font-size:10.5px;color:#5b7080;background:#e9eef4;border-radius:8px;padding:1px 7px;letter-spacing:0}
+.cp-m-sec{padding:20px 28px;border-top:1px solid #edf1f6}
+.cp-m-empty{font-size:13px;color:#9aabbd;margin:0 0 12px}
+.cp-m-hint{font-size:11px;color:#9aabbd;margin-top:8px}
+.cp-m-ask{margin:0 28px 22px;padding:18px 20px;border-radius:14px;background:#fffaf1;border:1px solid #f1dcb4;box-shadow:inset 3px 0 0 #e7a94b}
+.cp-m-ask+.cp-m-ask{margin-top:-8px}
+.cp-m-ask-head{display:flex;gap:12px;align-items:flex-start}
+.cp-m-ask-icon{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:#fdecc8;color:#b9701a;display:inline-flex;align-items:center;justify-content:center}
+.cp-m-ask-title{font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;letter-spacing:-0.01em}
+.cp-m-ask-text{font-size:13px;color:#5b7080;line-height:1.6;margin:3px 0 0}
+.cp-m-ask-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.cp-m-ask #cp-changes-form,.cp-m-ask #cp-decline-form{margin:16px 0 0!important}
+.cp-m-state{margin:0 28px 22px;padding:14px 16px;border-radius:12px;border:1px solid}
+.cp-m-state.ok{background:#f0fbf5;border-color:#c5ebd5}
+.cp-m-state.warn{background:#fffaf1;border-color:#f1dcb4}
+.cp-m-state.bad{background:#fdf3f2;border-color:#f6cfcb}
+.cp-m-upload{position:relative;display:inline-flex;cursor:pointer}
+.cp-m-file{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.cp-m-file::-webkit-file-upload-button{cursor:pointer}
+.cp-m-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid #d6e0ea;border-radius:9px;background:#fff;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:600;color:#33495c;cursor:pointer;transition:transform 0.18s cubic-bezier(0.34,1.4,0.64,1)}
+.cp-m-upload:hover .cp-m-btn,button.cp-m-btn:hover{border-color:#97bcbd;color:#0d1c33;background:#f7fbfb}
+.cp-m-upload:active .cp-m-btn,button.cp-m-btn:active{transform:scale(0.97)}
+.cp-m-upload:focus-within .cp-m-btn,button.cp-m-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+button.cp-m-btn.on{border-color:#0078d4;color:#0063b1;background:#eef6fd}
+@media (max-width:600px){.cp-m-head{padding:20px 18px 16px}.cp-m-sec{padding:18px}.cp-m-ask,.cp-m-state{margin:0 18px 18px}.cp-m-title{font-size:18px}.cp-m-facts{grid-template-columns:1fr 1fr}.cp-m-fact{border-left:0;border-top:1px solid #e6edf4}.cp-m-fact:first-child{grid-column:1/-1;border-top:0}.cp-m-fact:nth-child(3){border-left:1px solid #e6edf4}}
+/* in a joined list the row accent is a thin edge, not a rounded bar */
+.cp-list>.cp-task-list-row>div:first-child,.cp-list>.cp-task-row>div:first-child{width:3px!important;border-radius:0!important;opacity:0.85}
+@media (max-width:900px){.cp-brow{grid-template-columns:minmax(0,1fr) 150px 90px 50px}.cp-bcol-date{display:none}}
+@media (max-width:600px){.cp-brow{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}.cp-bcol-prog,.cp-bhead{display:none}.cp-bwith{grid-column:1;grid-row:2;font-size:11px;font-weight:500;margin-top:-4px}}
+/* ── Client portal: shell ── */
+#cp-client-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-nav-tab{white-space:nowrap}
+.cp-nav-tab:focus-visible{outline:2px solid #97bcbd;outline-offset:-4px;border-radius:6px}
+/* the staff app's phone tab bar and board button are not part of the client portal */
+body:has(#client-portal:not(.hidden)) #mobile-tabbar,body:has(#client-portal:not(.hidden)) #mobile-board-fab{display:none!important}
+@media (max-width:720px){
+  .cp-top{padding:0 14px!important;gap:10px!important}
+  .cp-top-tag{display:none}
+  .cp-nav{padding:0 6px!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .cp-nav::-webkit-scrollbar{display:none}
+  .cp-nav-tab{padding:13px 12px;flex-shrink:0}
+  .cp-list>.cp-task-row{flex-wrap:wrap;row-gap:8px}
+  .cp-list>.cp-task-row>div:nth-child(2){flex:1 1 calc(100% - 40px)!important}
+  .cp-list>.cp-task-row>div:nth-child(3){margin-left:16px!important}
+  .cp-sec-hint{display:none}
+}
+@media (max-width:900px){.cp-band{grid-template-columns:1fr 1fr}.cp-band-cell:nth-child(3){border-left:0}.cp-band-cell:nth-child(n+3){border-top:1px solid #eef2f6}.cp-ov-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.cp-band{grid-template-columns:repeat(3,1fr)}.cp-band-cell{padding:16px 14px;border-top:1px solid #eef2f6}.cp-band-cell.lead{grid-column:1/-1;border-top:0;justify-content:center}.cp-band-cell:nth-child(2){border-left:0}.cp-band-cell:nth-child(3){border-left:1px solid #eef2f6}.cp-band-num{font-size:26px}.cp-band-label{font-size:11px;line-height:1.3}}
 /* ── Master Capacity ── */
 .mc-swimlane-hdr{display:flex;align-items:center;height:36px;padding:0 8px 0 10px;background:#f8fafb;border-bottom:1px solid var(--border);border-left:3px solid transparent;gap:7px;cursor:pointer;overflow:hidden;user-select:none;transition:background 0.15s}
 .mc-swimlane-hdr:hover{background:var(--surface-3)}
@@ -1066,6 +1281,17 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     </div>
   </div>
 </div>
+<script>
+// The skeleton above is the signed-in app. Someone with no saved login is only ever going to see
+// the sign-in page, so drop it at once and show that page instead of a fake dashboard. Share
+// links and invite / password-reset links keep it: they are resolved during start-up.
+(function(){try{
+  var q=location.search+location.hash;
+  if(/[?&#]share=|access_token=|type=(recovery|invite|signup|magiclink)|[?&]code=/.test(q))return;
+  if(localStorage.getItem('etcher_supabase_auth')||localStorage.getItem('etcher_session_v1'))return;
+  var ls=document.getElementById('loading-screen');if(ls)ls.remove();
+}catch(e){}})();
+</script>
 
 <div id="login-screen">
   <div class="login-card">
@@ -1325,16 +1551,16 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
 <!-- CLIENT PORTAL — completely separate shell, shown instead of app-shell for client logins -->
 <div id="client-portal" class="hidden">
-  <header style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
+  <header class="cp-top" style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
     <img src="Etcher White Logo.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1);flex-shrink:0;margin:0 2px"></div>
     <div id="cp-client-name" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:0.01em">Client Portal</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
-      <span style="font-size:11px;color:#2a4560;font-family:'Jost',sans-serif;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Client Portal</span>
+      <span class="cp-top-tag" style="font-size:11px;color:#2a4560;font-family:'Jost',sans-serif;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Client Portal</span>
       <button onclick="doLogout()" style="padding:6px 16px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#8da2b2;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.13)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#8da2b2'">Sign out</button>
     </div>
   </header>
-  <nav style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
+  <nav class="cp-nav" style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <!-- Named 'workboard', not 'board' — 'board' is already an internal renderView route name
@@ -1345,7 +1571,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <div class="cp-nav-tab" data-section="requests" onclick="cpNavigate('requests')">Request Work</div>
     <div class="cp-nav-tab" data-section="notifications" onclick="cpNavigate('notifications')" style="display:flex;align-items:center;gap:6px">Notifications<span id="cp-notif-badge" style="display:none;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;line-height:1.4"></span></div>
   </nav>
-  <div id="cp-body" style="flex:1;padding:28px 32px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box"></div>
+  <div id="cp-body" class="cp-body"></div>
 </div>
 
 <!-- SHARE PAGE (token-gated public progress view) -->
@@ -1355,7 +1581,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
 <!-- CP Task Detail Modal -->
 <div id="cp-task-modal" class="modal-overlay hidden" onclick="if(event.target===this)cpCloseTaskModal()">
-  <div class="modal-box" style="max-width:620px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;padding:0">
+  <div class="modal-box cp-m-box" style="max-width:680px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;padding:0">
     <div id="cp-task-modal-body"></div>
   </div>
 </div>
@@ -3145,7 +3371,7 @@ async function _downloadTaskFile(id){
   const local=_getFileData(id);
   if(local){_clickDownload(local,f.name);return;}
   if(!f.storagePath){showAlert('This file was uploaded on another device or browser before file storage was set up, so only that device can open it.','File not on this device');return;}
-  try{_clickDownload(await _storageSignedUrl(f.storagePath,f.name));}
+  try{_clickDownload(await _storageSignedUrl(f.storagePath,f.name),f.name);}
   catch(e){showAlert('Could not download the file. Please try again.','Download failed');}
 }
 function _saveFileData(id,url){try{const s=JSON.parse(localStorage.getItem(_FILE_STORE_KEY)||'{}');s[id]=url;localStorage.setItem(_FILE_STORE_KEY,JSON.stringify(s));return true;}catch(e){console.warn('File store write failed',e);return false;}}
@@ -6713,8 +6939,11 @@ function _timeAgo(iso){
   return Math.floor(s/86400)+'d ago';
 }
 
+// Set once the server answers 404: the intake endpoint is not deployed (it waits on Microsoft
+// Graph credentials), so polling it every 30s only filled the console with errors.
+let _intakeUnavailable=false;
 function startIntakePoller(){
-  if(_intakePoller||currentUser.role==='client'||currentUser.role==='restricted')return;
+  if(_intakeUnavailable||_intakePoller||currentUser.role==='client'||currentUser.role==='restricted')return;
   _fetchIntakePending();
   _intakePoller=setInterval(_fetchIntakePending,30000);
 }
@@ -6722,6 +6951,7 @@ function startIntakePoller(){
 async function _fetchIntakePending(){
   try{
     const r=await fetch('/api/intake/pending');
+    if(r.status===404){_intakeUnavailable=true;clearInterval(_intakePoller);_intakePoller=null;return;}
     if(!r.ok)return;
     const items=await r.json();
     if(!items.length)return;
@@ -6985,7 +7215,7 @@ function renderNeedsAttention(){
     const ca=t.clientApproval||{};
     const atLabel=isChange?'Change Request':isDecline?('Declined'+(t.approvalType?' — '+(APPROVAL_TYPE_LABELS[t.approvalType]||''):'')):APPROVAL_TYPE_LABELS[t.approvalType]||'--';
     const actionAt=ca.at?new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'--';
-    const clientNotes=ca.note?`<div style="background:${isDecline?'#fef2f2':isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isDecline?'#fecaca':isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
+    const clientNotes=ca.note?`<div style="background:${isDecline?'#fef2f2':isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isDecline?'#fecaca':isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isDecline?'#991b1b':isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isDecline?'Reason:':isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
     const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
     const typeBadge=isDecline
       ?`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fee2e2;color:#b91c1c">Declined by Client</span>`
@@ -9679,6 +9909,13 @@ const _TE_STATUS_META={
   rejected:{label:'Rejected',bg:'#fee2e2',color:'#b91c1c'},
 };
 
+// Phones: a time row shows its note line only when it has a note; this opens it to add one.
+function _teToggleDetails(btn){
+  const row=btn.closest('.te-row');if(!row)return;
+  const open=row.classList.toggle('te-open');
+  btn.setAttribute('aria-expanded',String(open));
+  if(open){const ta=row.querySelector('._te-note-ta');if(ta)setTimeout(()=>ta.focus(),30);}
+}
 function renderTime(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
@@ -9840,7 +10077,7 @@ function renderTime(){
     // Short client badge: up to 4 uppercase chars from initials of each word
     const clientShort=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
     const taskLabel=task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
-    return`<div data-terowdate="${e.date}" class="te-row" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
+    return`<div data-terowdate="${e.date}" class="te-row${e.note?' te-hasnote':''}" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
       <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
       <div id="te-name-cell-${e.id}" class="_te-name-wrapper" onclick="${canEdit?`_teOpenTaskPicker('${e.id}',this)`:''}" style="display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;min-width:0;${canEdit?'cursor:pointer;':''}" ${canEdit?'title="Click to change task or client"':''}><span class="_te-name-body" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLabel}</span><span class="_te-name-chev" onclick="event.stopPropagation();_teNameToggle(this.closest('._te-name-wrapper'))" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;visibility:hidden;cursor:pointer;transition:transform 0.15s;padding:2px 0 2px 4px">▾</span></div>
       <div id="te-client-cell-${e.id}" ${canEdit?`onclick="_teOpenClientPicker('${e.id}',this)" title="Click to change client" style="display:flex;align-items:center;cursor:pointer"`:'style="display:flex;align-items:center"'}>${client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${clientShort}</span>`:'<span style="color:#c8d3dc">—</span>'}</div>
@@ -9850,6 +10087,7 @@ function renderTime(){
       <div style="display:flex;align-items:center">${billPill}</div>
       <div style="display:flex;align-items:center"><span style="font-size:10px;background:${sm.bg};color:${sm.color};padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;border:1px solid ${sm.color}20">${sm.label}</span></div>
       <div style="display:flex;align-items:center;justify-content:flex-end">
+        <button type="button" class="te-more" onclick="_teToggleDetails(this)" title="Note" aria-label="Show note" aria-expanded="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
         ${canDel?`<button onclick="deleteTimeEntry('${e.id}')" style="background:none;border:none;color:#c8d3dc;cursor:pointer;font-size:12px;padding:4px;border-radius:4px;line-height:1;transition:color .12s" title="Delete" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c8d3dc'">✕</button>`:''}
       </div>
     </div>`;
@@ -16588,8 +16826,10 @@ function _safeDataHref(d){const m=typeof d==='string'&&_DATA_HREF_RE.exec(d);if(
 function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s)||/&[a-z#][a-z0-9]+;/i.test(s))return _descSanitize(s);return escHtml(s).replace(/\n/g,'<br>');}
 // Parsed with DOMParser, which is inert: a live element starts loading <img> etc. the moment
 // innerHTML is set. The portal renders staff-written descriptions through this for clients.
-function _descSanitize(html){try{const d=new DOMParser().parseFromString(String(html),'text/html').body;d.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta,img,svg,math,video,audio,base').forEach(e=>e.remove());// Unwrap font/span tags that only carry colour/size (common from Word/Notion)
-d.querySelectorAll('font').forEach(e=>{const f=document.createDocumentFragment();while(e.firstChild)f.appendChild(e.firstChild);e.replaceWith(f);});d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','rel','target']);[...e.attributes].forEach(a=>{if(!keep.has(a.name)||/^(javascript:|data:|vbscript:)/i.test(a.value.replace(/[\s\u0000-\u001f]/g,'')))e.removeAttribute(a.name);});if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
+// opts.attrs: extra attributes to keep (e.g. colspan for tables). opts.images: keep <img> whose
+// src is an embedded raster image (Word previews), nothing else.
+function _descSanitize(html,opts){try{const d=new DOMParser().parseFromString(String(html),'text/html').body;d.querySelectorAll('script,style,iframe,frame,frameset,object,embed,applet,form,input,button,select,option,textarea,link,meta,base,title,noscript,noembed,noframes,template,xmp,plaintext,svg,math,video,audio'+(opts&&opts.images?'':',img')).forEach(e=>e.remove());// Unwrap font/span tags that only carry colour/size (common from Word/Notion)
+d.querySelectorAll('font').forEach(e=>{const f=document.createDocumentFragment();while(e.firstChild)f.appendChild(e.firstChild);e.replaceWith(f);});d.querySelectorAll('*').forEach(e=>{const keep=new Set(['href','rel','target',...((opts&&opts.attrs)||[])]);const imgOk=opts&&opts.images&&e.tagName==='IMG';[...e.attributes].forEach(a=>{if(imgOk&&a.name==='src'&&/^data:image\/(png|jpe?g|gif|webp|bmp);base64,[A-Za-z0-9+\/=]+$/i.test(a.value))return;if(!keep.has(a.name)||/^(javascript:|data:|vbscript:)/i.test(a.value.replace(/[\s\u0000-\u001f]/g,'')))e.removeAttribute(a.name);});if(imgOk&&!e.getAttribute('src'))e.remove();if(e.tagName==='A'){e.setAttribute('rel','noopener noreferrer');e.setAttribute('target','_blank');}});return d.innerHTML;}catch(_){return'';}}
 function _descEditorHtml(id,content,cls,placeholder){const html=_descToHtml(content);return`<div class="rich-desc-wrap${cls?' '+cls:''}"><div class="rich-desc-toolbar"><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button><span class="rdt-sep"></span><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Bullet list">• list</button><button type="button" class="rdt-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="1. list">1. list</button></div><div id="${id}" contenteditable="true" class="rich-desc-editor" data-placeholder="${escHtml(placeholder||'Add a description…')}">${html}</div><button type="button" class="rich-desc-expand-btn" id="${id}-expand" onclick="_descToggleExpand('${id}')">Show more</button></div>`;}
 let _pendingPaste=null;
 // Show/hide the "Show more" toggle depending on whether the (collapsed) editor actually overflows.
@@ -22218,6 +22458,7 @@ function wsSendClientAction(taskId,skipNoteRequired){
     return;
   }
   if(!body)body='Please review and let us know when this is done.';
+  if(window._wshSending)return;   // an attachment is still uploading for the first click
   const dueDate=document.getElementById('wsh-due')?.value||null;
   // '' is a real choice ("no one in particular → notify all staff") — only fall back to the
   // owner when the select isn't on the page at all. `value||task.ownerId` used to override it.
@@ -22286,7 +22527,10 @@ function wsSendClientAction(taskId,skipNoteRequired){
     const MAX=500*1024;
     if(_staffStorageOn()&&f.size<=10*1048576){
       const fid=uid();
+      window._wshSending=true;
+      document.querySelectorAll('#generic-modal-body button').forEach(b=>{b.disabled=true;});
       _storageUpload(taskId,fid,f).then(path=>{
+        window._wshSending=false;
         if(path)DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:now,internalOnly:false,actionRequestId:reqId});
         else showAlert('"'+f.name+'" could not be uploaded — the request was still sent without it.','Upload failed');
         finishHandoff();
@@ -22587,7 +22831,8 @@ function wsAddAttachment(taskId,input){
       const fid=uid();
       const path=await _storageUpload(taskId,fid,f);
       if(path){
-        DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:new Date().toISOString(),internalOnly:false});
+        const _now=new Date().toISOString();
+        DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:_now,updatedAt:_now,internalOnly:false});
         added();process(rest);return;
       }
       // storage unavailable (e.g. migration 006 not run yet) — fall through to the browser store
@@ -22635,7 +22880,9 @@ function _ensureDocViewer(kind,cb,onerror){
   if(have())return cb();
   const src=kind==='docx'
     ?'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'
-    :'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    // SheetJS 0.18.5 (the last on cdnjs) reads crafted files with prototype pollution (CVE-2023-30533);
+    // the fix is only published on cdn.sheetjs.com, so the patched 0.20.3 build is served from here.
+    :'vendor/xlsx-0.20.3.full.min.js';
   const s=document.createElement('script');
   s.src=src;s.crossOrigin='anonymous';
   s.onload=()=>have()?cb():onerror&&onerror();
@@ -22730,7 +22977,7 @@ async function wsPreviewFile(id,preData){
           .then(r=>{
             const doc=(r&&r.value||'').trim();
             _previewSetBody(doc
-              ?'<div style="width:min(820px,88vw);max-height:calc(85vh - 80px);overflow:auto;background:#fff;padding:40px 48px;box-sizing:border-box;font-family:Lato,sans-serif;font-size:14px;line-height:1.7;color:#1a2940" class="ws-doc-preview">'+doc+'</div>'
+              ?'<div style="width:min(820px,88vw);max-height:calc(85vh - 80px);overflow:auto;background:#fff;padding:40px 48px;box-sizing:border-box;font-family:Lato,sans-serif;font-size:14px;line-height:1.7;color:#1a2940" class="ws-doc-preview">'+_descSanitize(doc,{images:true})+'</div>'
               :_previewMessage('This document appears to be empty.',data,name));
           })
           .catch(()=>_previewSetBody(_previewMessage('This Word file could not be read. Older .doc files are not supported — only .docx.',data,name)));
@@ -22765,7 +23012,7 @@ function _sheetToHtml(wb,idx){
   const ws=wb.Sheets[wb.SheetNames[idx]];
   if(!ws)return '<div style="padding:32px;color:#8da2b2;font-size:13px">This sheet is empty.</div>';
   const html=window.XLSX.utils.sheet_to_html(ws,{editable:false});
-  return '<div class="ws-sheet-preview">'+html+'</div>';
+  return '<div class="ws-sheet-preview">'+_descSanitize(html,{attrs:['colspan','rowspan']})+'</div>';
 }
 function _previewSheet(id,idx){
   const wb=window.__sheetWb;
@@ -22786,6 +23033,9 @@ function wsToggleAttachmentShare(fileId){
   // (=== not true), which the label below already shows as "Shared" — flipping it here means
   // "make it internal", matching what the label just told them.
   f.internalOnly=!(f.internalOnly===true);
+  // Stamped so the id+updatedAt merge keeps this change; without it a peer's stale copy won the
+  // merge and the file quietly went back to Shared.
+  f.updatedAt=new Date().toISOString();
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
@@ -23555,24 +23805,29 @@ function renderCpNotifications(){
   // Mark all as read when viewing. Server mode: the local flip is just for this render (the
   // slice is never saved); the server records it, and only when there was something unread.
   const _hadUnread=notifs.some(n=>!n.read);
+  const _unread=new Set(notifs.filter(n=>!n.read).map(n=>n.id));   // shown as New on this visit
   notifs.forEach(n=>n.read=true);
   if(_portalServerMode()){if(_hadUnread)_portalAction('markNotificationsRead',{},{silent:true});}
   else saveDB(DB);
   updateCpNotifBadge();
-  if(!notifs.length)return`<div style="text-align:center;padding:60px 0;color:#8da2b2;font-size:14px">No notifications yet</div>`;
+  if(!notifs.length)return`<div class="cp-empty"><div class="cp-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="cp-empty-title">You're all caught up</div><div class="cp-empty-text">Updates from Etcher about your tasks will appear here.</div></div>`;
   const typeIcon={work_request:'⊞',client_comment_reply:'↩',client_comment:icon('chat',12),client_approved:'✓',client_changes_requested:'↩',client_action_requested:'⚡'};
   const typeColor={work_request:'#f59e0b',client_comment_reply:'#0d6e4e',client_comment:'#3b82f6',client_approved:'#10b981',client_changes_requested:'#f59e0b',client_action_requested:'#b45309'};
-  return`<div style="display:grid;gap:10px;max-width:700px">
+  const _visible=new Set((DB.tasks||[]).map(t=>t.id));
+  return`<div class="cp-list cp-notifs">
     ${notifs.map(n=>{
       const icon=typeIcon[n.type]||'●';
       const color=typeColor[n.type]||'#8da2b2';
       const ts=n.createdAt?new Date(n.createdAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-      return`<div style="background:#fff;border-radius:10px;padding:14px 18px;border:1px solid #e8eef4;display:flex;align-items:flex-start;gap:12px;box-shadow:0 1px 3px rgba(13,28,51,0.04)">
+      // A notification about a task this client can see opens that task.
+      const open=n.taskId&&_visible.has(n.taskId);
+      return`<div class="cp-notif${open?' link':''}" ${open?`role="button" tabindex="0" onclick="cpOpenTaskModal('${n.taskId}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${n.taskId}')"`:''}>
         <div style="width:30px;height:30px;border-radius:50%;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${color}">${icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;color:#0d1c33;line-height:1.5">${escHtml(n.message||'')}</div>
           <div style="font-size:11px;color:#a0b4c7;margin-top:4px">${ts}</div>
         </div>
+        ${_unread.has(n.id)?'<span class="cp-notif-new">New</span>':''}
       </div>`;
     }).join('')}
   </div>`;
@@ -23605,6 +23860,8 @@ function cpNavigate(section){
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
   if(!body)return;
+  // The schedule uses the full width; every other tab keeps the reading width.
+  body.classList.toggle('cp-wide',section==='schedule');
   if(section==='schedule')          body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
   else if(section==='tasks')        body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
   else if(section==='workboard')    body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
@@ -23635,31 +23892,25 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   // tasks are already pre-filtered (no archived) by sanitizeTaskForClient pipeline
   const activeTasks=tasks;
   const awaitingTasks=activeTasks.filter(t=>t.awaitingClient);
-  const doneTasks=activeTasks.filter(t=>t.status==='done'||t.status==='completed');
+  const _isDone=t=>t.status==='done'||t.status==='completed'||t.status==='completed-approved';
+  const doneTasks=activeTasks.filter(_isDone);
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
-  const clientColor=client?.color||'#0d6e4e';
 
 
-  // ── Stat cards ──
-  const stats=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
-    <div class="cp-stat-card" style="display:flex;align-items:center;gap:20px">
-      <div style="position:relative;flex-shrink:0">
-        ${cpProgressRing(overallPct,72,6,clientColor)}
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Jost',sans-serif;font-size:15px;font-weight:800;color:#0d1c33">${overallPct}%</div>
-      </div>
-      <div>
-        <div class="cp-stat-num">${doneTasks.length}<span style="font-size:16px;color:#b0bec5;font-weight:600"> / ${activeTasks.length}</span></div>
-        <div class="cp-stat-label">Tasks Complete</div>
-      </div>
+  // ── Stat band ──
+  // One joined band instead of three floating cards; the lead cell carries the headline number.
+  const _wk=new Date();_wk.setDate(_wk.getDate()+7);const _wkStr=toDateStr(_wk);
+  // Same rule as the 'Due this week' list below, so the band and the list always agree.
+  const _dueSoon=t=>t.endDate&&t.endDate>=todayStr&&t.endDate<=_wkStr&&!_isDone(t)&&t.percentComplete!==100&&!t.awaitingClient;
+  const dueWeek=activeTasks.filter(_dueSoon).length;
+  const stats=`<div class="cp-band">
+    <div class="cp-band-cell lead">
+      <div class="cp-band-ring">${cpProgressRing(overallPct,64,6,'#7fd1b2')}</div>
+      <div><div class="cp-band-num">${overallPct}<span class="cp-band-unit">%</span></div><div class="cp-band-label">Overall progress</div></div>
     </div>
-    <div class="cp-stat-card" style="position:relative;overflow:hidden;border-left:4px solid ${awaitingTasks.length?'#f59e0b':'#e4ecf4'}">
-      <div class="cp-stat-num" style="color:${awaitingTasks.length?'#b45309':'#0d1c33'}">${awaitingTasks.length}</div>
-      <div class="cp-stat-label">Awaiting Your Action</div>
-    </div>
-    <div class="cp-stat-card">
-      <div class="cp-stat-num">${boards.length}</div>
-      <div class="cp-stat-label">Active Engagement${boards.length!==1?'s':''}</div>
-    </div>
+    <div class="cp-band-cell"><div class="cp-band-num">${doneTasks.length}<span class="cp-band-of"> / ${activeTasks.length}</span></div><div class="cp-band-label">Tasks complete</div></div>
+    <${awaitingTasks.length?'button type="button" onclick="document.getElementById(\'cp-attn\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})"':'div'} class="cp-band-cell${awaitingTasks.length?' warn':''}"><div class="cp-band-num">${awaitingTasks.length}</div><div class="cp-band-label">Waiting on you</div></${awaitingTasks.length?'button':'div'}>
+    <div class="cp-band-cell"><div class="cp-band-num">${dueWeek}</div><div class="cp-band-label">Due in the next 7 days</div></div>
   </div>`;
 
   // ── Awaiting client action ──
@@ -23686,25 +23937,14 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
         </div>
       </div>`;
     }).join('');
-    awaitingSection=`<div style="margin-bottom:32px">
-      <div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;margin-bottom:4px">
-        <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
-        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#92400e">Requires Your Attention</span>
-        <span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:4px">${awaitingTasks.length}</span>
-        <span style="font-size:11px;color:#b45309;margin-left:auto">Tap a row to view details</span>
-      </div>
-      ${rows}
-    </div>`;
+    awaitingSection=`<section id="cp-attn" class="cp-sec">
+      <div class="cp-sec-head"><span class="cp-sec-dot" style="background:#e7a94b"></span><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${awaitingTasks.length}</span><span class="cp-sec-hint">Select a task for details</span></div>
+      <div class="cp-list">${rows}</div>
+    </section>`;
   }
 
   // ── Due this week ──
-  const sevenDaysLater=new Date();sevenDaysLater.setDate(sevenDaysLater.getDate()+7);
-  const sevenDaysLaterStr=sevenDaysLater.toISOString().slice(0,10);
-  const dueSoonTasks=activeTasks.filter(t=>
-    t.endDate&&t.endDate>=todayStr&&t.endDate<=sevenDaysLaterStr
-    &&t.status!=='done'&&t.status!=='completed'&&t.percentComplete!==100
-    &&!t.awaitingClient
-  ).sort((a,b)=>a.endDate.localeCompare(b.endDate));
+  const dueSoonTasks=activeTasks.filter(_dueSoon).sort((a,b)=>a.endDate.localeCompare(b.endDate));
   let dueSoonSection='';
   if(dueSoonTasks.length){
     const dueSoonRows=dueSoonTasks.slice(0,5).map(t=>{
@@ -23721,21 +23961,17 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d0dae6" stroke-width="2" stroke-linecap="round" style="margin-left:6px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
     }).join('');
-    dueSoonSection=`<div style="margin-bottom:32px">
-      <div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;margin-bottom:4px">
-        <span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span>
-        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#1d4ed8">Due This Week</span>
-        <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:4px">${dueSoonTasks.length}</span>
-      </div>
-      ${dueSoonRows}
-    </div>`;
+    dueSoonSection=`<section class="cp-sec">
+      <div class="cp-sec-head"><span class="cp-sec-dot" style="background:#3a73ad"></span><h2 class="cp-sec-title">Due this week</h2><span class="cp-sec-count">${dueSoonTasks.length}</span></div>
+      <div class="cp-list">${dueSoonRows}</div>
+    </section>`;
   }
 
   // ── Per-engagement cards ──
   const engCards=boards.map(b=>{
     const btIds=boardIdx.get(b.id)||new Set();
     const bt=activeTasks.filter(t=>btIds.has(t.id));
-    const done=bt.filter(t=>t.status==='done'||t.status==='completed').length;
+    const done=bt.filter(_isDone).length;
     const awaiting=bt.filter(t=>t.awaitingClient).length;
     const pct=bt.length?Math.round(done/bt.length*100):0;
     const counts=[
@@ -23746,7 +23982,7 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     ];
     const labels=['Not Started','In Progress','Completed','With You'];
     const statPills=labels.map((l,i)=>counts[i]?`<span style="font-size:11px;color:#8da2b2"><strong style="color:#1a2940;font-family:'Jost',sans-serif">${counts[i]}</strong> ${l}</span>`:'').filter(Boolean).join('<span style="color:#e2eaf2">·</span>');
-    return`<div class="cp-stat-card" style="margin-bottom:12px">
+    return`<div class="cp-eng">
       <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
         <div style="width:10px;height:10px;border-radius:3px;background:${b.color};flex-shrink:0;margin-top:4px"></div>
         <div style="flex:1;min-width:0">
@@ -23762,126 +23998,176 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     </div>`;
   }).join('');
 
-  const engSection=boards.length?`<div>
-    <div class="cp-section-title">Your Engagements</div>
-    ${engCards}
-  </div>`:'';
+  const engSection=boards.length?`<section class="cp-sec">
+    <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length}</span></div>
+    <div class="cp-list">${engCards}</div>
+  </section>`:'';
 
-  return stats+awaitingSection+dueSoonSection+engSection;
+  // Engagements and the week ahead sit side by side on a wide screen.
+  return stats+awaitingSection+`<div class="cp-ov-grid${dueSoonSection?'':' single'}">${engSection}${dueSoonSection}</div>`;
 }
 
 // ── Client-facing read-only Gantt ─────────────────────────
+// Bar colours for the portal's broad statuses — one muted family, so no status shouts.
+const _CP_BAR={'In Scope':'#9aabbd','In Progress':'#3a73ad','Awaiting Your Approval':'#d08a2c','Under Review':'#7d6db3',
+  'Change Requested – Awaiting Etcher Response':'#c27a30','Approved':'#2a8a66','Completed':'#2a8a66','Completed & Approved':'#1f7556',
+  'Declined':'#c0504d','Cancelled':'#a3aab3'};
+function _cpBar(label){return _CP_BAR[label]||cpBarColor(label);}
+// Light bars (not started / cancelled) carry dark text; the rest white.
+const _CP_BAR_DARK_TEXT=new Set(['In Scope','Cancelled']);
+
+// Client schedule. The chart is stretched to fill the space it has (a short project used to sit
+// in a third of the width with unreadable bars); longer projects scroll as before.
 function renderCpGantt(clientId,tasks,boards,client,boardIdx=new Map()){
   const withDates=tasks.filter(t=>t.startDate||t.endDate);
-  if(!withDates.length)return`<div class="cp-stat-card" style="text-align:center;padding:48px 24px"><p style="color:#8da2b2;font-size:14px">No tasks with dates to display yet.</p></div>`;
+  if(!withDates.length)return`<div class="cp-empty"><div class="cp-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="cp-empty-title">Nothing scheduled yet</div><div class="cp-empty-text">Tasks appear here once Etcher gives them dates.</div></div>`;
 
-  const DW={days:24,weeks:12,months:4,quarters:1.5}[cpGanttScale]||12;
-
+  const scale=cpGanttScale;
+  const BASE={days:24,weeks:12,months:4,quarters:1.5}[scale]||12;
   const allDates=withDates.flatMap(t=>[t.startDate,t.endDate].filter(Boolean).map(d=>new Date(d)));
   const rawMin=new Date(Math.min(...allDates));
   const rawMax=new Date(Math.max(...allDates));
-  const pad={days:3,weeks:7,months:14,quarters:30}[cpGanttScale]||7;
+  const pad={days:3,weeks:7,months:14,quarters:30}[scale]||7;
   const viewStart=new Date(rawMin);viewStart.setUTCDate(viewStart.getUTCDate()-pad);
-  if(cpGanttScale==='weeks'){const dow=viewStart.getUTCDay();viewStart.setUTCDate(viewStart.getUTCDate()-(dow===0?6:dow-1));}
+  if(scale==='weeks'){const dow=viewStart.getUTCDay();viewStart.setUTCDate(viewStart.getUTCDate()-(dow===0?6:dow-1));}
   const viewEnd=new Date(rawMax);viewEnd.setUTCDate(viewEnd.getUTCDate()+pad);
-  const totalDays=Math.max(1,Math.ceil((viewEnd-viewStart)/86400000));
+  let totalDays=Math.max(1,Math.ceil((viewEnd-viewStart)/86400000));
+
+  // Fill the available width. Stretch the scale up to a readable maximum; past that, add days.
+  const narrow=window.innerWidth<720;
+  const LEFT=narrow?170:290;
+  const body=document.getElementById('cp-body');
+  const bodyW=body?body.clientWidth-(parseFloat(getComputedStyle(body).paddingLeft)||0)-(parseFloat(getComputedStyle(body).paddingRight)||0):1100;
+  const avail=Math.max(300,bodyW-LEFT-4);
+  const MAX_DW={days:64,weeks:40,months:14,quarters:5}[scale]||40;
+  let DW=BASE;
+  if(totalDays*DW<avail){DW=Math.min(MAX_DW,avail/totalDays);if(totalDays*DW<avail)totalDays=Math.ceil(avail/DW);}
   const trackW=Math.ceil(totalDays*DW);
-  const d2x=ds=>Math.round((new Date(ds)-viewStart)/86400000*DW);
-  const todayStr=new Date().toISOString().slice(0,10);
+  const d2x=ds=>(new Date(ds)-viewStart)/86400000*DW;
+  const todayStr=toDateStr(new Date());
   const todayX=d2x(todayStr)+DW/2;
 
-  // Group by board using pre-built index (no boardId on sanitized task)
   const sections=boards.map(b=>{
     const btIds=boardIdx.get(b.id)||new Set();
     return{board:b,tasks:tasks.filter(t=>btIds.has(t.id)&&(t.startDate||t.endDate))};
-  }).filter(s=>s.tasks.length>0);
+  }).filter(sc=>sc.tasks.length>0);
 
-  // Row list
+  const GH=38,RH=46;
   const rowList=[];let totalH=0;
   for(const sec of sections){
-    rowList.push({type:'group',id:sec.board.id,sec,y:totalH,h:36});totalH+=36;
-    if(!cpGanttCollapsed.has(sec.board.id)){for(const t of sec.tasks){rowList.push({type:'task',id:t.id,task:t,y:totalH,h:40});totalH+=40;}}
+    rowList.push({type:'group',id:sec.board.id,sec,y:totalH});totalH+=GH;
+    if(!cpGanttCollapsed.has(sec.board.id)){for(const t of sec.tasks){rowList.push({type:'task',id:t.id,task:t,y:totalH});totalH+=RH;}}
   }
 
-  const{majorHTML,minorHTML}=ganttBuildHeaders(viewStart,totalDays,DW,cpGanttScale);
-
+  const{majorHTML,minorHTML}=ganttBuildHeaders(viewStart,totalDays,DW,scale);
+  const used=new Map();
   let leftRows='',rightRows='';
   for(const row of rowList){
     if(row.type==='group'){
       const{board}=row.sec;
       const col=cpGanttCollapsed.has(board.id);
-      leftRows+=`<div style="height:36px;display:flex;align-items:center;padding:0 8px 0 10px;gap:6px;background:#f8fafb;border-bottom:1px solid #edf1f6;border-left:3px solid ${board.color};cursor:pointer;overflow:hidden" onclick="cpToggleGroup('${board.id}')">
-        <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0;display:inline-block;transform:${col?'rotate(-90deg)':'rotate(0)'};transition:transform 0.15s">▾</span>
-        <div style="width:7px;height:7px;border-radius:2px;background:${board.color};flex-shrink:0"></div>
-        <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#1a2940;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(board.name)}</span>
-        <span style="font-size:10px;color:#8da2b2;background:#f0f4f8;border-radius:8px;padding:1px 6px;flex-shrink:0">${row.sec.tasks.length}</span>
-      </div>`;
-      rightRows+=`<div style="height:36px;width:${trackW}px;background:#f8fafb;border-bottom:1px solid #edf1f6;position:relative"></div>`;
-    }else{
-      const t=row.task;
-      const dr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:t.startDate?`From ${formatDate(t.startDate)}`:'';
-      const bs=cpBroadStatus(t.status);
-      const done=t.status==='done'||t.status==='completed';
-      leftRows+=`<div style="height:40px;display:flex;align-items:center;padding:0 8px 0 20px;gap:6px;border-bottom:1px solid #f4f6fa;overflow:hidden">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:500;color:${done?'#b0bec5':'#1a2940'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through':''}" title="${escHtml(t.title)}">${escHtml(t.title)}</div>
-          ${dr?`<div style="font-size:10px;color:#8da2b2;margin-top:1px">${dr}</div>`:''}
-        </div>
-        <span class="cp-badge" style="font-size:9px;padding:2px 7px;background:${bs.bg};color:${bs.color};flex-shrink:0">${bs.label}</span>
-      </div>`;
-      let barHTML='';
-      if(t.startDate&&t.endDate){
-        const bc=cpBarColor(bs.label);
-        const bx=d2x(t.startDate);
-        const bw=Math.max(Math.round(depDiffDays(t.startDate,t.endDate)*DW),4);
-        barHTML=`<div style="position:absolute;left:${bx}px;width:${bw}px;height:24px;top:8px;border-radius:4px;background:${bc};display:flex;align-items:center;padding:0 7px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)" title="${escHtml(t.title)}">
-          <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none">${escHtml(t.title)}</span>
-        </div>`;
-      }else if(t.startDate||t.endDate){
-        const mx=d2x(t.startDate||t.endDate);
-        barHTML=`<div style="position:absolute;left:${mx-7}px;top:13px;width:14px;height:14px;transform:rotate(45deg);background:${cpBarColor(bs.label)};border-radius:2px" title="${escHtml(t.title)}"></div>`;
-      }
-      rightRows+=`<div style="height:40px;width:${trackW}px;position:relative;border-bottom:1px solid #f4f6fa">${barHTML}</div>`;
+      leftRows+=`<button type="button" class="cpg-group" style="height:${GH}px;--c:${board.color||'#97bcbd'}" onclick="cpToggleGroup('${board.id}')" aria-expanded="${!col}">
+        <span class="cpg-caret${col?' shut':''}">▾</span><span class="cpg-sw"></span>
+        <span class="cpg-group-name">${escHtml(board.name)}</span><span class="cpg-count">${row.sec.tasks.length}</span></button>`;
+      rightRows+=`<div class="cpg-track-group" style="height:${GH}px;width:${trackW}px"></div>`;
+      continue;
     }
+    const t=row.task;
+    const bs=cpBroadStatus(t.status);
+    const color=_cpBar(bs.label);
+    used.set(bs.label,color);
+    const done=/Completed/.test(bs.label);
+    const waiting=!done&&!!t.awaitingClient&&t.clientApproval?.status!=='approved';
+    const pct=Math.max(0,Math.min(100,Math.round(+t.percentComplete||0)));
+    const dr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:`From ${formatDate(t.startDate)}`;
+    const tip=escHtml(`${t.title}\n${dr}\n${bs.label}${pct?` · ${pct}% complete`:''}${waiting?'\nWaiting on you':''}`);
+    leftRows+=`<button type="button" class="cpg-row" style="height:${RH}px" onclick="cpOpenTaskModal('${t.id}')" title="${tip}">
+      <span class="cpg-dot" style="background:${color}"></span>
+      <span class="cpg-row-main"><span class="cpg-row-name${done?' done':''}">${escHtml(t.title)}</span><span class="cpg-row-date">${dr}</span></span>
+      ${waiting?'<span class="cpg-you">Your action</span>':''}</button>`;
+    let bar='';
+    if(t.startDate&&t.endDate){
+      const bx=d2x(t.startDate);
+      const bw=Math.max((depDiffDays(t.startDate,t.endDate)+1)*DW,8);
+      // label inside when it fits, otherwise beside the bar
+      const fits=bw>=Math.min(t.title.length,40)*6.6+18;
+      bar=`<div class="cpg-bar${waiting?' you':''}" style="left:${bx}px;width:${bw}px;--c:${color};--t:${_CP_BAR_DARK_TEXT.has(bs.label)?'#1a2940':'#fff'}" onclick="cpOpenTaskModal('${t.id}')" title="${tip}">
+        ${pct&&!done?`<span class="cpg-fill" style="width:${pct}%"></span>`:''}
+        ${fits?`<span class="cpg-bar-label">${escHtml(t.title)}</span>`:''}</div>
+        ${fits?'':`<span class="cpg-side-label" style="left:${bx+bw+8}px">${escHtml(t.title)}</span>`}`;
+    }else{
+      const mx=d2x(t.startDate||t.endDate)+DW/2;
+      bar=`<div class="cpg-milestone" style="left:${mx-8}px;--c:${color}" onclick="cpOpenTaskModal('${t.id}')" title="${tip}"></div>
+        <span class="cpg-side-label" style="left:${mx+14}px">${escHtml(t.title)}</span>`;
+    }
+    rightRows+=`<div class="cpg-track" style="height:${RH}px;width:${trackW}px">${bar}</div>`;
   }
 
-  const gridSVG=ganttGridSVG(viewStart,totalDays,DW,totalH,cpGanttScale);
-  const todayLine=todayX>=0&&todayX<=trackW+DW?`<div style="position:absolute;top:0;left:${todayX}px;width:2px;height:${totalH}px;background:#ef4444;opacity:0.5;pointer-events:none;z-index:5"><div style="width:10px;height:10px;border-radius:50%;background:#ef4444;position:absolute;top:-5px;left:-4px"></div><div style="position:absolute;top:-18px;left:4px;font-size:9px;font-weight:700;color:#ef4444;white-space:nowrap;font-family:'Jost',sans-serif">Today</div></div>`:'';
-
-  const scaleBar=`<div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden;flex-shrink:0">${['days','weeks','months','quarters'].map(s=>`<button class="g2-scale-btn ${cpGanttScale===s?'active':''}" onclick="cpSetScale('${s}')">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}</div>`;
-
-  return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">${scaleBar}<button onclick="cpGanttAutoFit()" class="btn btn-ghost btn-sm">⊞ Auto Fit</button><div style="margin-left:auto;font-size:11px;color:#8da2b2">${withDates.length} task${withDates.length!==1?'s':''} · ${sections.length} engagement${sections.length!==1?'s':''}</div></div>
-  <div style="border:1.5px solid #e4ecf4;border-radius:10px;background:#fff;overflow:hidden;height:calc(100vh - 240px);min-height:360px;display:flex">
-    <div style="width:300px;flex-shrink:0;border-right:2px solid #e4ecf4;display:flex;flex-direction:column;z-index:2;background:#fff">
-      <div style="height:66px;flex-shrink:0;border-bottom:2px solid #e4ecf4;background:#f8fbff;display:flex;align-items:center;padding:0 16px;gap:8px">
-        <span style="font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em">Task</span>
-        <span style="margin-left:auto;font-size:10px;color:#b0bec5">Status</span>
-      </div>
-      <div id="cp-g-left" style="overflow:hidden;flex:1">${leftRows}</div>
+  const gridSVG=ganttGridSVG(viewStart,totalDays,DW,totalH,scale);
+  const todayIn=todayX>=0&&todayX<=trackW;
+  const todayLine=todayIn?`<div class="cpg-today" style="left:${todayX}px;height:${totalH}px"></div>`:'';
+  // Days view already marks today in its header; the flag would only cover the date.
+  const todayFlag=todayIn&&scale!=='days'?`<div class="cpg-today-flag" style="left:${todayX}px">Today</div>`:'';
+  const legend=[...used].map(([l,c])=>`<span class="cpg-legend-item"><span class="cpg-dot" style="background:${c}"></span>${escHtml(l.replace(' – Awaiting Etcher Response',''))}</span>`).join('');
+  const nBoards=sections.length;
+  const scales=[['days','Days'],['weeks','Weeks'],['months','Months'],['quarters','Quarters']];
+  setTimeout(_cpGanttAfterRender,0);
+  return`<div class="cpg-toolbar">
+    <div class="cpg-seg" role="group" aria-label="Zoom">${scales.map(([k,l])=>`<button type="button" class="${scale===k?'on':''}" onclick="cpSetScale('${k}')" aria-pressed="${scale===k}">${l}</button>`).join('')}</div>
+    <button type="button" class="cpg-tool" onclick="cpGanttAutoFit()" title="Pick the zoom that fits every task">Fit all</button>
+    <button type="button" class="cpg-tool" onclick="cpGanttToday()" ${todayIn?'':'disabled title="Today is outside this schedule"'}>Today</button>
+    <div class="cpg-summary">${withDates.length} task${withDates.length!==1?'s':''} · ${nBoards} engagement${nBoards!==1?'s':''}</div>
+  </div>
+  ${legend?`<div class="cpg-legend">${legend}</div>`:''}
+  <div class="cpg" style="--left:${LEFT}px">
+    <div class="cpg-left">
+      <div class="cpg-left-head">Task</div>
+      <div id="cp-g-left" class="cpg-left-body">${leftRows}</div>
     </div>
-    <div id="cp-g-right" style="flex:1;overflow:auto" onscroll="(function(s){var lb=document.getElementById('cp-g-left');if(lb)lb.scrollTop=s.scrollTop;})(this)">
-      <div style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:2px solid #e4ecf4">
-        <div style="display:flex;min-width:${trackW}px">${majorHTML}</div>
-        <div style="display:flex;min-width:${trackW}px">${minorHTML}</div>
+    <div id="cp-g-right" class="cpg-right" onscroll="(function(s){var lb=document.getElementById('cp-g-left');if(lb)lb.scrollTop=s.scrollTop;})(this)">
+      <div class="cpg-head" style="min-width:${trackW}px">
+        <div style="display:flex">${majorHTML}</div>
+        <div style="display:flex">${minorHTML}</div>
+        ${todayFlag}
       </div>
-      <div style="position:relative;min-width:${trackW}px">${gridSVG}${rightRows}${todayLine}</div>
+      <div style="position:relative;min-width:${trackW}px;height:${totalH}px">${gridSVG}${rightRows}${todayLine}</div>
     </div>
   </div>`;
 }
 
+// After a render: keep the scroll position across a collapse / zoom-free re-render, otherwise
+// bring today into view the first time the chart is wider than the screen.
+let _cpGanttKeep=null;
+function _cpGanttAfterRender(){
+  const r=document.getElementById('cp-g-right');if(!r)return;
+  if(_cpGanttKeep){r.scrollLeft=_cpGanttKeep.x;r.scrollTop=_cpGanttKeep.y;_cpGanttKeep=null;return;}
+  if(r.scrollWidth<=r.clientWidth+4)return;
+  if(r.querySelector('.cpg-today')){cpGanttToday(true);return;}
+  // today isn't on this schedule: start at the first bar instead of an empty stretch
+  const first=[...r.querySelectorAll('.cpg-bar,.cpg-milestone')].reduce((m,el)=>Math.min(m,parseFloat(el.style.left)||0),Infinity);
+  if(isFinite(first))r.scrollLeft=Math.max(0,first-24);
+}
+function cpGanttToday(silent){
+  const r=document.getElementById('cp-g-right');const line=r&&r.querySelector('.cpg-today');
+  if(!line){if(!silent)showToast&&showToast('Today is outside this schedule.');return;}
+  r.scrollTo({left:Math.max(0,parseFloat(line.style.left)-r.clientWidth*0.25),behavior:silent?'auto':'smooth'});
+}
+
 // ── Client Gantt controls ─────────────────────────────────
-function _cpReloadGantt(){
+function _cpReloadGantt(keepScroll){
   const clientId=currentUser?.clientId;
   const client=DB.clients.find(c=>c.id===clientId);
   const tasks=getClientTasks(clientId);
   const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
+  const r=document.getElementById('cp-g-right');
+  _cpGanttKeep=keepScroll&&r?{x:r.scrollLeft,y:r.scrollTop}:null;
   if(body)body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
 }
 function cpToggleGroup(id){
   if(cpGanttCollapsed.has(id))cpGanttCollapsed.delete(id);else cpGanttCollapsed.add(id);
-  _cpReloadGantt();
+  _cpReloadGantt(true);
 }
 function cpSetScale(s){
   cpGanttScale=s;
@@ -23896,6 +24182,14 @@ function cpGanttAutoFit(){
   cpGanttScale=days<=60?'days':days<=180?'weeks':days<=730?'months':'quarters';
   _cpReloadGantt();
 }
+// The chart is sized to the window, so re-fit it when the window changes size.
+let _cpGanttResizeT=null,_cpGanttW=window.innerWidth;
+window.addEventListener('resize',()=>{
+  if(cpSection!=='schedule'||window.innerWidth===_cpGanttW)return;
+  _cpGanttW=window.innerWidth;
+  clearTimeout(_cpGanttResizeT);
+  _cpGanttResizeT=setTimeout(()=>{if(cpSection==='schedule'&&document.getElementById('cp-g-right'))_cpReloadGantt(true);},180);
+});
 
 // ═══════════════════════════════════════════════════════════
 // CLIENT PORTAL — TASKS, APPROVAL & WORK REQUESTS
@@ -23924,7 +24218,7 @@ function cpSetTaskSearch(q){_cpTaskSearch=q.toLowerCase();const el=document.getE
 // is ever generated in the first place. Takes only sanitised tasks — resolves nothing from
 // DB.staff, so there is no staff name or avatar anywhere in this view to leak by accident.
 function renderCpBoard(clientId,tasks,boards,boardIdx){
-  if(!boards.length)return`<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No boards yet.</div>`;
+  if(!boards.length)return`<div class="cp-empty"><div class="cp-empty-title">No engagements yet</div><div class="cp-empty-text">Your boards appear here once Etcher sets them up.</div></div>`;
   const subMap=new Map();
   tasks.filter(t=>t.parentId).forEach(t=>{if(!subMap.has(t.parentId))subMap.set(t.parentId,[]);subMap.get(t.parentId).push(t);});
 
@@ -23939,20 +24233,18 @@ function renderCpBoard(clientId,tasks,boards,boardIdx){
       if(!byGroup.has(key))byGroup.set(key,[]);
       byGroup.get(key).push(t);
     });
-    const groupBlocks=[...byGroup.entries()].map(([groupName,gTasks])=>`<div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;padding-left:2px">${escHtml(groupName)}</div>
-        ${gTasks.map(t=>cpBoardRow(t,subMap.get(t.id)||[])).join('')}
-      </div>`).join('');
-    return`<div style="margin-bottom:28px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <span style="width:10px;height:10px;border-radius:3px;background:${b.color||'#94a3b8'};flex-shrink:0"></span>
-        <span style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33">${escHtml(b.name)}</span>
+    const groupBlocks=[...byGroup.entries()].map(([groupName,gTasks])=>`<div class="cp-bgroup">${escHtml(groupName)}<span>${gTasks.length}</span></div>
+        ${gTasks.map(t=>cpBoardRow(t,subMap.get(t.id)||[])).join('')}`).join('');
+    return`<section class="cp-sec">
+      <div class="cp-sec-head"><span class="cp-sec-dot" style="border-radius:3px;background:${b.color||'#94a3b8'}"></span><h2 class="cp-sec-title">${escHtml(b.name)}</h2><span class="cp-sec-count">${topTasks.length}</span></div>
+      <div class="cp-list">
+        <div class="cp-brow cp-bhead" aria-hidden="true"><span>Task</span><span>Status</span><span class="cp-bcol-date">Dates</span><span class="cp-bcol-prog">Progress</span><span>With</span></div>
+        ${groupBlocks}
       </div>
-      ${groupBlocks}
-    </div>`;
+    </section>`;
   }).join('');
 
-  return boardSections||`<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No tasks on your boards yet.</div>`;
+  return boardSections||`<div class="cp-empty"><div class="cp-empty-title">No tasks on your boards yet</div><div class="cp-empty-text">Tasks appear here as Etcher adds them.</div></div>`;
 }
 function cpBoardRow(t,subs){
   const bs=cpBroadStatus(t.status);
@@ -23963,23 +24255,17 @@ function cpBoardRow(t,subs){
   // A finished task isn't "with" anyone — seed/legacy data can leave With=Client on done work.
   const finished=['done','completed','approved-client','completed-approved','cancelled'].includes(t.status);
   const withLabel=finished?'—':t.awaitingClient?'You':'Etcher';
-  const withColor=!finished&&t.awaitingClient?'#7c3aed':'#8da2b2';
-  return`<div class="cp-task-list-row" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')" style="padding:9px 14px 9px 0;min-height:unset;align-items:center;flex-wrap:wrap">
-    <div style="width:4px;min-height:36px;border-radius:2px;flex-shrink:0;align-self:stretch;background:${t.openRequest?'#f59e0b':bs.color}"></div>
-    <div style="flex:1;min-width:160px;padding-left:12px;display:flex;align-items:center;gap:10px;overflow:hidden">
-      <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.title)}</span>
-      ${subs.length?`<span style="font-size:10px;color:#97bcbd;white-space:nowrap;background:#f0f4f8;border-radius:10px;padding:2px 7px">▸ ${subs.length}</span>`:''}
-      ${t.openRequest?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:20px;white-space:nowrap">⚡ Action needed</span>`:''}
-    </div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;margin-left:8px">
-      <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
-      <span style="font-size:11px;color:#b0bec5;white-space:nowrap">${dateStr}</span>
-      <span style="display:flex;align-items:center;gap:5px">
-        <span style="width:20px;height:6px;border-radius:3px;background:#e8eef4;overflow:hidden;display:inline-block"><span style="display:block;height:100%;width:${t.percentComplete}%;background:${bs.color}"></span></span>
-        <span style="font-size:10px;color:#8da2b2">${t.percentComplete}%</span>
-      </span>
-      <span style="font-size:11px;font-weight:600;color:${withColor};white-space:nowrap">${withLabel}</span>
-    </div>
+  const withColor=!finished&&t.awaitingClient?'#9a5b12':'#8da2b2';
+  return`<div class="cp-brow" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')" style="--acc:${t.openRequest?'#e7a94b':bs.color}">
+    <span class="cp-bcol-task">
+      <span class="cp-bname">${escHtml(t.title)}</span>
+      ${subs.length?`<span class="cp-bsubs" title="${subs.length} subtask${subs.length!==1?'s':''}">▸ ${subs.length}</span>`:''}
+      ${t.openRequest?`<span class="cpg-you">Action needed</span>`:''}
+    </span>
+    <span><span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label.replace(' – Awaiting Etcher Response','')}</span></span>
+    <span class="cp-bcol-date">${dateStr}</span>
+    <span class="cp-bcol-prog"><span class="cp-bbar"><span style="width:${Math.max(0,Math.min(100,+t.percentComplete||0))}%;background:${bs.color}"></span></span><span class="cp-bpct">${t.percentComplete}%</span></span>
+    <span class="cp-bwith" style="color:${withColor}">${withLabel}</span>
   </div>`;
 }
 
@@ -24049,41 +24335,31 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
     if(!arr.length)return'';
     const {amber,etcher,count,actions}=opts;
     const badge=(amber||etcher)?`<span style="background:#fef3c7;color:${etcher?'#92400e':'#b45309'};font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:6px">${arr.length}</span>`:count?`<span style="font-size:12px;color:#b0bec5;font-weight:500;margin-left:4px">(${arr.length})</span>`:'';
-    const header=amber
-      ?`<div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;margin-bottom:4px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#92400e">${escHtml(title)}</span>${badge}
-          <span style="font-size:11px;color:#b45309;margin-left:auto">Tap a row to view details</span>
-        </div>`
-      :etcher
-      ?`<div style="display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fff8e1;border:1.5px solid #fde68a;border-radius:10px;margin-bottom:4px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          <span style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#92400e">${escHtml(title)}</span>${badge}
-          <span style="font-size:11px;color:#b45309;margin-left:auto">We're reviewing your request</span>
-        </div>`
-      :`<div class="cp-section-title" style="font-size:12px;padding-bottom:6px">${escHtml(title)}${badge}</div>`;
-    return`<div data-section-wrap style="margin-bottom:24px">${header}${arr.map(t=>taskRow(t,!!actions)).join('')}</div>`;
+    const dot=amber?'#e7a94b':etcher?'#c27a30':null;
+    const hint=amber?'Select a task for details':etcher?'We\'re reviewing your request':'';
+    const header=`<div class="cp-sec-head">${dot?`<span class="cp-sec-dot" style="background:${dot}"></span>`:''}<h2 class="cp-sec-title">${escHtml(title)}</h2><span class="cp-sec-count">${arr.length}</span>${hint?`<span class="cp-sec-hint">${hint}</span>`:''}</div>`;
+    return`<div data-section-wrap class="cp-sec">${header}<div class="cp-list">${arr.map(t=>taskRow(t,!!actions)).join('')}</div></div>`;
   };
 
-  const searchBar=`<div style="margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e2eaf2;border-radius:8px;padding:7px 12px" onfocusin="this.style.borderColor='#97bcbd'" onfocusout="this.style.borderColor='#e2eaf2'">
+  const searchBar=`<div style="margin-bottom:20px">
+    <div class="cp-search">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b0bec5" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" placeholder="Search tasks…" oninput="cpSetTaskSearch(this.value)" style="flex:1;border:none;outline:none;font-size:13px;color:#1a2940;font-family:'Lato',sans-serif;background:transparent" />
+      <input type="search" placeholder="Search tasks" aria-label="Search tasks" oninput="cpSetTaskSearch(this.value)" />
     </div>
   </div>`;
 
   const sections=[
     // "Waiting on You", not "Awaiting Your Approval" — this bucket now also holds action
     // requests that aren't approvals (review, supply information, decide).
-    mkSection('Waiting on You',awaiting,{amber:true,actions:true}),
-    mkSection('Awaiting Etcher Response',awaitingEtcher,{etcher:true}),
-    mkSection('Under Review',underReview,{}),
-    mkSection('In Scope',inScope,{}),
-    mkSection('In Progress',inProgress,{}),
-    mkSection('Completed & Approved',completed,{count:true}),
+    mkSection('Waiting on you',awaiting,{amber:true,actions:true}),
+    mkSection('Awaiting Etcher response',awaitingEtcher,{etcher:true}),
+    mkSection('Under review',underReview,{}),
+    mkSection('In scope',inScope,{}),
+    mkSection('In progress',inProgress,{}),
+    mkSection('Completed & approved',completed,{count:true}),
   ].join('');
 
-  return`${searchBar}<div id="cp-tasks-body">${sections||'<div class="cp-stat-card" style="text-align:center;padding:48px 24px;color:#8da2b2;font-size:14px">No tasks assigned yet.</div>'}</div>`;
+  return`${searchBar}<div id="cp-tasks-body">${sections||`<div class="cp-empty"><div class="cp-empty-title">No tasks yet</div><div class="cp-empty-text">Tasks Etcher is working on for you will show here.</div></div>`}</div>`;
 }
 
 function cpOpenChangesModal(taskId){
@@ -24161,12 +24437,24 @@ function cpOpenTaskModal(taskId){
   const hasOpenRequest=!!t.openRequest;
   const bs=cpBroadStatus(t.status);
   const todayStr=toDateStr(new Date());
-  const overdue=t.endDate&&t.endDate<todayStr&&t.status!=='done'&&t.status!=='completed';
+  const overdue=t.endDate&&t.endDate<todayStr&&!['done','completed','completed-approved','approved-client','cancelled'].includes(t.status);
   const drParts=[];
   if(t.startDate&&t.endDate)drParts.push(`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`);
   else if(t.endDate)drParts.push(`Due ${formatDate(t.endDate)}`);
   else if(t.startDate)drParts.push(`From ${formatDate(t.startDate)}`);
   const prioMeta=cpPriorityMeta(t.priority||'med');
+  // Key facts strip: when, how long, how close, how far along.
+  const _isDoneT=['done','completed','completed-approved','approved-client','cancelled'].includes(t.status);
+  const _days=(a,b)=>Math.round((new Date(b)-new Date(a))/86400000);
+  const facts=[];
+  const _short=d=>new Date(d+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+  const _yr=d=>String(d).slice(0,4);
+  if(t.startDate&&t.endDate){const n=_days(t.startDate,t.endDate)+1;facts.push({label:'Timeline',value:`${_short(t.startDate)} → ${_short(t.endDate)}`,sub:`${n} day${n===1?'':'s'} · ${_yr(t.startDate)===_yr(t.endDate)?_yr(t.endDate):_yr(t.startDate)+'–'+_yr(t.endDate)}`});}
+  else if(drParts.length)facts.push({label:t.endDate?'Due date':'Starts',value:_short(t.endDate||t.startDate),sub:_yr(t.endDate||t.startDate)});
+  if(t.endDate&&!_isDoneT){const d=_days(todayStr,t.endDate);facts.push({label:d<0?'Overdue':'Due',value:d<0?`${-d} day${d===-1?'':'s'} late`:d===0?'Today':d===1?'Tomorrow':`In ${d} days`,tone:d<0?'bad':d<=2?'warn':''});}
+  const _pct=Math.max(0,Math.min(100,Math.round(+t.percentComplete||0)));
+  facts.push({label:'Progress',value:`${_isDoneT&&!_pct?100:_pct}%`,bar:_isDoneT&&!_pct?100:_pct});
+  const factsHtml=`<div class="cp-m-facts">${facts.map(x=>`<div class="cp-m-fact${x.tone?' '+x.tone:''}"><div class="cp-m-label">${x.label}</div><div class="cp-m-fact-val">${x.value}</div>${x.sub?`<div class="cp-m-fact-sub">${x.sub}</div>`:''}${x.bar!=null?`<div class="cp-m-bar"><span style="width:${x.bar}%"></span></div>`:''}</div>`).join('')}</div>`;
   // Same rule as api/_portal.js fileVisibleTo (server mode already receives only these).
   const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&(f.uploadedByClientId===currentUser.clientId||(!f.internalOnly&&!rawTask.clientAttachmentsHidden)));
   const rawSubs=DB.tasks.filter(s=>s.parentTaskId===taskId&&!s.archived&&canViewTask(currentUser,s));
@@ -24176,9 +24464,10 @@ function cpOpenTaskModal(taskId){
   // that task gets the actionSection's Mark Done instead.
   let approvalSection='';
   if(t.awaitingClient&&t.clientApproval?.status!=='approved'&&_cpIsApprovalAsk(t)){
-    approvalSection=`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
-      <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:4px">⚡ Action Required — Awaiting Your Approval</div>
-      <p style="font-size:13px;color:#6b8399;margin-bottom:18px;line-height:1.6">${t.approvalType?`We are requesting your approval for: <strong>${escHtml({scope:'Scope',quote:'Quote',proposal:'Proposal',work:'Work',final:'Final Delivery',change:'Change',other:'Other'}[t.approvalType]||t.approvalType)}</strong>. `:''}Please review and approve, request changes, or decline.</p>
+    approvalSection=`<div class="cp-m-ask">
+      <div class="cp-m-ask-head"><span class="cp-m-ask-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><div>
+      <div class="cp-m-ask-title">Your approval is needed</div>
+      <p class="cp-m-ask-text">${t.approvalType?`We are requesting your approval for: <strong>${escHtml({scope:'Scope',quote:'Quote',proposal:'Proposal',work:'Work',final:'Final Delivery',change:'Change',other:'Other'}[t.approvalType]||t.approvalType)}</strong>. `:''}Please review and approve, request changes, or decline.</p></div></div>
       <div id="cp-changes-form" class="hidden" style="margin-bottom:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px">
         <label class="cp-form-label" style="margin-bottom:8px">Describe the changes you'd like</label>
         <textarea id="cp-changes-note" class="cp-form-input" rows="4" placeholder="e.g. Please adjust the timeline, include X, change Y…" style="resize:vertical;min-height:90px;margin-bottom:12px"></textarea>
@@ -24201,7 +24490,7 @@ function cpOpenTaskModal(taskId){
           <button class="cp-link-btn" onclick="document.getElementById('cp-decline-form').classList.add('hidden');document.getElementById('cp-approval-btns').classList.remove('hidden')">Cancel</button>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:20px" id="cp-approval-btns">
+      <div class="cp-m-ask-btns" id="cp-approval-btns">
         <button class="cp-action-btn approve" onclick="cpApproveTask('${taskId}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
           Approve
@@ -24217,7 +24506,7 @@ function cpOpenTaskModal(taskId){
       </div>
     </div>`;
   }else if(t.clientApproval?.status==='approved'){
-    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;display:flex;align-items:center;gap:10px;margin-bottom:0">
+    approvalSection=`<div class="cp-m-state ok">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
       <div>
         <div style="font-size:13px;font-weight:700;color:#15803d">You approved this task</div>
@@ -24225,7 +24514,7 @@ function cpOpenTaskModal(taskId){
       </div>
     </div>`;
   }else if(t.clientApproval?.status==='changes-requested'){
-    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;margin-bottom:0">
+    approvalSection=`<div class="cp-m-state warn">
       <div style="font-size:13px;font-weight:700;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Changes Requested
@@ -24234,7 +24523,7 @@ function cpOpenTaskModal(taskId){
       <div style="font-size:11px;color:#d97706;margin-top:8px">Your feedback has been sent to the Etcher team.</div>
     </div>`;
   }else if(t.clientApproval?.status==='declined'){
-    approvalSection=`<div style="border-top:1px solid #e8eef4;margin:0 28px;padding:16px 18px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin-bottom:0">
+    approvalSection=`<div class="cp-m-state bad">
       <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:6px;display:flex;align-items:center;gap:6px">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         You declined this
@@ -24249,19 +24538,19 @@ function cpOpenTaskModal(taskId){
   // information") is exactly the same kind of moment and must not be blocked just because it
   // didn't happen to also be an approval.
   const canAttach=t.awaitingClient||hasOpenRequest;
-  const attachSection=`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
-    <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Attachments</div>
-    ${attachments.length===0?`<p style="font-size:12px;color:#b0bec5">No attachments yet.</p>`
+  const attachSection=`<div class="cp-m-sec">
+    <div class="cp-m-label">Attachments${attachments.length?` <span class="cp-m-count">${attachments.length}</span>`:''}</div>
+    ${attachments.length===0?`<p class="cp-m-empty">No files or links yet.</p>`
       :`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${canAttach?12:0}px">${attachments.map(f=>{const fd=f.type==='link'?f.url:(_getFileData(f.id)||((f.stored||f.storagePath)?'#stored':null));const isLink=f.type==='link';return`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#f0f4f8;border-radius:6px;border:1px solid #e2eaf2;max-width:220px;${fd?'':'opacity:0.5'}">${_fileTypeIcon(f.type,f.name,f.url)}<span style="font-size:12px;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escHtml(f.name)}</span><div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${fd?(isLink?`<a href="${escHtml(fd)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;color:#97bcbd;text-decoration:none" title="Open link"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>`:`<button type="button" class="cp-file-btn" onclick="cpOpenFile('${f.id}',false)" title="View"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button><button type="button" class="cp-file-btn" style="margin-left:3px" onclick="cpOpenFile('${f.id}',true)" title="Download"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`):''}${f.uploadedByClientId&&f.uploadedByClientId===currentUser?.clientId?`<button type="button" class="cp-file-btn cp-file-del" style="margin-left:3px" onclick="cpRemoveFile('${f.id}')" title="Remove — you added this"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}</div></div>`;}).join('')}</div>`}
     ${canAttach?`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:${attachments.length?8:0}px">
-      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:5px 13px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
+      <label class="cp-m-upload">
+        <span class="cp-m-btn">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           Upload document
         </span>
-        <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" style="display:none"/>
+        <input type="file" multiple onchange="cpUploadToTask('${taskId}',this)" class="cp-m-file" aria-label="Upload document"/>
       </label>
-      <button onclick="_cpToggleLinkInput('${taskId}')" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${_cpShowLinkInput?'#0078d4':'#97bcbd'};padding:5px 13px;border:1.5px ${_cpShowLinkInput?'solid #0078d4':'dashed #c8d4e0'};border-radius:6px;background:${_cpShowLinkInput?'#deecf9':'transparent'};cursor:pointer;transition:border-color 0.12s">
+      <button type="button" onclick="_cpToggleLinkInput('${taskId}')" class="cp-m-btn${_cpShowLinkInput?' on':''}" aria-expanded="${!!_cpShowLinkInput}">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         SharePoint / link
       </button>
@@ -24270,52 +24559,49 @@ function cpOpenTaskModal(taskId){
       <input id="cp-link-url-${taskId}" type="url" placeholder="SharePoint or document URL" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 9px;border:1px solid #c8d4e0;border-radius:5px;outline:none;font-family:'Jost',sans-serif;color:#0d1c33" onkeydown="if(event.key==='Enter')cpAddActionLink('${taskId}')"/>
       <button onclick="cpAddActionLink('${taskId}')" style="align-self:flex-start;font-size:12px;font-weight:600;padding:5px 14px;background:#0078d4;color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#0062ad'" onmouseout="this.style.background='#0078d4'">Add link</button>
     </div>`:''}
-    <div style="font-size:10px;color:#b0bec5;margin-top:5px">Max 1 MB per file · Visible to Etcher team</div>`:''}
+    <div class="cp-m-hint">Files up to 1 MB · shared with the Etcher team</div>`:''}
   </div>`;
 
   // What we actually asked the client to do — separate from, and shown above, the generic
   // "awaiting approval" banner below, since a task can carry an open action request without
   // being an approval at all (e.g. "supply information").
-  const actionSection=hasOpenRequest?`<div style="border-top:1px solid #e8eef4;padding:20px 28px 0">
+  const actionSection=hasOpenRequest?`<div class="cp-m-ask">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#b45309;background:#fef3c7;padding:3px 10px;border-radius:10px">${escHtml((_AR_KIND_META[t.openRequest.kind]||{}).label||'Review')}</span>
-        <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">📌 ${escHtml(t.openRequest.title)}</div>
+        <div class="cp-m-ask-title">${escHtml(t.openRequest.title)}</div>
       </div>
       <p style="font-size:13px;color:#6b8399;margin-bottom:${t.openRequest.dueDate?4:14}px;line-height:1.6;white-space:pre-wrap">${escHtml(t.openRequest.body)}</p>
       ${t.openRequest.dueDate?`<div style="font-size:11px;font-weight:600;color:#b45309;margin-bottom:14px">By ${formatDate(t.openRequest.dueDate)}</div>`:''}
-      <div style="display:flex;gap:10px;flex-wrap:wrap;padding-bottom:20px">
+      <div class="cp-m-ask-btns">
         <button class="cp-action-btn approve" onclick="cpRespondToAction('${t.openRequest.id}','${taskId}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Mark Done
+          Mark done
         </button>
         <button onclick="document.getElementById('cp-ccomm-input-${taskId}')?.focus();document.getElementById('cp-ccomm-input-${taskId}')?.scrollIntoView({behavior:'smooth',block:'center'})" class="cp-action-btn changes">
-          Ask a Question
+          Ask a question
         </button>
       </div>
     </div>`:'';
 
   const body=`
   <div>
-    <div style="padding:24px 28px 18px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px">
-        <h2 style="font-family:'Jost',sans-serif;font-size:18px;font-weight:700;color:#0d1c33;line-height:1.3;margin:0;flex:1">${escHtml(t.title)}</h2>
-        <button onclick="cpCloseTaskModal()" style="background:none;border:none;cursor:pointer;color:#8da2b2;font-size:22px;line-height:1;flex-shrink:0;padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'" title="Close">&#215;</button>
+    <div class="cp-m-head">
+      <div class="cp-m-titlerow">
+        <h2 class="cp-m-title">${escHtml(t.title)}</h2>
+        <button type="button" class="cp-m-close" onclick="cpCloseTaskModal()" title="Close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${drParts.length||t.percentComplete>0?18:0}px">
+      <div class="cp-m-badges">
         <span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${bs.label}</span>
         ${t.awaitingClient&&t.clientApproval?.status!=='approved'?`<span class="cp-badge" style="background:#fef3c7;color:#b45309;font-weight:700">${_cpIsApprovalAsk(t)?'⚡ Approval Needed':'⚡ Action Needed'}</span>`:''}
         ${t.priority&&t.priority!=='med'&&t.priority!=='medium'?`<span class="cp-badge" style="background:${prioMeta.bg};color:${prioMeta.color}">${prioMeta.label} Priority</span>`:''}
         ${overdue?`<span class="cp-badge" style="background:#fee2e2;color:#b91c1c">Overdue</span>`:''}
       </div>
-      ${drParts.length||t.percentComplete>0?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;background:#f8fafb;border-radius:8px;padding:14px 18px;margin-bottom:${t.description?18:0}px">
-        ${drParts.length?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Timeline</div><div style="font-size:13px;font-weight:600;color:#1a2940">${drParts[0]}</div></div>`:''}
-        ${t.percentComplete>0||t.status==='done'||t.status==='completed'?`<div><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Progress</div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:#e8eef4;border-radius:3px;overflow:hidden"><div style="height:100%;width:${t.percentComplete}%;background:#0d6e4e;border-radius:3px"></div></div><span style="font-size:12px;font-weight:700;color:#0d1c33;flex-shrink:0">${t.percentComplete}%</span></div></div>`:''}
-      </div>`:''}
-      ${t.description?`<div style="font-size:13px;color:#4a5568;line-height:1.75;padding:14px 18px;background:#f8fafb;border-radius:8px;border-left:3px solid #e2eaf2;word-break:break-word"><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Description</div><div class="cp-desc">${_descToHtml(t.description)}</div></div>`:''}
+      ${factsHtml}
     </div>
-    ${actionSection}
-    ${subs.length?`<div style="padding:20px 28px;border-top:1px solid #e8eef4">
-      <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Subtasks (${subs.length})</div>
+    ${actionSection}${approvalSection}
+    ${t.description?`<div class="cp-m-sec"><div class="cp-m-label">Description</div><div class="cp-desc">${_descToHtml(t.description)}</div></div>`:''}
+    ${subs.length?`<div class="cp-m-sec">
+      <div class="cp-m-label">Subtasks <span class="cp-m-count">${subs.length}</span></div>
       ${subs.map(s=>{const sbs=cpBroadStatus(s.status);const pct=s.percentComplete;return`<div onclick="cpOpenTaskModal('${s.id}')" role="button" tabindex="0" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${s.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;background:#f8fafb;border:1px solid #e8eef4;transition:background 0.12s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#f8fafb'">
         <span style="color:#c8d4e0;font-size:12px;flex-shrink:0">↳</span>
         <span style="flex:1;font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.title)}</span>
@@ -24325,9 +24611,8 @@ function cpOpenTaskModal(taskId){
       </div>`}).join('')}
     </div>`:''}
     ${attachSection}
-    ${approvalSection?approvalSection+'<div style="height:24px"></div>':''}
-    <div style="padding:20px 28px;border-top:1px solid #e8eef4">
-      <div style="font-family:'Jost',sans-serif;font-size:12px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;display:flex;align-items:center;gap:5px">${icon('chat',12)} Client Comms</div>
+    <div class="cp-m-sec">
+      <div class="cp-m-label">Messages with Etcher</div>
       <div id="cp-ccomm-${taskId}">${renderClientCommsThread(taskId,true)}</div>
     </div>
   </div>`;
@@ -24655,7 +24940,7 @@ async function cpOpenFile(id,dl){
       const r=await fetch('/api/portal-file?id='+encodeURIComponent(id)+(dl?'&dl=1':''),{headers:await _adminApiAuthHeaders(),cache:'no-store'});
       const j=await r.json().catch(()=>({}));
       if(!r.ok||!j.url)throw new Error(j.error||'Could not open the file.');
-      if(dl){_clickDownload(j.url);return;}
+      if(dl){_clickDownload(j.url,f.name);return;}
       const blob=await (await fetch(j.url)).blob();
       const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob);});
       await wsPreviewFile(id,data);

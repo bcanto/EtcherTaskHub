@@ -25,6 +25,7 @@ module.exports = async function handler(req, res) {
   const action = req.body && typeof req.body === 'object' ? req.body : null;
   if (!action || typeof action.type !== 'string') return res.status(400).json({ error: 'Missing action.' });
 
+  let storedPaths = null, written = false, maybeWritten = false;
   try {
     let stored = false;   // uploaded paths are deterministic (tasks/<task>/<file id>): upload once
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -46,11 +47,16 @@ module.exports = async function handler(req, res) {
       // Bytes first, so a file record never points at nothing. If the write below loses the
       // race, the retry re-applies with the same ids and the objects are already there.
       if (!stored && result.uploads && result.uploads.length) {
+        storedPaths = result.uploads.map(u => u.path);   // before the puts: a partial failure still gets cleaned up
         await Promise.all(result.uploads.map(u => putObject(u.path, Buffer.from(u.base64, 'base64'), u.type)));
         stored = true;
       }
       after._savedAt = now;
-      if (await casWrite(after, updatedAt)) {
+      maybeWritten = true;   // an error from here on may have come after the row was updated
+      const ok = await casWrite(after, updatedAt);
+      maybeWritten = false;
+      if (ok) {
+        written = true;
         await Promise.allSettled((result.emails || []).map(e => sendNotificationEmail(e)));
         if (result.removals && result.removals.length) await removeObjects(result.removals);   // after the record is gone
         return res.status(200).json({ ok: true, slice: sliceForClient(after, caller.clientId, caller.id) });
@@ -61,5 +67,10 @@ module.exports = async function handler(req, res) {
   } catch (e) {
     console.error('[portal-action]', e.message);
     return res.status(500).json({ error: 'Could not save. Please try again.' });
+  } finally {
+    // Uploaded, but the record never landed (lost every race, or the retry was refused):
+    // nothing points at these objects, so delete them rather than leave orphans in the bucket.
+    // (not when the save may have landed — deleting then would leave a record pointing at nothing)
+    if (storedPaths && !written && !maybeWritten) await removeObjects(storedPaths).catch(() => {});
   }
 };

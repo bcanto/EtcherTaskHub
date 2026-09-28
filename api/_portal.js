@@ -107,7 +107,9 @@ function openRequestFor(blob, taskId) {
 // Same rule as the portal's _cpIsApprovalAsk: Approve / Request changes only answer an approval
 // ask. A "review X" or "send us Y" request is answered with Mark done, never by approving the task.
 function isApprovalAsk(blob, t) {
-  const open = openRequestFor(blob, t.id);
+  // The portal only shows an open ask while the task is with the client (sanitizeTaskForClient),
+  // so a stale ask left on a task staff took back must not turn Approve into a refusal.
+  const open = t.currentlyWithType === 'client' ? openRequestFor(blob, t.id) : null;
   return t.status === 'ready-approval' || !open || open.kind === 'approve';
 }
 
@@ -152,6 +154,7 @@ function sliceForClient(blob, clientId, userId) {
 
   const tasks = arr(blob.tasks).filter(t => taskVisibleTo(blob, clientId, t));
   const taskIds = new Set(tasks.map(t => t.id));
+  const taskById = new Map(tasks.map(t => [t.id, t]));
   const boards = arr(blob.boards).filter(b => b.clientId === clientId && !b.archived)
     .map(b => pick(b, ['id', 'name', 'color', 'clientId', 'order']));
   const boardIds = new Set(boards.map(b => b.id));
@@ -177,7 +180,8 @@ function sliceForClient(blob, clientId, userId) {
     }),
     // internalOnly === true is internal. Legacy rows (undefined) stay visible — decision D1 of
     // PLAN-client-board-and-actions.md, unchanged here.
-    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && fileVisibleTo(blob, clientId, f))
+    // taskIds are exactly the visible tasks, so only the per-file part of fileVisibleTo is left to check
+    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && (f.uploadedByClientId === clientId || (f.internalOnly !== true && !(taskById.get(f.taskId) || {}).clientAttachmentsHidden)))
       .map(f => ({ ...pick(f, ['id', 'taskId', 'name', 'type', 'size', 'url', 'internalOnly', 'uploadedByClientId', 'actionRequestId', 'addedAt', 'uploadedAt']), stored: !!f.storagePath })),
     actionRequests: arr(blob.actionRequests).filter(r => taskIds.has(r.taskId)).map(sliceActionRequest),
     clientWorkRequests: arr(blob.clientWorkRequests).filter(r => r.clientId === clientId).map(clone),
@@ -255,7 +259,7 @@ function makeRecorder(blob, ctx) {
   function notify(recipientId, taskId, type, message) {
     if (!recipientId) return;
     if (!blob.notifications) blob.notifications = [];
-    blob.notifications.push({ id: 'n' + ctx.rid(), recipientId, taskId: taskId || null, type, message, read: false, createdAt: ctx.now });
+    blob.notifications.push({ id: 'n' + ctx.rid(), recipientId, taskId: taskId || null, type, message, read: false, createdAt: ctx.now, ...(ctx.userId ? { byUserId: ctx.userId } : {}) });
     if (EMAIL_TYPES.has(type)) {
       const rec = arr(blob.users).find(u => u.id === recipientId);
       if (rec && rec.email) emails.push({ to: rec.email, recipientName: rec.name, type, message, senderName: ctx.userName || 'Client' });
@@ -306,7 +310,11 @@ function recentActivity(blob, ctx, ms) {
   for (const f of arr(blob.taskFiles)) if (f.uploadedByClientId === ctx.clientId && recent(f.uploadedAt || f.addedAt)) n++;
   for (const r of arr(blob.clientWorkRequests)) if (r.clientId === ctx.clientId && recent(r.submittedAt)) n++;
   for (const r of arr(blob.actionRequests)) if (r.respondedByUserId && r.respondedByUserId === ctx.userId && recent(r.respondedAt)) n++;
-  return n;
+  // Every action notifies Etcher, and all of one action's notifications share its timestamp —
+  // so distinct timestamps = actions taken, including ones whose record has since been removed.
+  const acts = new Set();
+  for (const x of arr(blob.notifications)) if (x.byUserId && x.byUserId === ctx.userId && recent(x.createdAt)) acts.add(x.createdAt);
+  return Math.max(n, acts.size);
 }
 
 // ── Actions ──────────────────────────────────────────────────────────────────────────────
@@ -391,8 +399,11 @@ function applyPortalAction(blob, ctx, action) {
       if (!files.length || files.length > 3) return fail('Choose between 1 and 3 files.');
       const uploads = [];
       let total = 0;
+      const ids = new Set();
       for (const x of files) {
         if (!/^cf-[A-Za-z0-9-]{1,48}$/.test(String(x.id || ''))) return fail('Invalid file id.');
+        if (ids.has(x.id)) return fail('Duplicate file id.', 409);
+        ids.add(x.id);
         const name = String(x.name || '');
         if (!name || name.length > 255) return fail('Invalid file name.');
         if (blockedFile(name, x.type)) return fail(`"${name}" cannot be uploaded (file type not allowed).`);
