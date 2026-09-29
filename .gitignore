@@ -39,3 +39,7 @@ supabase/.branches
 supabase/.temp
 
 .vercel
+
+# ── ISO Audit workboard (local-only client data; not part of the live app) ────
+workboard/ISO Audit/data/
+workboard/ISO Audit/source/

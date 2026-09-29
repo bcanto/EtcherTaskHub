@@ -2,6 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<!-- Which boot skeleton to paint FIRST — decided here, before the body's skeleton markup is
+     even parsed, so the wrong-shaped one is never painted even for a moment on a slow
+     connection (a class added later, once the body exists, would still race the initial
+     paint). "boot-loggedout" means the localStorage check below is certain there's no saved
+     session and nothing in the URL needs resolving — the sign-in skeleton is correct with no
+     further async check. Anything else keeps the app skeleton (the async default, matching
+     the old behaviour) since only a real session check can settle it. See the two skeletons
+     and the follow-up script right after them in <body> for the other half of this. -->
+<script>(function(){try{
+  var q=location.search+location.hash;
+  var pending=/[?&#]share=|access_token=|type=(recovery|invite|signup|magiclink)|[?&]code=/.test(q)
+    ||!!(localStorage.getItem('etcher_supabase_auth')||localStorage.getItem('etcher_session_v1'));
+  document.documentElement.classList.add(pending?'boot-pending':'boot-loggedout');
+}catch(e){document.documentElement.classList.add('boot-pending');}})();</script>
 <!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve to anything but 0
      (WebKit spec) — the mobile shell's bottom-sheet/tab-bar/FAB padding for the home
      indicator was written against these insets but silently a no-op without this. -->
@@ -692,9 +706,14 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
 ::-webkit-scrollbar-thumb{background:#97bcbd;border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:#7aa3a4}
 /* ── Login ── */
-#login-screen{min-height:100vh;background:linear-gradient(145deg,#060f1b 0%,#0c1a2e 45%,#0b2038 100%);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
-#login-screen::before{content:'';position:absolute;top:-30%;left:-20%;width:60%;height:80%;border-radius:50%;background:radial-gradient(ellipse,rgba(151,188,189,0.07) 0%,transparent 70%);pointer-events:none}
-#login-screen::after{content:'';position:absolute;bottom:-20%;right:-10%;width:50%;height:60%;border-radius:50%;background:radial-gradient(ellipse,rgba(10,45,82,0.8) 0%,transparent 70%);pointer-events:none}
+.login-bg{min-height:100vh;background:linear-gradient(145deg,#060f1b 0%,#0c1a2e 45%,#0b2038 100%);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+.login-bg::before{content:'';position:absolute;top:-30%;left:-20%;width:60%;height:80%;border-radius:50%;background:radial-gradient(ellipse,rgba(151,188,189,0.07) 0%,transparent 70%);pointer-events:none}
+.login-bg::after{content:'';position:absolute;bottom:-20%;right:-10%;width:50%;height:60%;border-radius:50%;background:radial-gradient(ellipse,rgba(10,45,82,0.8) 0%,transparent 70%);pointer-events:none}
+/* Which boot skeleton paints first — set by the inline script at the very top of <head>,
+   before this body content is even parsed. See the comment there for why. */
+#login-skeleton{display:none}
+html.boot-loggedout #loading-screen{display:none!important}
+html.boot-loggedout #login-skeleton{display:flex!important}
 .login-card{background:#fff;border-radius:var(--r-xl);width:680px;max-width:95vw;box-shadow:0 40px 120px rgba(0,0,0,0.42),0 12px 40px rgba(0,0,0,0.2),0 0 0 1px rgba(255,255,255,0.04);display:flex;overflow:hidden;position:relative;z-index:1}
 .login-left{background:linear-gradient(160deg,#0d1c33 0%,#0a2442 100%);padding:44px 32px;width:250px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .login-left::before{content:'';position:absolute;bottom:-80px;right:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(151,188,189,0.1) 0%,transparent 65%);pointer-events:none}
@@ -1291,19 +1310,61 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     </div>
   </div>
 </div>
+
+<!-- Sign-in skeleton — shown instead of the app skeleton above when html.boot-loggedout is set
+     (see the script at the very top of <head>). Mirrors .login-card/.login-left/.login-right
+     exactly (reusing those same classes) so there is no layout shift when the real sign-in
+     page underneath is revealed. -->
+<div id="login-skeleton" class="login-bg" style="position:fixed;inset:0;z-index:99999">
+  <div class="login-card">
+    <div class="login-left">
+      <div>
+        <div class="_sk" style="height:34px;width:128px;margin-bottom:18px"></div>
+        <div style="width:28px;height:2px;background:#97bcbd;border-radius:2px;margin-bottom:18px;opacity:0.3"></div>
+        <div class="_sk" style="height:15px;width:96px;margin-bottom:11px"></div>
+        <div class="_sk" style="height:9px;width:100%;margin-bottom:5px;opacity:0.6"></div>
+        <div class="_sk" style="height:9px;width:82%;opacity:0.6"></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div class="_sk" style="width:6px;height:6px;border-radius:50%;opacity:0.5"></div>
+          <div class="_sk" style="height:9px;width:88px;opacity:0.4"></div>
+        </div>
+        <div class="_sk" style="height:8px;width:118px;opacity:0.3"></div>
+      </div>
+    </div>
+    <div class="login-right">
+      <div style="margin-bottom:32px">
+        <div class="_skl" style="height:21px;width:150px;margin-bottom:11px"></div>
+        <div class="_skl" style="height:10px;width:185px;opacity:0.7"></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="_skl" style="height:9px;width:92px;margin-bottom:7px;opacity:0.55"></div>
+        <div class="_skl" style="height:41px;border-radius:9px"></div>
+      </div>
+      <div style="margin-bottom:26px">
+        <div class="_skl" style="height:9px;width:66px;margin-bottom:7px;opacity:0.55"></div>
+        <div class="_skl" style="height:41px;border-radius:9px"></div>
+      </div>
+      <div class="_skl" style="height:41px;border-radius:9px"></div>
+    </div>
+  </div>
+</div>
 <script>
-// The skeleton above is the signed-in app. Someone with no saved login is only ever going to see
-// the sign-in page, so drop it at once and show that page instead of a fake dashboard. Share
-// links and invite / password-reset links keep it: they are resolved during start-up.
+// Whichever skeleton the CSS above chose to paint (see the classifying script at the top of
+// <head>), this settles it: html.boot-loggedout is a synchronous, certain "no saved session and
+// nothing in the URL to resolve" — the sign-in page underneath is already correct with no
+// further async check, so both skeletons come out now. Anything else (a saved session, or a
+// share/invite/recovery link) leaves the app skeleton up for the real boot code to resolve,
+// exactly as before.
 (function(){try{
-  var q=location.search+location.hash;
-  if(/[?&#]share=|access_token=|type=(recovery|invite|signup|magiclink)|[?&]code=/.test(q))return;
-  if(localStorage.getItem('etcher_supabase_auth')||localStorage.getItem('etcher_session_v1'))return;
+  if(!document.documentElement.classList.contains('boot-loggedout'))return;
   var ls=document.getElementById('loading-screen');if(ls)ls.remove();
+  var lsk=document.getElementById('login-skeleton');if(lsk)lsk.remove();
 }catch(e){}})();
 </script>
 
-<div id="login-screen">
+<div id="login-screen" class="login-bg">
   <div class="login-card">
 
     <!-- Left brand panel -->
@@ -2693,7 +2754,7 @@ function _mergeDB(current, incoming){
   // NB both halves of each alias pair must be filtered: the alias reconciliation further down
   // unions boards with workboards (and users with staff), so filtering only one half lets a
   // tombstoned board walk straight back in through its alias.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds']]){
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds'],['internalComms','deletedInternalCommsIds'],['meetingNotes','deletedMeetingNoteIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
@@ -4818,9 +4879,9 @@ function _renderErrorFallbackHtml(v,err,errId){
     <div class="err-page-title">Something went wrong</div>
     <div class="err-page-sub">An error occurred while loading this view.<br>Error ID: <code style="background:#f1f5f9;padding:2px 7px;border-radius:4px;font-size:12px;font-family:monospace">${escHtml(errId)}</code></div>
     <div class="err-page-actions">
-      <button onclick="navigate(${JSON.stringify(v)})" class="btn btn-teal" style="font-size:13px;padding:0 18px;height:36px">Try Again</button>
+      <button onclick="navigate(${escHtml(JSON.stringify(v))})" class="btn btn-teal" style="font-size:13px;padding:0 18px;height:36px">Try Again</button>
       <button onclick="navigate('dashboard')" class="btn btn-ghost" style="font-size:13px;padding:0 18px;height:36px">Go to Dashboard</button>
-      <button onclick="openReportIssueModal(${JSON.stringify(errId)})" class="btn btn-ghost" style="font-size:13px;padding:0 18px;height:36px">Report Issue</button>
+      <button onclick="openReportIssueModal(${escHtml(JSON.stringify(errId))})" class="btn btn-ghost" style="font-size:13px;padding:0 18px;height:36px">Report Issue</button>
     </div>
     ${isAdmin?`<details style="margin-top:24px;text-align:left;max-width:600px;font-size:11px;color:#8da2b2;width:100%"><summary style="cursor:pointer;color:#6b8399;font-size:12px;font-weight:600">Technical details (admin only)</summary><pre style="margin-top:8px;padding:12px;background:#f8fbff;border:1px solid #e4ecf4;border-radius:6px;overflow:auto;white-space:pre-wrap;font-size:10px;color:#4a5568;line-height:1.5">${escHtml(err?.stack||err?.message||'Unknown error')}</pre></details>`:''}
   </div>`;
@@ -17482,7 +17543,9 @@ function wsRefreshFileList(){
 }
 function wsDeleteComms(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
+  const _before=DB.internalComms;
   DB.internalComms=(DB.internalComms||[]).filter(m=>m.id!==id);
+  _tombstoneRemoved(_before,DB.internalComms,'deletedInternalCommsIds');
   saveDB(DB);renderView('workspace');setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);
 }
 function wsSetCommsTab(tab){
@@ -17918,7 +17981,9 @@ function wsMeetingNoteDelete(id){
   // openConfirm sets the message with textContent, so pass raw text — escaping here
   // would surface literal &amp; in the dialog.
   openConfirm('Delete Meeting Note',`Delete "${n.title}"? This cannot be undone.`,'Delete',()=>{
+    const _before=DB.meetingNotes;
     DB.meetingNotes=(DB.meetingNotes||[]).filter(x=>x.id!==id);
+    _tombstoneRemoved(_before,DB.meetingNotes,'deletedMeetingNoteIds');
     if(wsMeetingNoteExpandedId===id)wsMeetingNoteExpandedId=null;
     saveDB(DB);closeConfirm();renderView('workspace');
   },true);
@@ -19844,7 +19909,7 @@ function renderTpComments(taskId){
             <span style="font-size:13px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>
             <span style="font-size:11px;color:#a0b4c7">${_cTs?new Date(_cTs).toLocaleDateString():''}</span>
             <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-              ${isInternal?`<button onclick="tpReplyToComment(${JSON.stringify(author.name)})" style="border:none;background:none;cursor:pointer;font-size:11px;color:#97bcbd" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Reply</button>`:''}
+              ${isInternal?`<button onclick="tpReplyToComment(${escHtml(JSON.stringify(author.name))})" style="border:none;background:none;cursor:pointer;font-size:11px;color:#97bcbd" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Reply</button>`:''}
               ${canDel?`<button onclick="tpDeleteComment('${c.id}')" style="border:none;background:none;cursor:pointer;font-size:11px;color:#c0cdd8" onmouseover="this.style.color='#991b1b'" onmouseout="this.style.color='#c0cdd8'">Delete</button>`:''}
             </div>
           </div>
@@ -20246,7 +20311,9 @@ function mtgDelete(id){
     </div>`);
 }
 function mtgDeleteConfirm(id){
+  const _before=DB.meetingNotes;
   DB.meetingNotes=(DB.meetingNotes||[]).filter(n=>n.id!==id);
+  _tombstoneRemoved(_before,DB.meetingNotes,'deletedMeetingNoteIds');
   (DB.timeEntries||[]).forEach(e=>{if(e.meetingId===id)e.meetingId=null;});
   saveDB(DB);closeGenericModal();
   if(_tpNoteExpandedId===id)_tpNoteExpandedId=null;
@@ -21190,7 +21257,9 @@ function tpNoteDelete(id){
   const n=(DB.meetingNotes||[]).find(x=>x.id===id);if(!n)return;
   if(n.authorId!==currentUser.id&&currentUser.role!=='admin')return;
   openConfirm('Delete Meeting Note',`Delete "${n.title}"? This cannot be undone.`,'Delete',()=>{
+    const _before=DB.meetingNotes;
     DB.meetingNotes=(DB.meetingNotes||[]).filter(x=>x.id!==id);
+    _tombstoneRemoved(_before,DB.meetingNotes,'deletedMeetingNoteIds');
     if(_tpNoteExpandedId===id)_tpNoteExpandedId=null;
     saveDB(DB);closeConfirm();
     if(_tpCurrentTask){const p=document.getElementById('task-panel');if(p)p.innerHTML=renderTaskPanel(_tpCurrentTask);}
