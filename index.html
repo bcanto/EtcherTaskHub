@@ -773,6 +773,9 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
 /* ── Misc ── */
 .notif-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;animation:_notifPulse 2s ease-in-out infinite}
 @keyframes _notifPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 4px rgba(239,68,68,0)}}
+/* Jumping to a row from a notification/link — briefly rings it so it's findable on a long board. */
+.ws-row-jump{animation:_wsRowJump 1.8s ease-out}
+@keyframes _wsRowJump{0%{box-shadow:inset 0 0 0 2px #f59e0b;background-color:#fff7e6}100%{box-shadow:inset 0 0 0 2px transparent;background-color:transparent}}
 .section-header{font-family:'Jost',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#1c3856;padding:12px 19px 5px}
 .stat-card{background:#fff;border-radius:var(--r-md);padding:18px 18px 28px;box-shadow:var(--sh-xs);border:1px solid rgba(13,28,51,0.06);border-top-width:3px}
 .stat-val{font-family:'Jost',sans-serif;font-size:30px;font-weight:700;color:var(--navy);line-height:1.1;letter-spacing:-0.02em}
@@ -2690,7 +2693,7 @@ function _mergeDB(current, incoming){
   // NB both halves of each alias pair must be filtered: the alias reconciliation further down
   // unions boards with workboards (and users with staff), so filtering only one half lets a
   // tombstoned board walk straight back in through its alias.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds']]){
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
@@ -3657,6 +3660,9 @@ let schedMonth=new Date().getMonth();
 let schedWeekBase=null;
 // Task panel state
 let _tpCurrentTask=null;
+// closeTaskPanel()'s hide-after-slide-out is deferred (see below); tracked so a reopen
+// within that window can cancel it instead of being clobbered closed a moment later.
+let _tpCloseTimer=null;
 // Which tab the panel is showing. The header (status, owner, priority) sits above the
 // tab bar and is reachable from every tab, so a save made from there must repaint the
 // tab the user is actually on — not drop them back onto Details.
@@ -15688,7 +15694,7 @@ function deleteStaff(id){
       if(t.coOwnerId===id)t.coOwnerId=null;
       if(Array.isArray(t.assigneeIds)&&t.assigneeIds.includes(id))setTaskAssignees(t,t.assigneeIds.filter(a=>a!==id));
     });
-    DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);
+    {const _before=DB.notifications;DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);_tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');}
     {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     {const _before=DB.users;DB.users=DB.users.filter(x=>x.id!==id);_tombstoneRemoved(_before,DB.users,'deletedUserIds');}
     DB.staff=DB.users;
@@ -15861,8 +15867,8 @@ function renderNotifications(){
     const bg=n.read?'':'#f8fbff';
     const dot=n.read?'':`<div style="width:7px;height:7px;border-radius:50%;background:${meta.color};flex-shrink:0;margin-top:4px"></div>`;
     const goToTask=(n.type==='mention'||n.type==='comment')
-      ?`notifMarkRead('${n.id}');openTaskPanel('${task?.id}','comments')`
-      :`notifMarkRead('${n.id}');openTaskPanel('${task?.id}')`;
+      ?`notifGoToTask('${n.id}','${task?.id}','comments')`
+      :`notifGoToTask('${n.id}','${task?.id}')`;
     return`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task?'pointer':'default'}" onclick="${task?goToTask:''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${meta.color}">${meta.icon}</div>
       <div style="flex:1;min-width:0">
@@ -15920,12 +15926,42 @@ function notifMarkRead(id){
   if(n)n.read=true;
   saveDB(DB);updateNotifBadge();
 }
+// Notification click: land on the task's own board with its row visible — not just a
+// floating panel with no context — then open the panel on top of it. Every navigation step
+// (board switch, filter reset, expanding a collapsed parent) has to happen BEFORE
+// openTaskPanel(): navigate() unconditionally closes any open task panel, so calling it after
+// would immediately undo the open.
+function notifGoToTask(notifId,taskId,tab){
+  notifMarkRead(notifId);
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task){openTaskPanel(taskId,tab);return;}
+  const boardId=task.boardId||task.workboardId;
+  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId))openWorkboard(boardId);
+  else{wsCollapsed=new Set();if(currentView!=='workspace')navigate('workspace');}
+  // Clear whatever filters/search/person-chip were active — otherwise the row can pass
+  // every navigation step above and still not be in the DOM to scroll to.
+  activeFilters=freshFilters();saveFilters();
+  wsMtSearch='';wsMtPersonFilter='';
+  if(task.archived)wsShowArchived=true;
+  if(task.parentTaskId)wsExpanded.add(task.parentTaskId);
+  renderView('workspace');
+  setTimeout(()=>{
+    const row=document.querySelector(`tr[data-tid="${taskId}"]`);
+    if(!row)return;
+    row.scrollIntoView({behavior:'smooth',block:'center'});
+    row.classList.add('ws-row-jump');
+    setTimeout(()=>row.classList.remove('ws-row-jump'),1800);
+  },50);
+  openTaskPanel(taskId,tab);
+}
 function notifMarkAllRead(){
   DB.notifications.filter(n=>n.recipientId===currentUser.id).forEach(n=>n.read=true);
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 function notifDismiss(id){
+  const _before=DB.notifications;
   DB.notifications=DB.notifications.filter(n=>n.id!==id);
+  _tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 
@@ -15940,7 +15976,9 @@ function _relativeTime(ts){
   return new Date(ts).toLocaleDateString();
 }
 function clearAllNotifs(){
+  const _before=DB.notifications;
   DB.notifications=DB.notifications.filter(n=>n.recipientId!==currentUser.id);
+  _tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 
@@ -18972,7 +19010,7 @@ function renderSubRow(t,visSub,subCust){
   const canDrag=!t.archived&&currentUser?.role!=='client'&&!wsSort.col;
   const dnd=canDrag?` ondragover="_wsRowDragOver(event,'${t.id}')" ondragleave="_wsRowDragLeave(event)" ondrop="_wsRowDrop(event,'${t.id}')"`:'';
   const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id);
-  return`<tr class="ws-subrow2${isSelected?' ws-row-selected':''}"${dnd}>
+  return`<tr data-tid="${t.id}" class="ws-subrow2${isSelected?' ws-row-selected':''}"${dnd}>
     <td style="text-align:center;width:30px" onclick="event.stopPropagation()">
       <input type="checkbox" ${isSelected?'checked':''} onchange="wsToggleSelect('${t.id}',this.checked)" style="cursor:pointer;accent-color:#97bcbd"/>
     </td>
@@ -19201,6 +19239,10 @@ function openTaskPanel(taskId,tab){
   // current user no longer has (or never had) access to — every cp* client-portal mutator
   // already re-checks this before acting, but this, the staff-side equivalent, did not.
   if(!canViewTask(currentUser,task))return;
+  // A just-scheduled navigation (e.g. jumping here from a notification) may have called
+  // closeTaskPanel() a moment ago; its deferred hide is still pending and would otherwise
+  // blank this panel right back out shortly after it opens.
+  clearTimeout(_tpCloseTimer);_tpCloseTimer=null;
   _tpCurrentTask=task;
   const panel=document.getElementById('task-panel');
   const overlay=document.getElementById('task-panel-overlay');
@@ -19246,9 +19288,11 @@ function closeTaskPanel(){
   clearTextareaDraft('tp-title');
   if(document.activeElement&&panel.contains(document.activeElement))document.activeElement.blur();
   panel.style.transform='translateX(100%)';
-  setTimeout(()=>{
+  clearTimeout(_tpCloseTimer);
+  _tpCloseTimer=setTimeout(()=>{
     panel.style.display='none';
     if(overlay)overlay.style.display='none';
+    _tpCloseTimer=null;
   },280);
   _tpCurrentTask=null;
   _tpActiveTab='details';
