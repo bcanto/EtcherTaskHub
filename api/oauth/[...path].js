@@ -240,7 +240,7 @@ module.exports = async function handler(req, res) {
     if (path === 'authorize' && req.method === 'GET') return authorize(req, res);
     if (path === 'complete' && req.method === 'POST') return await complete(req, res);
     if (path === 'token' && req.method === 'POST') return await token(req, res);
-    return json(res, 404, { error: 'not_found' });
+    return json(res, 404, { error: 'not_found', _debug: { path, query: req.query, url: req.url } });
   } catch (e) {
     console.error('[oauth]', path, e);
     return json(res, 500, { error: 'server_error' });
