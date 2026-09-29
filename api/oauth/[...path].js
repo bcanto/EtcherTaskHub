@@ -124,7 +124,7 @@ function authorize(req, res) {
 </style></head>
 <body><div class="card">
   <h1>Connect to TaskHub</h1>
-  <p>An app wants to read and update the Email Triage action register on your behalf.</p>
+  <p>An app wants to add items to your TaskHub Email Triage review queue and update ones you've already routed to a WorkBoard.</p>
   <div id="loading">Checking your session…</div>
   <form id="f" style="display:none">
     <label for="email">Email</label><input id="email" type="email" autocomplete="username">
@@ -242,25 +242,25 @@ const MCP_PROTOCOL_VERSION = '2025-06-18';
 const MCP_TOOLS = [
   {
     name: 'list_actions',
-    description: 'List action items on the Email Triage board, optionally filtered by status, owner or due date.',
+    description: 'List action items pulled from email. Items still waiting for a person to route them to a WorkBoard show status "Pending review"; once routed, an item shows its real status and which board it landed on. Optionally filtered by status, owner or due date (owner/due-date filters only match already-routed items).',
     inputSchema: {
       type: 'object',
       properties: {
-        status: { type: 'string', enum: ['Open', 'Waiting', 'Done'], description: 'Filter by status.' },
-        owner: { type: 'string', description: 'Filter by owner — a staff name or email.' },
-        dueBefore: { type: 'string', description: 'YYYY-MM-DD — only items due before this date.' },
-        dueAfter: { type: 'string', description: 'YYYY-MM-DD — only items due after this date.' },
+        status: { type: 'string', enum: ['Open', 'Waiting', 'Done', 'pending'], description: 'Filter by status. "pending" returns only items still waiting to be routed.' },
+        owner: { type: 'string', description: 'Filter by owner — a staff name or email. Only matches already-routed items.' },
+        dueBefore: { type: 'string', description: 'YYYY-MM-DD — only items due before this date. Only matches already-routed items.' },
+        dueAfter: { type: 'string', description: 'YYYY-MM-DD — only items due after this date. Only matches already-routed items.' },
       },
     },
   },
   {
     name: 'create_action',
-    description: 'Create an action item from an email. If an item with the same outlookMessageId and task text already exists, it is updated instead of duplicated.',
+    description: 'Queue an action item from an email for review in TaskHub\'s Email Triage dashboard panel — a person routes it to the correct WorkBoard, client, group and owner from there, so it is never created directly on a board. If an item with the same outlookMessageId and task text already exists — pending or already routed — it is updated instead of duplicated.',
     inputSchema: {
       type: 'object',
       properties: {
         task: { type: 'string', description: 'The action item text.' },
-        owner: { type: 'string', description: 'Who owns this — a staff name or email. Defaults to the connected account if not recognised.' },
+        owner: { type: 'string', description: 'Who owns this — a staff name or email. Only takes effect once the item has been routed to a board.' },
         dueDate: { type: 'string', description: 'YYYY-MM-DD' },
         emailSubject: { type: 'string', description: 'Subject line of the source email.' },
         emailLink: { type: 'string', description: 'Outlook web link to the source email.' },
@@ -273,7 +273,7 @@ const MCP_TOOLS = [
   },
   {
     name: 'update_action',
-    description: 'Change the status, due date or owner of an existing action item.',
+    description: 'Change the status, due date or owner of an action item that has already been routed to a WorkBoard. An item still pending review must be routed from the TaskHub dashboard first — this returns an error explaining that instead of guessing a board.',
     inputSchema: {
       type: 'object',
       properties: {

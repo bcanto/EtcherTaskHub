@@ -3677,6 +3677,9 @@ function _tpUserIsTyping(){
 }
 // Workspace selection/sort/archive state
 let wsSelected=new Set();
+// Email Triage panel selection state (Dashboard) — separate from wsSelected since it's a
+// different list (DB.emailIntake) shown on a different view.
+let triageSelected=new Set();
 let wsSort={col:null,dir:'asc'};
 let wsShowArchived=false;
 let wsMtSearch='';
@@ -7000,6 +7003,7 @@ function renderTriageZone(inline=false){
         <div style="width:28px;height:28px;border-radius:8px;background:#f0f7f7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#97bcbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>
         </div>
+        ${items.length>1?`<input type="checkbox" onclick="triageToggleSelectAll()" title="Select all pending" ${items.every(x=>triageSelected.has(x.id))?'checked':''} style="cursor:pointer;width:14px;height:14px;flex-shrink:0"/>`:``}
         <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;flex:1">Email Triage</span>
         ${items.length?`<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px">${items.length} pending</span>`:``}
         <div style="display:flex;gap:5px;margin-left:${items.length?'6px':'0'}">
@@ -7009,6 +7013,12 @@ function renderTriageZone(inline=false){
         </div>
       </div>
       ${_triageCollapsed?'':`<div style="padding:12px 14px;display:grid;gap:8px;max-height:320px;overflow-y:auto">
+        ${triageSelected.size>0?`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0d1c33;border-radius:8px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#97bcbd">${triageSelected.size} selected</span>
+          <button onclick="triageOpenBulkRoute()" style="font-size:11px;font-weight:700;color:#fff;background:#0d6e4e;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif">Route Selected →</button>
+          <button onclick="triageBulkDiscard()" style="font-size:11px;color:rgba(255,255,255,0.8);background:transparent;border:1px solid rgba(255,255,255,0.25);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Jost',sans-serif">Discard Selected</button>
+          <button onclick="triageClearSelection()" style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.55);background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'Jost',sans-serif">✕ Clear</button>
+        </div>`:``}
         ${items.length===0?`<div style="padding:28px 20px;text-align:center">
           <div style="width:40px;height:40px;border-radius:10px;background:#f0f7f7;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#97bcbd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>
@@ -7041,12 +7051,15 @@ function _renderTriageCard(item,wbs){
   if((item.attachments||[]).length) chips.push(`<span style="font-size:10px;color:#97bcbd;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${item.attachments.length}</span>`);
   return`<div style="background:#f8fbff;border:1.5px solid ${unknownSender?'#fde68a':'#e8eef6'};border-radius:10px;padding:12px 14px;transition:border-color 0.15s" onmouseover="this.style.borderColor='${unknownSender?'#f59e0b':'#97bcbd'}'" onmouseout="this.style.borderColor='${unknownSender?'#fde68a':'#e8eef6'}'">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:${item.snippet?'8px':'0'}">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.subject||'(no subject)')}</div>
-          ${unknownSender?`<span style="flex-shrink:0;font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;white-space:nowrap" title="Sender domain not in your client list">⚠ Unknown sender</span>`:''}
+      <div style="display:flex;gap:8px;flex:1;min-width:0">
+        <input type="checkbox" ${triageSelected.has(item.id)?'checked':''} onclick="event.stopPropagation();triageToggleSelect('${item.id}')" style="margin-top:3px;cursor:pointer;flex-shrink:0;width:14px;height:14px"/>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <div style="font-family:'Jost',sans-serif;font-size:12.5px;font-weight:700;color:#0d1c33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.subject||'(no subject)')}</div>
+            ${unknownSender?`<span style="flex-shrink:0;font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;white-space:nowrap" title="Sender domain not in your client list">⚠ Unknown sender</span>`:''}
+          </div>
+          <div style="font-size:11px;color:#97bcbd">${escHtml(item.fromName||item.from||'Unknown')} <span style="color:#c8d4e0">·</span> ${ago}</div>
         </div>
-        <div style="font-size:11px;color:#97bcbd">${escHtml(item.fromName||item.from||'Unknown')} <span style="color:#c8d4e0">·</span> ${ago}</div>
       </div>
       <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
         <button onclick="triageOpenRoute('${item.id}')" style="font-size:11px;font-weight:700;color:#fff;background:#0d6e4e;border:none;border-radius:6px;padding:4px 11px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#0d6e4e'">Route →</button>
@@ -7143,6 +7156,109 @@ function triageConfirmRoute(itemId){
   saveDB(DB);updateInboxBadge();closeGenericModal();renderView('dashboard');
   const wb=(DB.workboards||[]).find(w=>w.id===boardId);
   showToast(`Task created → ${escHtml(wb?.name||'WorkBoard')}`,'success');
+}
+
+function triageToggleSelect(itemId){
+  if(triageSelected.has(itemId))triageSelected.delete(itemId);else triageSelected.add(itemId);
+  renderView('dashboard');
+}
+function triageToggleSelectAll(){
+  const items=(DB.emailIntake||[]).filter(x=>x.status==='pending');
+  const allSelected=items.length>0&&items.every(x=>triageSelected.has(x.id));
+  if(allSelected)items.forEach(x=>triageSelected.delete(x.id));else items.forEach(x=>triageSelected.add(x.id));
+  renderView('dashboard');
+}
+function triageClearSelection(){triageSelected.clear();renderView('dashboard');}
+
+// Bulk version of triageOpenRoute/triageConfirmRoute — for when too many emails pile up in the
+// triage queue to route one at a time. Each email keeps its own subject as its task title;
+// board/group/owner/priority/due-date picked here apply to every selected item at once.
+function triageOpenBulkRoute(){
+  const ids=[...triageSelected].filter(id=>{const it=(DB.emailIntake||[]).find(x=>x.id===id);return it&&it.status==='pending';});
+  if(!ids.length)return;
+  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived);
+  const staff=allStaff().filter(u=>u.active!==false&&u.role!=='client');
+  document.getElementById('generic-modal-title').textContent=`Route ${ids.length} Email${ids.length!==1?'s':''} to WorkBoard`;
+  document.getElementById('generic-modal-body').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#f8fbff;border:1px solid #e2eaf2;border-radius:8px;padding:10px 12px;font-size:11.5px;color:#5a6e82">Each email keeps its own subject as the task title. The WorkBoard, group, owner, priority and due date below apply to all ${ids.length} selected.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">WorkBoard *</label>
+          <select id="tr-board" class="form-input" onchange="triageUpdateGroups()">
+            <option value="">Select board…</option>
+            ${wbs.map(wb=>`<option value="${wb.id}">${escHtml(wb.name)}</option>`).join('')}
+          </select></div>
+        <div><label class="form-label">Group</label>
+          <select id="tr-group" class="form-input"><option value="">No group</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="form-label">Assign to</label>
+          <select id="tr-owner" class="form-input">
+            <option value="">Unassigned</option>
+            ${staff.map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+          </select></div>
+        <div><label class="form-label">Priority</label>
+          <select id="tr-priority" class="form-input">
+            <option value="low">Low</option><option value="med" selected>Medium</option><option value="high">High</option>
+          </select></div>
+      </div>
+      <div><label class="form-label">Due Date</label>
+        <input id="tr-due" type="date" class="form-input"/></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
+        <button onclick="triageConfirmBulkRoute()" class="btn btn-primary">Create ${ids.length} Task${ids.length!==1?'s':''} & Route</button>
+      </div>
+    </div>`;
+  triageUpdateGroups();
+  document.getElementById('generic-modal').classList.remove('hidden');
+}
+
+function triageConfirmBulkRoute(){
+  const boardId=document.getElementById('tr-board')?.value;
+  if(!boardId){showAlert('Please select a WorkBoard.','Validation');return;}
+  const groupId=document.getElementById('tr-group').value||null;
+  const ownerId=document.getElementById('tr-owner').value||null;
+  const dueDate=document.getElementById('tr-due').value||null;
+  const priority=document.getElementById('tr-priority').value||'med';
+  const now=new Date().toISOString();
+  let n=0;
+  [...triageSelected].forEach(itemId=>{
+    const item=(DB.emailIntake||[]).find(x=>x.id===itemId&&x.status==='pending');
+    if(!item)return;
+    const title=item.suggestedTitle||item.subject||'Email task';
+    const task={
+      id:'t'+uid(),workboardId:boardId,boardId,groupId,
+      title,name:title,description:item.suggestedDescription||item.snippet||'',status:'not-started',priority,
+      ownerId,startDate:null,endDate:dueDate,
+      archived:false,order:0,tags:['email-intake'],
+      emailSource:{from:item.from,fromName:item.fromName,subject:item.subject,receivedAt:item.receivedAt,originalEmailId:item.originalEmailId},
+      createdAt:now,updatedAt:now,
+      percentComplete:0,percentMode:'manual',lockedDates:false,dependencies:[],
+    };
+    DB.tasks.push(task);
+    item.status='routed';item.routedToTaskId=task.id;item.routedAt=now;item.routedBy=currentUser.id;
+    fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'routed',taskId:task.id})}).catch(()=>{});
+    n++;
+  });
+  triageSelected.clear();
+  saveDB(DB);updateInboxBadge();closeGenericModal();renderView('dashboard');
+  const wb=(DB.workboards||[]).find(w=>w.id===boardId);
+  showToast(`Routed ${n} email${n===1?'':'s'} → ${escHtml(wb?.name||'WorkBoard')}`,'success');
+}
+
+function triageBulkDiscard(){
+  const ids=[...triageSelected];
+  if(!ids.length)return;
+  openConfirm('Discard Emails',`${ids.length} email${ids.length!==1?'s':''} will not become tasks. This cannot be undone.`,'Discard',()=>{
+    const now=new Date().toISOString();
+    ids.forEach(itemId=>{
+      const item=(DB.emailIntake||[]).find(x=>x.id===itemId);
+      if(!item)return;
+      item.status='discarded';item.discardedAt=now;item.discardedBy=currentUser.id;
+      fetch(`/api/intake/ack/${itemId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'discarded'})}).catch(()=>{});
+    });
+    triageSelected.clear();saveDB(DB);updateInboxBadge();closeConfirm();renderView('dashboard');
+  },true);
 }
 
 function triageDiscard(itemId){
@@ -17976,6 +18092,10 @@ function updateBulkBar(){
       <option value="" style="background:#1a2940;color:#fff">Move to group…</option>
       ${getWbGroups().map(g=>`<option value="${g.id}" style="background:#1a2940;color:#fff">${escHtml(g.name)}</option>`).join('')}
     </select>
+    <select onchange="wsBulkMoveToBoard(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif" title="Forward tasks that ended up on the wrong board — e.g. a mis-routed email triage item">
+      <option value="" style="background:#1a2940;color:#fff">Move to board…</option>
+      ${(DB.workboards||[]).filter(b=>!b.archived&&b.id!==currentWorkboard?.id).map(b=>`<option value="${b.id}" style="background:#1a2940;color:#fff">${escHtml(b.name)}</option>`).join('')}
+    </select>
     <button onclick="wsBulkArchiveTasks()" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.8);font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Archive</button>
     <button onclick="wsBulkDeleteTasks()" style="padding:5px 12px;border-radius:6px;border:none;background:#fef2f2;color:#991b1b;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Delete</button>
     <button onclick="wsSelected.clear();updateBulkBar();renderView('workspace')" style="margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.55);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Lato',sans-serif">✕ Clear</button>
@@ -18013,6 +18133,33 @@ function wsBulkMoveToGroup(groupId){
   wsSelected.clear();updateBulkBar();
   renderView('workspace');
   showToast(n?`Moved ${n} task${n===1?'':'s'} to “${g.name}”`:'Nothing to move — already in that group','success',3000);
+}
+// Move the selected tasks to a different board entirely — not just a different group on the
+// same board. The escape hatch for anything that lands on the wrong board by accident (e.g. a
+// mis-routed email triage item): forward it to the right one instead of deleting and recreating
+// it by hand. Crossing a client boundary changes who can see the task in the client portal, so
+// this confirms first instead of applying immediately like the same-board group move above.
+function wsBulkMoveToBoard(boardId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  if(!boardId||boardId===currentWorkboard?.id)return;
+  const board=(DB.workboards||[]).find(b=>b.id===boardId);
+  if(!board)return;
+  const n=wsSelected.size;
+  const crossClient=board.clientId!==currentWorkboard?.clientId;
+  const warn=crossClient?' This also moves them to a different client.':'';
+  openConfirm('Move to Board',`Move ${n} task${n!==1?'s':''} to "${board.name}"?${warn}`,'Move',()=>{
+    const now=new Date().toISOString();
+    let moved=0;
+    [...wsSelected].forEach(id=>{
+      const t=DB.tasks.find(x=>x.id===id);
+      if(!t||t.boardId===boardId)return;
+      t.boardId=boardId;t.workboardId=boardId;t.clientId=board.clientId;t.groupId=null;t.updatedAt=now;moved++;
+      DB.tasks.filter(s=>s.parentTaskId===t.id).forEach(s=>{s.boardId=boardId;s.workboardId=boardId;s.clientId=board.clientId;s.groupId=null;s.updatedAt=now;});
+    });
+    wsSelected.clear();saveDB(DB);closeConfirm();
+    renderView('workspace');
+    showToast(moved?`Moved ${moved} task${moved===1?'':'s'} to "${board.name}"`:'Nothing to move','success',3000);
+  });
 }
 function wsBulkAssignTo(staffId){
   try{requireInternalUser(currentUser);}catch(e){return;}

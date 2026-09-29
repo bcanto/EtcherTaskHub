@@ -3,15 +3,15 @@
 // be unit-tested directly with plain objects. api/mcp.js does the read/CAS-write/JSON-RPC framing
 // and calls into here. Leading underscore = shared module, not a Vercel route.
 //
-// Everything this creates lives on one fixed, well-known board ("Email Triage", id b-email-triage)
-// so it shows up as an ordinary board in the app the user already uses — Main Table, Kanban,
-// Gantt — rather than a walled-off list nobody else on the team can see. Nothing here ever
-// touches any other board.
+// create_action never creates a task directly and never auto-creates a board — it drops a pending
+// item into the same DB.emailIntake review queue Task Hub's own Dashboard already renders (the
+// "Email Triage" panel). A person picks the real board/client/group/owner there (the existing
+// Route dialog), so the task is born on the correct board the first time — there is no "move it
+// off the wrong board afterward" problem to solve, because nothing is created until routing.
+// Once routed, the resulting task is tagged 'email-intake' and carries emailSource.originalEmailId
+// — that tag, not a fixed board id, is what scopes update_action/list_actions to "things this
+// connector is allowed to touch," now that those tasks can live on any board.
 const crypto = require('crypto');
-
-const BOARD_ID = 'b-email-triage';
-const GROUP_ID = 'g-email-triage';
-const BOARD_NAME = 'Email Triage';
 
 // Open/Waiting/Done (the user's spec) map onto three of the app's existing plain internal
 // statuses (index.html's STATUS_META) rather than inventing new ones the rest of the UI (status
@@ -36,30 +36,8 @@ function newId(prefix) {
   return prefix + crypto.randomBytes(9).toString('hex');
 }
 
-// Idempotent: creates the board + its default group only if missing, and never touches them
-// again once they exist. `ownerId` is only used the first time (board owner / group colour).
-function ensureBoard(data, ownerId) {
-  data.boards = data.boards || [];
-  data.groups = data.groups || [];
-  if (!data.boards.some(b => b.id === BOARD_ID)) {
-    const now = new Date().toISOString();
-    data.boards.push({
-      id: BOARD_ID, name: BOARD_NAME, color: '#f59e0b', clientId: null,
-      ownerId: ownerId || null, visibility: 'all_internal', archived: false,
-      description: 'Action items pulled out of email by the morning triage connector.',
-      excludeFromReports: false, createdAt: now, updatedAt: now,
-    });
-    data.groups.push({
-      id: GROUP_ID, clientId: null, boardId: BOARD_ID, workboardId: BOARD_ID,
-      name: 'Inbox', order: 0, color: '#f59e0b', collapsed: false, createdAt: now, updatedAt: now,
-    });
-  }
-  data.workboards = data.boards; // same alias reconciliation the rest of the app relies on
-  return { boardId: BOARD_ID, groupId: GROUP_ID };
-}
-
 // Best-effort match of a free-text owner (name or email) to an existing staff account.
-// Returns { id, name, matched }. Falls back to the caller (the one allowed account) rather
+// Returns { id, name, matched }. Falls back to the caller (the one allow-listed account) rather
 // than leaving a task unowned, and always says whether it actually matched something.
 function resolveOwner(data, ownerText, fallbackUser) {
   const users = data.users || data.staff || [];
@@ -72,100 +50,158 @@ function resolveOwner(data, ownerText, fallbackUser) {
     const byPartial = users.find(u => (u.name || '').toLowerCase().includes(q));
     if (byPartial) return { id: byPartial.id, name: byPartial.name, matched: true };
   }
-  return { id: fallbackUser.id, name: fallbackUser.name, matched: false };
+  return fallbackUser ? { id: fallbackUser.id, name: fallbackUser.name, matched: false } : { id: null, name: null, matched: false };
 }
 
-function findExisting(data, outlookMessageId, task) {
-  if (!outlookMessageId) return null;
-  return (data.tasks || []).find(t => t.outlookMessageId === outlookMessageId && t.name === task) || null;
+// A task belongs to this connector only if it was actually routed here (tagged by
+// triageConfirmRoute()/the bulk-route equivalent in the Dashboard) — never by board id, since
+// routed tasks can now land on any board.
+function isEmailIntakeTask(t) {
+  return !!t && Array.isArray(t.tags) && t.tags.includes('email-intake');
 }
 
-// caller = { id, name } — the authenticated (allow-listed) TaskHub user, used as fallback owner
-// and as createdBy. Returns { task, created }.
+// Dedup key is the (outlookMessageId, task text) pair, not the message id alone — one email
+// can produce several distinct action items, and those must stay separate.
+function findExistingPending(data, originalEmailId, taskText) {
+  if (!originalEmailId) return null;
+  return (data.emailIntake || []).find(x => x.originalEmailId === originalEmailId && x.suggestedTitle === taskText && x.status === 'pending') || null;
+}
+function findExistingRouted(data, originalEmailId, taskText) {
+  if (!originalEmailId) return null;
+  return (data.tasks || []).find(t => isEmailIntakeTask(t) && t.emailSource && t.emailSource.originalEmailId === originalEmailId && (t.name === taskText || t.title === taskText)) || null;
+}
+
+// caller = { id, name, email } — the authenticated (allow-listed) TaskHub user. Returns
+// { task, created, routed, ownerMatched }. `task` is either the already-routed real task (when
+// the same email was routed by a person earlier — routed:true) or the pending queue item
+// (created or updated in place) — never a brand-new task, and never a new board.
 function createOrUpdateAction(data, input, caller) {
   const task = String(input.task || '').trim();
   if (!task) throw Object.assign(new Error('task is required'), { code: 'invalid_params' });
-  const outlookMessageId = input.outlookMessageId ? String(input.outlookMessageId) : null;
-
-  const existing = findExisting(data, outlookMessageId, task);
-  const { groupId } = ensureBoard(data, caller.id);
-  const owner = resolveOwner(data, input.owner, caller);
-  const status = normalizeStatus(input.status, existing ? existing.status : 'todo');
+  const originalEmailId = input.outlookMessageId ? String(input.outlookMessageId) : null;
   const now = new Date().toISOString();
 
-  if (existing) {
-    existing.status = status;
-    if (input.owner) { existing.ownerId = owner.id; existing.currentlyWithUserId = owner.id; }
-    if (input.dueDate !== undefined) existing.endDate = input.dueDate || '';
-    if (input.emailSubject) existing.emailSubject = input.emailSubject;
-    if (input.emailLink) existing.emailLink = input.emailLink;
-    existing.updatedAt = now;
-    return { task: existing, created: false, ownerMatched: owner.matched };
+  const routedTask = findExistingRouted(data, originalEmailId, task);
+  if (routedTask) {
+    if (input.status !== undefined) routedTask.status = normalizeStatus(input.status, routedTask.status);
+    if (input.owner) {
+      const o = resolveOwner(data, input.owner, null);
+      if (o.id) { routedTask.ownerId = o.id; routedTask.currentlyWithUserId = o.id; }
+    }
+    if (input.dueDate !== undefined) routedTask.endDate = input.dueDate || '';
+    if (input.notes !== undefined) routedTask.description = input.notes;
+    routedTask.updatedAt = now;
+    return { task: routedTask, created: false, routed: true, ownerMatched: null };
   }
 
+  data.emailIntake = data.emailIntake || [];
+  const existingPending = findExistingPending(data, originalEmailId, task);
+  if (existingPending) {
+    existingPending.subject = input.emailSubject || task;
+    existingPending.suggestedTitle = task;
+    if (input.notes !== undefined) { existingPending.snippet = input.notes.slice(0, 250); existingPending.suggestedDescription = input.notes; }
+    if (input.dueDate !== undefined) existingPending.suggestedDueDate = input.dueDate || null;
+    if (input.priority) existingPending.suggestedPriority = input.priority;
+    if (input.emailLink) existingPending.emailLink = input.emailLink;
+    existingPending.updatedAt = now;
+    return { task: existingPending, created: false, routed: false, ownerMatched: null };
+  }
+
+  const ownerGuess = resolveOwner(data, input.owner, null);
   const created = {
-    id: newId('t'), groupId, boardId: BOARD_ID, workboardId: BOARD_ID, clientId: null,
-    name: task, status, priority: input.priority || 'med',
-    ownerId: owner.id, currentlyWith: 'internal', currentlyWithType: 'none', currentlyWithUserId: owner.id,
-    percentComplete: 0, startDate: '', endDate: input.dueDate || '',
-    hourBudget: '', description: input.notes || '', dependencies: [], tags: [], archived: false,
-    source: 'Email triage', outlookMessageId, emailSubject: input.emailSubject || '', emailLink: input.emailLink || '',
-    createdBy: caller.id, createdAt: now, updatedAt: now, completedAt: null,
+    id: newId('ei_'), status: 'pending',
+    from: caller.email || '', fromName: caller.name || 'Email triage connector',
+    subject: input.emailSubject || task, body: input.notes || '', snippet: (input.notes || '').slice(0, 250),
+    attachments: [], receivedAt: now,
+    suggestedTitle: task, suggestedDescription: input.notes || '',
+    suggestedBoardId: null, suggestedGroupId: null, suggestedDueDate: input.dueDate || null,
+    suggestedOwnerId: ownerGuess.matched ? ownerGuess.id : null, suggestedPriority: input.priority || 'med',
+    extractedDates: [], actionItems: [],
+    routedToTaskId: null, routedAt: null, routedBy: null,
+    discardedAt: null, discardedBy: null,
+    originalEmailId, emailLink: input.emailLink || '', emailHeaders: {}, isTest: false,
+    createdBy: caller.id, createdAt: now, updatedAt: now,
   };
-  data.tasks = data.tasks || [];
-  data.tasks.push(created);
-  return { task: created, created: true, ownerMatched: owner.matched };
+  data.emailIntake.push(created);
+  return { task: created, created: true, routed: false, ownerMatched: ownerGuess.matched };
 }
 
 function applyUpdate(data, input) {
-  const task = (data.tasks || []).find(t => t.id === input.id);
-  if (!task) throw Object.assign(new Error('No action with that id'), { code: 'not_found' });
-  if (task.boardId !== BOARD_ID) {
-    // Guard rail, not an expected path: update_action is scoped to this connector's own
-    // board, never a general "edit any task" backdoor.
-    throw Object.assign(new Error('That item is not part of the Email Triage board'), { code: 'forbidden' });
+  const routed = (data.tasks || []).find(t => t.id === input.id && isEmailIntakeTask(t));
+  if (routed) {
+    if (input.status !== undefined) routed.status = normalizeStatus(input.status, routed.status);
+    if (input.dueDate !== undefined) routed.endDate = input.dueDate || '';
+    if (input.owner !== undefined) {
+      const owner = resolveOwner(data, input.owner, { id: routed.ownerId, name: routed.ownerId });
+      routed.ownerId = owner.id; routed.currentlyWithUserId = owner.id;
+    }
+    routed.updatedAt = new Date().toISOString();
+    return routed;
   }
-  if (input.status !== undefined) task.status = normalizeStatus(input.status, task.status);
-  if (input.dueDate !== undefined) task.endDate = input.dueDate || '';
-  if (input.owner !== undefined) {
-    const owner = resolveOwner(data, input.owner, { id: task.ownerId, name: task.ownerId });
-    task.ownerId = owner.id; task.currentlyWithUserId = owner.id;
+  const pending = (data.emailIntake || []).find(x => x.id === input.id && x.status === 'pending');
+  if (pending) {
+    // Routing (and the fields that only make sense once routed, like status/owner) is a
+    // person's decision made in the Dashboard's Route dialog, not something the connector
+    // does on their behalf — so this fails loudly instead of guessing a board.
+    throw Object.assign(new Error('This item is still pending review in the Task Hub dashboard — route it to a WorkBoard there before updating its status or owner.'), { code: 'not_yet_routed' });
   }
-  task.updatedAt = new Date().toISOString();
-  return task;
+  throw Object.assign(new Error('No action with that id'), { code: 'not_found' });
 }
 
 function listActions(data, filter) {
   filter = filter || {};
-  let tasks = (data.tasks || []).filter(t => t.boardId === BOARD_ID && !t.archived);
-  if (filter.status) {
+  const wantPending = filter.status && String(filter.status).trim().toLowerCase() === 'pending';
+
+  let routed = (data.tasks || []).filter(isEmailIntakeTask);
+  if (wantPending) {
+    routed = [];
+  } else if (filter.status) {
     const want = normalizeStatus(filter.status, null);
-    if (want) tasks = tasks.filter(t => t.status === want);
+    routed = want ? routed.filter(t => t.status === want) : routed;
   }
   if (filter.owner) {
     const q = String(filter.owner).trim().toLowerCase();
     const users = data.users || data.staff || [];
     const match = users.find(u => (u.email || '').toLowerCase() === q || (u.name || '').toLowerCase() === q);
-    tasks = tasks.filter(t => t.ownerId === (match ? match.id : filter.owner));
+    routed = routed.filter(t => t.ownerId === (match ? match.id : filter.owner));
   }
-  if (filter.dueBefore) tasks = tasks.filter(t => t.endDate && t.endDate < filter.dueBefore);
-  if (filter.dueAfter) tasks = tasks.filter(t => t.endDate && t.endDate > filter.dueAfter);
-  return tasks.map(t => toPublic(data, t));
+  if (filter.dueBefore) routed = routed.filter(t => t.endDate && t.endDate < filter.dueBefore);
+  if (filter.dueAfter) routed = routed.filter(t => t.endDate && t.endDate > filter.dueAfter);
+
+  let pending = (data.emailIntake || []).filter(x => x.status === 'pending');
+  if (filter.status && !wantPending) pending = [];
+  if (filter.owner || filter.dueBefore || filter.dueAfter) pending = [];
+
+  return [...pending.map(toPublicPending), ...routed.map(t => toPublicTask(data, t))];
 }
 
-function toPublic(data, t) {
+function toPublicTask(data, t) {
   const users = data.users || data.staff || [];
   const owner = users.find(u => u.id === t.ownerId);
+  const board = (data.boards || data.workboards || []).find(b => b.id === t.boardId);
   return {
-    id: t.id, task: t.name, status: friendlyStatus(t.status),
-    owner: owner ? owner.name : null, dueDate: t.endDate || null,
-    emailSubject: t.emailSubject || null, emailLink: t.emailLink || null,
-    outlookMessageId: t.outlookMessageId || null, source: t.source || null,
+    id: t.id, task: t.name || t.title, status: friendlyStatus(t.status),
+    owner: owner ? owner.name : null, dueDate: t.endDate || null, board: board ? board.name : null,
+    emailSubject: (t.emailSource && t.emailSource.subject) || null, emailLink: t.emailLink || null,
+    outlookMessageId: (t.emailSource && t.emailSource.originalEmailId) || null, source: t.source || 'Email triage',
     createdAt: t.createdAt, updatedAt: t.updatedAt,
   };
 }
+function toPublicPending(item) {
+  return {
+    id: item.id, task: item.suggestedTitle || item.subject, status: 'Pending review',
+    owner: null, dueDate: item.suggestedDueDate || null, board: null,
+    emailSubject: item.subject || null, emailLink: item.emailLink || null,
+    outlookMessageId: item.originalEmailId || null, source: 'Email triage',
+    createdAt: item.createdAt, updatedAt: item.updatedAt,
+  };
+}
+// Dispatches on shape: a routed task always has a boardId, a still-pending queue item never does.
+function toPublic(data, record) {
+  return (record && record.boardId) ? toPublicTask(data, record) : toPublicPending(record);
+}
 
 module.exports = {
-  BOARD_ID, GROUP_ID, BOARD_NAME, normalizeStatus, friendlyStatus,
-  ensureBoard, resolveOwner, findExisting, createOrUpdateAction, applyUpdate, listActions, toPublic,
+  normalizeStatus, friendlyStatus, resolveOwner, isEmailIntakeTask,
+  createOrUpdateAction, applyUpdate, listActions, toPublic,
 };
