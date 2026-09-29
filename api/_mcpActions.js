@@ -160,7 +160,7 @@ function toPublic(data, t) {
     id: t.id, task: t.name, status: friendlyStatus(t.status),
     owner: owner ? owner.name : null, dueDate: t.endDate || null,
     emailSubject: t.emailSubject || null, emailLink: t.emailLink || null,
-    outlookMessageId: t.outlookMessageId || null,
+    outlookMessageId: t.outlookMessageId || null, source: t.source || null,
     createdAt: t.createdAt, updatedAt: t.updatedAt,
   };
 }
