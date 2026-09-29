@@ -7,10 +7,11 @@
 // against MCP_OAUTH_SECRET, a random value set only in Vercel's env. Rotating that secret
 // instantly invalidates every token ever issued; there is nothing else to revoke.
 //
-// The connector is for exactly one TaskHub account (MCP_ALLOWED_EMAIL). Anyone can still run
-// the OAuth dance and prove who they are via a real TaskHub login, same as api/_authAdmin.js
-// does for the rest of the app — but only that one email is ever allowed past login, and it is
-// checked again on every single token verification, not just at login time.
+// The connector is for a short, explicit allowlist of TaskHub accounts (MCP_ALLOWED_EMAIL — comma-
+// separated for more than one). Anyone can still run the OAuth dance and prove who they are via a
+// real TaskHub login, same as api/_authAdmin.js does for the rest of the app — but only an
+// allowlisted email is ever allowed past login, and it is checked again on every single token
+// verification, not just at login time.
 const crypto = require('crypto');
 
 function b64url(input) {
@@ -65,13 +66,17 @@ function pkceMatches(codeVerifier, codeChallenge) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function allowedEmail() {
-  const e = (process.env.MCP_ALLOWED_EMAIL || '').trim().toLowerCase();
-  if (!e) throw new Error('MCP_ALLOWED_EMAIL not configured');
-  return e;
+// MCP_ALLOWED_EMAIL is one email, or several separated by commas ("a@x.com,b@x.com").
+function allowedEmails() {
+  const list = (process.env.MCP_ALLOWED_EMAIL || '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (!list.length) throw new Error('MCP_ALLOWED_EMAIL not configured');
+  return list;
 }
 function isAllowedEmail(email) {
-  return !!email && String(email).trim().toLowerCase() === allowedEmail();
+  return !!email && allowedEmails().includes(String(email).trim().toLowerCase());
 }
 
 // Verifies a browser-supplied Supabase access token via GoTrue and returns { id, email }, or
@@ -100,5 +105,5 @@ const SCOPE = 'actions:read actions:write';
 
 module.exports = {
   b64url, b64urlDecode, signToken, verifyToken, pkceMatches,
-  allowedEmail, isAllowedEmail, verifySupabaseSession, SCOPE,
+  allowedEmails, isAllowedEmail, verifySupabaseSession, SCOPE,
 };

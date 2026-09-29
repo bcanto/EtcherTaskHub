@@ -17,7 +17,7 @@
 //   POST complete                                — the consent page calls this once it has a verified TaskHub session
 //   POST token                                   — RFC 6749 token endpoint (authorization_code + refresh_token grants)
 //   *    mcp                                     — the MCP JSON-RPC endpoint itself (reached via a vercel.json rewrite from /api/mcp)
-const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmail, verifySupabaseSession, SCOPE } = require('../_mcpAuth');
+const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmails, verifySupabaseSession, SCOPE } = require('../_mcpAuth');
 const { readBlob, casWrite } = require('../_blob');
 const { listActions, createOrUpdateAction, applyUpdate, toPublic } = require('../_mcpActions');
 
@@ -189,7 +189,7 @@ async function complete(req, res) {
   }
   const identity = await verifySupabaseSession(body.accessToken);
   if (!identity || !isAllowedEmail(identity.email)) {
-    return json(res, 403, { error: 'access_denied', error_description: `This connector is restricted to ${allowedEmail()}.` });
+    return json(res, 403, { error: 'access_denied', error_description: `This connector is restricted to ${allowedEmails().join(', ')}.` });
   }
   const code = signToken({
     kind: 'code', sub: identity.id, email: identity.email,
