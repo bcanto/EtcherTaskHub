@@ -246,8 +246,14 @@ function pathParts(req) {
 module.exports = async function handler(req, res) {
   const path = pathParts(req).join('/');
   try {
-    if (path === 'well-known/oauth-authorization-server' && req.method === 'GET') return wellKnownAuthServer(req, res);
-    if (path === 'well-known/oauth-protected-resource' && req.method === 'GET') return wellKnownProtectedResource(req, res);
+    // Flat, single-segment names — this project's plain (non-Next.js) Vercel function router
+    // turns out not to support true multi-level catch-all (confirmed by deploying and testing
+    // directly): a request for /api/oauth/well-known/oauth-authorization-server (two segments)
+    // 404s at the platform level before it ever reaches this file, even though the exact same
+    // file happily handles /api/oauth/register (one segment). vercel.json rewrites the real
+    // /.well-known/... URLs to these flat names instead of trying to preserve their path shape.
+    if (path === 'as-metadata' && req.method === 'GET') return wellKnownAuthServer(req, res);
+    if (path === 'prm-metadata' && req.method === 'GET') return wellKnownProtectedResource(req, res);
     if (path === 'register' && req.method === 'POST') return register(req, res);
     if (path === 'authorize' && req.method === 'GET') return authorize(req, res);
     if (path === 'complete' && req.method === 'POST') return await complete(req, res);
