@@ -1,6 +1,7 @@
-// /api/oauth/* — a minimal OAuth 2.1 authorization server for exactly the MCP connector at
-// /api/mcp, restricted to one TaskHub account (MCP_ALLOWED_EMAIL). One catch-all file so this
-// whole feature costs exactly one more Vercel serverless function, not five.
+// /api/oauth/* AND /api/mcp — the MCP connector's OAuth server plus the connector endpoint
+// itself, both in this one catch-all file so the whole feature costs exactly one Vercel
+// serverless function, not two. /api/mcp is reached via a vercel.json rewrite to this file's
+// own "mcp" sub-route, same trick already used for the two /.well-known/... routes below.
 //
 // Stateless by design: there is no database table anywhere in this flow. Every code/token is a
 // signed, self-expiring token (see ../_mcpAuth.js) — including the OAuth "client_id" itself,
@@ -15,8 +16,10 @@
 //   GET  authorize                               — renders the sign-in/consent page
 //   POST complete                                — the consent page calls this once it has a verified TaskHub session
 //   POST token                                   — RFC 6749 token endpoint (authorization_code + refresh_token grants)
-const crypto = require('crypto');
+//   *    mcp                                     — the MCP JSON-RPC endpoint itself (reached via a vercel.json rewrite from /api/mcp)
 const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmail, verifySupabaseSession, SCOPE } = require('../_mcpAuth');
+const { readBlob, casWrite } = require('../_blob');
+const { listActions, createOrUpdateAction, applyUpdate, toPublic } = require('../_mcpActions');
 
 function baseUrl(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -231,6 +234,160 @@ function issueTokens(sub, email, scope) {
   };
 }
 
+// ── /api/mcp — the MCP JSON-RPC endpoint (formerly its own api/mcp.js; folded in here to save
+// a function slot). Every request must carry a valid access token for the one allow-listed
+// account, checked on every single call, not just at login. Anything else gets a 401 pointing
+// at this server's OAuth metadata, which is how Claude's connector knows to run the sign-in flow.
+const MCP_PROTOCOL_VERSION = '2025-06-18';
+const MCP_TOOLS = [
+  {
+    name: 'list_actions',
+    description: 'List action items on the Email Triage board, optionally filtered by status, owner or due date.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['Open', 'Waiting', 'Done'], description: 'Filter by status.' },
+        owner: { type: 'string', description: 'Filter by owner — a staff name or email.' },
+        dueBefore: { type: 'string', description: 'YYYY-MM-DD — only items due before this date.' },
+        dueAfter: { type: 'string', description: 'YYYY-MM-DD — only items due after this date.' },
+      },
+    },
+  },
+  {
+    name: 'create_action',
+    description: 'Create an action item from an email. If an item with the same outlookMessageId and task text already exists, it is updated instead of duplicated.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'The action item text.' },
+        owner: { type: 'string', description: 'Who owns this — a staff name or email. Defaults to the connected account if not recognised.' },
+        dueDate: { type: 'string', description: 'YYYY-MM-DD' },
+        emailSubject: { type: 'string', description: 'Subject line of the source email.' },
+        emailLink: { type: 'string', description: 'Outlook web link to the source email.' },
+        outlookMessageId: { type: 'string', description: 'Outlook message id — used to avoid creating duplicates.' },
+        notes: { type: 'string' },
+        priority: { type: 'string', enum: ['low', 'med', 'high'] },
+      },
+      required: ['task'],
+    },
+  },
+  {
+    name: 'update_action',
+    description: 'Change the status, due date or owner of an existing action item.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The action item id, from list_actions or create_action.' },
+        status: { type: 'string', enum: ['Open', 'Waiting', 'Done'] },
+        dueDate: { type: 'string', description: 'YYYY-MM-DD' },
+        owner: { type: 'string', description: 'A staff name or email.' },
+      },
+      required: ['id'],
+    },
+  },
+];
+
+function mcpSend(res, status, body) {
+  res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));
+}
+function rpcResult(id, result) { return { jsonrpc: '2.0', id, result }; }
+function rpcError(id, code, message) { return { jsonrpc: '2.0', id, error: { code, message } }; }
+function toolResult(id, payload) {
+  return rpcResult(id, { content: [{ type: 'text', text: JSON.stringify(payload) }], structuredContent: payload });
+}
+function toolError(id, message) {
+  return rpcResult(id, { content: [{ type: 'text', text: message }], isError: true });
+}
+function mcpUnauthorized(req, res) {
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers['host'];
+  res.setHeader('WWW-Authenticate', `Bearer resource_metadata="${proto}://${host}/.well-known/oauth-protected-resource"`);
+  mcpSend(res, 401, { error: 'unauthorized' });
+}
+
+async function callTool(name, args, caller) {
+  args = args || {};
+  if (name === 'list_actions') {
+    const { data } = await readBlob();
+    return { ok: true, items: listActions(data, args) };
+  }
+  if (name === 'create_action') {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data, updatedAt } = await readBlob();
+      const { task, created, ownerMatched } = createOrUpdateAction(data, args, caller);
+      data._savedAt = new Date().toISOString();
+      if (await casWrite(data, updatedAt)) {
+        return { ok: true, created, ownerMatched, item: toPublic(data, task) };
+      }
+      await new Promise(r => setTimeout(r, 80 * (attempt + 1)));
+    }
+    throw Object.assign(new Error('TaskHub is saving changes right now — please try again in a moment.'), { code: 'conflict' });
+  }
+  if (name === 'update_action') {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data, updatedAt } = await readBlob();
+      const task = applyUpdate(data, args);
+      data._savedAt = new Date().toISOString();
+      if (await casWrite(data, updatedAt)) {
+        return { ok: true, item: toPublic(data, task) };
+      }
+      await new Promise(r => setTimeout(r, 80 * (attempt + 1)));
+    }
+    throw Object.assign(new Error('TaskHub is saving changes right now — please try again in a moment.'), { code: 'conflict' });
+  }
+  throw Object.assign(new Error(`Unknown tool: ${name}`), { code: 'not_found' });
+}
+
+async function mcp(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Mcp-Protocol-Version');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return mcpSend(res, 405, { error: 'Method not allowed' });
+
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const payload = token ? verifyToken(token) : null;
+  if (!payload || payload.kind !== 'access' || !isAllowedEmail(payload.email)) {
+    return mcpUnauthorized(req, res);
+  }
+  const caller = { id: payload.sub, name: payload.email };
+
+  const msg = req.body;
+  if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return mcpSend(res, 400, rpcError(null, -32600, 'Invalid request'));
+  const { id, method, params } = msg;
+
+  try {
+    if (method === 'initialize') {
+      return mcpSend(res, 200, rpcResult(id, {
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        capabilities: { tools: {} },
+        serverInfo: { name: 'taskhub-mcp', version: '1.0.0' },
+      }));
+    }
+    if (method === 'notifications/initialized' || (method && method.startsWith('notifications/'))) {
+      return res.status(202).end();
+    }
+    if (method === 'tools/list') {
+      return mcpSend(res, 200, rpcResult(id, { tools: MCP_TOOLS }));
+    }
+    if (method === 'tools/call') {
+      const name = params && params.name;
+      const args = params && params.arguments;
+      try {
+        const result = await callTool(name, args, caller);
+        return mcpSend(res, 200, toolResult(id, result));
+      } catch (e) {
+        return mcpSend(res, 200, toolError(id, e.message || 'Tool call failed'));
+      }
+    }
+    return mcpSend(res, 400, rpcError(id, -32601, `Unknown method: ${method}`));
+  } catch (e) {
+    console.error('[mcp]', e);
+    return mcpSend(res, 500, rpcError(id, -32603, 'Internal error'));
+  }
+}
+
 // Vercel's plain (non-Next.js) catch-all convention puts the captured segments under the
 // query key "...path" (the literal bracket contents, ellipsis included) — not "path" — and as
 // a single already-joined string for this shape, not an array. Handling both a string and an
@@ -258,6 +415,7 @@ module.exports = async function handler(req, res) {
     if (path === 'authorize' && req.method === 'GET') return authorize(req, res);
     if (path === 'complete' && req.method === 'POST') return await complete(req, res);
     if (path === 'token' && req.method === 'POST') return await token(req, res);
+    if (path === 'mcp') return await mcp(req, res);
     return json(res, 404, { error: 'not_found' });
   } catch (e) {
     console.error('[oauth]', path, e);
