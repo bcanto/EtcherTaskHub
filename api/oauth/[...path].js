@@ -231,8 +231,20 @@ function issueTokens(sub, email, scope) {
   };
 }
 
+// Vercel's plain (non-Next.js) catch-all convention puts the captured segments under the
+// query key "...path" (the literal bracket contents, ellipsis included) — not "path" — and as
+// a single already-joined string for this shape, not an array. Handling both a string and an
+// array here rather than hard-coding that one observed shape, since it's undocumented behaviour
+// discovered by deploying and inspecting the actual request, not something to rely on exactly.
+function pathParts(req) {
+  const raw = req.query['...path'] !== undefined ? req.query['...path'] : req.query.path;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') return raw.split('/').filter(Boolean);
+  return [];
+}
+
 module.exports = async function handler(req, res) {
-  const path = (req.query.path || []).join('/');
+  const path = pathParts(req).join('/');
   try {
     if (path === 'well-known/oauth-authorization-server' && req.method === 'GET') return wellKnownAuthServer(req, res);
     if (path === 'well-known/oauth-protected-resource' && req.method === 'GET') return wellKnownProtectedResource(req, res);
@@ -240,7 +252,7 @@ module.exports = async function handler(req, res) {
     if (path === 'authorize' && req.method === 'GET') return authorize(req, res);
     if (path === 'complete' && req.method === 'POST') return await complete(req, res);
     if (path === 'token' && req.method === 'POST') return await token(req, res);
-    return json(res, 404, { error: 'not_found', _debug: { path, query: req.query, url: req.url } });
+    return json(res, 404, { error: 'not_found' });
   } catch (e) {
     console.error('[oauth]', path, e);
     return json(res, 500, { error: 'server_error' });
