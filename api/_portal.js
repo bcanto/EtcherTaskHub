@@ -84,8 +84,18 @@ function portalClient(blob, clientId) {
   const c = arr(blob.clients).find(x => x.id === clientId);
   return c && c.portalEnabled ? c : null;
 }
+// Mirrors index.html's own _isPersonalBoard(wb) exactly: personalBoard alone means nothing once
+// visibility has been switched back to all_internal (saveBoardVisibility never clears the flag,
+// so a board converted back to an ordinary team board can carry a stale personalBoard:true) —
+// checking the flag alone here disagreed with index.html and kept such a board hidden from its
+// client's portal even after the owner had deliberately made it a normal, shared board again.
+function taskOnPersonalBoard(blob, t) {
+  const bId = taskBoardId(blob, t);
+  const b = bId && arr(blob.boards).find(x => x.id === bId);
+  return !!(b && b.visibility === 'private' && b.personalBoard);
+}
 function taskVisibleTo(blob, clientId, t) {
-  return !!t && !t.archived && !taskHidden(blob, t) && taskClientId(blob, t) === clientId;
+  return !!t && !t.archived && !taskHidden(blob, t) && taskClientId(blob, t) === clientId && !taskOnPersonalBoard(blob, t);
 }
 // Same definition the portal uses for "this is waiting on you".
 // A task file is visible to the client when its task is, and either the client uploaded it, or
@@ -155,7 +165,12 @@ function sliceForClient(blob, clientId, userId) {
   const tasks = arr(blob.tasks).filter(t => taskVisibleTo(blob, clientId, t));
   const taskIds = new Set(tasks.map(t => t.id));
   const taskById = new Map(tasks.map(t => [t.id, t]));
-  const boards = arr(blob.boards).filter(b => b.clientId === clientId && !b.archived)
+  // personalBoard is excluded even if it somehow carries this clientId (e.g. an existing
+  // client board later marked Personal) — a personal board must never appear in any client's
+  // portal, full stop, matching the plan's own "PERSONAL = private to the owner" rule. Checked
+  // the same way as taskOnPersonalBoard above (both flags) — not personalBoard alone, which
+  // stays stale-true after a board is switched back to a normal all_internal team board.
+  const boards = arr(blob.boards).filter(b => b.clientId === clientId && !b.archived && !(b.visibility === 'private' && b.personalBoard))
     .map(b => pick(b, ['id', 'name', 'color', 'clientId', 'order']));
   const boardIds = new Set(boards.map(b => b.id));
   const groupIds = new Set(tasks.map(t => t.groupId).filter(Boolean));

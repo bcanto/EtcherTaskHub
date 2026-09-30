@@ -25,7 +25,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://wowwiafaqzovlfwzyktj.supabase.co wss://wowwiafaqzovlfwzyktj.supabase.co https://cdn.tailwindcss.com; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
-<link rel="icon" type="image/png" href="favicon_taskapp.png"/>
+<link id="app-favicon" rel="icon" type="image/png" href="favicon_taskapp.png"/>
 <!-- B7: Preload critical assets to eliminate render-blocking fetches -->
 <link rel="preload" href="Etcher White Logo.png" as="image" type="image/png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -2673,6 +2673,21 @@ function _mergeDB(current, incoming){
     (inc||[]).forEach(x=>map.set(x.id,x));
     return[...map.values()];
   }
+  // notifications carry no updatedAt (nothing bumps one when notifMarkRead/notifMarkAllRead flip
+  // `read`), so plain unionById above has no timestamp to compare and just lets whichever side is
+  // `inc` win outright — a stale snapshot that hasn't caught up to your read-flip yet silently
+  // un-reads it again on the very next merge, which is what made a dismissed/read notification
+  // "come back" after a refresh (outright deletion was already handled correctly by
+  // deletedNotificationIds below; this is the read-flag-regression half of the same symptom).
+  // `read` only ever goes false -> true in this app, never back, so it merges safely as an OR.
+  function unionByIdReadOr(curr,inc){
+    const map=new Map((curr||[]).map(x=>[x.id,x]));
+    (inc||[]).forEach(x=>{
+      const ex=map.get(x.id);
+      map.set(x.id,ex&&ex.read?{...x,read:true}:x);
+    });
+    return[...map.values()];
+  }
   // clientNotes has no top-level updatedAt (only its nested sections do), and one client
   // has exactly one note object holding every section — merging it as a plain per-id record
   // (like the generic loop below does for everything else) meant whichever whole object
@@ -2697,7 +2712,7 @@ function _mergeDB(current, incoming){
   merged.tasks=mergeById(current.tasks,incoming.tasks,'updatedAt');
   merged.comments=unionById(current.comments,incoming.comments);
   merged.clientComments=unionById(current.clientComments,incoming.clientComments);
-  merged.notifications=unionById(current.notifications,incoming.notifications);
+  merged.notifications=unionByIdReadOr(current.notifications,incoming.notifications);
   merged.meetingNotes=mergeById(current.meetingNotes,incoming.meetingNotes,'updatedAt');
   merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
   merged.clientNotes=_mergeClientNotes(current.clientNotes,incoming.clientNotes);
@@ -4501,6 +4516,11 @@ function doLogout(){
   document.getElementById('client-portal')?.classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-password').value='';
+  // Found in this session's own audit: the previous user's unread-count title prefix and
+  // favicon bubble stayed on screen straight through to the login screen (no reload happens
+  // here for a regular logout, so nothing else would reset them) — misleading on a shared
+  // machine, since it implies the app still has an active, notification-bearing session.
+  _updateTabNotifIndicator(0);
 }
 function updateSidebarUser(){
   document.getElementById('sidebar-avatar').textContent=currentUser.initials||'?';
@@ -5106,10 +5126,17 @@ function statusMixBar(mix,width){
 function canViewBoard(user,board){
   if(!user||!board)return false;
   if(user.role==='client')return false;
+  const isOwner=board.ownerId===user.id;
+  const isShared=(DB.boardShares||[]).some(s=>s.boardId===board.id&&s.userId===user.id);
+  // A Private board marked "Personal" stays invite-only even for admin/pm — the one exception to
+  // the usual "admin can see every board" rule below. Without this, "Private (invite only)" was
+  // misleading: every admin/pm could still see it regardless, since the role check ran first and
+  // returned true unconditionally for any board at all.
+  if(board.visibility==='private'&&board.personalBoard)return isOwner||isShared;
   if(user.role==='admin'||user.role==='pm')return true;
   if(board.visibility==='all_internal')return true;
-  if(board.ownerId===user.id)return true;
-  if((DB.boardShares||[]).some(s=>s.boardId===board.id&&s.userId===user.id))return true;
+  if(isOwner)return true;
+  if(isShared)return true;
   return false;
 }
 function getGroup(task){return DB.groups.find(g=>g.id===task.groupId);}
@@ -5833,10 +5860,14 @@ function _cpTaskHidden(t){
 }
 function canViewTask(user,task){
   if(!user||!task)return false;
-  if(user.role==='admin')return true;
-  if(user.role==='staff'||user.role==='restricted'){
+  if(user.role==='admin'||user.role==='staff'||user.role==='restricted'){
     // Defence in depth: tasks on a private board stay private even if a caller forgets to
-    // scope by board — unless this user is directly assigned to or holding the task.
+    // scope by board — unless this user is directly assigned to or holding the task. Admin is
+    // no longer an unconditional bypass here: canViewBoard already refuses admin for a board
+    // explicitly marked personalBoard, and merging admin into this same check means that refusal
+    // now reaches task-level views too (My Week, search, notifications, MCP) — previously the
+    // board was hidden but its tasks still leaked through here (a real user report). This is a
+    // no-op for every other board: canViewBoard already returns true for admin/pm on those.
     const bId=_taskBoardId(task);
     const board=bId?(DB.boards||[]).find(b=>b.id===bId):null;
     if(board&&!canViewBoard(user,board))
@@ -5857,7 +5888,14 @@ function canEditTask(user,task){
   if(!user||!task)return false;
   if(user.role==='client'||user.role==='restricted')return false;
   if(task.archived)return false;
-  return user.role==='admin'||user.role==='staff';
+  if(!(user.role==='admin'||user.role==='staff'))return false;
+  // Personal boards: editing needs the same access canViewBoard grants the owner/shared users —
+  // scoped narrowly to personalBoard rather than tightening edit rights on every ordinary
+  // Private board, which is separate, pre-existing behaviour this plan does not touch.
+  const bId=_taskBoardId(task);
+  const board=bId?(DB.boards||[]).find(b=>b.id===bId):null;
+  if(board&&board.visibility==='private'&&board.personalBoard&&!canViewBoard(user,board))return false;
+  return true;
 }
 function canViewClientPortal(user,clientId){
   if(!user)return false;
@@ -5901,8 +5939,39 @@ function updateNotifBadge(){
   if(!currentUser)return;
   const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length;
   const badge=document.getElementById('notif-count-badge');
-  if(!badge)return;
-  if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}
+  if(badge){if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}}
+  _updateTabNotifIndicator(unread);
+}
+// The sidebar badge above is invisible whenever this browser tab isn't the one on screen —
+// another app, another tab — which is exactly when a new notification is easiest to miss.
+// _tabBaseTitle is captured once, before any prefix is ever applied, so repeated calls never
+// stack "(3) (5) Etcher - Task Hub" on top of each other.
+const _tabBaseTitle=document.title;
+let _faviconBaseHref=null,_faviconImg=null;
+function _updateTabNotifIndicator(unread){
+  document.title=unread>0?`(${unread>99?'99+':unread}) ${_tabBaseTitle}`:_tabBaseTitle;
+  _drawFaviconBubble(unread>0);
+}
+function _drawFaviconBubble(showDot){
+  const link=document.getElementById('app-favicon');
+  if(!link)return;
+  if(!_faviconBaseHref)_faviconBaseHref=link.getAttribute('href');
+  if(!showDot){link.href=_faviconBaseHref;return;}
+  const paint=img=>{
+    const size=64;
+    const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,size,size);
+    const r=size*0.2,cx=size-r*0.85,cy=r*0.85;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#ef4444';ctx.fill();
+    ctx.lineWidth=size*0.06;ctx.strokeStyle='#fff';ctx.stroke();
+    link.href=canvas.toDataURL('image/png');
+  };
+  if(_faviconImg){paint(_faviconImg);return;}
+  const img=new Image();
+  img.onload=()=>{_faviconImg=img;paint(img);};
+  img.onerror=()=>{}; // base icon unreachable — the title prefix above is still a real indicator
+  img.src=_faviconBaseHref;
 }
 
 function updateClientReqBadge(){
@@ -5936,12 +6005,49 @@ function updateSidebarWorkboard(){
   renderSidebarWorkboards();
 }
 
+// A board is "personal" only when BOTH flags are set — personalBoard alone (with visibility
+// switched back to all_internal) means nothing; see saveBoardVisibility/saveBoardPersonal.
+function _isPersonalBoard(wb){return wb.visibility==='private'&&!!wb.personalBoard;}
+// A personal board is for the owner's own organisation, not billable/loggable work — it should
+// never appear as a choice in the Timesheet's task picker for anyone, owner included (a real
+// user question: names on a personal board were showing up in the Log Time search for every
+// staff member, which is both a privacy leak and conceptually the wrong kind of item to log
+// hours against). Used to filter task pickers, not to gate viewing/editing the task itself.
+function _isTaskOnPersonalBoard(t){
+  const bId=_taskBoardId(t);
+  const b=bId&&(DB.workboards||[]).find(w=>w.id===bId);
+  return!!(b&&_isPersonalBoard(b));
+}
+// Folder collapse is per-viewer, not per-folder-record (a shared record meant Sam collapsing a
+// folder collapsed it for every other user too). localStorage keeps this off the synced blob
+// entirely; the old folder.collapsed field is read once as a fallback for anyone who never
+// touched this folder before the change, then ignored.
+function _wbFolderCollapseKey(folderId){return`wbFolderCollapsed:${currentUser?.id||'anon'}:${folderId}`;}
+function _wbFolderCollapsed(folder){
+  try{
+    const raw=localStorage.getItem(_wbFolderCollapseKey(folder.id));
+    if(raw!==null)return raw==='1';
+  }catch(e){}
+  return!!folder.collapsed;
+}
 // ── Sidebar workboard list ──
 function renderSidebarWorkboards(){
   const container=document.getElementById('sidebar-wb-list');
   if(!container)return;
-  const wbs=(DB.workboards||[]).filter(wb=>!wb.archived&&canViewBoard(currentUser,wb)).sort((a,b)=>(a.order||0)-(b.order||0));
-  const folders=(DB.wbFolders||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const allWbs=(DB.workboards||[]).filter(wb=>!wb.archived&&canViewBoard(currentUser,wb)).sort((a,b)=>(a.order||0)-(b.order||0));
+  // Personal boards never live in a team folder and never show for anyone but their owner (My
+  // Boards) or someone they were explicitly shared/assigned to (Shared With Me) — both sections
+  // are built here from the flag alone, nothing persisted about "which folder", so there is no
+  // per-user folder record another user could ever see (plan: .agents/PLAN-personal-boards.md).
+  const isStaffOrAdmin=currentUser&&currentUser.role!=='client';
+  const personalMine=isStaffOrAdmin?allWbs.filter(wb=>_isPersonalBoard(wb)&&wb.ownerId===currentUser.id):[];
+  const personalShared=isStaffOrAdmin?allWbs.filter(wb=>_isPersonalBoard(wb)&&wb.ownerId!==currentUser.id):[];
+  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb));
+  const folders=(DB.wbFolders||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0))
+    // A team folder only shows for someone who can currently see ≥1 board inside it, or who owns
+    // the folder itself (an empty folder they made on purpose), or — for a legacy folder made
+    // before folders had an owner — for admin only (never for ordinary staff, the safer default).
+    .filter(f=>wbs.some(wb=>wb.folderId===f.id)||f.ownerId===currentUser?.id||(!f.ownerId&&currentUser?.role==='admin'));
   const inBoardView=new Set(['workspace','board','list','gantt']).has(currentView);
   const lockSvg=`<svg width="10" height="10" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;opacity:0.4"><rect x="2" y="5" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 
@@ -5974,6 +6080,30 @@ function renderSidebarWorkboards(){
 
   let html='';
 
+  // ── Personal Boards (mine) — always shown for staff/admin, even empty, so there is an
+  // obvious home instead of people inventing their own public "My Items" team folder. ──────────
+  if(isStaffOrAdmin){
+    const personalInner=personalMine.length
+      ? personalMine.map(wb=>wbRow(wb,14)).join('')
+      : `<div style="padding:5px 10px 6px 14px;font-size:11px;color:#3a5570;font-style:italic">No personal boards yet</div>`;
+    html+=`<div>
+      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;gap:5px">
+        <span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Personal Boards</span>
+        <button onclick="event.stopPropagation();sidebarNewPersonalWb()" title="New personal board" style="background:none;border:none;cursor:pointer;color:#5a8a8c;font-size:13px;padding:1px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#97bcbd'" onmouseout="this.style.color='#5a8a8c'">+</button>
+      </div>
+      ${personalInner}
+    </div>`;
+  }
+  // ── Shared With Me — other people's personal boards they explicitly shared, one at a time.
+  // Only ever populated by canViewBoard already having said yes (owner/shared/assigned), so
+  // sharing one board can never expose any of that owner's other personal boards. ──────────────
+  if(personalShared.length){
+    html+=`<div>
+      <div style="padding:6px 10px 5px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Shared With Me</div>
+      ${personalShared.map(wb=>wbRow(wb,14)).join('')}
+    </div>`;
+  }
+
   // Unfiled drop zone
   const unfiled=wbs.filter(wb=>!wb.folderId);
   html+=dropZone('', unfiled.map(wb=>wbRow(wb,14)).join(''));
@@ -5981,19 +6111,20 @@ function renderSidebarWorkboards(){
   // Folders
   folders.forEach(folder=>{
     const boards=wbs.filter(wb=>wb.folderId===folder.id);
+    const collapsed=_wbFolderCollapsed(folder);
     // Always render the drop zone so collapsed folders accept drops;
     // hide the content visually when collapsed but keep the zone active.
     const innerContent=boards.length
       ? boards.map(wb=>wbRow(wb,26)).join('')
       : `<div style="padding:5px 10px 6px 28px;font-size:11px;color:#3a5570;font-style:italic;margin:2px 6px;border:1px dashed rgba(90,138,140,0.3);border-radius:5px">Drop a board here</div>`;
-    const inner=`<div style="${folder.collapsed?'display:none':''}">${dropZone(folder.id,innerContent)}</div>`
-      +(folder.collapsed?`<div data-drop-folder="${folder.id}" ondragover="_wbDragOver(event,this)" ondragleave="_wbDragLeave(event,this)" ondrop="_wbDrop(event,this,'${folder.id}')" style="height:4px;border-radius:3px;transition:background 0.12s,height 0.12s"></div>`:'');
+    const inner=`<div style="${collapsed?'display:none':''}">${dropZone(folder.id,innerContent)}</div>`
+      +(collapsed?`<div data-drop-folder="${folder.id}" ondragover="_wbDragOver(event,this)" ondragleave="_wbDragLeave(event,this)" ondrop="_wbDrop(event,this,'${folder.id}')" style="height:4px;border-radius:3px;transition:background 0.12s,height 0.12s"></div>`:'');
     html+=`<div>
       <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;cursor:pointer;gap:5px;user-select:none;border-radius:6px;transition:background 0.1s"
         onclick="toggleWbFolder('${folder.id}')"
         onmouseover="this.querySelector('._fops').style.opacity='1'"
         onmouseout="this.querySelector('._fops').style.opacity='0'">
-        <span style="font-size:9px;color:#5a8a8c;display:inline-block">${folder.collapsed?'▶':'▾'}</span>
+        <span style="font-size:9px;color:#5a8a8c;display:inline-block">${collapsed?'▶':'▾'}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">${escHtml(folder.name)}</span>
         <span class="_fops" onclick="event.stopPropagation()" style="opacity:0;transition:opacity 0.12s;display:flex;gap:1px;flex-shrink:0">
           <button onclick="renameWbFolder('${folder.id}')" title="Rename" style="background:none;border:none;cursor:pointer;color:#5a8a8c;font-size:12px;padding:1px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#97bcbd'" onmouseout="this.style.color='#5a8a8c'">✎</button>
@@ -6043,6 +6174,7 @@ function _wbRowDrop(e,targetWbId,targetFolderId){
   const dragged=(DB.workboards||[]).find(w=>w.id===draggedId);
   const target=(DB.workboards||[]).find(w=>w.id===targetWbId);
   if(!dragged||!target)return;
+  if(targetFolderId&&_isPersonalBoard(dragged)){showToast('Personal boards stay in Personal Boards — use Board Access to share instead.','error');return;}
   dragged.folderId=targetFolderId||null;
   const siblings=(DB.workboards||[]).filter(w=>!w.archived&&(w.folderId||null)===(targetFolderId||null));
   const ordered=[...siblings].sort((a,b)=>(a.order||0)-(b.order||0)).filter(w=>w.id!==draggedId);
@@ -6102,13 +6234,21 @@ function sidebarNewWb(){
   navigate('dashboard');
   setTimeout(openCreateWbForm,40);
 }
+function sidebarNewPersonalWb(){
+  navigate('dashboard');
+  setTimeout(()=>{
+    openCreateWbForm();
+    const vis=document.getElementById('new-wb-visibility');
+    if(vis)vis.value='personal';
+  },40);
+}
 function createWbFolder(){
   if(currentUser?.role==='client')return;
   showPrompt('New Folder','',name=>{
     name=(name||'').trim();
     if(!name)return;
     if(!DB.wbFolders)DB.wbFolders=[];
-    DB.wbFolders.push({id:'wbf_'+uid(),name,collapsed:false,order:DB.wbFolders.length});
+    DB.wbFolders.push({id:'wbf_'+uid(),name,collapsed:false,order:DB.wbFolders.length,ownerId:currentUser.id});
     saveDB(DB);renderSidebarWorkboards();
   });
 }
@@ -6127,12 +6267,14 @@ function deleteWbFolder(id){
 }
 function toggleWbFolder(id){
   const f=(DB.wbFolders||[]).find(x=>x.id===id);if(!f)return;
-  f.collapsed=!f.collapsed;
-  saveDB(DB);renderSidebarWorkboards();
+  const next=!_wbFolderCollapsed(f);
+  try{localStorage.setItem(_wbFolderCollapseKey(id),next?'1':'0');}catch(e){}
+  renderSidebarWorkboards();
 }
 function moveWbToFolder(wbId,folderId){
   if(currentUser?.role==='client')return;
   const wb=(DB.workboards||[]).find(w=>w.id===wbId);if(!wb)return;
+  if(folderId&&_isPersonalBoard(wb)){showToast('Personal boards stay in Personal Boards — use Board Access to share instead.','error');return;}
   wb.folderId=folderId||null;
   // Dropped into folder empty space rather than on a specific row — append to the end.
   const siblings=(DB.workboards||[]).filter(w=>!w.archived&&w.id!==wbId&&(w.folderId||null)===(folderId||null));
@@ -6163,11 +6305,17 @@ function submitCreateWb(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('new-wb-name')?.value||'').trim();
   if(!name)return;
-  const visibility=document.getElementById('new-wb-visibility')?.value||'all_internal';
-  const clientId=document.getElementById('new-wb-client')?.value||'';
+  const visSel=document.getElementById('new-wb-visibility')?.value||'all_internal';
+  // "personal" isn't a real visibility value — it's shorthand in this one form for
+  // {visibility:'private', personalBoard:true}, the same pair canViewBoard/canViewTask check.
+  const personalBoard=visSel==='personal';
+  const visibility=personalBoard?'private':visSel;
+  // A personal board never has a client (it has no place in that client's portal — see
+  // api/_portal.js's own personalBoard exclusion) and never lands in a team folder.
+  const clientId=personalBoard?'':(document.getElementById('new-wb-client')?.value||'');
   const excludeFromReports=document.getElementById('new-wb-exclude')?.checked||false;
   const wbId=uid();
-  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,clientId,ownerId:currentUser.id,description:'',archived:false,excludeFromReports,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+  DB.workboards.push({id:wbId,name,color:selectedWbColor,visibility,personalBoard,clientId,folderId:null,ownerId:currentUser.id,description:'',archived:false,excludeFromReports,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
   DB.groups.push({id:uid(),clientId,workboardId:wbId,boardId:wbId,name:'Main',order:0,color:selectedWbColor,createdAt:new Date().toISOString()});
   saveDB(DB);closeCreateWbForm();renderSidebarWorkboards();renderView('dashboard');
 }
@@ -6186,6 +6334,10 @@ function openBoardShareModal(boardId){
         <option value="all_internal"${wb.visibility==='all_internal'?' selected':''}>All internal staff</option>
         <option value="private"${wb.visibility==='private'?' selected':''}>Private (invite only)</option>
       </select>
+      ${wb.visibility==='private'&&wb.ownerId===currentUser.id?`<label style="display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer">
+        <input type="checkbox" ${wb.personalBoard?'checked':''} onchange="saveBoardPersonal('${boardId}',this.checked)"/>
+        <span style="font-size:12px;color:#0d1c33">Personal board — hide from admins too, not just other staff</span>
+      </label>`:''}
     </div>
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Members with access</div>
@@ -6214,6 +6366,24 @@ function saveBoardVisibility(boardId,visibility){
   const wb=DB.workboards.find(w=>w.id===boardId);
   if(!wb)return;
   wb.visibility=visibility;
+  saveDB(DB);
+  renderSidebarWorkboards();
+  openBoardShareModal(boardId);
+}
+function saveBoardPersonal(boardId,checked){
+  const wb=DB.workboards.find(w=>w.id===boardId);
+  if(!wb)return;
+  // Owner only — NOT admin. An admin can reach this modal for any board (Board Access is
+  // rendered for admin/owner alike), and admin bypasses canViewBoard for every board except one
+  // marked personalBoard — so an admin ticking this on someone else's board would instantly cut
+  // off their own access to the very board+modal they were just editing (found in this
+  // session's own audit, reproduced: canViewBoard was true before the toggle, false after).
+  // Whether to make a board personal is the owner's call, not something imposed on their board.
+  if(wb.ownerId!==currentUser.id)return;
+  wb.personalBoard=checked;
+  // Turning personal ON drops any client link and pulls it out of a team folder — a personal
+  // board has no place in a client's portal (api/_portal.js's own exclusion) or a shared folder.
+  if(checked){wb.clientId='';wb.folderId=null;}
   saveDB(DB);
   renderSidebarWorkboards();
   openBoardShareModal(boardId);
@@ -7400,14 +7570,12 @@ const APPROVAL_TYPE_LABELS={scope:'Scope Approval',quote:'Quote Approval',propos
 
 
 function renderNeedsAttention(){
-  const canView=t=>{
-    if(currentUser.role==='admin'||currentUser.role==='pm')return true;
-    const wb=(DB.workboards||[]).find(w=>w.id===(t.workboardId||t.boardId));
-    return canViewBoard(currentUser,wb);
-  };
-  const approvals=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canView(t));
-  const changeReqs=(DB.tasks||[]).filter(t=>t.status==='change-requested'&&!t.archived&&canView(t));
-  const declines=(DB.tasks||[]).filter(t=>t.status==='declined-client'&&!t.archived&&canView(t));
+  // Was its own reimplementation with an unconditional admin/pm bypass, independent of
+  // canViewTask — meant this widget leaked a personal board's tasks to admin even after
+  // canViewTask itself was fixed. Route through the one real permission function instead.
+  const approvals=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canViewTask(currentUser,t));
+  const changeReqs=(DB.tasks||[]).filter(t=>t.status==='change-requested'&&!t.archived&&canViewTask(currentUser,t));
+  const declines=(DB.tasks||[]).filter(t=>t.status==='declined-client'&&!t.archived&&canViewTask(currentUser,t));
   const items=[...approvals,...changeReqs,...declines];
   if(!items.length)return'';
   const NEXT_APPROVAL=[
@@ -7596,6 +7764,7 @@ function renderDashboard(){
         <select id="new-wb-visibility" class="form-input" style="height:36px">
           <option value="all_internal">All internal staff</option>
           <option value="private">Private (invite only)</option>
+          <option value="personal">Personal board (only me)</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px">
@@ -10149,11 +10318,12 @@ function renderTime(){
   const isAdmin=currentUser.role==='admin';
   const mode=_teMode==='client'?'client':'task';
 
-  const taskOpts=DB.tasks.filter(t=>!t.archived).map(t=>{
+  const _teLoggableTasks=DB.tasks.filter(t=>!t.archived&&!_isTaskOnPersonalBoard(t));
+  const taskOpts=_teLoggableTasks.map(t=>{
     const cl=getTaskClient(t);
     return`<option value="${t.id}">${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;
   }).join('');
-  window._teTaskAllItems=DB.tasks.filter(t=>!t.archived).map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
+  window._teTaskAllItems=_teLoggableTasks.map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
   // Nothing here was marked selected, so the browser pre-selected the first client
   // alphabetically and a fresh form looked as though it had silently chosen one. Lead with
   // an empty placeholder instead; logTime already rejects a blank client.
@@ -10419,7 +10589,10 @@ function openEditTimeEntry(id){
   if(e.status==='approved'){showAlert('Approved entries cannot be edited.');return;}
   const isAdmin=currentUser.role==='admin';
   if(!isAdmin&&e.staffId!==currentUser.id){showAlert('You can only edit your own entries.');return;}
-  const tasks=DB.tasks.filter(t=>!t.archived);
+  // A personal-board task is excluded from the picker's choices, same as Log Time — except the
+  // entry's OWN current task, which stays selectable so an existing entry doesn't silently lose
+  // its task the moment this form opens.
+  const tasks=DB.tasks.filter(t=>!t.archived&&(!_isTaskOnPersonalBoard(t)||t.id===e.taskId));
   const taskOpts=`<option value="">— No task —</option>`+tasks.map(t=>{const cl=getTaskClient(t);return`<option value="${t.id}"${t.id===e.taskId?' selected':''}>${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;}).join('');
   const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id===e.earningsRateId?' selected':''}>${escHtml(r.name)}</option>`).join('');
@@ -16235,6 +16408,9 @@ function tmOwnerChanged(newOwnerId){
   box.innerHTML=tmBuildAssigneesHtml(newOwnerId,checked);
 }
 function openTaskModal(id, defaultGroupId){
+  // A direct URL (?openTask=) or a stale reference can point at a task on a board this user
+  // has no access to — openTaskPanel already guards this; this older modal never did.
+  if(id){const _t=DB.tasks.find(x=>x.id===id);if(_t&&!canViewTask(currentUser,_t)){showAlert('You do not have access to this task.');return;}}
   editingTaskId=id||null;
   const isNew=!id;
   const t=id?DB.tasks.find(x=>x.id===id):{
@@ -17397,6 +17573,16 @@ function _wsBuildNewTask(opts){
     percentComplete:opts.pct||0,startDate:opts.startDate||toDateStr(new Date()),endDate:opts.endDate||'',
     hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
 }
+// Shows the "log hours" field once an inline-add row's own status select lands on a done
+// status — for a brand-new item (or subitem) added straight as Completed purely for
+// traceability, with no other way to attach the hours it actually took until a separate trip
+// to the Timesheet. Shared by the top-level row and the subitem row (hoursElId tells it which).
+function wsInlineStatusChanged(status,hoursElId){
+  const el=document.getElementById(hoursElId||'ws-inline-hours');
+  if(!el)return;
+  if(_TASK_DONE_STATUSES.includes(status))el.style.display='';
+  else{el.style.display='none';el.value='';}
+}
 function wsSaveInlineTask(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const name=(document.getElementById('ws-inline-name')?.value||'').trim();
@@ -17408,9 +17594,14 @@ function wsSaveInlineTask(){
   const endDate=document.getElementById('ws-inline-duedate')?.value||'';
   const startDate=document.getElementById('ws-inline-startdate')?.value||'';
   const pct=parseInt(document.getElementById('ws-inline-pct')?.value||'0',10)||0;
+  const hours=parseFloat(document.getElementById('ws-inline-hours')?.value||'');
   const _inlineTask=_wsBuildNewTask({name,status,priority,ownerId,cwith,startDate,endDate,pct});
   DB.tasks.push(_inlineTask);
   notifyTaskCreated(_inlineTask);
+  if(_TASK_DONE_STATUSES.includes(status)&&hours>0){
+    _teCreateEntry({taskId:_inlineTask.id,staffId:ownerId,hours,date:toDateStr(new Date()),
+      note:_inlineTask.name,earningsRateId:'er1',earningsRateName:'Ordinary Hours',location:'remote',billable:true});
+  }
   saveDB(DB);wsCancelInlineAdd();
 }
 function wsHandlePasteMultiline(e){
@@ -18428,6 +18619,7 @@ function wsSaveInlineSubitem(){
   const startDate=_wsInlineSubTL.start||'';
   const endDate=_wsInlineSubTL.end||'';
   const pct=parseInt(document.getElementById('ws-inline-subtask-pct')?.value||'0',10)||0;
+  const hours=parseFloat(document.getElementById('ws-inline-subtask-hours')?.value||'');
   const now=new Date().toISOString();
   const _pGrp=DB.groups.find(g=>g.id===parent.groupId);
   const _si={
@@ -18441,6 +18633,13 @@ function wsSaveInlineSubitem(){
   };
   DB.tasks.push(_si);
   notifyTaskCreated(_si);
+  // No inline hint here (unlike the top-level row) — owner and status are two independently
+  // toggleable columns in this tighter layout, not guaranteed adjacent — so this just quietly
+  // skips logging when there is nobody to attribute the hours to, same rule, no dead input shown.
+  if(_TASK_DONE_STATUSES.includes(status)&&ownerId&&hours>0){
+    _teCreateEntry({taskId:_si.id,staffId:ownerId,hours,date:toDateStr(new Date()),
+      note:_si.name,earningsRateId:'er1',earningsRateName:'Ordinary Hours',location:'remote',billable:true});
+  }
   saveDB(DB);
   wsInlineAddSubtaskId=null;
   wsExpanded.add(parentId);
@@ -19133,9 +19332,10 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
           <input id="ws-inline-name" type="text" class="ws-inline-input" placeholder="Task name — press Enter to save, Esc to cancel, or paste a list"
             onkeydown="if(event.key==='Enter')wsSaveInlineTask();if(event.key==='Escape')wsCancelInlineAdd()"
             onpaste="wsHandlePasteMultiline(event)"/>
-          <select id="ws-inline-status" class="ws-inline-select">
+          <select id="ws-inline-status" class="ws-inline-select" onchange="wsInlineStatusChanged(this.value)">
             ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
           </select>
+          <input id="ws-inline-hours" type="number" min="0.25" step="0.25" placeholder="Hours" class="ws-inline-select" style="width:64px;display:none" title="Log hours for the owner on save"/>
           <select id="ws-inline-priority" class="ws-inline-select">
             <option value="low">▼ Low</option>
             <option value="med" selected>● Medium</option>
@@ -19295,13 +19495,17 @@ function renderSubInlineAdd(parent,visSub,subCust,width){
   return`<tr class="ws-inline-row">
     <td style="width:30px"></td>
     <td style="padding:4px 8px">
+      <div style="display:flex;align-items:center;gap:6px">
       <input id="ws-inline-subtask-input" type="text" class="ws-inline-input"
-        placeholder="Subitem name… (Enter to save)" style="width:100%"
+        placeholder="Subitem name… (Enter to save)" style="flex:1;min-width:0"
         onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}if(event.key==='Escape')wsCancelInlineSubitem();"
         onpaste="wsInlineSubitemPaste(event)"/>
+      <input id="ws-inline-subtask-hours" type="number" min="0.25" step="0.25" placeholder="Hours" style="width:64px;height:26px;display:none;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;padding:2px 6px" title="Log hours for the owner on save"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}"/>
+      </div>
     </td>
     ${visSub.map(c=>{
-      if(c.key==='status')return`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:26px">${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select></td>`;
+      if(c.key==='status')return`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:26px" onchange="wsInlineStatusChanged(this.value,'ws-inline-subtask-hours')">${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select></td>`;
       if(c.key==='owner')return`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:26px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name.split(' ')[0])}</option>`).join('')}</select></td>`;
       if(c.key==='cwith')return`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:26px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`;
       if(c.key==='duedate')return`<td class="ws-editable" style="text-align:center;cursor:pointer" title="Click to set a start and end date" onclick="event.stopPropagation();wsInlineSubTLOpen(event)"><span id="ws-inline-subtask-tl" style="font-size:11px;color:#c8d5e0">+ dates</span></td>`;
@@ -22298,7 +22502,7 @@ function wsBuildDropdownHtml(taskId,field){
     html=`<div style="padding:4px 0">
       ${getAllStatuses().map(k=>{const sm=getStatusMeta(k);const isCust=k.startsWith('cst_');return`
         <div class="ws-cell-dd-item${task.status===k?' ws-dd-active':''}" style="justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer" onclick="wsCellSave('${taskId}','status','${k}')">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer" onclick="wsStatusPick('${taskId}','${k}')">
             <label style="position:relative;width:14px;height:14px;flex-shrink:0;cursor:pointer;border-radius:3px;overflow:hidden" onclick="event.stopPropagation()" title="Change colour">
               <span style="position:absolute;inset:0;background:${sm.dot||sm.color}"></span>
               <input type="color" value="${sm.color}" onchange="wsLabelColor('status','${k}',this.value)" style="opacity:0;position:absolute;inset:0;cursor:pointer"/>
@@ -22318,6 +22522,7 @@ function wsBuildDropdownHtml(taskId,field){
           <button onclick="event.stopPropagation();wsAddCustomLabel('status')" style="background:#f0f7f7;color:#0d6e4e;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:4px 8px;white-space:nowrap">+ Add</button>
         </div>
       </div>
+      <div id="ws-dd-hours-prompt"></div>
     </div>`;
   } else if(field==='priority'){
     html=`<div style="padding:4px 0">
@@ -22666,6 +22871,44 @@ function wsCellSave(taskId,field,value,keepOpen){
     saveDB(DB);
   }
   if(!keepOpen)wsCellClose();
+  renderView('workspace');
+}
+// Status-dropdown pick, wrapped so landing on a "done" status (incl. a task added straight as
+// Completed purely for traceability, with no time ever logged against it) can offer a one-line
+// hours field right there instead of a separate trip to the Timesheet — see _wsShowHoursPrompt.
+// Every other status keeps closing the dropdown immediately, exactly as before.
+function wsStatusPick(taskId,statusKey){
+  const goingDone=_TASK_DONE_STATUSES.includes(statusKey);
+  wsCellSave(taskId,'status',statusKey,goingDone); // keepOpen only when there's an hours prompt to show
+  if(goingDone)_wsShowHoursPrompt(taskId);
+}
+function _wsShowHoursPrompt(taskId){
+  const box=document.getElementById('ws-dd-hours-prompt'); // sits outside view-container, see wsCellClose's own comment
+  if(!box)return;
+  const task=DB.tasks.find(t=>t.id===taskId);
+  const owner=task&&DB.staff.find(s=>s.id===task.ownerId);
+  box.innerHTML=`<div class="ws-dd-sep"></div>
+    <div style="padding:8px 14px" onclick="event.stopPropagation()">
+      ${owner?`<div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Log hours for ${escHtml(owner.name)}</div>
+        <div style="display:flex;gap:6px">
+          <input id="ws-dd-hours" type="number" min="0.25" step="0.25" placeholder="Hours" style="flex:1;font-size:12px;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;outline:none;font-family:'Lato',sans-serif" onkeydown="if(event.key==='Enter'){event.stopPropagation();wsLogHoursFromStatusDD('${taskId}')}"/>
+          <button onclick="event.stopPropagation();wsLogHoursFromStatusDD('${taskId}')" style="background:#0d6e4e;color:#fff;border:none;border-radius:6px;padding:0 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Log</button>
+        </div>`
+      :`<div style="font-size:11px;color:#8da2b2">Set an owner to log hours for this task.</div>`}
+    </div>`;
+  document.getElementById('ws-dd-hours')?.focus();
+}
+function wsLogHoursFromStatusDD(taskId){
+  const input=document.getElementById('ws-dd-hours');
+  const hours=parseFloat(input?.value);
+  if(!hours||hours<=0){input?.focus();return;}
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task||!task.ownerId)return;
+  const entry=_teCreateEntry({taskId,staffId:task.ownerId,hours,date:toDateStr(new Date()),
+    note:task.name||task.title||'Completed',earningsRateId:'er1',earningsRateName:'Ordinary Hours',
+    location:'remote',billable:true});
+  if(!entry)return;
+  wsCellClose();
   renderView('workspace');
 }
 

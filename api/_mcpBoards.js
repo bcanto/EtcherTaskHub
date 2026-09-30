@@ -9,14 +9,17 @@
 function boardsOf(data) { return data.boards || data.workboards || []; }
 function usersOf(data) { return data.users || data.staff || []; }
 
-// Mirrors index.html:5167 canViewBoard(user,board) exactly.
+// Mirrors index.html's canViewBoard(user,board) exactly, including the personalBoard exception.
 function canViewBoard(user, board, data) {
   if (!user || !board) return false;
   if (user.role === 'client') return false;
+  const isOwner = board.ownerId === user.id;
+  const isShared = (data.boardShares || []).some(s => s.boardId === board.id && s.userId === user.id);
+  if (board.visibility === 'private' && board.personalBoard) return isOwner || isShared;
   if (user.role === 'admin' || user.role === 'pm') return true;
   if (board.visibility === 'all_internal') return true;
-  if (board.ownerId === user.id) return true;
-  if ((data.boardShares || []).some(s => s.boardId === board.id && s.userId === user.id)) return true;
+  if (isOwner) return true;
+  if (isShared) return true;
   return false;
 }
 
@@ -32,13 +35,14 @@ function isAssignedTo(t, userId) {
   const ids = new Set([t.ownerId, ...(t.assigneeIds || [])].filter(Boolean));
   return ids.has(userId);
 }
-// Mirrors index.html:5895 canViewTask(user,task) for the staff/admin branches — the client branch
+// Mirrors index.html's canViewTask(user,task) for the staff/admin branches — the client branch
 // is intentionally omitted: the MCP connector is allow-listed to real staff accounts only
-// (api/_mcpAuth.js), never a client login, so there is nothing to mirror there.
+// (api/_mcpAuth.js), never a client login, so there is nothing to mirror there. Admin is no
+// longer an unconditional bypass: merged into the same board check so a personalBoard's tasks
+// stay out of list_tasks/get_task for admin too, matching canViewBoard's own exception.
 function canViewTask(user, task, data) {
   if (!user || !task) return false;
-  if (user.role === 'admin') return true;
-  if (user.role === 'staff' || user.role === 'restricted') {
+  if (user.role === 'admin' || user.role === 'staff' || user.role === 'restricted') {
     const bId = resolveTaskBoardId(data, task);
     const board = bId ? boardsOf(data).find(b => b.id === bId) : null;
     if (board && !canViewBoard(user, board, data)) return isAssignedTo(task, user.id) || task.currentlyWithUserId === user.id;
