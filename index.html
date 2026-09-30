@@ -2021,6 +2021,7 @@ function _migrateDB(data){
   if(!data.deletedChecklistItemIds) data.deletedChecklistItemIds = [];
   if(!data.deletedBoardIds)       data.deletedBoardIds       = [];
   if(!data.deletedUserIds)        data.deletedUserIds        = [];
+  if(!data.deletedWbFolderIds)    data.deletedWbFolderIds    = [];
   // Apply tombstones so nothing deleted reappears after a migration/merge.
   // Set, not .includes(): this runs on EVERY load and every incoming realtime payload, and
   // .includes() made each pass O(tasks × tombstones) — at a few thousand of each that is
@@ -2045,6 +2046,10 @@ function _migrateDB(data){
   _tomb('deletedBoardIds','boards');
   _tomb('deletedBoardIds','boardViews',v=>v.boardId);
   _tomb('deletedUserIds','users');
+  // wbFolders had no tombstone either — same symptom as boards: deleting a sidebar folder
+  // (which falls into _mergeDB's generic by-id merge, a union) let any peer still holding the
+  // old snapshot resurrect it on the next sync.
+  _tomb('deletedWbFolderIds','wbFolders');
   // dependencies and note sections were filtered only in _mergeDB — asymmetric, so a
   // local-only load (no merge) brought them back.
   _tomb('deletedDependencyIds','dependencies');
@@ -2752,6 +2757,12 @@ function _mergeDB(current, incoming){
   const deletedTaskFileIds=new Set([...(current.deletedTaskFileIds||[]),...(incoming.deletedTaskFileIds||[])]);
   merged.deletedTaskFileIds=[...deletedTaskFileIds];
   if(deletedTaskFileIds.size)merged.taskFiles=(merged.taskFiles||[]).filter(x=>!deletedTaskFileIds.has(x.id));
+  // wbFolders goes through the generic by-id loop above (a union, like taskFiles) with no
+  // tombstone of its own — a deleted sidebar folder came back the moment a peer still holding
+  // the old snapshot synced. Same scheme as deletedBoardIds/deletedTaskFileIds.
+  const deletedWbFolderIds=new Set([...(current.deletedWbFolderIds||[]),...(incoming.deletedWbFolderIds||[])]);
+  merged.deletedWbFolderIds=[...deletedWbFolderIds];
+  if(deletedWbFolderIds.size)merged.wbFolders=(merged.wbFolders||[]).filter(f=>!deletedWbFolderIds.has(f.id));
   // dependencies has no tombstone at all: mergeById only ever ADDS, so removing a predecessor
   // on one side while a stale peer still has that exact dependency record resurrects it on the
   // next merge — silently re-establishing a schedule constraint someone deliberately removed,
@@ -6262,6 +6273,10 @@ function deleteWbFolder(id){
   openConfirm('Delete Folder','Boards inside will be moved out of the folder. This cannot be undone.','Delete',()=>{
     (DB.workboards||[]).forEach(wb=>{if(wb.folderId===id)wb.folderId=null;});
     DB.wbFolders=(DB.wbFolders||[]).filter(f=>f.id!==id);
+    // Without a tombstone, _mergeDB's generic by-id merge treats wbFolders as a union — a
+    // stale peer that syncs after this delete brings the folder right back.
+    if(!DB.deletedWbFolderIds)DB.deletedWbFolderIds=[];
+    if(!DB.deletedWbFolderIds.includes(id))DB.deletedWbFolderIds.push(id);
     saveDB(DB);closeConfirm();renderSidebarWorkboards();renderView('dashboard');
   },true);
 }
