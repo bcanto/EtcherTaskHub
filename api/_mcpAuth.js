@@ -101,7 +101,14 @@ async function verifySupabaseSession(accessToken) {
   }
 }
 
-const SCOPE = 'actions:read actions:write';
+// boards:read is new (read-only WorkBoards/tasks) — actions:read/actions:write are unchanged and
+// still never enforced per-call (see api/oauth/[...path].js's callTool), so an existing connection
+// keeps working exactly as before for the 3 original tools with no action needed. boards:read IS
+// enforced on the 3 new tools (there is no pre-existing behaviour of theirs to protect), so an
+// already-issued token/refresh-token — signed before this scope existed — gets a clear
+// "reconnect the connector" error on list_boards/list_tasks/get_task until the holder reconnects
+// and consents to the wider scope.
+const SCOPE = 'actions:read actions:write boards:read';
 
 module.exports = {
   b64url, b64urlDecode, signToken, verifyToken, pkceMatches,

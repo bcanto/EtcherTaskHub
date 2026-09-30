@@ -20,6 +20,7 @@
 const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmails, verifySupabaseSession, SCOPE } = require('../_mcpAuth');
 const { readBlob, casWrite } = require('../_blob');
 const { listActions, createOrUpdateAction, applyUpdate, toPublic } = require('../_mcpActions');
+const { resolveCallerUser, listBoardsForUser, listTasksForUser, getTaskForUser } = require('../_mcpBoards');
 
 function baseUrl(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -124,7 +125,7 @@ function authorize(req, res) {
 </style></head>
 <body><div class="card">
   <h1>Connect to TaskHub</h1>
-  <p>An app wants to add items to your TaskHub Email Triage review queue and update ones you've already routed to a WorkBoard.</p>
+  <p>An app wants to add items to your TaskHub Email Triage review queue, update ones you've already routed to a WorkBoard, and read the WorkBoards and tasks you can already see in TaskHub. It cannot create, edit or delete a WorkBoard task, and cannot see anything you can't already see yourself.</p>
   <div id="loading">Checking your session…</div>
   <form id="f" style="display:none">
     <label for="email">Email</label><input id="email" type="email" autocomplete="username">
@@ -285,7 +286,46 @@ const MCP_TOOLS = [
       required: ['id'],
     },
   },
+  // ── Read-only WorkBoard/task tools (boards:read) — everything here is a plain read, scoped to
+  // exactly what the caller can already see logged into TaskHub itself: an admin/pm sees every
+  // board, everyone else sees boards marked "all internal", boards they own, and boards
+  // specifically shared with them (api/_mcpBoards.js mirrors index.html's own canViewBoard/
+  // canViewTask so this can never drift from what the UI actually shows). ─────────────────────
+  {
+    name: 'list_boards',
+    description: 'List the WorkBoards visible to you (an admin/pm sees every board; anyone else sees boards marked "all internal", boards they own, and boards specifically shared with them) — each with its client and a count of its tasks per status.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'list_tasks',
+    description: 'List tasks across every WorkBoard visible to you, optionally filtered. Closed tasks (done/completed/completed-approved/cancelled) are excluded unless includeDone is true. Sorted by due date (soonest first, no-due-date last) by default.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        boardId: { type: 'string', description: 'Only tasks on this board (from list_boards).' },
+        client: { type: 'string', description: 'Only tasks whose board belongs to this client — a client name or short code.' },
+        owner: { type: 'string', description: 'Only tasks owned by or assigned to this person — a staff name or email.' },
+        status: { type: 'string', description: 'TaskHub\'s own internal status value, e.g. "todo", "in-progress", "blocked", "done" — exactly as returned by these tools, not a display label.' },
+        priority: { type: 'string', enum: ['low', 'med', 'high'] },
+        dueBefore: { type: 'string', description: 'YYYY-MM-DD' },
+        dueAfter: { type: 'string', description: 'YYYY-MM-DD' },
+        updatedSince: { type: 'string', description: 'ISO date/time — only tasks updated at or after this.' },
+        includeDone: { type: 'boolean', description: 'Include closed tasks too. Default false.' },
+        sort: { type: 'string', enum: ['dueDate', 'priority', 'updatedAt'], description: 'Default dueDate (ascending; no due date sorts last). priority is high-med-low. updatedAt is most-recent first.' },
+        limit: { type: 'number', description: 'Default 50, max 200.' },
+        offset: { type: 'number', description: 'For pagination — pass back the previous call\'s nextOffset. Default 0.' },
+      },
+    },
+  },
+  {
+    name: 'get_task',
+    description: 'Full detail for one task: everything list_tasks returns, plus its description, its parent task (if it\'s a subitem), its group, and its own subitems.',
+    inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'The task id, from list_tasks.' } }, required: ['id'] },
+  },
 ];
+// Tools added after the original 3 that require the caller's token to actually carry the new
+// scope — see _mcpAuth.js's SCOPE comment for why this is enforced here but not on the original 3.
+const READ_TOOLS = new Set(['list_boards', 'list_tasks', 'get_task']);
 
 function mcpSend(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));
@@ -305,11 +345,25 @@ function mcpUnauthorized(req, res) {
   mcpSend(res, 401, { error: 'unauthorized' });
 }
 
-async function callTool(name, args, caller) {
+async function callTool(name, args, caller, base) {
   args = args || {};
+  if (READ_TOOLS.has(name) && !(caller.scope || '').split(' ').includes('boards:read')) {
+    throw Object.assign(new Error('This connection was authorised before board/task access existed — disconnect and reconnect the TaskHub connector to grant it.'), { code: 'scope_required' });
+  }
   if (name === 'list_actions') {
     const { data } = await readBlob();
     return { ok: true, items: listActions(data, args) };
+  }
+  if (READ_TOOLS.has(name)) {
+    const { data } = await readBlob();
+    const user = resolveCallerUser(data, caller.id, caller.email);
+    if (!user) throw Object.assign(new Error('Your TaskHub account could not be matched to a staff record — ask an admin to check your account.'), { code: 'account_not_linked' });
+    if (name === 'list_boards') return { ok: true, boards: listBoardsForUser(data, user) };
+    if (name === 'list_tasks') return { ok: true, ...listTasksForUser(data, user, args, base) };
+    if (name === 'get_task') {
+      if (!args.id) throw Object.assign(new Error('id is required'), { code: 'invalid_params' });
+      return { ok: true, task: getTaskForUser(data, user, args.id, base) };
+    }
   }
   if (name === 'create_action') {
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -351,7 +405,12 @@ async function mcp(req, res) {
   if (!payload || payload.kind !== 'access' || !isAllowedEmail(payload.email)) {
     return mcpUnauthorized(req, res);
   }
-  const caller = { id: payload.sub, name: payload.email };
+  // caller.email is new — the original code only ever set .name (to the email address, so
+  // create_action's "from" field silently stayed empty forever; harmless since it was never
+  // surfaced, but real). Added because the read-only tools below need the real email to resolve
+  // the caller's actual TaskHub user record; .name/.id are untouched so the 3 original tools'
+  // existing behaviour (including that quirk) is unaffected.
+  const caller = { id: payload.sub, name: payload.email, email: payload.email, scope: payload.scope || '' };
 
   const msg = req.body;
   if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return mcpSend(res, 400, rpcError(null, -32600, 'Invalid request'));
@@ -375,7 +434,7 @@ async function mcp(req, res) {
       const name = params && params.name;
       const args = params && params.arguments;
       try {
-        const result = await callTool(name, args, caller);
+        const result = await callTool(name, args, caller, baseUrl(req));
         return mcpSend(res, 200, toolResult(id, result));
       } catch (e) {
         return mcpSend(res, 200, toolError(id, e.message || 'Tool call failed'));

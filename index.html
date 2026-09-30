@@ -4417,6 +4417,36 @@ function launchApp(){
   updateNotifBadge();updateClientReqBadge();
   startIntakePoller();
   _checkRecurringTasks();
+  // Deep link from the MCP connector's task URLs (?openTask=<id>&openBoard=<id>, plan: read-only
+  // WorkBoard/task tools) — checked once per real login, same as the last-nav restore above.
+  try{
+    const _dlParams=new URLSearchParams(location.search);
+    const _dlTaskId=_dlParams.get('openTask');
+    if(_dlTaskId){
+      history.replaceState(null,'',location.pathname+location.hash); // never resurface on a plain refresh
+      setTimeout(()=>_deepLinkOpenTask(_dlTaskId),300);
+    }
+  }catch(_){}
+}
+// Opens a task by id from outside the app (currently: MCP tool responses' `url` field) — same
+// jump-to-row behaviour as notifGoToTask, minus the notification-specific bookkeeping.
+function _deepLinkOpenTask(taskId){
+  const task=DB.tasks.find(t=>t.id===taskId);
+  if(!task){showAlert('That task could not be found — it may have been deleted.');return;}
+  if(!canViewTask(currentUser,task)){showAlert('You do not have access to this task.');return;}
+  const boardId=task.boardId||task.workboardId;
+  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId))openWorkboard(boardId);
+  else{wsCollapsed=new Set();if(currentView!=='workspace')navigate('workspace');}
+  activeFilters=freshFilters();saveFilters();
+  wsMtSearch='';wsMtPersonFilter='';
+  if(task.archived)wsShowArchived=true;
+  if(task.parentTaskId)wsExpanded.add(task.parentTaskId);
+  renderView('workspace');
+  setTimeout(()=>{
+    const row=document.querySelector(`tr[data-tid="${taskId}"]`);
+    if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('ws-row-jump');setTimeout(()=>row.classList.remove('ws-row-jump'),1800);}
+    openTaskPanel(taskId);
+  },80);
 }
 function launchClientView(){
   _hideLoadingScreen();
