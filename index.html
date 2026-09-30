@@ -7629,7 +7629,7 @@ function renderNeedsAttention(){
     const atLabel=isChange?'Change Request':isDecline?('Declined'+(t.approvalType?' — '+(APPROVAL_TYPE_LABELS[t.approvalType]||''):'')):APPROVAL_TYPE_LABELS[t.approvalType]||'--';
     const actionAt=ca.at?new Date(ca.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'--';
     const clientNotes=ca.note?`<div style="background:${isDecline?'#fef2f2':isChange?'#fffbeb':'#f0fdf4'};border:1px solid ${isDecline?'#fecaca':isChange?'#fde68a':'#bbf7d0'};border-radius:6px;padding:8px 12px;margin-top:10px;font-size:12px;color:${isDecline?'#991b1b':isChange?'#92400e':'#065f46'};line-height:1.6"><strong>${isDecline?'Reason:':isChange?'Client feedback:':'Client note:'}</strong> "${escHtml(ca.note)}"</div>`:'';
-    const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
+    const attachCount=(DB.taskFiles||[]).filter(f=>f.taskId===t.id&&!f.columnId).length;
     const typeBadge=isDecline
       ?`<span style="flex-shrink:0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fee2e2;color:#b91c1c">Declined by Client</span>`
       :isChange
@@ -19054,7 +19054,7 @@ const WS_SORT_VALUE={
   tags:t=>(t.tags||[]).join(', '),
   // `?? fallback` defeated the cache for the common case: fileCountMap has no entry for a
   // task with zero attachments, so every such row fell through to a full DB.taskFiles scan.
-  attachments:t=>_wsCache?.fileCountMap?(_wsCache.fileCountMap.get(t.id)||0):(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length,
+  attachments:t=>_wsCache?.fileCountMap?(_wsCache.fileCountMap.get(t.id)||0):(DB.taskFiles||[]).filter(f=>f.taskId===t.id&&!f.columnId).length,
   deps:t=>(t.dependencies||[]).length,
 };
 function _wsOrderTasks(arr){
@@ -19141,7 +19141,9 @@ function renderWorkspace(){
   const _hoursMap=new Map();
   DB.tasks.forEach(t=>{if(t.parentTaskId){if(!_childMap.has(t.parentTaskId))_childMap.set(t.parentTaskId,[]);_childMap.get(t.parentTaskId).push(t);}});
   (DB.comments||[]).forEach(c=>{_commentCountMap.set(c.taskId,(_commentCountMap.get(c.taskId)||0)+1);});
-  (DB.taskFiles||[]).forEach(f=>{_fileCountMap.set(f.taskId,(_fileCountMap.get(f.taskId)||0)+1);});
+  // columnId-scoped files (a custom "File" column) are a separate count, shown in that column's
+  // own cell — the main Attachments badge must only reflect the task's real, unscoped files.
+  (DB.taskFiles||[]).forEach(f=>{if(f.columnId)return;_fileCountMap.set(f.taskId,(_fileCountMap.get(f.taskId)||0)+1);});
   (DB.timeEntries||[]).forEach(e=>{_hoursMap.set(e.taskId,(_hoursMap.get(e.taskId)||0)+e.hours);});
   _wsCache={childMap:_childMap,commentCountMap:_commentCountMap,fileCountMap:_fileCountMap,hoursMap:_hoursMap};
   const tasks=getFilteredTasks();
@@ -19563,7 +19565,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const isSelected=wsSelected.has(t.id);
   const isOverdue=t.endDate&&t.endDate<toDateStr(new Date())&&t.status!=='done'&&t.status!=='completed'&&!t.archived;
   const commentCount=_wsCache?.commentCountMap.get(t.id)||( (DB.comments||[]).filter(c=>c.taskId===t.id).length );
-  const attachCount=_wsCache?.fileCountMap.get(t.id)||( (DB.taskFiles||[]).filter(f=>f.taskId===t.id).length );
+  const attachCount=_wsCache?.fileCountMap.get(t.id)||( (DB.taskFiles||[]).filter(f=>f.taskId===t.id&&!f.columnId).length );
   // A parent with subitems shows the span of its children rather than its own dates -
   // the item runs from the first subitem starting to the last one finishing.
   const _span=(hasChildren&&!isSubitem)?getTaskDateSpan(t.id):null;
@@ -22633,8 +22635,13 @@ function wsBuildDropdownHtml(taskId,field){
         ${pcts.map(p=>`<button onclick="wsCellSave('${taskId}','percentComplete',${p})" style="flex:1;min-width:26px;padding:3px 0;border:1px solid ${(task.percentComplete||0)===p?'#97bcbd':'#e2eaf2'};border-radius:5px;background:${(task.percentComplete||0)===p?'#f0f7f7':'#fff'};font-size:10px;font-weight:700;color:${(task.percentComplete||0)===p?'#0d6e4e':'#6b8399'};cursor:pointer">${p}%</button>`).join('')}
       </div>
     </div>`;
-  } else if(field==='attachments'){
-    const files=(DB.taskFiles||[]).filter(f=>f.taskId===taskId);
+  } else if(field==='attachments'||field.startsWith('cc_')){
+    // A custom "File" column reuses this exact real attachment system (DB.taskFiles), scoped to
+    // its own column via columnId, instead of the old fake text-only "stores filename only"
+    // field — same popup, same File/Link/preview/download/Shared/remove controls as the task's
+    // main Attachments field, just filtered to this one column's own files.
+    const _ccColumnId=field==='attachments'?null:field.slice(3);
+    const files=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&(f.columnId||null)===_ccColumnId);
     const _eyeSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const _dlSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
     const _xSvg=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
@@ -22642,7 +22649,9 @@ function wsBuildDropdownHtml(taskId,field){
     // out of the attribute and ran script in the staff session.
     const _iconBtn=(href,title,svg,dl)=>`<a href="${escHtml(href)}" ${dl?`download="${dl}"`:'target="_blank" rel="noopener noreferrer"'} style="display:inline-flex;align-items:center;justify-content:center;color:#4a6572;text-decoration:none;padding:5px 7px;border-radius:5px;border:1px solid #cfdae4;background:#fff;line-height:1" onmouseover="this.style.color='#fff';this.style.background='${dl?'#0d1c33':'#0d6e4e'}';this.style.borderColor='${dl?'#0d1c33':'#0d6e4e'}'" onmouseout="this.style.color='#4a6572';this.style.background='#fff';this.style.borderColor='#cfdae4'" title="${title}">${svg}</a>`;
     const _iconBtnDim=(svg,why)=>`<span title="${why||'This file is not available on this device'}" style="display:inline-flex;align-items:center;justify-content:center;color:#b0bec5;padding:5px 7px;border-radius:5px;border:1px dashed #dde5ee;background:#fafcfe;line-height:1;cursor:not-allowed">${svg}</span>`;
+    const _ccCol=_ccColumnId?(DB.customColumns||[]).find(c=>c.id===_ccColumnId):null;
     html=`<div style="min-width:240px">
+      ${_ccCol?`<div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px 0">${escHtml(_ccCol.name)}</div>`:''}
       ${files.length===0?`<div style="padding:8px 14px;font-size:12px;color:#8da2b2;font-style:italic">No files attached</div>`:''}
       ${files.map(f=>{
         const isLink=f.type==='link';
@@ -23377,14 +23386,20 @@ function wsCommitInlineName(taskId,inp){
 }
 
 // ── Attachments ──
+// A custom "File" column's cell popup shares this exact system, scoped by columnId — see
+// wsBuildDropdownHtml's field==='attachments'||field.startsWith('cc_') branch. _wsCellField is
+// already 'attachments' or 'cc_<id>' by the time any of these run (set by wsCellOpen/mtOpenCellEdit).
+function _wsAttachField(){return(_wsCellField==='attachments'||(_wsCellField||'').startsWith('cc_'))?_wsCellField:'attachments';}
+function _wsAttachColumnId(){const f=_wsAttachField();return f==='attachments'?null:f.slice(3);}
 function wsAddAttachment(taskId,input){
   try{requireInternalUser(currentUser);}catch(e){return;}
   if(!DB.taskFiles)DB.taskFiles=[];
+  const columnId=_wsAttachColumnId();
   const MAX=500*1024, MAX_STORED=10*1048576;
   const added=()=>{
     saveDB(DB);
     const body=document.getElementById('ws-cell-dd-body');
-    if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
+    if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,_wsAttachField());
     renderView('workspace');
   };
   const process=async arr=>{
@@ -23397,7 +23412,7 @@ function wsAddAttachment(taskId,input){
       const path=await _storageUpload(taskId,fid,f);
       if(path){
         const _now=new Date().toISOString();
-        DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:_now,updatedAt:_now,internalOnly:false});
+        DB.taskFiles.push({id:fid,taskId,columnId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:_now,updatedAt:_now,internalOnly:false});
         added();process(rest);return;
       }
       // storage unavailable (e.g. migration 006 not run yet) — fall through to the browser store
@@ -23414,7 +23429,7 @@ function wsAddAttachment(taskId,input){
       }
       // New uploads are Shared: the task's Portal Visibility switch decides whether the client
       // sees its attachments at all, and the Internal pill next to a file hides that one file.
-      DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),internalOnly:false});
+      DB.taskFiles.push({id:fid,taskId,columnId,name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),internalOnly:false});
       added();
       process(rest);
     };
@@ -23603,7 +23618,7 @@ function wsToggleAttachmentShare(fileId){
   f.updatedAt=new Date().toISOString();
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
+  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsAttachField());
   renderView('workspace');
 }
 function wsDeleteAttachment(attId){
@@ -23615,13 +23630,13 @@ function wsDeleteAttachment(attId){
   if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(attId))DB.deletedTaskFileIds.push(attId);
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
+  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsAttachField());
   renderView('workspace');
 }
 function _wsToggleAttachLink(){
   _wsShowLinkInput=!_wsShowLinkInput;
   const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,'attachments');
+  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsAttachField());
 }
 function wsAddAttachmentLink(taskId){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -23634,11 +23649,11 @@ function wsAddAttachmentLink(taskId){
   const displayName=(nameEl?nameEl.value.trim():'')||rawUrl.replace(/^https?:\/\//i,'').split('/')[0];
   if(!DB.taskFiles)DB.taskFiles=[];
   // Shared by default — same reasoning as wsAddAttachment above.
-  DB.taskFiles.push({id:uid(),taskId,name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString(),internalOnly:false});
+  DB.taskFiles.push({id:uid(),taskId,columnId:_wsAttachColumnId(),name:displayName,size:0,type:'link',url,addedAt:new Date().toISOString(),internalOnly:false});
   saveDB(DB);
   _wsShowLinkInput=false;
   const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,'attachments');
+  if(body&&_wsCellTask===taskId)body.innerHTML=wsBuildDropdownHtml(taskId,_wsAttachField());
   renderView('workspace');
 }
 
@@ -23701,7 +23716,7 @@ function _xlCell(t,key){
     case 'client':  return plain(getTaskClient(t)?.name||'');
     case 'tags':    return plain((t.tags||[]).join(', '));
     case 'attachments':{
-      const n=(DB.taskFiles||[]).filter(f=>f.taskId===t.id).length;
+      const n=(DB.taskFiles||[]).filter(f=>f.taskId===t.id&&!f.columnId).length;
       return{v:n||'',center:true};
     }
     case 'deps':{
@@ -23907,6 +23922,16 @@ function mtDeleteCustomCol(colId){
   openConfirm('Delete Column','Delete this column and all its data? This cannot be undone.','Delete',()=>{
     DB.customColumns=(DB.customColumns||[]).filter(c=>c.id!==colId);
     DB.customColumnValues=(DB.customColumnValues||[]).filter(v=>v.columnId!==colId);
+    // A "File" column's actual values live in DB.taskFiles (columnId-scoped), not
+    // customColumnValues — deleting the column must also clean those up, same as
+    // wsDeleteAttachment: real blob storage removed, then tombstoned so a stale peer's merge
+    // doesn't resurrect a file whose column no longer exists.
+    (DB.taskFiles||[]).filter(f=>f.columnId===colId).forEach(f=>{
+      _deleteFileData(f.id);
+      if(f.storagePath)_storageRemove(f.storagePath);
+      if(!(DB.deletedTaskFileIds||(DB.deletedTaskFileIds=[])).includes(f.id))DB.deletedTaskFileIds.push(f.id);
+    });
+    DB.taskFiles=(DB.taskFiles||[]).filter(f=>f.columnId!==colId);
     saveDB(DB);closeConfirm();renderView('workspace');
   });
 }
@@ -24083,7 +24108,15 @@ function renderCustomColCell(taskId,cc){
     }
     case 'link':
       return val?`<a href="${escHtml(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${icon('link',11)} Link</a>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
-    default: // text, longtext, file
+    case 'file':{
+      // Same clip+count badge as the main Attachments column — the value itself lives in
+      // DB.taskFiles (scoped by columnId), not in customColumnValues; see mtOpenCellEdit.
+      const n=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&f.columnId===cc.id).length;
+      const clipSvg=`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
+      return n?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px">${clipSvg}${n}</span>`
+        :`<span style="color:#c8d5e0;display:inline-flex;align-items:center" title="Add a file or link">${clipSvg}</span>`;
+    }
+    default: // text, longtext
       return`<span style="font-size:12px;color:${val?'#1a2940':'#c8d4e0'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;display:block">${val?escHtml(String(val)):'—'}</span>`;
   }
 }
@@ -24104,7 +24137,11 @@ function mtOpenCellEdit(taskId,colId,evt){
   dd.style.left=left+'px';dd.style.top=top+'px';
   dd.style.display='block';
   _wsCellTask=taskId;_wsCellField='cc_'+colId;
-  body.innerHTML=cc.type==='labels'?mtLabelPickerHtml(taskId,cc,val):mtBuildCustomCellHtml(taskId,cc,val);
+  // A "File" column reuses the real attachments system (wsBuildDropdownHtml's own
+  // field.startsWith('cc_') branch) instead of the old text-only mtBuildCustomCellHtml case.
+  body.innerHTML=cc.type==='labels'?mtLabelPickerHtml(taskId,cc,val)
+    :cc.type==='file'?wsBuildDropdownHtml(taskId,'cc_'+colId)
+    :mtBuildCustomCellHtml(taskId,cc,val);
 }
 
 function mtBuildCustomCellHtml(taskId,cc,val){
@@ -24177,16 +24214,7 @@ function mtBuildCustomCellHtml(taskId,cc,val){
         onchange="mtSetCustomVal('${taskId}','${cc.id}',this.value)"/>
       ${val?`<a href="${escHtml(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;display:block;margin-top:5px">Open link ↗</a>`:''}
       </div>`;
-    case 'file':
-      return label+`<div style="padding:0 14px 12px">
-        ${val?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#4d6275;margin-bottom:6px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(val)}</div>`:''}
-        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#97bcbd;padding:4px 10px;border:1.5px dashed #c8d4e0;border-radius:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Upload</span>
-          <input type="file" onchange="(function(inp){if(inp.files[0])mtSetCustomVal('${taskId}','${cc.id}',inp.files[0].name);})(this)" style="display:none" onclick="event.stopPropagation()"/>
-        </label>
-        <div style="font-size:10px;color:#b0bec5;margin-top:4px">Stores filename only</div>
-      </div>`;
-    default:
+    default: // 'file' is handled before this function is ever called — see mtOpenCellEdit
       return label+`<div style="padding:0 14px 12px"><input type="text" value="${escHtml(val)}" placeholder="Enter value…"
         onclick="event.stopPropagation()" autofocus
         style="width:100%;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 8px;font-size:13px;outline:none;box-sizing:border-box"
@@ -24334,7 +24362,7 @@ function sanitizeTaskForClient(task){
     // Same rule as api/_portal.js sliceTask: the task description, unless hidden from the client.
     description:     task.clientDescriptionHidden?null:(task.clientDescription||task.description||null),
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
-    attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&(f.uploadedByClientId===currentUser?.clientId||(!f.internalOnly&&!task.clientAttachmentsHidden))).length,
+    attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.columnId&&(f.uploadedByClientId===currentUser?.clientId||(!f.internalOnly&&!task.clientAttachmentsHidden))).length,
     parentId:        task.parentTaskId||null,
     // Board-view-only additions — still whitelisted one field at a time, never the raw task.
     boardId:         _taskBoardId(task),
@@ -25021,7 +25049,9 @@ function cpOpenTaskModal(taskId){
   facts.push({label:'Progress',value:`${_isDoneT&&!_pct?100:_pct}%`,bar:_isDoneT&&!_pct?100:_pct});
   const factsHtml=`<div class="cp-m-facts">${facts.map(x=>`<div class="cp-m-fact${x.tone?' '+x.tone:''}"><div class="cp-m-label">${x.label}</div><div class="cp-m-fact-val">${x.value}</div>${x.sub?`<div class="cp-m-fact-sub">${x.sub}</div>`:''}${x.bar!=null?`<div class="cp-m-bar"><span style="width:${x.bar}%"></span></div>`:''}</div>`).join('')}</div>`;
   // Same rule as api/_portal.js fileVisibleTo (server mode already receives only these).
-  const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&(f.uploadedByClientId===currentUser.clientId||(!f.internalOnly&&!rawTask.clientAttachmentsHidden)));
+  // columnId-scoped files (a Main Table custom "File" column) are never client-visible — see
+  // api/_portal.js's own matching exclusion.
+  const attachments=(DB.taskFiles||[]).filter(f=>f.taskId===taskId&&!f.columnId&&(f.uploadedByClientId===currentUser.clientId||(!f.internalOnly&&!rawTask.clientAttachmentsHidden)));
   const rawSubs=DB.tasks.filter(s=>s.parentTaskId===taskId&&!s.archived&&canViewTask(currentUser,s));
   const subs=rawSubs.map(sanitizeTaskForClient);
 

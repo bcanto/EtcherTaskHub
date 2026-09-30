@@ -195,8 +195,13 @@ function sliceForClient(blob, clientId, userId) {
     }),
     // internalOnly === true is internal. Legacy rows (undefined) stay visible — decision D1 of
     // PLAN-client-board-and-actions.md, unchanged here.
-    // taskIds are exactly the visible tasks, so only the per-file part of fileVisibleTo is left to check
-    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && (f.uploadedByClientId === clientId || (f.internalOnly !== true && !(taskById.get(f.taskId) || {}).clientAttachmentsHidden)))
+    // taskIds are exactly the visible tasks, so only the per-file part of fileVisibleTo is left to check.
+    // columnId-scoped files (a Main Table custom "File" column) are excluded outright, regardless
+    // of internalOnly — customColumns/customColumnValues are already entirely absent from the
+    // portal feed (see _PORTAL_EMPTY in index.html), so a client who has no concept of "columns"
+    // must never see a file that only exists because of one, mixed unexplained into their
+    // Attachments list.
+    taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && !f.columnId && (f.uploadedByClientId === clientId || (f.internalOnly !== true && !(taskById.get(f.taskId) || {}).clientAttachmentsHidden)))
       .map(f => ({ ...pick(f, ['id', 'taskId', 'name', 'type', 'size', 'url', 'internalOnly', 'uploadedByClientId', 'actionRequestId', 'addedAt', 'uploadedAt']), stored: !!f.storagePath })),
     actionRequests: arr(blob.actionRequests).filter(r => taskIds.has(r.taskId)).map(sliceActionRequest),
     clientWorkRequests: arr(blob.clientWorkRequests).filter(r => r.clientId === clientId).map(clone),
