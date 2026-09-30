@@ -5030,7 +5030,13 @@ function getTaskClient(task){
 function getEffectiveTaskPct(taskId){
   const children=(_wsCache?.childMap.get(taskId)||DB.tasks.filter(t=>t.parentTaskId===taskId)).filter(t=>!t.archived);
   if(!children.length) return DB.tasks.find(t=>t.id===taskId)?.percentComplete||0;
-  return Math.round(children.reduce((s,t)=>s+(t.percentComplete||0),0)/children.length);
+  // An hour-budget subitem marked Done keeps whatever percentComplete its logged hours computed
+  // to (0 if none logged yet — _applyStatusProgress deliberately never overwrites that number).
+  // Its own row hides this by showing "Done" instead of a %, but a parent averaging raw
+  // percentComplete across children had no such cover: every child could read Done/green while
+  // the rollup still read 0%. Counting a done child as 100 here matches what its own row and the
+  // status-mix bar already say, everywhere this rollup is used (row display, exports, capacity).
+  return Math.round(children.reduce((s,t)=>s+(_TASK_DONE_STATUSES.includes(t.status)?100:(t.percentComplete||0)),0)/children.length);
 }
 // ── Status distribution ─────────────────────────────────────
 // A single averaged % hides the shape of the work: "0%" reads the same whether nothing has
