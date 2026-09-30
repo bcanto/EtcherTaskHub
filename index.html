@@ -6034,6 +6034,16 @@ function _isTaskOnPersonalBoard(t){
 // entirely; the old folder.collapsed field is read once as a fallback for anyone who never
 // touched this folder before the change, then ignored.
 function _wbFolderCollapseKey(folderId){return`wbFolderCollapsed:${currentUser?.id||'anon'}:${folderId}`;}
+// The Personal Boards section isn't a real wbFolder record (see _isPersonalBoard's own note on
+// why it's computed, not stored), so it reuses the same per-viewer collapse key scheme under a
+// fixed pseudo-id rather than needing a folder object of its own.
+function _personalSectionCollapsed(){
+  try{return localStorage.getItem(_wbFolderCollapseKey('__personal'))==='1';}catch(e){return false;}
+}
+function toggleWbPersonalSection(){
+  try{localStorage.setItem(_wbFolderCollapseKey('__personal'),_personalSectionCollapsed()?'0':'1');}catch(e){}
+  renderSidebarWorkboards();
+}
 function _wbFolderCollapsed(folder){
   try{
     const raw=localStorage.getItem(_wbFolderCollapseKey(folder.id));
@@ -6094,15 +6104,17 @@ function renderSidebarWorkboards(){
   // ── Personal Boards (mine) — always shown for staff/admin, even empty, so there is an
   // obvious home instead of people inventing their own public "My Items" team folder. ──────────
   if(isStaffOrAdmin){
+    const personalCollapsed=_personalSectionCollapsed();
     const personalInner=personalMine.length
       ? personalMine.map(wb=>wbRow(wb,14)).join('')
       : `<div style="padding:5px 10px 6px 14px;font-size:11px;color:#3a5570;font-style:italic">No personal boards yet</div>`;
     html+=`<div>
-      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;gap:5px">
+      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;gap:5px;cursor:pointer;user-select:none;border-radius:6px"
+        onclick="toggleWbPersonalSection()">
         <span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Personal Boards</span>
-        <button onclick="event.stopPropagation();sidebarNewPersonalWb()" title="New personal board" style="background:none;border:none;cursor:pointer;color:#5a8a8c;font-size:13px;padding:1px 4px;border-radius:3px;line-height:1" onmouseover="this.style.color='#97bcbd'" onmouseout="this.style.color='#5a8a8c'">+</button>
+        <span style="font-size:9px;color:#5a8a8c;display:inline-block;flex-shrink:0">${personalCollapsed?'▶':'▾'}</span>
       </div>
-      ${personalInner}
+      <div style="${personalCollapsed?'display:none':''}">${personalInner}</div>
     </div>`;
   }
   // ── Shared With Me — other people's personal boards they explicitly shared, one at a time.
@@ -6244,14 +6256,6 @@ function closeWbAddMenu(){
 function sidebarNewWb(){
   navigate('dashboard');
   setTimeout(openCreateWbForm,40);
-}
-function sidebarNewPersonalWb(){
-  navigate('dashboard');
-  setTimeout(()=>{
-    openCreateWbForm();
-    const vis=document.getElementById('new-wb-visibility');
-    if(vis)vis.value='personal';
-  },40);
 }
 function createWbFolder(){
   if(currentUser?.role==='client')return;
