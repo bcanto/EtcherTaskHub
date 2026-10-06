@@ -1,0 +1,266 @@
+{
+  "templateId": "corrective-action-form",
+  "title": "Corrective Action Form",
+  "filenameStem": "Corrective_Action_Form",
+  "documentType": "form",
+  "purpose": "Records one nonconformity or incident through to closure: the immediate correction, root-cause analysis, corrective action and a check that it worked.",
+  "requiredProfileFields": [
+    "legal_name",
+    "numbering_convention",
+    "org_roles",
+    "approval_roles"
+  ],
+  "questions": [
+    {
+      "id": "numbering",
+      "text": "How are corrective actions numbered (for example CA-2026-001)?",
+      "kind": "text"
+    },
+    {
+      "id": "method",
+      "text": "Which root-cause method is normally used?",
+      "kind": "choice",
+      "options": [
+        "5 Whys",
+        "Fishbone (cause and effect)",
+        "Either, depending on the case",
+        "Other (describe)"
+      ]
+    },
+    {
+      "id": "verifier",
+      "text": "Who verifies effectiveness (role), and how long after implementation?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Identification (number, date, raised by, source)",
+    "Description of the nonconformity or incident",
+    "Immediate correction and containment",
+    "Root-cause analysis",
+    "Corrective action plan (action, owner, due date)",
+    "Could this happen elsewhere? (similar risks reviewed)",
+    "Effectiveness verification (method, date, result, verified by)",
+    "Closure sign-off"
+  ],
+  "optionalSections": [
+    "Updates needed to risks, procedures or training"
+  ],
+  "expectedRecords": [
+    "Completed forms",
+    "Evidence for each action",
+    "The effectiveness check record"
+  ],
+  "draftingRules": [
+    "Make it a fill-in form: labelled fields and tick boxes, no example content.",
+    "Keep correction (fixing this case) separate from corrective action (stopping it recurring)."
+  ],
+  "reviewerChecklist": [
+    "Correction and corrective action are separate",
+    "Root cause is a cause, not a restated symptom",
+    "Effectiveness is verified by someone other than the action owner",
+    "Numbering matches the stated convention"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "6.3",
+      "stableKey": "9001|6.3|b716c596|0",
+      "workbookRow": 29,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "8.5.6",
+      "stableKey": "9001|8.5.6|ed6449ec|0",
+      "workbookRow": 84,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "8.7",
+      "stableKey": "9001|8.7|e84954ec|0",
+      "workbookRow": 88,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "8.7",
+      "stableKey": "9001|8.7|a80daf1a|0",
+      "workbookRow": 91,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|f9f51279|0",
+      "workbookRow": 103,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.1",
+      "stableKey": "9001|10.1|fbf1f6c4|0",
+      "workbookRow": 111,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "9001|10.2|e202f98c|0",
+      "workbookRow": 112,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "9001|10.2|9b97c6d3|0",
+      "workbookRow": 113,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "9001|10.2|91ecd77d|0",
+      "workbookRow": 114,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "9001|10.2|236c5b66|0",
+      "workbookRow": 115,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|f9f51279|0",
+      "workbookRow": 66,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.1",
+      "stableKey": "14001|10.1|fbf1f6c4|0",
+      "workbookRow": 73,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "14001|10.2|e202f98c|0",
+      "workbookRow": 74,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "14001|10.2|9b97c6d3|0",
+      "workbookRow": 75,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "14001|10.2|91ecaa71|0",
+      "workbookRow": 76,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.2",
+      "stableKey": "14001|10.2|236c5b66|0",
+      "workbookRow": 77,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|f9f51279|0",
+      "workbookRow": 77,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.1",
+      "stableKey": "45001|10.1|fbf1f6c4|0",
+      "workbookRow": 84,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.2",
+      "stableKey": "45001|10.2|bf0fa34f|0",
+      "workbookRow": 85,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.2",
+      "stableKey": "45001|10.2|9b97c6d3|0",
+      "workbookRow": 86,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.2",
+      "stableKey": "45001|10.2|c9f68506|0",
+      "workbookRow": 87,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.2",
+      "stableKey": "45001|10.2|236c5b66|0",
+      "workbookRow": 88,
+      "why": "clause"
+    }
+  ],
+  "documents": []
+}

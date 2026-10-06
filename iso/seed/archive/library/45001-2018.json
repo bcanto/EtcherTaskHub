@@ -1,0 +1,1432 @@
+{
+  "seedKey": "45001-2018",
+  "standardCode": "45001",
+  "edition": "2018",
+  "label": "ISO 45001:2018 — Etcher wording",
+  "status": "approved",
+  "wording": "Etcher's own paraphrase of each requirement, not ISO text (plan D8). Check the licensed standard for the authoritative text.",
+  "scopeNote": "Base 2018 edition as written in the source workbook. Does NOT include the 2024 climate-change amendment (Amd 1:2024) — the workbook predates it (plan A67).",
+  "sourceFilename": "Etcher ISO gap analysis workbook V2.0 (library columns only)",
+  "sourceSha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f",
+  "sections": [
+    {
+      "id": "45001:4",
+      "standard": "45001",
+      "clause": "4",
+      "title": "Context of the Organization",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 2
+      }
+    },
+    {
+      "id": "45001:5",
+      "standard": "45001",
+      "clause": "5",
+      "title": "Leadership and worker participation",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 12
+      }
+    },
+    {
+      "id": "45001:6",
+      "standard": "45001",
+      "clause": "6",
+      "title": "Planning",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 20
+      }
+    },
+    {
+      "id": "45001:6.1",
+      "standard": "45001",
+      "clause": "6.1",
+      "title": "Actions to address risks and opportunities",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 21
+      }
+    },
+    {
+      "id": "45001:6.1.2",
+      "standard": "45001",
+      "clause": "6.1.2",
+      "title": "Hazard identification and assessment of risks and opportunities",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 25
+      }
+    },
+    {
+      "id": "45001:6.2",
+      "standard": "45001",
+      "clause": "6.2",
+      "title": "OH&S objectives and planning to achieve them",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 33
+      }
+    },
+    {
+      "id": "45001:7",
+      "standard": "45001",
+      "clause": "7",
+      "title": "Support",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 36
+      }
+    },
+    {
+      "id": "45001:7.4",
+      "standard": "45001",
+      "clause": "7.4",
+      "title": "Communication",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 43
+      }
+    },
+    {
+      "id": "45001:7.5",
+      "standard": "45001",
+      "clause": "7.5",
+      "title": "Documented information",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 48
+      }
+    },
+    {
+      "id": "45001:8",
+      "standard": "45001",
+      "clause": "8",
+      "title": "Operation",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 53
+      }
+    },
+    {
+      "id": "45001:8.1",
+      "standard": "45001",
+      "clause": "8.1",
+      "title": "Operational planning and control",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 54
+      }
+    },
+    {
+      "id": "45001:8.1.4",
+      "standard": "45001",
+      "clause": "8.1.4",
+      "title": "Procurement",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 58
+      }
+    },
+    {
+      "id": "45001:9",
+      "standard": "45001",
+      "clause": "9",
+      "title": "Performance Evaluation",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 63
+      }
+    },
+    {
+      "id": "45001:9.1",
+      "standard": "45001",
+      "clause": "9.1",
+      "title": "Monitoring, measurement, analysis and performance evaluation",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 64
+      }
+    },
+    {
+      "id": "45001:9.2",
+      "standard": "45001",
+      "clause": "9.2",
+      "title": "Internal audit",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 72
+      }
+    },
+    {
+      "id": "45001:10",
+      "standard": "45001",
+      "clause": "10",
+      "title": "Improvement",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 83
+      }
+    }
+  ],
+  "items": [
+    {
+      "standard": "45001",
+      "clause": "4.1",
+      "clauseName": "Understanding the organization and its context",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Determine what factors may affect the organization's strategy and its ability to achieve intended results",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 3,
+        "matchKey": "45001|4.1|d819ea7e|0"
+      },
+      "imported": {
+        "evidenceExamples": "PEST Analysis (PESTEL)\nSWOT Analysis\nBusiness Plan\nStrategic Plan",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.1",
+      "clauseName": "Understanding the organization and its context",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Monitor and review information about those issues",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 4,
+        "matchKey": "45001|4.1|33a7464d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management Review\nPlanned/scheduled reviews",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of workers and other interested parties",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Determine WHO the interested parties are relevant to the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 5,
+        "matchKey": "45001|4.2|bfa859ce|0"
+      },
+      "imported": {
+        "evidenceExamples": "Who are relevant interested parties? People or groups of people (organizations) that can affect the OHSMS or be affected by the OHSMS. These could be identified with the process followed for 4.1 above:\nPEST Analysis\nSWOT Analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of workers and other interested parties",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Determine the requirements relevant to the OHSMS for the identified interested parties",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 6,
+        "matchKey": "45001|4.2|d5ec2107|0"
+      },
+      "imported": {
+        "evidenceExamples": "Legislation review\nClient feedback\nWorker/Contractor consultation\nContract requirements",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of workers and other interested parties",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Which of these requirements become a legal requirement or other requirement",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 7,
+        "matchKey": "45001|4.2|a572f565|0"
+      },
+      "imported": {
+        "evidenceExamples": "Legislation\nPermits\nContracts\nVoluntary arrangements - industry guidelines",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of workers and other interested parties",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Monitor and review requirements and interested parties",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 8,
+        "matchKey": "45001|4.2|da71e94d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management Review\nPlanned/scheduled reviews",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.3",
+      "clauseName": "Determining the scope of the OH&S management system",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Define and document the scope of the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 9,
+        "matchKey": "45001|4.3|55ac5a3a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Scope statement\nInformation on the products and services offered",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.4",
+      "clauseName": "OH&S management system",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Develop and operate an OHSMS - including any necessary processes",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 10,
+        "matchKey": "45001|4.4|e3d6c15f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Overall process map and individual process plans\nProject Plans\nDocumented processes\nRecords and evidence of processes being followed",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "4.4",
+      "clauseName": "OH&S management system",
+      "sectionId": "45001:4",
+      "subSectionId": null,
+      "requirement": "Determine the interactions and relationships of processes",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 11,
+        "matchKey": "45001|4.4|5646cf65|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": 10
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.1",
+      "clauseName": "Leadership and commitment",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "Top management demonstrate their leadership of and commitment to the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 13,
+        "matchKey": "45001|5.1|a8676fb4|0"
+      },
+      "imported": {
+        "evidenceExamples": "Attendance at management review and certification audits\nCommunication to workers and others about the OHSMS\nEstablishing the OH&S Policy\nSufficient resources have been provided\nAny other personal involvement in the OHSMS",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.2",
+      "clauseName": "OH&S policy",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "Top management establish, review and maintain a suitable policy",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 14,
+        "matchKey": "45001|5.2|c41453cd|0"
+      },
+      "imported": {
+        "evidenceExamples": "OH&S policy",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.2",
+      "clauseName": "OH&S policy",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "The policy is documented and implemented within the organization",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 15,
+        "matchKey": "45001|5.2|eaaec521|0"
+      },
+      "imported": {
+        "evidenceExamples": "OH&S policy is accessible:\ndisplayed on a notice board\navailable on the website\navailable through internal systems \nincluded with induction and training\ndemonstrated understanding of the policy during audits",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.2",
+      "clauseName": "OH&S policy",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "The policy is available to relevant interested parties",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 16,
+        "matchKey": "45001|5.2|97128f9|0"
+      },
+      "imported": {
+        "evidenceExamples": "Website\nContractor induction\nTenders",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.3",
+      "clauseName": "Organizational roles, responsibilities and authorities",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "Top management ensure that people know their OHSMS responsibilites and authorities",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 17,
+        "matchKey": "45001|5.3|cb9531be|0"
+      },
+      "imported": {
+        "evidenceExamples": "Organizational chart\nPosition Descriptions\nAuthority delegation\nKPI's or objectives\nRACI Matri",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.3",
+      "clauseName": "Organizational roles, responsibilities and authorities",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "Responsibility and authority is specifically assigned to manage and report on the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 18,
+        "matchKey": "45001|5.3|a700c103|0"
+      },
+      "imported": {
+        "evidenceExamples": "Position Description for relevant person",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "5.4",
+      "clauseName": "Consultation and participation of workers",
+      "sectionId": "45001:5",
+      "subSectionId": null,
+      "requirement": "Arrangements for non-managerial workers or their representatives to participate in and be consutled about the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 19,
+        "matchKey": "45001|5.4|28965ed0|0"
+      },
+      "imported": {
+        "evidenceExamples": "OHS committee\nReporting mechanisms for hazards, incidents and procedures",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1",
+      "requirement": "Determine the risks and opportunities that need to be addressed",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 22,
+        "matchKey": "45001|6.1.1|370ce83a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Use formal or informal risk assessment process (FMEA, Risk matrix)\nHigh risk processes may include a risk section also",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1",
+      "requirement": "Plan actions to address these risks and opportunities",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 23,
+        "matchKey": "45001|6.1.1|8fd4eeb8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Action plans following on from higher level analysis (SWOT)\nProcess actions and procedures to mitigate risk",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1",
+      "requirement": "Plan how to integrate and implement the actions into the OHSMS, and evaluate how effective they are",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 24,
+        "matchKey": "45001|6.1.1|1129cd19|0"
+      },
+      "imported": {
+        "evidenceExamples": "The OHSMS system demonstrates integration of risk and actions into daily processes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.2.1",
+      "clauseName": "Hazard identification",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Determine the process for identifying hazards",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 26,
+        "matchKey": "45001|6.1.2.1|7ee91853|0"
+      },
+      "imported": {
+        "evidenceExamples": "Hazard identificastion procedure - how you will identify hazards from activities\nHazard register",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.2.2",
+      "clauseName": "Assessment of OH&S risks and other risks to the OH&S management system",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Maintain a process, methodology and criteria to assess OH&S risk",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 27,
+        "matchKey": "45001|6.1.2.2|7fe4b266|0"
+      },
+      "imported": {
+        "evidenceExamples": "Risks and opportunity register",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.2.3",
+      "clauseName": "Assessment of OH&S opportunities and other opportunities for the OH&S management system",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Maintain a process to assess OH&S opportunities",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 28,
+        "matchKey": "45001|6.1.2.3|6b2cca33|0"
+      },
+      "imported": {
+        "evidenceExamples": "Risks and opportunity register",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.3",
+      "clauseName": "Determination of legal requirements and other requirements",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Consider what legal requirements and other requirements might apply in relation to OH&S hazards and risks",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 29,
+        "matchKey": "45001|6.1.3|74e23c0|0"
+      },
+      "imported": {
+        "evidenceExamples": "Compliance/legal review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.3",
+      "clauseName": "Determination of legal requirements and other requirements",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Maintain documented information of its compliance obligations",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 30,
+        "matchKey": "45001|6.1.3|e90cbe6c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Compliance obligations register/Legal register\nAccess to legislation\nStandards wathc/subscription services",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.4",
+      "clauseName": "Planning action",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Take action to address significant aspects, compliance obligations, risks and opportunities and evaluate their effectiveness",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 31,
+        "matchKey": "45001|6.1.4|4c0b9bb4|0"
+      },
+      "imported": {
+        "evidenceExamples": "Risk register\nAspects register",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.1.4",
+      "clauseName": "Planning action",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.1.2",
+      "requirement": "Integrate those actions into the business systems",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 32,
+        "matchKey": "45001|6.1.4|8bbc94ae|0"
+      },
+      "imported": {
+        "evidenceExamples": "Organizations procedure and management system",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.2.1",
+      "clauseName": "OH&S objectives",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.2",
+      "requirement": "Establish measurable objectives",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 34,
+        "matchKey": "45001|6.2.1|f22e7672|0"
+      },
+      "imported": {
+        "evidenceExamples": "Objective table, matrix or register (print or software)\nKPIs or SLAs\nReview and update at Management review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "6.2.2",
+      "clauseName": "Planning actions to achieve OH&S objectives",
+      "sectionId": "45001:6",
+      "subSectionId": "45001:6.2",
+      "requirement": "Document the action and responsibilities to achieve objectives",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 35,
+        "matchKey": "45001|6.2.2|638f6eb9|0"
+      },
+      "imported": {
+        "evidenceExamples": "Actions, responsibilities, target dates and evaluation plans for objectives are available",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.1",
+      "clauseName": "Resources",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "Determine and provide the resources needed for the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 37,
+        "matchKey": "45001|7.1|5171c8e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review assessing resource requirements\nResource gap analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "Determine the necessary levels of competence required for all levels of work",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 38,
+        "matchKey": "45001|7.2|2f1cea0e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training needs analysis\nPosition Descriptions\nPosition advertisement",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "Ensure that the people doing that work are competent",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 39,
+        "matchKey": "45001|7.2|226dc277|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training, education, experience, induction\nTraining budget and programme",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "Take actions to obtain the necessary competence (where required)",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 40,
+        "matchKey": "45001|7.2|58f75e8e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training budget and programme\nAssessment of meeting competence requirements",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "Retain records of competencies achieved",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 41,
+        "matchKey": "45001|7.2|169e77c8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training records\nCertificates\nLicences, permits",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.3",
+      "clauseName": "Awareness",
+      "sectionId": "45001:7",
+      "subSectionId": null,
+      "requirement": "People working under the organizations control are to be aware of the OH&S policy, OH&S objectives, contribution to the OHSMS, implications of not conforming to the OHSMS, incidents, investigations, hazards, risks",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 42,
+        "matchKey": "45001|7.3|e98b423|0"
+      },
+      "imported": {
+        "evidenceExamples": "Induction/Onboarding training and records\nTeam updates\nKPIs\nAvailability of OHSMS documentation\nCorrespondence with suppliers/contractors",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.4.1",
+      "clauseName": "General",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.4",
+      "requirement": "Determine what to communicate, with whom, when and how and by who - for both internal and external comms",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 44,
+        "matchKey": "45001|7.4.1|868c16f8|0"
+      },
+      "imported": {
+        "evidenceExamples": "What: Interested parties needs and expectations (4.2), legal requirements (4.2), internal staff needs, supplier needs, customer needs\nWho: Position descriptions and responsibilities\nHow: internal notices/memos, emails, newsletters, general correspondence, reports, meeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.4.1",
+      "clauseName": "General",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.4",
+      "requirement": "Retain documented information as evidence",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 45,
+        "matchKey": "45001|7.4.1|236c5b66|0"
+      },
+      "imported": {
+        "evidenceExamples": "as above",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.4.2",
+      "clauseName": "Internal communication",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.4",
+      "requirement": "Internally communicate relevant OHSMS information among various levels and functions of the organization",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 46,
+        "matchKey": "45001|7.4.2|d00abb39|0"
+      },
+      "imported": {
+        "evidenceExamples": "Stand up meetings\nTeam meetings\nManagement updates\nNoticeboards\nMemos/emails",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.4.3",
+      "clauseName": "External communication",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.4",
+      "requirement": "Externally communicate information relevant to the OHSMS, considering compliance obligations also",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 47,
+        "matchKey": "45001|7.4.3|6ebb566|0"
+      },
+      "imported": {
+        "evidenceExamples": "Reports\nMeeting minutes\nFlyers \nCommunity events",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.5.1",
+      "clauseName": "General",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.5",
+      "requirement": "The OHSMS includes documented information required by the Standard and otherwise considered necessary",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 49,
+        "matchKey": "45001|7.5.1|8b573734|0"
+      },
+      "imported": {
+        "evidenceExamples": "Scope, Policy and Objectives\nAll mandatory documented information\nProcess documentation to maintain control of processes and outputs (as needed)\nManagement review of documentation requirements to improve the OHSMS",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.5.2",
+      "clauseName": "Creating and updating",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.5",
+      "requirement": "Ensure appropriate identification and description, format and media, review and approval",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 50,
+        "matchKey": "45001|7.5.2|b5ea3c60|0"
+      },
+      "imported": {
+        "evidenceExamples": "Document control procedure\nCorporate style guide",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.5.3",
+      "clauseName": "Control of documented information",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.5",
+      "requirement": "Information security: Ensure the CIA triad (confidentiality, integrity, availability) and proper use of documented information",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 51,
+        "matchKey": "45001|7.5.3|7f122182|0"
+      },
+      "imported": {
+        "evidenceExamples": "Information security policy/procedure\nData privacy policy\nInformation security training, awareness sesssions\nInternal audit results",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "7.5.3",
+      "clauseName": "Control of documented information",
+      "sectionId": "45001:7",
+      "subSectionId": "45001:7.5",
+      "requirement": "Exercise control over documents and records",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 52,
+        "matchKey": "45001|7.5.3|3c15b930|0"
+      },
+      "imported": {
+        "evidenceExamples": "Backup protocol\nDocument control procedure\nSoftware maintenance",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1",
+      "requirement": "Manage the processes needed for product/service provision and to address risks and opportunities",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 55,
+        "matchKey": "45001|8.1.1|363e9ccf|0"
+      },
+      "imported": {
+        "evidenceExamples": "Procedures/process plans\nProject Plans\nOH&S management plans\nHierarchy of controls used",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.2",
+      "clauseName": "Eliminating hazards and reducing OH&S risks",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1",
+      "requirement": "Use the hierarcy of controls to implement controls and eliminatin of OH&S hazards and risks",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 56,
+        "matchKey": "45001|8.1.2|fee68448|0"
+      },
+      "imported": {
+        "evidenceExamples": "Hierarchy of controls used",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.3",
+      "clauseName": "Management of change",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1",
+      "requirement": "Identify hazards and risks associated with change prior to those changes being made. Manage those changes.\nConsider the impacts of unplanned changes, and act to mitigate risk / take the opportunities they pose.",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 57,
+        "matchKey": "45001|8.1.3|62ce28dc|0"
+      },
+      "imported": {
+        "evidenceExamples": "Project planning/management\nDocument control\nVariation or change management procedure",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.4.1",
+      "clauseName": "General",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1.4",
+      "requirement": "Establish, implement and maintain a process(es) to control the procurement of products and services.",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 59,
+        "matchKey": "45001|8.1.4.1|c859434c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Procurement procedure\nSupplier Agreement or Contract",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.4.2",
+      "clauseName": "Contractors",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1.4",
+      "requirement": "Identify hazards from contractor activities, the organizations activities and activities that may impact other interested parties",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 60,
+        "matchKey": "45001|8.1.4.2|e9a3def2|0"
+      },
+      "imported": {
+        "evidenceExamples": "Hazard identification checklist\nHazard Register\nSWMS",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.1.4.3",
+      "clauseName": "Outsourcing",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1.4",
+      "requirement": "Control outsourced functions and processes",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 61,
+        "matchKey": "45001|8.1.4.3|23b939ad|0"
+      },
+      "imported": {
+        "evidenceExamples": "Supplier Agreement or Contract\nSupplier Performance reviews or evaluations",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "8.2",
+      "clauseName": "Emergency preparedness and response",
+      "sectionId": "45001:8",
+      "subSectionId": "45001:8.1.4",
+      "requirement": "Have processes in place to prepare for and respond to emergencies:\n- Respond to emergencies\n- Act to prevent or mitigate their consequences\n- Test responses (drills)\n- Periodically review and update plans\n- maintain documented information",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 62,
+        "matchKey": "45001|8.2|a107940f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Potential emergencies should have been identified in addressing clause 6.1\nReview of emergency response plans should particularly take place after an emergency has occurred - performance can then be evaluated and plans improved as necessary\nEmergency drill checklist and form\nEmergency response plans and procedures",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Define requirements for monitoring and measurement (including the methods to be used, when checks are to be performed, analysis and evaluation)",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 65,
+        "matchKey": "45001|9.1.1|1b308b3b|0"
+      },
+      "imported": {
+        "evidenceExamples": "Inspection and Test Plan\nChecklists\nAudiometry Testing (where required)\nCrystalline Silica monitoring (where required)",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Ensure that required monitoring and measurement activities are implemented and retain appropriate documented information as evidence",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 66,
+        "matchKey": "45001|9.1.1|b04db332|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit\nManagement review\nInterim monitoring of product compliance",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Evaluate the performance and the effectiveness of the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 67,
+        "matchKey": "45001|9.1.1|628f36a8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit\nManagement review\nInterim monitoring of product compliance\nData analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Analyse and evaluate appropriate data and information arising from monitoring, measurement and other sources",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 68,
+        "matchKey": "45001|9.1.1|a972302d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review\nOH&S management system reporting\nTeam meeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Calibrated equipment verified and maintained",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 69,
+        "matchKey": "45001|9.1.1|2fdd036|0"
+      },
+      "imported": {
+        "evidenceExamples": "Equipment calibration register\nCertificates of testing\nFire equipment testing\nElectrical test and tag",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.2",
+      "clauseName": "Evaluation of compliance",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Determine frequency of compliance evaluations and take actions",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 70,
+        "matchKey": "45001|9.1.2|946b85e3|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit programme/schedule\nMonitoring programme",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.1.2",
+      "clauseName": "Evaluation of compliance",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.1",
+      "requirement": "Retain documented information as evidence of the compliance evaluation results",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 71,
+        "matchKey": "45001|9.1.2|dfad5839|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit reports\nMonitoring reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.1",
+      "clauseName": "General",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Conduct internal audits at planned intervals",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 73,
+        "matchKey": "45001|9.2.1|3bd0ffe6|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit schedule or programme",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.2",
+      "clauseName": "Internal audit programme",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "The audit programme takes into account objectives and risks",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 74,
+        "matchKey": "45001|9.2.2|2bae247c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Adjust frequency/scope of audits as required",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.2",
+      "clauseName": "Internal audit programme",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Establish criteria and scope for each audit",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 75,
+        "matchKey": "45001|9.2.2|677f9b22|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit checklist",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.2",
+      "clauseName": "Internal audit programme",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Ensure the impartiality and objectiveness of auditors",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 76,
+        "matchKey": "45001|9.2.2|9b955e47|0"
+      },
+      "imported": {
+        "evidenceExamples": "People should not be auditing the work that they generate the records/evidence for",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.2",
+      "clauseName": "Internal audit programme",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Take necessary correction and correctiv actions without undue delay",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 77,
+        "matchKey": "45001|9.2.2|f9f51279|0"
+      },
+      "imported": {
+        "evidenceExamples": "Corrective Action reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.2.2",
+      "clauseName": "Internal audit programme",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Retain documented information as evidence",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 78,
+        "matchKey": "45001|9.2.2|236c5b66|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit report records",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.3",
+      "clauseName": "Management review",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Top management to review the OHSMS at planned intervals",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 79,
+        "matchKey": "45001|9.3|a6025e69|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review schedule or process",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.3",
+      "clauseName": "Management review",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Ensure all input requirements are reviewed by top management",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 80,
+        "matchKey": "45001|9.3|2f5c3553|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review agenda\nMeeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.3",
+      "clauseName": "Management review",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Outputs include decisions and actions related to improvement opportunities and any need for changes to the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 81,
+        "matchKey": "45001|9.3|44e5589f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Meeting minutes and actions",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "9.3",
+      "clauseName": "Management review",
+      "sectionId": "45001:9",
+      "subSectionId": "45001:9.2",
+      "requirement": "Retain documented information",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 82,
+        "matchKey": "45001|9.3|4c475e81|0"
+      },
+      "imported": {
+        "evidenceExamples": "As above",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.1",
+      "clauseName": "General",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Determine and select opportunities for improvement and then implement the necessary actions",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 84,
+        "matchKey": "45001|10.1|fbf1f6c4|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.2",
+      "clauseName": "Incident, nonconformity and corrective action",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "When an incident of nonconformity occurs, take action to deal with the immediate issue",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 85,
+        "matchKey": "45001|10.2|bf0fa34f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.2",
+      "clauseName": "Incident, nonconformity and corrective action",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Consider any similar nonconformites that might exist",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 86,
+        "matchKey": "45001|10.2|9b97c6d3|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.2",
+      "clauseName": "Incident, nonconformity and corrective action",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Take action to identify and address the root cause(s) and make any necessary changes to the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 87,
+        "matchKey": "45001|10.2|c9f68506|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports\nRoot cause analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.2",
+      "clauseName": "Incident, nonconformity and corrective action",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Retain documented information as evidence",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 88,
+        "matchKey": "45001|10.2|236c5b66|0"
+      },
+      "imported": {
+        "evidenceExamples": "as above",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.3",
+      "clauseName": "Continual improvement",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Continually improve the suitability, adequacy and effectiveness of the OHSMS",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 89,
+        "matchKey": "45001|10.3|54d9edb2|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "45001",
+      "clause": "10.3",
+      "clauseName": "Continual improvement",
+      "sectionId": "45001:10",
+      "subSectionId": null,
+      "requirement": "Analyse data to confirm if there are opportunities for improvement",
+      "source": {
+        "sheet": "ISO 45001",
+        "row": 90,
+        "matchKey": "45001|10.3|565edc01|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review",
+        "evidenceMergedFromRow": null
+      }
+    }
+  ]
+}

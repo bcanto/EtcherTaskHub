@@ -1,0 +1,291 @@
+{
+  "templateId": "hazard-risk-register",
+  "title": "Hazard and Risk Register",
+  "filenameStem": "Hazard_Risk_Register",
+  "documentType": "register",
+  "purpose": "Identifies the work health and safety hazards of the organisation's work, assesses the risks they create, and records the controls chosen by the hierarchy of control, their owners and how they are reviewed — consulting the workers who do the work.",
+  "requiredProfileFields": [
+    "legal_name",
+    "business_activities",
+    "main_processes",
+    "operating_locations",
+    "whs_hazards",
+    "approval_roles"
+  ],
+  "questions": [
+    {
+      "id": "areas",
+      "text": "Which of these hazard areas apply to the work? Tick only what applies — each ticked area becomes a confirmed starting point for the register; add anything else under Other.",
+      "kind": "checklist",
+      "allowOther": true,
+      "items": [
+        {
+          "id": "electrical",
+          "label": "Electrical risks and energised electrical work",
+          "source": 1,
+          "note": "WHS (General) Regulations 2022 (WA), Part 4.7"
+        },
+        {
+          "id": "falls",
+          "label": "Falls (work at height)",
+          "source": 1,
+          "note": "Part 4.4"
+        },
+        {
+          "id": "confined",
+          "label": "Confined spaces",
+          "source": 1,
+          "note": "Part 4.3"
+        },
+        {
+          "id": "noise",
+          "label": "Noise",
+          "source": 1,
+          "note": "Part 4.1"
+        },
+        {
+          "id": "manual",
+          "label": "Hazardous manual tasks",
+          "source": 1,
+          "note": "Part 4.2"
+        },
+        {
+          "id": "hrw",
+          "label": "High risk work (licensed work)",
+          "source": 1,
+          "note": "Part 4.5"
+        },
+        {
+          "id": "plant",
+          "label": "Plant and structures, including mobile plant",
+          "source": 1,
+          "note": "Chapter 5"
+        },
+        {
+          "id": "construction",
+          "label": "Construction work",
+          "source": 1,
+          "note": "Chapter 6"
+        },
+        {
+          "id": "chemicals",
+          "label": "Hazardous chemicals",
+          "source": 1,
+          "note": "Chapter 7"
+        },
+        {
+          "id": "asbestos",
+          "label": "Asbestos",
+          "source": 1,
+          "note": "Chapter 8"
+        },
+        {
+          "id": "silica",
+          "label": "Crystalline silica",
+          "source": 1,
+          "note": "Chapter 8A"
+        },
+        {
+          "id": "psychosocial",
+          "label": "Psychosocial hazards — from how work is designed or managed, the work environment, plant, or workplace interactions and behaviours",
+          "source": 1,
+          "note": "Part 3.2, Division 11"
+        },
+        {
+          "id": "driving",
+          "label": "Driving commercial vehicles",
+          "source": 1,
+          "note": "Part 4.10"
+        },
+        {
+          "id": "mine-electrical",
+          "label": "Electricity at a mine",
+          "source": 2,
+          "note": "WHS (Mines) Regulations 2022 (WA), electricity in mines"
+        },
+        {
+          "id": "mining-hazards",
+          "label": "Principal mining hazards at a mine the organisation works at (for example ground instability, inrush, roads and mobile-plant areas, fire or explosion)",
+          "source": 2,
+          "note": "identified and managed by the mine operator; the organisation works within those controls"
+        }
+      ]
+    },
+    {
+      "id": "method",
+      "text": "Which risk rating method does the organisation use?",
+      "kind": "choice",
+      "options": [
+        "5 × 5 likelihood × consequence",
+        "4 × 4 likelihood × consequence",
+        "3 × 3 likelihood × consequence",
+        "Other (describe)"
+      ]
+    },
+    {
+      "id": "consultation",
+      "text": "How are the workers who do the work consulted when hazards are identified and controls chosen?",
+      "kind": "text"
+    },
+    {
+      "id": "review",
+      "text": "When is the register reviewed (for example after an incident, a change, or new work)?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Method, rating matrix and consultation",
+    "Register of hazards, risks and controls",
+    "Controls by the hierarchy of control",
+    "Owners and review dates",
+    "Link to the risk and opportunity register and emergency plan",
+    "Review record"
+  ],
+  "optionalSections": [
+    "Task-based risk assessments (for example safe work method statements) referenced from the register"
+  ],
+  "expectedRecords": [
+    "The register itself",
+    "Records of consultation with workers",
+    "Inspection and review records showing controls are checked"
+  ],
+  "draftingRules": [
+    "Table columns: ID | Task or area | Hazard | Risk | Inherent rating | Controls (by the hierarchy) | Residual rating | Owner | Review date.",
+    "Build rows only from the ticked areas, the confirmed hazards and the answers. Where nothing is confirmed, leave a placeholder row — never invent hazards.",
+    "Controls follow the hierarchy of control as the Safe Work Australia code cited describes: eliminate first; then substitute, isolate or use engineering controls; then administrative controls; then PPE.",
+    "Cite a regulation part only where its hazard area is ticked."
+  ],
+  "reviewerChecklist": [
+    "Every hazard traces to real work or a ticked area",
+    "Controls follow the hierarchy of control",
+    "Workers were consulted",
+    "Each control has an owner and a review date",
+    "Mine-site work reflects the mine operator's requirements"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    },
+    {
+      "title": "Work Health and Safety (General) Regulations 2022 (WA) — official consolidation",
+      "publisher": "Western Australian Legislation",
+      "url": "https://legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_48400.htm/$FILE/Work%20Health%20and%20Safety%20(General)%20Regulations%202022%20-%20[00-n0-00].html?OpenElement=",
+      "checkedOn": "2026-10-03"
+    },
+    {
+      "title": "Work Health and Safety (Mines) Regulations 2022 (WA) — official consolidation",
+      "publisher": "Western Australian Legislation",
+      "url": "https://www.legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_48401.htm/$FILE/Work%20Health%20and%20Safety%20(Mines)%20Regulations%202022%20-%20%5B01-e0-00%5D.html?OpenElement=",
+      "checkedOn": "2026-10-03"
+    },
+    {
+      "title": "Model Code of Practice: How to manage work health and safety risks (November 2024)",
+      "publisher": "Safe Work Australia",
+      "url": "https://www.safeworkaustralia.gov.au/sites/default/files/2024-11/model_code_of_practice-how_to_manage_work_health_and_safety_risks-nov24.pdf",
+      "checkedOn": "2026-10-02"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "6.1",
+      "stableKey": "9001|6.1|370ce83a|0",
+      "workbookRow": 24,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "8.4.2",
+      "stableKey": "9001|8.4.2|e2e53b55|0",
+      "workbookRow": 72,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "6.1.1",
+      "stableKey": "14001|6.1.1|370ce83a|0",
+      "workbookRow": 21,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "6.1.2",
+      "stableKey": "14001|6.1.2|46364324|0",
+      "workbookRow": 24,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.4",
+      "stableKey": "45001|5.4|28965ed0|0",
+      "workbookRow": 19,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.1.1",
+      "stableKey": "45001|6.1.1|370ce83a|0",
+      "workbookRow": 22,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.1.2.1",
+      "stableKey": "45001|6.1.2.1|7ee91853|0",
+      "workbookRow": 26,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.1.2.2",
+      "stableKey": "45001|6.1.2.2|7fe4b266|0",
+      "workbookRow": 27,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.1.2.3",
+      "stableKey": "45001|6.1.2.3|6b2cca33|0",
+      "workbookRow": 28,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "8.1.4.2",
+      "stableKey": "45001|8.1.4.2|e9a3def2|0",
+      "workbookRow": 60,
+      "why": "evidence example"
+    }
+  ],
+  "documents": [
+    "Hazard Register"
+  ]
+}

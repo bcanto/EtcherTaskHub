@@ -1,0 +1,210 @@
+{
+  "templateId": "context-register",
+  "title": "Context of the Organisation Register",
+  "filenameStem": "Context_Register",
+  "documentType": "register",
+  "purpose": "Records the external and internal issues that matter to the organisation's purpose and direction and affect what its management system can achieve, and how those issues are monitored and reviewed.",
+  "requiredProfileFields": [
+    "legal_name",
+    "business_activities",
+    "operating_locations",
+    "internal_issues",
+    "external_issues",
+    "ims_scope",
+    "jurisdiction"
+  ],
+  "questions": [
+    {
+      "id": "method",
+      "text": "Which method does the organisation use to identify its issues?",
+      "kind": "choice",
+      "options": [
+        "SWOT",
+        "PESTLE",
+        "SWOT and PESTLE",
+        "Other (describe)"
+      ]
+    },
+    {
+      "id": "climate",
+      "text": "Is climate change a relevant issue for the organisation? Record the decision and the reason. (The 2024 climate-change amendments to ISO 9001, 14001 and 45001 ask organisations to make this determination.)",
+      "kind": "text"
+    },
+    {
+      "id": "owner",
+      "text": "Who owns and maintains the register (role)?",
+      "kind": "text"
+    },
+    {
+      "id": "review",
+      "text": "How often, and where, are the issues reviewed (for example at management review)?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Purpose and method used",
+    "External issues (with how each is monitored)",
+    "Internal issues (with how each is monitored)",
+    "Climate change determination",
+    "Effect on the management system and link to risks and opportunities",
+    "Monitoring and review record"
+  ],
+  "optionalSections": [
+    "Completed SWOT or PESTLE worksheet as an appendix"
+  ],
+  "expectedRecords": [
+    "The completed SWOT or PESTLE worksheet",
+    "Management review minutes that review the issues",
+    "Risk and opportunity register entries that arise from the issues"
+  ],
+  "draftingRules": [
+    "Lay the issues out as a table: Issue | Internal or external | Category | Effect on the management system | Linked risk or opportunity | Owner | Last reviewed.",
+    "List only the issues supplied as confirmed information or answers; for anything else leave a placeholder row."
+  ],
+  "reviewerChecklist": [
+    "Every listed issue is real for this organisation",
+    "Each issue says how it is monitored",
+    "The climate change decision is recorded with a reason",
+    "Issues are linked to the risk and opportunity register"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "9001|4.1|d819ea7e|0",
+      "workbookRow": 3,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "9001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "4.2",
+      "stableKey": "9001|4.2|d21d3e45|0",
+      "workbookRow": 5,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "6.1",
+      "stableKey": "9001|6.1|8fd4eeb8|0",
+      "workbookRow": 25,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.1.1",
+      "stableKey": "9001|7.1.1|5ddb105|0",
+      "workbookRow": 32,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.1.2",
+      "stableKey": "9001|7.1.2|775d9c52|0",
+      "workbookRow": 33,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "14001|4.1|d819ea7e|0",
+      "workbookRow": 3,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "14001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "4.2",
+      "stableKey": "14001|4.2|d21d1139|0",
+      "workbookRow": 5,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "6.1.1",
+      "stableKey": "14001|6.1.1|8fd4eeb8|0",
+      "workbookRow": 22,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "4.1",
+      "stableKey": "45001|4.1|d819ea7e|0",
+      "workbookRow": 3,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "4.1",
+      "stableKey": "45001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "4.2",
+      "stableKey": "45001|4.2|bfa859ce|0",
+      "workbookRow": 5,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.1.1",
+      "stableKey": "45001|6.1.1|8fd4eeb8|0",
+      "workbookRow": 23,
+      "why": "evidence example"
+    }
+  ],
+  "documents": [
+    "Context and Strategic Issues Register"
+  ]
+}

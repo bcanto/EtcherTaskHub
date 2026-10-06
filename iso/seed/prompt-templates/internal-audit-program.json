@@ -1,0 +1,259 @@
+{
+  "templateId": "internal-audit-program",
+  "title": "Internal Audit Program",
+  "filenameStem": "Internal_Audit_Program",
+  "documentType": "plan",
+  "purpose": "The schedule of internal audits over a cycle, covering every process, standard and site, set according to importance, changes and previous results.",
+  "requiredProfileFields": [
+    "main_processes",
+    "operating_locations",
+    "standards_in_scope",
+    "org_roles"
+  ],
+  "questions": [
+    {
+      "id": "cycle",
+      "text": "Over what period does the program run?",
+      "kind": "choice",
+      "options": [
+        "12 months",
+        "3 years (certification cycle)",
+        "Other (describe)"
+      ]
+    },
+    {
+      "id": "importance",
+      "text": "Which processes are most important or highest risk, and should be audited more often?",
+      "kind": "text"
+    },
+    {
+      "id": "auditors",
+      "text": "Who is available to audit (names or roles), and what can each not audit for impartiality?",
+      "kind": "text"
+    },
+    {
+      "id": "previous",
+      "text": "What did previous audits find that should shape this program?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Program period and objectives",
+    "Coverage matrix (process or area × standards × planned month)",
+    "Auditor assignments",
+    "How the program is adjusted",
+    "Status tracking"
+  ],
+  "optionalSections": [
+    "Supplier or second-party audits"
+  ],
+  "expectedRecords": [
+    "The approved program",
+    "Audit reports for each planned audit",
+    "Records of program changes and why"
+  ],
+  "draftingRules": [
+    "Lay the coverage out as a table so gaps are visible at a glance.",
+    "Use only processes, sites and people supplied as confirmed information or answers."
+  ],
+  "reviewerChecklist": [
+    "Every process and site is covered in the cycle",
+    "Higher-risk processes are audited more often",
+    "No auditor is assigned to their own work",
+    "Approved by the stated role"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    },
+    {
+      "title": "ISO 9001 Auditing Practices Group Guidance on: Internal Audits",
+      "publisher": "ISO/TC 176 and IAF",
+      "url": "https://committee.iso.org/files/live/sites/tc176/files/PDF%20APG%20New%20Disclaimer%2012-2023/ISO-TC%20176-TF_APG-InternalAudit.pdf",
+      "checkedOn": "2026-10-02"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|3bd0ffe6|0",
+      "workbookRow": 99,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|2bae247c|0",
+      "workbookRow": 100,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|677f9b22|0",
+      "workbookRow": 101,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|9b955e47|0",
+      "workbookRow": 102,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|f9f51279|0",
+      "workbookRow": 103,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.2",
+      "stableKey": "9001|9.2|236c5b66|0",
+      "workbookRow": 104,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.1.2",
+      "stableKey": "14001|9.1.2|946b85e3|0",
+      "workbookRow": 59,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.1",
+      "stableKey": "14001|9.2.1|3bd0ffe6|0",
+      "workbookRow": 62,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|2bae247c|0",
+      "workbookRow": 63,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|677f9b22|0",
+      "workbookRow": 64,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|9b955e47|0",
+      "workbookRow": 65,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|f9f51279|0",
+      "workbookRow": 66,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.2.2",
+      "stableKey": "14001|9.2.2|236c5b66|0",
+      "workbookRow": 67,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.1.2",
+      "stableKey": "45001|9.1.2|946b85e3|0",
+      "workbookRow": 70,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.1",
+      "stableKey": "45001|9.2.1|3bd0ffe6|0",
+      "workbookRow": 73,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|2bae247c|0",
+      "workbookRow": 74,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|677f9b22|0",
+      "workbookRow": 75,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|9b955e47|0",
+      "workbookRow": 76,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|f9f51279|0",
+      "workbookRow": 77,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.2.2",
+      "stableKey": "45001|9.2.2|236c5b66|0",
+      "workbookRow": 78,
+      "why": "clause"
+    }
+  ],
+  "documents": [
+    "Risk-based Audit Programme"
+  ]
+}

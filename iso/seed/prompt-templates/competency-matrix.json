@@ -1,0 +1,236 @@
+{
+  "templateId": "competency-matrix",
+  "title": "Competency Matrix",
+  "filenameStem": "Competency_Matrix",
+  "documentType": "register",
+  "purpose": "Shows, for each role, the competence it needs (education, training, licences, experience), who holds it and until when, so gaps are seen and closed before people do the work.",
+  "requiredProfileFields": [
+    "org_roles",
+    "business_activities",
+    "main_processes"
+  ],
+  "questions": [
+    {
+      "id": "credentials",
+      "text": "Which of these does the work require? Tick only what applies — each ticked item becomes a confirmed requirement in the matrix; add anything else (for example client site tickets) under Other.",
+      "kind": "checklist",
+      "allowOther": true,
+      "items": [
+        {
+          "id": "electrician",
+          "label": "Electrical worker's licence (electrician)",
+          "source": 1,
+          "note": null
+        },
+        {
+          "id": "contractor",
+          "label": "Electrical contractor's licence (held by the business)",
+          "source": 1,
+          "note": null
+        },
+        {
+          "id": "hrw-licence",
+          "label": "High risk work licences for the classes of work done",
+          "source": 2,
+          "note": "Part 4.5"
+        },
+        {
+          "id": "confined-training",
+          "label": "Training for work in confined spaces",
+          "source": 2,
+          "note": "Part 4.3"
+        },
+        {
+          "id": "asbestos-training",
+          "label": "Asbestos training where asbestos may be encountered",
+          "source": 2,
+          "note": "Chapter 8"
+        },
+        {
+          "id": "mine-induction",
+          "label": "Mine site inductions required by the mine operator",
+          "source": 3,
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "roles",
+      "text": "Which roles should the matrix cover?",
+      "kind": "text"
+    },
+    {
+      "id": "evaluation",
+      "text": "How is competence checked (for example licence checks, assessments, supervised work) and how is a gap closed?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Roles covered",
+    "Competence required per role",
+    "Matrix of people against requirements (with expiry dates)",
+    "How competence is evaluated and gaps closed",
+    "Review record"
+  ],
+  "optionalSections": [
+    "Planned training for the next period"
+  ],
+  "expectedRecords": [
+    "The matrix itself",
+    "Copies of licences and certificates (or a register of them) with expiry dates",
+    "Records of training and of competence evaluations"
+  ],
+  "draftingRules": [
+    "Rows are people (or roles), columns are requirements; cells show held / expiry date / gap.",
+    "Include only requirements that are ticked or confirmed; never invent licences or people.",
+    "Licences are listed by their title as published in the instrument ticked."
+  ],
+  "reviewerChecklist": [
+    "Every role has its requirements defined",
+    "Every licence is in date",
+    "Gaps have a plan and a date",
+    "The matrix matches the people actually doing the work"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    },
+    {
+      "title": "Electricity (Licensing) Regulations 1991 (WA) — official version",
+      "publisher": "Western Australian Legislation",
+      "url": "https://legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_46377.pdf/$FILE/Electricity%20(Licensing)%20Regulations%201991%20-%20[07-z0-01].pdf?OpenElement=",
+      "checkedOn": "2026-10-03"
+    },
+    {
+      "title": "Work Health and Safety (General) Regulations 2022 (WA) — official consolidation",
+      "publisher": "Western Australian Legislation",
+      "url": "https://legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_48400.htm/$FILE/Work%20Health%20and%20Safety%20(General)%20Regulations%202022%20-%20[00-n0-00].html?OpenElement=",
+      "checkedOn": "2026-10-03"
+    },
+    {
+      "title": "Work Health and Safety (Mines) Regulations 2022 (WA) — official consolidation",
+      "publisher": "Western Australian Legislation",
+      "url": "https://www.legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_48401.htm/$FILE/Work%20Health%20and%20Safety%20(Mines)%20Regulations%202022%20-%20%5B01-e0-00%5D.html?OpenElement=",
+      "checkedOn": "2026-10-03"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "9001|7.2|2f1cea0e|0",
+      "workbookRow": 40,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "9001|7.2|226dc277|0",
+      "workbookRow": 41,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "9001|7.2|58f75e8e|0",
+      "workbookRow": 42,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "9001|7.2|169e77c8|0",
+      "workbookRow": 43,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "14001|7.2|2f1cea0e|0",
+      "workbookRow": 34,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "14001|7.2|226dc277|0",
+      "workbookRow": 35,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "14001|7.2|58f75e8e|0",
+      "workbookRow": 36,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.2",
+      "stableKey": "14001|7.2|169e77c8|0",
+      "workbookRow": 37,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.2",
+      "stableKey": "45001|7.2|2f1cea0e|0",
+      "workbookRow": 38,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.2",
+      "stableKey": "45001|7.2|226dc277|0",
+      "workbookRow": 39,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.2",
+      "stableKey": "45001|7.2|58f75e8e|0",
+      "workbookRow": 40,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.2",
+      "stableKey": "45001|7.2|169e77c8|0",
+      "workbookRow": 41,
+      "why": "clause"
+    }
+  ],
+  "documents": [
+    "Skills and Competency Matrix"
+  ]
+}

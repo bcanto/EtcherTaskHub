@@ -1,0 +1,1879 @@
+{
+  "seedKey": "9001-2015",
+  "standardCode": "9001",
+  "edition": "2015",
+  "label": "ISO 9001:2015 — Etcher wording",
+  "status": "approved",
+  "wording": "Etcher's own paraphrase of each requirement, not ISO text (plan D8). Check the licensed standard for the authoritative text.",
+  "scopeNote": "Base 2015 edition as written in the source workbook. Does NOT include the 2024 climate-change amendment (Amd 1:2024) — the workbook predates it (plan A67).",
+  "sourceFilename": "Etcher ISO gap analysis workbook V2.0 (library columns only)",
+  "sourceSha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f",
+  "sections": [
+    {
+      "id": "9001:4",
+      "standard": "9001",
+      "clause": "4",
+      "title": "Context of the Organization",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 2
+      }
+    },
+    {
+      "id": "9001:5",
+      "standard": "9001",
+      "clause": "5",
+      "title": "Leadership",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 13
+      }
+    },
+    {
+      "id": "9001:5.1",
+      "standard": "9001",
+      "clause": "5.1",
+      "title": "Leadership and commitment",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 14
+      }
+    },
+    {
+      "id": "9001:5.2",
+      "standard": "9001",
+      "clause": "5.2",
+      "title": "Policy",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 17
+      }
+    },
+    {
+      "id": "9001:6",
+      "standard": "9001",
+      "clause": "6",
+      "title": "Planning",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 23
+      }
+    },
+    {
+      "id": "9001:7",
+      "standard": "9001",
+      "clause": "7",
+      "title": "Support",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 30
+      }
+    },
+    {
+      "id": "9001:7.1",
+      "standard": "9001",
+      "clause": "7.1",
+      "title": "Resources",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 31
+      }
+    },
+    {
+      "id": "9001:7.1.5",
+      "standard": "9001",
+      "clause": "7.1.5",
+      "title": "Monitoring and measuring resources",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 36
+      }
+    },
+    {
+      "id": "9001:7.5",
+      "standard": "9001",
+      "clause": "7.5",
+      "title": "Documented information",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 46
+      }
+    },
+    {
+      "id": "9001:8",
+      "standard": "9001",
+      "clause": "8",
+      "title": "Operation",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 51
+      }
+    },
+    {
+      "id": "9001:8.2",
+      "standard": "9001",
+      "clause": "8.2",
+      "title": "Requirements for products and services",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 53
+      }
+    },
+    {
+      "id": "9001:8.3",
+      "standard": "9001",
+      "clause": "8.3",
+      "title": "Design and development of products and services",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 61
+      }
+    },
+    {
+      "id": "9001:8.4",
+      "standard": "9001",
+      "clause": "8.4",
+      "title": "Control of externally provided processes, products and services",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 68
+      }
+    },
+    {
+      "id": "9001:8.5",
+      "standard": "9001",
+      "clause": "8.5",
+      "title": "Production and service provision",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 75
+      }
+    },
+    {
+      "id": "9001:9",
+      "standard": "9001",
+      "clause": "9",
+      "title": "Performance Evaluation",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 92
+      }
+    },
+    {
+      "id": "9001:9.1",
+      "standard": "9001",
+      "clause": "9.1",
+      "title": "Monitoring, measurement, analysis and evaluation",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 93
+      }
+    },
+    {
+      "id": "9001:9.3",
+      "standard": "9001",
+      "clause": "9.3",
+      "title": "Management Review",
+      "level": 2,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 105
+      }
+    },
+    {
+      "id": "9001:10",
+      "standard": "9001",
+      "clause": "10",
+      "title": "Improvement",
+      "level": 1,
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 110
+      }
+    }
+  ],
+  "items": [
+    {
+      "standard": "9001",
+      "clause": "4.1",
+      "clauseName": "Understanding the organization and its context",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Determine what factors may affect the organization's strategy and its ability to achieve intended results",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 3,
+        "matchKey": "9001|4.1|d819ea7e|0"
+      },
+      "imported": {
+        "evidenceExamples": "PEST Analysis (PESTEL)\nSWOT Analysis\nBusiness Plan\nStrategic Plan",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.1",
+      "clauseName": "Understanding the organization and its context",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Monitor and review information about those issues",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 4,
+        "matchKey": "9001|4.1|33a7464d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management Review\nPlanned/scheduled reviews",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of interested parties",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Determine WHO the interested parties are relevant to the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 5,
+        "matchKey": "9001|4.2|d21d3e45|0"
+      },
+      "imported": {
+        "evidenceExamples": "Who are relevant interested parties? People or groups of people (organizations) that can affect the QMS or be affected by the QMS. These could be identified with the process followed for 4.1 above:\nPEST Analysis\nSWOT Analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of interested parties",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Determine the requirements relevant to the QMS for the identified interested parties",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 6,
+        "matchKey": "9001|4.2|d493d37e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Legislation review\nClient feedback\nWorker/Contractor consultation\nContract requirements",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.2",
+      "clauseName": "Understanding the needs and expectations of interested parties",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Monitor and review requirements and interested parties",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 7,
+        "matchKey": "9001|4.2|da71e94d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management Review\nPlanned/scheduled reviews",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.3",
+      "clauseName": "Determining the scope of the quality management system",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Define and document the scope of the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 8,
+        "matchKey": "9001|4.3|4bbe69b1|0"
+      },
+      "imported": {
+        "evidenceExamples": "Scope statement\nInformation on the products and services offered",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.3",
+      "clauseName": "Determining the scope of the quality management system",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Include justification for areas not applicable",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 9,
+        "matchKey": "9001|4.3|2a6a93c3|0"
+      },
+      "imported": {
+        "evidenceExamples": "Scope statement including justification for any areas claimed as not applicable",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.4",
+      "clauseName": "Quality management system and its processes",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Determine the inputs required and the outputs expected from processes",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 10,
+        "matchKey": "9001|4.4|e53cd5a3|0"
+      },
+      "imported": {
+        "evidenceExamples": "Overall process map and individual process plans\nProject Plans\nDocumented processes\nRecords and evidence of processes being followed",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.4",
+      "clauseName": "Quality management system and its processes",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Determine the sequence and interaction of these processes",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 11,
+        "matchKey": "9001|4.4|a6b577b1|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": 10
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "4.4",
+      "clauseName": "Quality management system and its processes",
+      "sectionId": "9001:4",
+      "subSectionId": null,
+      "requirement": "Maintain documented information to the extent necessary to support the operation of its processes",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 12,
+        "matchKey": "9001|4.4|b20b07e2|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": 10
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.1.1",
+      "clauseName": "General",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.1",
+      "requirement": "Top management demonstrate their leadership of and commitment to the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 15,
+        "matchKey": "9001|5.1.1|2b5495ab|0"
+      },
+      "imported": {
+        "evidenceExamples": "Attendance at management review and certification audits\nCommunication to workers and others about the QMS\nEstablishing the Quality Policy\nSufficient resources have been provided\nAny other personal involvement in the QMS",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.1.2",
+      "clauseName": "Customer focus",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.1",
+      "requirement": "Top management demonstrate their leadership and commitment with respect to having a customer focus",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 16,
+        "matchKey": "9001|5.1.2|698adb4c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Demonstrate an understanding of customer requirements\nCustomer satisfaction understanding through analysis and action plans\nInclusion of customer focus in management review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.2.1",
+      "clauseName": "Establishing the quality policy",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.2",
+      "requirement": "Top management establish, review and maintain a suitable policy",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 18,
+        "matchKey": "9001|5.2.1|c41453cd|0"
+      },
+      "imported": {
+        "evidenceExamples": "Quality policy",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.2.2",
+      "clauseName": "Communicating the quality policy",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.2",
+      "requirement": "The policy is documented and implemented within the organization",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 19,
+        "matchKey": "9001|5.2.2|eaaec521|0"
+      },
+      "imported": {
+        "evidenceExamples": "Quality policy is accessible:\ndisplayed on a notice board\navailable on the website\navailable through internal systems\nincluded with induction and training\ndemonstrated understanding of the policy during audits",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.2.2",
+      "clauseName": "Communicating the quality policy",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.2",
+      "requirement": "The policy is available to relevant interested parties",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 20,
+        "matchKey": "9001|5.2.2|97128f9|0"
+      },
+      "imported": {
+        "evidenceExamples": "Availability on website\nIncluded in tenders",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.3",
+      "clauseName": "Organizational roles, responsibilities and authorities",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.2",
+      "requirement": "Top management ensure that people know their QMS responsibilites and authorities",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 21,
+        "matchKey": "9001|5.3|111c75f5|0"
+      },
+      "imported": {
+        "evidenceExamples": "Organizational chart\nPosition Descriptions\nAuthority delegation\nKPI's or objectives\nRACI Matri",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "5.3",
+      "clauseName": "Organizational roles, responsibilities and authorities",
+      "sectionId": "9001:5",
+      "subSectionId": "9001:5.2",
+      "requirement": "Responsibility and authority is specifically assigned to manage and report on the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 22,
+        "matchKey": "9001|5.3|ff5feeba|0"
+      },
+      "imported": {
+        "evidenceExamples": "Position Description for relevant person",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.1",
+      "clauseName": "Actions to address risks and opportunities",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "Determine the risks and opportunities that need to be addressed",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 24,
+        "matchKey": "9001|6.1|370ce83a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Use formal or informal risk assessment process (FMEA, Risk matrix)\nHigh risk processes may include a risk section also",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.1",
+      "clauseName": "Actions to address risks and opportunities",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "Plan actions to address these risks and opportunities",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 25,
+        "matchKey": "9001|6.1|8fd4eeb8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Action plans following on from higher level analysis (SWOT)\nProcess actions and procedures to mitigate risk",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.1",
+      "clauseName": "Actions to address risks and opportunities",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "Plan how to integrate and implement the actions into the QMS, and evaluate how effective they are",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 26,
+        "matchKey": "9001|6.1|8b6e7502|0"
+      },
+      "imported": {
+        "evidenceExamples": "The QMS system demonstrates integration of risk and actions into daily processes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.2",
+      "clauseName": "Quality objectives and planning to achieve them",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "Establish measurable objectives",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 27,
+        "matchKey": "9001|6.2|f22e7672|0"
+      },
+      "imported": {
+        "evidenceExamples": "Objective table, matrix or register (print or software)\nKPIs or SLAs\nReview and update at Management review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.2",
+      "clauseName": "Quality objectives and planning to achieve them",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "Document the action and responsibilities to achieve objectives",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 28,
+        "matchKey": "9001|6.2|638f6eb9|0"
+      },
+      "imported": {
+        "evidenceExamples": "Actions, responsibilities, target dates and evaluation plans for objectives are available",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "6.3",
+      "clauseName": "Planning of changes",
+      "sectionId": "9001:6",
+      "subSectionId": null,
+      "requirement": "When it is decided to make a change to the QMS, carry it out in a planned and systematic manner.",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 29,
+        "matchKey": "9001|6.3|b716c596|0"
+      },
+      "imported": {
+        "evidenceExamples": "Use of existing QMS processes to manage change (corrective action, risk management, monitoring, internal audit, management review)",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.1",
+      "clauseName": "General",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1",
+      "requirement": "Determine and provide the resources needed for the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 32,
+        "matchKey": "9001|7.1.1|5ddb105|0"
+      },
+      "imported": {
+        "evidenceExamples": "Agenda item at management review\nSWOT analysis or PEST analysis determining resource capabilities\nGap analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.2",
+      "clauseName": "People",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1",
+      "requirement": "Determine the people required to implement and maintain the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 33,
+        "matchKey": "9001|7.1.2|775d9c52|0"
+      },
+      "imported": {
+        "evidenceExamples": "Agenda item at management review\nSWOT analysis or PEST analysis determining resource capabilities\nGap analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.3",
+      "clauseName": "Infrastructure",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1",
+      "requirement": "Determine what infrastructure is required to maintain the QMS and conform to product requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 34,
+        "matchKey": "9001|7.1.3|9cd7e542|0"
+      },
+      "imported": {
+        "evidenceExamples": "Infrastructure/facilities\nHardware\nSoftware\nCommunication equipment\nWork stations",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.4",
+      "clauseName": "Environment for the operation of processes",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1",
+      "requirement": "Determine the environment requirements to maintain the QMS and conform to product requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 35,
+        "matchKey": "9001|7.1.4|c6bd1054|0"
+      },
+      "imported": {
+        "evidenceExamples": "Lighting, noise, temperature, work culture to reduce stress on mind and body\nJob planners\nRosters",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.5.1",
+      "clauseName": "General",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Determine what monitoring and measuring resources are required to maintain the QMS and conform to product requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 37,
+        "matchKey": "9001|7.1.5.1|fc3b1cd8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Equipment Register\nMonitoring and measuring equipment\nEquipment calibration register and certificates",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.5.2",
+      "clauseName": "Measurement traceability",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Ensure equipment is checked and calibrated as required",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 38,
+        "matchKey": "9001|7.1.5.2|5b6c08ee|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": 37
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.1.6",
+      "clauseName": "Organizational knowledge",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Determine the knowledge necessary to pass on and share across the organization",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 39,
+        "matchKey": "9001|7.1.6|6a548211|0"
+      },
+      "imported": {
+        "evidenceExamples": "Knowledge retention / management processes\nBusiness continuity plans\nMentoring programs\nLog books\nOn the job training records",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Determine the necessary levels of competence required for all levels of work",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 40,
+        "matchKey": "9001|7.2|2f1cea0e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training needs analysis\nPosition Descriptions\nPosition advertisement",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Ensure that the people doing that work are competent",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 41,
+        "matchKey": "9001|7.2|226dc277|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training, education, experience, induction\nTraining budget and programme",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Take actions to obtain the necessary competence (where required)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 42,
+        "matchKey": "9001|7.2|58f75e8e|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training budget and programme\nAssessment of meeting competence requirements",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.2",
+      "clauseName": "Competence",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Retain records of competencies achieved",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 43,
+        "matchKey": "9001|7.2|169e77c8|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training records\nCertificates\nLicences, permits",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.3",
+      "clauseName": "Awareness",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "People working under the organizations control are to be aware of the quality policy, quality objectives, contribution to the QMS, implications of not conforming to the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 44,
+        "matchKey": "9001|7.3|474053e0|0"
+      },
+      "imported": {
+        "evidenceExamples": "Induction/Onboarding training and records\nTeam updates\nKPIs\nAvailability of QMS documentation\nCorrespondence with suppliers/contractors",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.4",
+      "clauseName": "Communication",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.1.5",
+      "requirement": "Determine what to communicate, with whom, when and how and by who - for both internal and external comms",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 45,
+        "matchKey": "9001|7.4|868c16f8|0"
+      },
+      "imported": {
+        "evidenceExamples": "What: Interested parties needs and expectations (4.2), legal requirements (4.2), internal staff needs, supplier needs, customer needs\nWho: Position descriptions and responsibilities\nHow: internal notices/memos, emails, newsletters, general correspondence, reports, meeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.5.1",
+      "clauseName": "General",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.5",
+      "requirement": "The QMS includes documented information required by the Standard and otherwise considered necessary",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 47,
+        "matchKey": "9001|7.5.1|b90cc7eb|0"
+      },
+      "imported": {
+        "evidenceExamples": "Scope, Policy and Objectives\nAll mandatory documented information\nProcess documentation to maintain control of processes and outputs (as needed)\nManagement review of documentation requirements to improve the QMS",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.5.2",
+      "clauseName": "Creating and updating",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.5",
+      "requirement": "Ensure appropriate identification and description, format and media, review and approval",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 48,
+        "matchKey": "9001|7.5.2|b5ea3c60|0"
+      },
+      "imported": {
+        "evidenceExamples": "Document control procedure\nCorporate style guide",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.5.3",
+      "clauseName": "Control of documented information",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.5",
+      "requirement": "Information security: Ensure the CIA triad (confidentiality, integrity, availability) and proper use of documented information",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 49,
+        "matchKey": "9001|7.5.3|7f122182|0"
+      },
+      "imported": {
+        "evidenceExamples": "Information security policy/procedure\nData privacy policy\nInformation security training, awareness sesssions\nInternal audit results",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "7.5.3",
+      "clauseName": "Control of documented information",
+      "sectionId": "9001:7",
+      "subSectionId": "9001:7.5",
+      "requirement": "Exercise control over documents and records",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 50,
+        "matchKey": "9001|7.5.3|3c15b930|0"
+      },
+      "imported": {
+        "evidenceExamples": "Backup protocol\nDocument control procedure\nSoftware maintenance",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.1",
+      "clauseName": "Operational planning and control",
+      "sectionId": "9001:8",
+      "subSectionId": null,
+      "requirement": "Manage the processes needed for product/service provision and to address risks and opportunities",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 52,
+        "matchKey": "9001|8.1|363e9ccf|0"
+      },
+      "imported": {
+        "evidenceExamples": "Procedures/process plans\nProject Plans\nJob Packs\nQuality management plans\nHierarchy of controls used",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.1",
+      "clauseName": "Customer communication",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Have processes in place for communicating with customers about products and services",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 54,
+        "matchKey": "9001|8.2.1|29120a4b|0"
+      },
+      "imported": {
+        "evidenceExamples": "Website\nSocial media, brochures, presentations, advertising\nProduct downloads, ordering processes\nStaff training",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.1",
+      "clauseName": "Customer communication",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Have processes in place for handling enquiries, contracts or orders (including changes)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 55,
+        "matchKey": "9001|8.2.1|664000c2|0"
+      },
+      "imported": {
+        "evidenceExamples": "Order process (forms, software)\nVariations or changes to order records and updates",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.1",
+      "clauseName": "Customer communication",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Have processes in place for obtaining customer views and perceptions about the organization and products (including complaints)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 56,
+        "matchKey": "9001|8.2.1|75f24622|0"
+      },
+      "imported": {
+        "evidenceExamples": "Customer feedback, surveys\nReview and response to feedback",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.2",
+      "clauseName": "Determining the requirements for products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Have a process to determine requirements for products/services to be offered to potential customers",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 57,
+        "matchKey": "9001|8.2.2|8ff6e75f|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.3",
+      "clauseName": "Review of the requirements for products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Review requirements before committing to supply products/services",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 58,
+        "matchKey": "9001|8.2.3|47e3f2bb|0"
+      },
+      "imported": {
+        "evidenceExamples": "Contract or Tender review\nManagement sign off and approval\nOrder review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.3",
+      "clauseName": "Review of the requirements for products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Where the customer does not document their requirements, confirm them before acceptance",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 59,
+        "matchKey": "9001|8.2.3|217e4649|0"
+      },
+      "imported": {
+        "evidenceExamples": "Verbal confirmation, email confirmation, order update and provision",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.2.4",
+      "clauseName": "Changes to requirements for products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.2",
+      "requirement": "Have processes in place for handling enquiries, contracts or orders (including changes)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 60,
+        "matchKey": "9001|8.2.4|664000c2|0"
+      },
+      "imported": {
+        "evidenceExamples": "Order process (forms, software)\nVariations or changes to order records and updates",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.1",
+      "clauseName": "General",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Where applicable, establish, implement and maintain a design and development process",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 62,
+        "matchKey": "9001|8.3.1|c5ffc68c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Design procedure or process plan",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.2",
+      "clauseName": "Design and development  planning",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Plan the stages for design and development",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 63,
+        "matchKey": "9001|8.3.2|2117856c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Design project plan with milestones",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.3",
+      "clauseName": "Design and development  inputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Determine the requirements for design inputs",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 64,
+        "matchKey": "9001|8.3.3|49d9cc60|0"
+      },
+      "imported": {
+        "evidenceExamples": "Design project plan including input requirements (legal, customer, industry, criteria, previous projects etc)",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.4",
+      "clauseName": "Design and development  controls",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Determine the controls to be applied to manage the design and development outputs",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 65,
+        "matchKey": "9001|8.3.4|1a9bfcd0|0"
+      },
+      "imported": {
+        "evidenceExamples": "Design project plan including controls\nProcedures including controls\nRecords of control outputs",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.5",
+      "clauseName": "Design and development  outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Determine the design and development outputs",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 66,
+        "matchKey": "9001|8.3.5|4990c9fe|0"
+      },
+      "imported": {
+        "evidenceExamples": "Design project plan including milestone outputs as project progresses (drafts, reports, drawings etc)",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.3.6",
+      "clauseName": "Design and development  changes",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.3",
+      "requirement": "Review, control and identify changes made to design inputs or outputs, and controls",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 67,
+        "matchKey": "9001|8.3.6|88f56c90|0"
+      },
+      "imported": {
+        "evidenceExamples": "Use of the Design project to manage the cycle of change and variations",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.1",
+      "clauseName": "General",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Determine the controls to be applied to externally provided processes, products and services",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 69,
+        "matchKey": "9001|8.4.1|a3d81843|0"
+      },
+      "imported": {
+        "evidenceExamples": "Purchasing or Procurement procedures\nAuthority for delegation and purchasing",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.1",
+      "clauseName": "General",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Determine and apply criteria for evaluation, selection, monitoring of performance, and re-evaluation",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 70,
+        "matchKey": "9001|8.4.1|c54d847a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Project plans\nSupplier evaluation forms or registers",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.1",
+      "clauseName": "General",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Retain documented information of these activities and any actions",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 71,
+        "matchKey": "9001|8.4.1|379aba94|0"
+      },
+      "imported": {
+        "evidenceExamples": "Records of evaluations and re-evaluations conducted",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.2",
+      "clauseName": "Type and extent of control",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Take into consideration the potential impact on the organizations ability to meet applicable requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 72,
+        "matchKey": "9001|8.4.2|e2e53b55|0"
+      },
+      "imported": {
+        "evidenceExamples": "Project plans\nSupplier evaluation forms or registers which may include a risk assessment",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.2",
+      "clauseName": "Type and extent of control",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Determine the verification, or other activities necessary to ensure requirements are met by external suppliers",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 73,
+        "matchKey": "9001|8.4.2|c753639a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Evaluation and re-evaluation processes for monitoring performance of externally provided services or products",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.4.3",
+      "clauseName": "Information for external providers",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.4",
+      "requirement": "Ensure that the specified requirements are adequate and communicate them to external providers",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 74,
+        "matchKey": "9001|8.4.3|11552c32|0"
+      },
+      "imported": {
+        "evidenceExamples": "Contractor Agreement\nSupplier Agreement\nKPIs",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.1",
+      "clauseName": "Control of production and service provision",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Control the conditions for production / service provision",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 76,
+        "matchKey": "9001|8.5.1|8b6778bf|0"
+      },
+      "imported": {
+        "evidenceExamples": "Procedures and process plans",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.1",
+      "clauseName": "Control of production and service provision",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Where necessary, use suitable means to identify process outputs",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 77,
+        "matchKey": "9001|8.5.1|a99ce20a|0"
+      },
+      "imported": {
+        "evidenceExamples": "ERP Software output, labelling, barcodes, numbering systems",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.1",
+      "clauseName": "Control of production and service provision",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Identify the status of process outputs (with respect to monitoring and measurement requirements)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 78,
+        "matchKey": "9001|8.5.1|1df1670|0"
+      },
+      "imported": {
+        "evidenceExamples": "Labelling, location, documentation",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.2",
+      "clauseName": "Identification and traceability",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Where traceability is required, control the unique identification of process outputs, and retain any documented information necessary to maintain that traceability",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 79,
+        "matchKey": "9001|8.5.2|d0cd5421|0"
+      },
+      "imported": {
+        "evidenceExamples": "Unique numbering/labelling",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.3",
+      "clauseName": "Property belonging to customers or external providers",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Exercise care with property belonging to the customer or external providers while it is under your control or being used by you",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 80,
+        "matchKey": "9001|8.5.3|839c4b9a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Data privacy policy\nProcedures\nPayment security controls",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.3",
+      "clauseName": "Property belonging to customers or external providers",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "When such property is incorrectly used, lost, damaged or otherwise found to be unsuitable for use, report this to the owner",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 81,
+        "matchKey": "9001|8.5.3|d6c39818|0"
+      },
+      "imported": {
+        "evidenceExamples": "Reporting process\nCommunication process",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.4",
+      "clauseName": "Preservation",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Ensure preservation of process outputs during production and service provision, to maintain conformity to requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 82,
+        "matchKey": "9001|8.5.4|5a90a674|0"
+      },
+      "imported": {
+        "evidenceExamples": "Can include identification, handing, packaging, storage, transmission or transportation and protection",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.5",
+      "clauseName": "Post-delivery activities",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Determine whether there are post-delivery requirements",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 83,
+        "matchKey": "9001|8.5.5|c57cea6f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Training\nWarranty\nService",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.5.6",
+      "clauseName": "Control of changes",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Review and control unplanned changes essential for production or service provision to ensure continuing conformity",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 84,
+        "matchKey": "9001|8.5.6|ed6449ec|0"
+      },
+      "imported": {
+        "evidenceExamples": "Emergency arrangements, nonconformance reporting, corrective actions",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.6",
+      "clauseName": "Release of products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Verify that product and service requirements have been met and retain evidence of conformity",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 85,
+        "matchKey": "9001|8.6|97fb59a1|0"
+      },
+      "imported": {
+        "evidenceExamples": "Inspection and test Plan\nChecklists",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.6",
+      "clauseName": "Release of products and services",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Hold the release of products and services until any planned verification of conformity is complete",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 86,
+        "matchKey": "9001|8.6|73270ea|0"
+      },
+      "imported": {
+        "evidenceExamples": "Quarantine area\nLabels\nProduct status reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.7",
+      "clauseName": "Control of nonconforming outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Ensure process outputs that do not conform to requirements are identified and controlled to prevent unintended use or delivery",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 87,
+        "matchKey": "9001|8.7|7a6d410a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Quarantine area\nLabels\nProduct status reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.7",
+      "clauseName": "Control of nonconforming outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Take appropriate corrective action based on the nature of the nonconformity and its impact",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 88,
+        "matchKey": "9001|8.7|e84954ec|0"
+      },
+      "imported": {
+        "evidenceExamples": "Corrective Action forms/reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.7",
+      "clauseName": "Control of nonconforming outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Deal with nonconforming process outputs, products and services by one or more of the approved options",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 89,
+        "matchKey": "9001|8.7|79f400f1|0"
+      },
+      "imported": {
+        "evidenceExamples": "May be documented in a procedure?",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.7",
+      "clauseName": "Control of nonconforming outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Where nonconforming process outputs, products and services are corrected, re-check their conformity",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 90,
+        "matchKey": "9001|8.7|f2affb31|0"
+      },
+      "imported": {
+        "evidenceExamples": "",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "8.7",
+      "clauseName": "Control of nonconforming outputs",
+      "sectionId": "9001:8",
+      "subSectionId": "9001:8.5",
+      "requirement": "Retain records of actions taken on nonconforming process outputs, products and services",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 91,
+        "matchKey": "9001|8.7|a80daf1a|0"
+      },
+      "imported": {
+        "evidenceExamples": "Corrective Action froms/reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Define requirements for monitoring and measurement (including the methods to be used, when checks are to be performed, analysis and evaluation)",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 94,
+        "matchKey": "9001|9.1.1|1b308b3b|0"
+      },
+      "imported": {
+        "evidenceExamples": "Inspection and Test Plan\nChecklists",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Ensure that required monitoring and measurement activities are implemented and retain appropriate documented information as evidence",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 95,
+        "matchKey": "9001|9.1.1|b04db332|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit\nManagement review\nInterim monitoring of product compliance",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.1.1",
+      "clauseName": "General",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Evaluate the performance and the effectiveness of the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 96,
+        "matchKey": "9001|9.1.1|76e9899f|0"
+      },
+      "imported": {
+        "evidenceExamples": "Internal audit\nManagement review\nInterim monitoring of product compliance\nData analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.1.2",
+      "clauseName": "Customer satisfaction",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Determine methods to be used and obtain information relating to customer views and opinions of the organization, products and services",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 97,
+        "matchKey": "9001|9.1.2|111bffe7|0"
+      },
+      "imported": {
+        "evidenceExamples": "Surveys\nFeedback forms\nCustomer meeting minutes and actions",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.1.3",
+      "clauseName": "Analysis and evaluation",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Analyse and evaluate appropriate data and information arising from monitoring, measurement and other sources",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 98,
+        "matchKey": "9001|9.1.3|a972302d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review\nQuality management system reporting\nTeam meeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Conduct internal audits at planned intervals",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 99,
+        "matchKey": "9001|9.2|3bd0ffe6|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit schedule or programme",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "The audit programme takes into account objectives and risks",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 100,
+        "matchKey": "9001|9.2|2bae247c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Adjust frequency/scope of audits as required",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Establish criteria and scope for each audit",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 101,
+        "matchKey": "9001|9.2|677f9b22|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit checklist",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Ensure the impartiality and objectiveness of auditors",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 102,
+        "matchKey": "9001|9.2|9b955e47|0"
+      },
+      "imported": {
+        "evidenceExamples": "People should not be auditing the work that they generate the records/evidence for",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Take necessary correction and correctiv actions without undue delay",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 103,
+        "matchKey": "9001|9.2|f9f51279|0"
+      },
+      "imported": {
+        "evidenceExamples": "Corrective Action reports\nNonconformance reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.2",
+      "clauseName": "Internal audit",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.1",
+      "requirement": "Retain documented information as evidence",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 104,
+        "matchKey": "9001|9.2|236c5b66|0"
+      },
+      "imported": {
+        "evidenceExamples": "Audit report records",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.3.1",
+      "clauseName": "General",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.3",
+      "requirement": "Top management to review the QMS at planned intervals",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 106,
+        "matchKey": "9001|9.3.1|52d5d6d2|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review schedule or process",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.3.2",
+      "clauseName": "Management review inputs",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.3",
+      "requirement": "Ensure all input requirements are reviewed by top management",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 107,
+        "matchKey": "9001|9.3.2|2f5c3553|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review agenda\nMeeting minutes",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.3.3",
+      "clauseName": "Management review outputs",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.3",
+      "requirement": "Outputs include decisions and actions related to improvement opportunities and any need for changes to the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 108,
+        "matchKey": "9001|9.3.3|ad7dbd56|0"
+      },
+      "imported": {
+        "evidenceExamples": "Meeting minutes and actions",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "9.3.3",
+      "clauseName": "Management review outputs",
+      "sectionId": "9001:9",
+      "subSectionId": "9001:9.3",
+      "requirement": "Retain documented information",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 109,
+        "matchKey": "9001|9.3.3|4c475e81|0"
+      },
+      "imported": {
+        "evidenceExamples": "As above",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.1",
+      "clauseName": "General",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Determine and select opportunities for improvement and then implement the necessary actions",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 111,
+        "matchKey": "9001|10.1|fbf1f6c4|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.2",
+      "clauseName": "Nonconformity and corrective action",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "When a nonconformity occurs, take action to deal with the immediate issue",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 112,
+        "matchKey": "9001|10.2|e202f98c|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.2",
+      "clauseName": "Nonconformity and corrective action",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Consider any similar nonconformites that might exist",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 113,
+        "matchKey": "9001|10.2|9b97c6d3|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.2",
+      "clauseName": "Nonconformity and corrective action",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Take action to identify and address the root cause(s) and make any necessary changes to the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 114,
+        "matchKey": "9001|10.2|91ecd77d|0"
+      },
+      "imported": {
+        "evidenceExamples": "Nonconformance reports\nCorrective action reports\nRoot cause analysis",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.2",
+      "clauseName": "Nonconformity and corrective action",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Retain documented information as evidence",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 115,
+        "matchKey": "9001|10.2|236c5b66|0"
+      },
+      "imported": {
+        "evidenceExamples": "as above",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.3",
+      "clauseName": "Continual improvement",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Continually improve the suitability, adequacy and effectiveness of the QMS",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 116,
+        "matchKey": "9001|10.3|15aa7b29|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review",
+        "evidenceMergedFromRow": null
+      }
+    },
+    {
+      "standard": "9001",
+      "clause": "10.3",
+      "clauseName": "Continual improvement",
+      "sectionId": "9001:10",
+      "subSectionId": null,
+      "requirement": "Analyse data to confirm if there are opportunities for improvement",
+      "source": {
+        "sheet": "ISO 9001",
+        "row": 117,
+        "matchKey": "9001|10.3|565edc01|0"
+      },
+      "imported": {
+        "evidenceExamples": "Management review",
+        "evidenceMergedFromRow": null
+      }
+    }
+  ]
+}

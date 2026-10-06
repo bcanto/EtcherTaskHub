@@ -1,0 +1,477 @@
+{
+  "templateId": "management-review",
+  "title": "Management Review Agenda and Minutes",
+  "filenameStem": "Management_Review_Agenda_Minutes",
+  "documentType": "record",
+  "purpose": "An agenda and minutes template for top management's periodic review of the management system: what is reviewed, what is decided, and who acts.",
+  "requiredProfileFields": [
+    "legal_name",
+    "approval_roles",
+    "org_roles",
+    "standards_in_scope"
+  ],
+  "questions": [
+    {
+      "id": "frequency",
+      "text": "How often is the management review held?",
+      "kind": "text"
+    },
+    {
+      "id": "attendees",
+      "text": "Who attends (roles)?",
+      "kind": "text"
+    },
+    {
+      "id": "period",
+      "text": "What period does the next review cover?",
+      "kind": "text"
+    },
+    {
+      "id": "data",
+      "text": "Which performance information is available to bring (objectives, customer feedback, audit results, incidents, environmental data, supplier performance)?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Meeting details and attendees",
+    "Actions from previous reviews",
+    "Changes in external and internal issues",
+    "Performance of the management system (objectives, customer and interested-party feedback, process performance, nonconformities and corrective actions, monitoring and measurement results, audit results, external providers, compliance evaluation, WHS consultation and incidents, environmental performance)",
+    "Adequacy of resources",
+    "Effectiveness of actions on risks and opportunities",
+    "Opportunities for improvement",
+    "Decisions and actions (owner and due date for each)",
+    "Sign-off"
+  ],
+  "optionalSections": [
+    "Attachments list (data packs presented)"
+  ],
+  "expectedRecords": [
+    "Signed minutes",
+    "The data presented at the meeting",
+    "The action list with owners and due dates, and evidence actions were closed"
+  ],
+  "draftingRules": [
+    "Give each agenda item a \"Discussion\" and a \"Decision / action\" field so the same document works as the minutes.",
+    "Never fill in discussion or decisions — leave them for the meeting."
+  ],
+  "reviewerChecklist": [
+    "Every agenda heading has been covered",
+    "Decisions have owners and due dates",
+    "Attendance matches the stated roles",
+    "Minutes are approved and kept"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "9001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "4.2",
+      "stableKey": "9001|4.2|da71e94d|0",
+      "workbookRow": 7,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.1.1",
+      "stableKey": "9001|5.1.1|2b5495ab|0",
+      "workbookRow": 15,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.1.2",
+      "stableKey": "9001|5.1.2|698adb4c|0",
+      "workbookRow": 16,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "6.2",
+      "stableKey": "9001|6.2|f22e7672|0",
+      "workbookRow": 27,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "6.3",
+      "stableKey": "9001|6.3|b716c596|0",
+      "workbookRow": 29,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.1.1",
+      "stableKey": "9001|7.1.1|5ddb105|0",
+      "workbookRow": 32,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.1.2",
+      "stableKey": "9001|7.1.2|775d9c52|0",
+      "workbookRow": 33,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.5.1",
+      "stableKey": "9001|7.5.1|b90cc7eb|0",
+      "workbookRow": 47,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.1.1",
+      "stableKey": "9001|9.1.1|b04db332|0",
+      "workbookRow": 95,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.1.1",
+      "stableKey": "9001|9.1.1|76e9899f|0",
+      "workbookRow": 96,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.1.3",
+      "stableKey": "9001|9.1.3|a972302d|0",
+      "workbookRow": 98,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.3.1",
+      "stableKey": "9001|9.3.1|52d5d6d2|0",
+      "workbookRow": 106,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.3.2",
+      "stableKey": "9001|9.3.2|2f5c3553|0",
+      "workbookRow": 107,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.3.3",
+      "stableKey": "9001|9.3.3|ad7dbd56|0",
+      "workbookRow": 108,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "9.3.3",
+      "stableKey": "9001|9.3.3|4c475e81|0",
+      "workbookRow": 109,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.3",
+      "stableKey": "9001|10.3|15aa7b29|0",
+      "workbookRow": 116,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "10.3",
+      "stableKey": "9001|10.3|565edc01|0",
+      "workbookRow": 117,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "4.1",
+      "stableKey": "14001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "4.2",
+      "stableKey": "14001|4.2|da71e94d|0",
+      "workbookRow": 8,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.1",
+      "stableKey": "14001|5.1|2b54689f|0",
+      "workbookRow": 13,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "6.2.1",
+      "stableKey": "14001|6.2.1|f22e7672|0",
+      "workbookRow": 30,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.1",
+      "stableKey": "14001|7.1|5dd83f9|0",
+      "workbookRow": 33,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.5.1",
+      "stableKey": "14001|7.5.1|d5c1c4df|0",
+      "workbookRow": 45,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.1.1",
+      "stableKey": "14001|9.1.1|b04db332|0",
+      "workbookRow": 55,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.1.1",
+      "stableKey": "14001|9.1.1|76e95c93|0",
+      "workbookRow": 56,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.1.1",
+      "stableKey": "14001|9.1.1|a972302d|0",
+      "workbookRow": 57,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.3",
+      "stableKey": "14001|9.3|82c3245e|0",
+      "workbookRow": 68,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.3",
+      "stableKey": "14001|9.3|2f5c3553|0",
+      "workbookRow": 69,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.3",
+      "stableKey": "14001|9.3|ad7d904a|0",
+      "workbookRow": 70,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "9.3",
+      "stableKey": "14001|9.3|4c475e81|0",
+      "workbookRow": 71,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.3",
+      "stableKey": "14001|10.3|15aa4e1d|0",
+      "workbookRow": 78,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "10.3",
+      "stableKey": "14001|10.3|565edc01|0",
+      "workbookRow": 79,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "4.1",
+      "stableKey": "45001|4.1|33a7464d|0",
+      "workbookRow": 4,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "4.2",
+      "stableKey": "45001|4.2|da71e94d|0",
+      "workbookRow": 8,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.1",
+      "stableKey": "45001|5.1|a8676fb4|0",
+      "workbookRow": 13,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "6.2.1",
+      "stableKey": "45001|6.2.1|f22e7672|0",
+      "workbookRow": 34,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.1",
+      "stableKey": "45001|7.1|5171c8e|0",
+      "workbookRow": 37,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.5.1",
+      "stableKey": "45001|7.5.1|8b573734|0",
+      "workbookRow": 49,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.1.1",
+      "stableKey": "45001|9.1.1|b04db332|0",
+      "workbookRow": 66,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.1.1",
+      "stableKey": "45001|9.1.1|628f36a8|0",
+      "workbookRow": 67,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.1.1",
+      "stableKey": "45001|9.1.1|a972302d|0",
+      "workbookRow": 68,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.3",
+      "stableKey": "45001|9.3|a6025e69|0",
+      "workbookRow": 79,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.3",
+      "stableKey": "45001|9.3|2f5c3553|0",
+      "workbookRow": 80,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.3",
+      "stableKey": "45001|9.3|44e5589f|0",
+      "workbookRow": 81,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "9.3",
+      "stableKey": "45001|9.3|4c475e81|0",
+      "workbookRow": 82,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.3",
+      "stableKey": "45001|10.3|54d9edb2|0",
+      "workbookRow": 89,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "10.3",
+      "stableKey": "45001|10.3|565edc01|0",
+      "workbookRow": 90,
+      "why": "evidence example"
+    }
+  ],
+  "documents": [
+    "Management Review Minutes",
+    "Management Review Agenda and Input Pack"
+  ]
+}

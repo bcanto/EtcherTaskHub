@@ -31,6 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/iso/iso.css"/>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
@@ -152,6 +153,9 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(8,18,34,0.55);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
 .modal-box{background:#fff;border-radius:16px;max-width:680px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-xl)}
+/* A wide dialog (a record drawer with tabs) keeps its top edge still: centred, every tab of a
+   different height moved the tabs themselves and the mouse had to chase them. */
+#generic-modal.modal-top{align-items:flex-start;padding-top:5vh}
 .modal-header{padding:24px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
 /* ── Forms ── */
 .form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;display:block}
@@ -1200,6 +1204,19 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .ws-cell-dd-item{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text-1);display:flex;align-items:center;gap:8px;transition:background 0.1s}
 .ws-cell-dd-item:hover{background:#f4f7ff}
 .ws-dd-active{background:#f0f7f0!important}
+/* Fixed-column generic tables (ISO registers): compact cells stay on one line. */
+.ws-table.mt-fixed td.ws-editable{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Generic Main Table / ISO register dropdown (_mtOpenDropdown) — reuses #ws-cell-dd and its items. */
+.mt-dd{min-width:200px;max-width:320px}
+.mt-dd-head{padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5a7186}
+.mt-dd-list{padding:2px 0 6px;max-height:320px;overflow-y:auto}
+button.mt-dd-opt{width:100%;border:none;background:none;font:inherit;font-size:12px;text-align:left}
+button.mt-dd-opt:focus-visible{outline:2px solid #1d6fb8;outline-offset:-2px}
+button.mt-dd-opt:active{background:#e8f0ff}
+.mt-dd-check{width:12px;flex-shrink:0;color:#0d6e4e;font-weight:700}
+.mt-dd-pill{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.mt-dd-form{padding:4px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.mt-dd-actions{display:flex;gap:6px;justify-content:flex-end}
 .ws-dd-sep{height:1px;background:var(--surface-3);margin:4px 0}
 .ws-cell-caret{font-size:8px;color:#d4dde8;margin-left:2px;flex-shrink:0;transition:color 0.15s}
 td.ws-editable{cursor:pointer}
@@ -1501,6 +1518,28 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <div id="sidebar-wb-list"></div>
       </div>
 
+      <!-- ISO (plan Phase 5.1) -->
+      <div id="nav-iso-header" style="display:none;align-items:center;padding:12px 19px 5px;justify-content:space-between">
+        <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('iso')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('iso')}">ISO<span class="nav-sec-chevron" id="nav-chev-iso">&#9662;</span></span>
+        <div style="position:relative" onclick="event.stopPropagation()">
+          <button id="iso-add-btn" onclick="toggleIsoAddMenu()" title="New ISO board or import"
+            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
+            onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
+            onmouseout="this.style.background='rgba(255,255,255,0.07)';this.style.color='#5a7a96'">+</button>
+          <div id="iso-add-menu" class="hidden" style="position:absolute;right:0;top:26px;background:#1a2940;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px;min-width:170px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,0.35)">
+            <button onclick="closeIsoAddMenu();window.ISO&&ISO.openNewBoard()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
+              <span style="font-size:14px;line-height:1">+</span> New ISO board
+            </button>
+            <button onclick="closeIsoAddMenu();window.ISO&&ISO.openImport()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
+              <span style="font-size:13px;line-height:1">⇪</span> Import workbook…
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="nav-sec-body" id="nav-section-iso">
+        <div id="sidebar-iso-list"></div>
+      </div>
+
       <div class="section-header nav-sec-toggle" id="nav-clients-section" onclick="toggleNavSection('clients')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('clients')}">Clients<span class="nav-sec-chevron" id="nav-chev-clients">&#9662;</span></div>
       <div class="nav-sec-body" id="nav-section-clients">
       <div class="nav-item" data-view="clients" onclick="navigate('clients')" id="nav-clients-item">
@@ -1543,6 +1582,10 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div class="nav-item" data-view="audit" onclick="navigate('audit')" id="nav-audit-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="8.5" x2="9" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="11" x2="7.5" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Audit Trail
+      </div>
+      <div class="nav-item" data-view="iso-admin" onclick="navigate('iso-admin')" id="nav-iso-admin-item" style="display:none">
+        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l5.5 2v4c0 3.5-2.2 5.9-5.5 7-3.3-1.1-5.5-3.5-5.5-7v-4l5.5-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+        ISO library
       </div>
       <div class="nav-item" data-view="archive" onclick="navigate('archive')" id="nav-archive-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
@@ -1676,6 +1719,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <div class="modal-box" style="max-width:500px">
     <div class="modal-header">
       <h3 id="generic-modal-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">Edit</h3>
+      <div id="generic-modal-header-extra" style="margin-left:auto;margin-right:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end"></div>
       <button onclick="closeGenericModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8da2b2;line-height:1">×</button>
     </div>
     <div style="padding:24px 28px 28px;overflow-y:auto;max-height:calc(90vh - 60px)" id="generic-modal-body"></div>
@@ -3478,6 +3522,37 @@ function _deleteFileData(id){try{const s=JSON.parse(localStorage.getItem(_FILE_S
 // ── Workspace render cache: O(1) lookups inside renderWsRow ──
 let _wsCache=null;
 
+// ── Main Table adapter (ISO plan Phase 1) ────────────────────────────────────
+// The ctx set by the last renderWorkspace(ctx) call. Handlers (cell open/save, sort, group,
+// resize, bulk bar, …) resolve state through this instead of assuming currentWorkboard/DB.tasks,
+// so a future non-Workboards ctx (ISO, Phase 6+) can reuse the same table. For the Workboards ctx
+// this is a pure passthrough — see _wbMtContext — so today's behaviour is unchanged byte-for-byte
+// (golden tests: .agents/mt-golden-test.cjs).
+let _mtCtx=null;
+// Same "let is invisible to window" problem as DB/currentUser (A31) — iso-core.js needs to SET
+// this (not just read it) before calling the shared _mtRenderGeneric/_mtCellClick/_mtToggleSection
+// for its own Requirements register ctx (plan Phase 6.1).
+window._isoSetMtCtx=(ctx)=>{_mtCtx=ctx;};
+// Per-ctx state bucket: {groupBy, sort, selected, expanded, collapsed, columns}. The Workboards
+// bucket ('wb') is never populated here — _mtStateFor('wb') reads/writes the existing globals
+// (wsGroupBy, wsSort, wsSelected, wsExpanded, wsCollapsed, wsColumns) directly, by reference, so
+// every existing per-board store (colmeta, sessionStorage expand state, …) keeps working exactly
+// as it does today. Non-Workboards ctxs get a real entry here, persisted to
+// localStorage.etcher_iso_state_<auditId> once ISO exists (Phase 6).
+let _mtState={};
+function _mtStateFor(key){
+  if(key==='wb') return {
+    get groupBy(){return wsGroupBy;}, set groupBy(v){wsGroupBy=v;},
+    get sort(){return wsSort;}, set sort(v){wsSort=v;},
+    get selected(){return wsSelected;}, set selected(v){wsSelected=v;},
+    get expanded(){return wsExpanded;}, set expanded(v){wsExpanded=v;},
+    get collapsed(){return wsCollapsed;}, set collapsed(v){wsCollapsed=v;},
+    get columns(){return wsColumns;}, set columns(v){wsColumns=v;},
+  };
+  if(!_mtState[key]) _mtState[key]={groupBy:'group',sort:{col:null,dir:'asc'},selected:new Set(),expanded:new Set(),collapsed:new Set(),columns:{}};
+  return _mtState[key];
+}
+
 // ── Lazy jsPDF loader: only fetches the ~600 KB of PDF libs when actually needed ──
 function _ensureJsPdf(callback,onerror){
   if(window.jspdf&&window.jspdf.jsPDF){callback();return;}
@@ -3506,9 +3581,16 @@ function _ensureJsPdf(callback,onerror){
 function uid(){return Math.random().toString(36).slice(2,10);}
 
 let DB=loadDB();
-
+// DB/currentUser are `let` bindings scoped to this inline <script> block — invisible on `window`
+// to any externally-loaded <script src> file (unlike the functions below, which are plain
+// top-level function declarations and so attach to `window` automatically). iso/iso-core.js needs
+// read access to both; these two closures are the bridge (plan Phase 5, found empirically — a
+// Puppeteer check of window.DB/window.currentUser came back `undefined` despite the bare
+// identifiers resolving fine inside this script — logged as A31).
+window._isoDB=()=>DB;
 
 let currentUser=null;
+window._isoCurrentUser=()=>currentUser;
 let currentView='dashboard';
 let selectedNoteClientId=null;
 let selectedNoteSectionId=null;
@@ -3523,9 +3605,9 @@ function showAlert(msg,title='Notice'){
 let _promptCb=null;
 function showPrompt(title,defaultVal,cb){
   _promptCb=cb;
-  document.getElementById('generic-modal-title').textContent=title;
-  document.getElementById('generic-modal-body').innerHTML=`<input id="sp-val" class="form-input" value="${escHtml(defaultVal||'')}" style="margin-bottom:16px" onkeydown="if(event.key==='Enter')_spOk();if(event.key==='Escape')closeGenericModal()"/><div style="display:flex;gap:10px;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button><button onclick="_spOk()" class="btn btn-teal">OK</button></div>`;
-  document.getElementById('generic-modal').classList.remove('hidden');
+  // Through openGenericModal, so a prompt asked from inside a dialog (an ISO "Send back" note from a
+  // clause popup) stacks on it and OK/Cancel step back to that dialog instead of closing everything.
+  openGenericModal(title,`<input id="sp-val" class="form-input" value="${escHtml(defaultVal||'')}" style="margin-bottom:16px" onkeydown="if(event.key==='Enter')_spOk();if(event.key==='Escape')closeGenericModal()"/><div style="display:flex;gap:10px;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button><button onclick="_spOk()" class="btn btn-teal">OK</button></div>`,'500px');
   setTimeout(()=>document.getElementById('sp-val')?.select(),40);
 }
 function _spOk(){
@@ -3856,6 +3938,15 @@ let ganttExpanded=new Set();
 let ganttLeftCollapsed=false;
 let ganttShowBaseline=false;
 let _ganttViewStart=null;
+// ── Gantt adapter (ISO plan Phase 2) ──────────────────────────────────────────
+// {model, handlers} from the last _ganttRender(model, handlers) call. model is what
+// _ganttTaskModel() built (today's data gathering, unchanged); handlers is
+// {open(id), commitMove(id,start,end)->Promise?, beforeCommit(id,start,end)->Promise<boolean>,
+// toggle(key), rerender(), linkDeps}. For Workboards (_wbGanttHandlers) every method delegates to
+// the existing, unchanged functions (applyGanttMove, ganttToggleGroup/Task, renderView('gantt')),
+// so today's drag/cascade/warning code paths are untouched by this — see the Phase 2 scoping
+// note above _wbGanttHandlers for what is and isn't rewired onto this in this phase.
+let _ganttSrc=null;
 let _ganttTodayX=null; // set by renderGantt each render; used by renderView's 'gantt' case to
                         // scroll a freshly-opened Gantt to today instead of the far-left edge
 let _ganttDrag=null;
@@ -3895,6 +3986,7 @@ let tsViewMode='detailed';
 let tsStaffFilter='all';
 let tsClientFilter='all';
 let tsBoardFilter='all';
+let tsIsoFilter='all'; // 'all' | 'any_iso' | a specific isoAuditId — Phase 7b.3 (D13)
 let tsEarningsRateFilter='all';
 let tsBillableFilter='all';
 let tsInvoicedFilter='all'; // 'all' | 'invoiced' | 'not_invoiced'
@@ -4414,6 +4506,11 @@ function launchApp(){
   updateSidebarUser();
   applyRolePermissions();
   renderNav();
+  // window._isoEnabled is set inside supabase-client.js's own async init (deferred script, reads
+  // /api/config) — it may not have resolved yet on the very first call above. Re-run once it has,
+  // so the ISO nav section reflects the real flag rather than defaulting to hidden forever
+  // (plan Phase 5.1b).
+  if(window._supabaseReady)window._supabaseReady.then(()=>{applyRolePermissions();renderNav();}).catch(()=>{});
   loadFilters();
   renderSidebarWorkboards();
   // Restore last view — fall back to dashboard
@@ -4546,12 +4643,17 @@ function applyRolePermissions(){
   const isRestricted=r==='restricted';
   const isClient=r==='client';
 
-  // Admin-only nav: staff management, capacity, reports, audit trail, clients
+  // Admin-only nav: staff management, capacity, audit trail, clients
   ['nav-staff-item','nav-admin-section','nav-capacity-item',
-   'nav-reports-item','nav-audit-item','nav-archive-item','nav-clients-item','nav-clients-section'].forEach(id=>{
+   'nav-audit-item','nav-archive-item','nav-clients-item','nav-clients-section'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display=isAdmin?'':'none';
   });
+
+  // Reports: admin, or a Billing-flagged staff member (D16) — pulled out of the admin-only
+  // sweep above since it has its own, broader gate.
+  const navReportsEl=document.getElementById('nav-reports-item');
+  if(navReportsEl)navReportsEl.style.display=_canBill(currentUser)?'':'none';
 
   // Time tracking: admin + medium staff only
   const navTimeEl=document.getElementById('nav-time-item');
@@ -4578,12 +4680,23 @@ function applyRolePermissions(){
   if(isRestricted||isClient){
     document.getElementById('new-task-btn')?.classList.add('hidden');
   }
+
+  // ISO (plan Phase 5.1): the section header is admin/staff/restricted only, and only when the
+  // server has the feature enabled (offline always; live only with ISO_ENABLED=1) — window._isoEnabled
+  // is set by supabase-client.js/serve.mjs's own offline branch (Phase 5.1b) before this ever runs.
+  const navIsoHeaderEl=document.getElementById('nav-iso-header');
+  if(navIsoHeaderEl)navIsoHeaderEl.style.display=(window._isoEnabled&&(isAdmin||isMedium||isRestricted))?'flex':'none';
+  // Restricted staff can be ISO board members (as reviewer) but cannot create boards (A13).
+  const isoAddBtnEl=document.getElementById('iso-add-btn');
+  if(isoAddBtnEl)isoAddBtnEl.style.display=isRestricted?'none':'';
+  const navIsoAdminEl=document.getElementById('nav-iso-admin-item');
+  if(navIsoAdminEl)navIsoAdminEl.style.display=(window._isoEnabled&&isAdmin)?'':'none';
 }
 
 // ═══════════════════════════════════════════════════════════
 // SIDEBAR NAV: COLLAPSIBLE SECTIONS + PINNED ITEMS
 // ═══════════════════════════════════════════════════════════
-const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',clients:'nav-clients-section',admin:'nav-admin-section'};
+const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',iso:'nav-iso-header',clients:'nav-clients-section',admin:'nav-admin-section'};
 const _NAV_PIN_SVG='<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/></svg>';
 function _navCollapseState(){
   try{const s=JSON.parse(localStorage.getItem('navCollapse'));return(s&&typeof s==='object')?s:{};}catch(e){return{};}
@@ -4687,16 +4800,21 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
+  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin',iso:'ISO','iso-admin':'ISO library'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   // Inside a workboard the tab strip already shows the board name (with its colour dot and
   // actions menu), so repeating it in the page title is pure duplication.
   const _inWb=workboardViews.has(view)&&currentWorkboard;
+  // An open ISO board behaves the same way (plan Phase 5.1 "topbar client line") — its own tab
+  // strip (ISO.tabStrip) already shows the board ref/title, so this slot shows the board's client
+  // instead. ISO.currentClient() returns null on the ISO landing page ('iso' with no open board).
+  const _isoCli=view==='iso'&&window.ISO?ISO.currentClient():null;
+  const _inIso=view==='iso'&&!!_isoCli;
   const _vt=document.getElementById('view-title');
   // The board name is already in the tab strip below, so inside a board this slot shows the
   // board's client instead — one client per board, so it is the board's identity, not a repeat.
-  const _wbCli=_inWb?boardClient(currentWorkboard):null;
-  if(_inWb){
+  const _wbCli=_inWb?boardClient(currentWorkboard):(_inIso?_isoCli:null);
+  if(_inWb||_inIso){
     // Logo capped well under the 34px slim topbar so showing it costs no header height.
     const _lg=_wbCli&&_wbCli.logo
       ?`<img src="${escHtml(_wbCli.logo)}" alt="" class="vt-logo"/>`:'';
@@ -4704,7 +4822,7 @@ function navigate(view){
   }else{
     _vt.textContent=viewTitles[view]||view;
   }
-  _vt.classList.toggle('vt-client',!!_inWb);
+  _vt.classList.toggle('vt-client',!!(_inWb||_inIso));
   // Views that render their own page heading would otherwise show the same title twice.
   const _selfTitled=new Set(['quotes']);
   _vt.style.display=(_selfTitled.has(view)&&!_inWb)?'none':'';
@@ -4900,6 +5018,8 @@ function renderView(v){
       case 'notes':     renderNotes();break;
       case 'quotes':    vc.innerHTML=renderQuotes();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
+      case 'iso':       vc.innerHTML=window._isoEnabled&&window.ISO?ISO.render(vc):_render404Html('iso');break;
+      case 'iso-admin': vc.innerHTML=window._isoEnabled&&window.ISO?ISO.renderAdmin(vc):_render404Html('iso-admin');break;
       default: vc.innerHTML=_render404Html(v);break;
     }
     // Smooth enter transition — only when navigating to a different view
@@ -5844,6 +5964,10 @@ function requireInternalUser(user)       { assertInternalUser(user); }
 function requireClientScopedAccess(user,clientId){ assertClientCanAccessClientData(user,clientId); }
 
 // ── Predicate helpers (return boolean, never throw) ──────────
+// D16: a non-admin staff member flagged `billing:true` gets the same approve/reject/invoice/report
+// access an admin has, without the rest of admin's surface area (staff management, audit trail,
+// etc.) — Sam needs to approve time and run pro forma invoices without being made a full admin.
+function _canBill(u){ return !!u&&(u.role==='admin'||(u.role==='staff'&&u.billing===true)); }
 // Resolve the board a task belongs to. Subitems carry no boardId of their own, so fall
 // back to the group, then to the parent task.
 function _taskBoardId(t){
@@ -5920,7 +6044,7 @@ function canViewMasterCapacity(user){
 }
 
 // ── Route-level blocked-views per role ───────────────────────
-const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients']);
+const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients','iso-admin']);
 // Restricted staff are further limited: no Client Notes (confidential credentials).
 const _RESTRICTED_BLOCKED=new Set([..._STAFF_BLOCKED,'notes']);
 function _acBlockedViews(user){
@@ -5930,10 +6054,14 @@ function _acBlockedViews(user){
     // 'archive' was missing here — every other internal-only view is blocked for clients,
     // but Archive & Bin (permanent delete, across every client's archived boards/tasks) was
     // reachable by calling renderView('archive') directly, bypassing the sidebar which never
-    // renders that nav item for a client in the first place.
+    // renders that nav item for a client in the first place. ISO (plan Phase 5.1): the client
+    // portal reaches ISO data through its own portal tab (Phase 13), never this internal 'iso'
+    // view — blocked here the same way every other internal-only view is.
     return new Set(['schedule','workspace','board','list','gantt',
-                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive']);
-  if(user.role==='staff')   return _STAFF_BLOCKED;
+                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive','iso','iso-admin']);
+  // D16: a Billing-flagged staff member gets Reports unblocked (approve/reject/invoice access),
+  // same route as an admin, without the rest of _STAFF_BLOCKED being lifted.
+  if(user.role==='staff')   return _canBill(user)?new Set([..._STAFF_BLOCKED].filter(v=>v!=='reports')):_STAFF_BLOCKED;
   if(user.role==='restricted') return _RESTRICTED_BLOCKED;
   return new Set(['*']);
 }
@@ -6014,6 +6142,7 @@ function exitWorkboard(){
 }
 function updateSidebarWorkboard(){
   renderSidebarWorkboards();
+  if(window.ISO&&window._isoEnabled)ISO.renderSidebar();
 }
 
 // A board is "personal" only when BOTH flags are set — personalBoard alone (with visibility
@@ -6256,6 +6385,29 @@ function closeWbAddMenu(){
   if(_wbAddMenuClose){
     document.removeEventListener('click',_wbAddMenuClose,true);
     _wbAddMenuClose=null;
+  }
+}
+let _isoAddMenuClose=null;
+function toggleIsoAddMenu(){
+  const m=document.getElementById('iso-add-menu');
+  if(!m)return;
+  const isHidden=m.classList.toggle('hidden');
+  if(!isHidden){
+    _isoAddMenuClose=(e)=>{
+      if(!document.getElementById('iso-add-btn')?.contains(e.target)){
+        closeIsoAddMenu();
+      }
+    };
+    setTimeout(()=>document.addEventListener('click',_isoAddMenuClose,true),10);
+  } else {
+    closeIsoAddMenu();
+  }
+}
+function closeIsoAddMenu(){
+  document.getElementById('iso-add-menu')?.classList.add('hidden');
+  if(_isoAddMenuClose){
+    document.removeEventListener('click',_isoAddMenuClose,true);
+    _isoAddMenuClose=null;
   }
 }
 function sidebarNewWb(){
@@ -8335,7 +8487,11 @@ function ganttDepSVG(rowList,viewStart,DW,trackW,totalH){
 }
 
 // ── Main Gantt render ────────────────────────────────────
-function renderGantt(){
+// Plan 2.1: renderGantt split into _ganttTaskModel() (today's data gathering, verbatim — see the
+// golden Gantt captures this is checked against) and _ganttRender(model, handlers) below. Neither
+// function's own logic changed; this only relocates where the data-gathering half ends and the
+// HTML-assembly half begins, so Workboards output is unchanged by construction.
+function _ganttTaskModel(){
   const _wbTabs=renderWbTabs('gantt');
   const _gExcl=_excludedBoardIds();
   // The Gantt has no archived-task styling or handling at all (no dimming, no toggle of its
@@ -8367,7 +8523,7 @@ function renderGantt(){
     parents.forEach(pid=>_gHiddenDepCount.set(pid,(_gHiddenDepCount.get(pid)||0)+1));
   });
 
-  if(!tasks.length)return _wbTabs+renderUniversalToolbar('gantt',{itemCount:0})+`<div class="card" style="margin-top:12px"><p style="color:#8da2b2;text-align:center;padding:40px">No tasks with dates to display. Add start/end dates to tasks to see them here.</p></div>`;
+  if(!tasks.length)return{empty:true,wbTabs:_wbTabs};
 
   // Group by workboard groups
   const wbGroups=getWbGroups();
@@ -8595,12 +8751,23 @@ function renderGantt(){
   // Grid SVG + today line + dep SVG
   const gridSVG=ganttGridSVG(viewStart,totalDays,DW,totalH,ganttScale);
   const depSVG=ganttDepSVG(rowList,viewStart,DW,trackW,totalH);
+  return{empty:false,wbTabs:_wbTabs,taskCount:tasks.length,DW,trackW,totalH,majorHTML,minorHTML,gridSVG,depSVG,leftRows,rightRows,todayX};
+}
+// The other half of the plan 2.1 split — verbatim from today's renderGantt, just reading its
+// inputs from the model object instead of closure variables. handlers is accepted for the
+// contract (plan §4.1 "handlers: {open(id), commitMove, beforeCommit, toggle, rerender,
+// linkDeps}") but Workboards' own left/right row HTML (built into the model above) already has
+// every onclick wired to the existing global functions — see the Phase 2 scoping note above
+// _wbGanttHandlers for what is and isn't routed through handlers in this phase.
+function _ganttRender(model,handlers){
+  if(model.empty)return model.wbTabs+renderUniversalToolbar('gantt',{itemCount:0})+`<div class="card" style="margin-top:12px"><p style="color:#8da2b2;text-align:center;padding:40px">No tasks with dates to display. Add start/end dates to tasks to see them here.</p></div>`;
+  const{wbTabs,taskCount,DW,trackW,totalH,majorHTML,minorHTML,gridSVG,depSVG,leftRows,rightRows,todayX}=model;
   const todayLine=todayX>=0&&todayX<=trackW+DW?`<div style="position:absolute;top:0;left:${todayX}px;width:2px;height:${totalH}px;background:#ef4444;opacity:0.55;pointer-events:none;z-index:5">
     <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;position:absolute;top:-5px;left:-4px;opacity:0.8"></div>
     <div style="position:absolute;top:-18px;left:4px;font-size:9px;font-weight:700;color:#ef4444;white-space:nowrap;font-family:'Jost',sans-serif">Today</div>
   </div>`:'';
 
-  return _wbTabs+renderUniversalToolbar('gantt',{itemCount:tasks.length})+`
+  return wbTabs+renderUniversalToolbar('gantt',{itemCount:taskCount})+`
   <div class="g2-container" style="margin-top:12px">
     <!-- Left panel -->
     <div style="width:${ganttLeftCollapsed?30:300}px;flex-shrink:0;border-right:2px solid #e8edf4;display:flex;flex-direction:column;z-index:2;background:#fff;transition:width 0.16s var(--ease)">
@@ -8633,6 +8800,266 @@ function renderGantt(){
       </div>
     </div>
   </div>`;
+}
+// Workboards' Gantt handlers (plan §4.1 contract). Every method delegates to the existing,
+// unchanged functions — commitMove/beforeCommit/toggle are NOT yet consumed by
+// ganttBarMouseDown/ganttOnUp/applyGanttMove (deliberately deferred: those functions still read
+// DB.tasks and call renderView('gantt') directly, exactly as before Phase 2). Rewiring the actual
+// mouse-drag path onto _ganttSrc is real work with real regression risk (fragile to test via
+// simulated mouse events) for zero behavioural benefit until ISO has its own Gantt to drag
+// (Phase 7b+) — see the Phase 2 Progress Log entry. This object exists now so a future ISO
+// _ganttRender caller has a working reference implementation to model its own handlers on, and so
+// gantt-adapter-test can exercise the contract today against a fake model.
+function _wbGanttHandlers(){
+  return{
+    open(id){ openTaskPanel(id); },
+    commitMove(id,start,end){ return Promise.resolve(_ganttCommitMove(id,start,end)); },
+    beforeCommit(id,start,end){
+      const warnings=getDependencyWarnings(id,start,end,DB.tasks,DB.dependencies||[]);
+      return Promise.resolve(!warnings.some(w=>w.taskId===id));
+    },
+    toggle(key){ getWbGroups().some(g=>g.id===key)?ganttToggleGroup(key):ganttToggleTask(key); },
+    rerender(){ renderView('gantt'); },
+    linkDeps:true,
+  };
+}
+function renderGantt(){
+  const model=_ganttTaskModel();
+  _ganttSrc={model,handlers:_wbGanttHandlers()};
+  return _ganttRender(model,_ganttSrc.handlers);
+}
+
+// Generic Gantt renderer for a model shaped per plan §4.1 (sections:[{id,label,color,
+// rows:[{key,id,name,start,end,color,depth,canDrag}]}]) that isn't Workboards' own model
+// (_ganttRender above consumes that directly via its pre-built leftRows/rightRows). Not reachable
+// from today's Workboards UI. Deliberately minimal — no label-collision avoidance, no baseline
+// ghosts, no rollup bars — those stay Workboards-specific richness, not needed by any generic
+// consumer yet. Real mouse-drag IS wired now (ISO's Action plan Gantt, Phase 7.4, is the first
+// caller that needs it): pass `handlers` (the same {open,beforeCommit,commitMove,toggle,rerender}
+// contract _ganttCommitDrag already expects) and every row not explicitly opted out via
+// `row.canDrag===false` gets a real move/resize drag, mirroring Workboards' own
+// ganttBarMouseDown/OnMove/OnUp but against this generic model instead of DB.tasks. `handlers`
+// stays optional so .agents/gantt-adapter-test.cjs's existing calls (model only, asserting the
+// static render + driving _ganttCommitDrag directly) are unaffected — omitting it just renders
+// non-interactive bars, exactly as before this change.
+function _ganttRenderGeneric(model,handlers){
+  const DW=10,dayMs=86400000;
+  const rows=(model.sections||[]).flatMap(s=>s.rows||[]);
+  const dates=rows.flatMap(r=>[r.start,r.end].filter(Boolean).map(d=>new Date(d+'T00:00:00Z')));
+  const viewStart=dates.length?new Date(Math.min(...dates)):new Date();
+  if(handlers){_ganttGenericSrc={model,handlers};_ganttGenericViewStart=viewStart;}
+  let y=0;const parts=[];
+  (model.sections||[]).forEach(sec=>{
+    parts.push(`<div class="g2g-sec" data-sec="${escHtml(sec.id)}" style="position:absolute;top:${y}px;left:0;height:24px;font-weight:700;background:${sec.color||'#97bcbd'}22">${escHtml(sec.label||'')}</div>`);
+    y+=24;
+    (sec.rows||[]).forEach(row=>{
+      const domId=row.key||row.id;
+      const hasS=!!row.start,hasE=!!row.end;
+      const x=hasS?Math.round((new Date(row.start+'T00:00:00Z')-viewStart)/dayMs*DW):(hasE?Math.round((new Date(row.end+'T00:00:00Z')-viewStart)/dayMs*DW):0);
+      const canDrag=!!handlers&&row.canDrag!==false;
+      if(hasS&&hasE){
+        const w=Math.max(Math.round((new Date(row.end+'T00:00:00Z')-new Date(row.start+'T00:00:00Z'))/dayMs*DW),4);
+        const dAttr=canDrag?`onmousedown="_ganttGenericMouseDown(event,'${escHtml(domId)}','move')"`:'';
+        const rsAttr=canDrag?`onmousedown="event.stopPropagation();_ganttGenericMouseDown(event,'${escHtml(domId)}','resize-start')"`:'';
+        const reAttr=canDrag?`onmousedown="event.stopPropagation();_ganttGenericMouseDown(event,'${escHtml(domId)}','resize-end')"`:'';
+        parts.push(`<div class="g2-bar g2g-bar" id="g2g-bar-${escHtml(domId)}" data-id="${escHtml(row.id)}" data-depth="${row.depth||0}" ${dAttr} style="position:absolute;top:${y}px;left:${x}px;width:${w}px;height:20px;background:${row.color||'#97bcbd'};cursor:${canDrag?'grab':'default'}" title="${escHtml(row.name||'')}">${canDrag?`<div class="g2-rh g2-rh-l" ${rsAttr}></div><div style="flex:1"></div><div class="g2-rh g2-rh-r" ${reAttr}></div>`:''}</div>`);
+      } else if(hasS||hasE){
+        const mAttr=canDrag?`onmousedown="_ganttGenericMouseDown(event,'${escHtml(domId)}','move')"`:'';
+        parts.push(`<div class="g2-bar g2g-bar g2g-milestone" id="g2g-bar-${escHtml(domId)}" data-id="${escHtml(row.id)}" ${mAttr} style="position:absolute;top:${y+4}px;left:${x-6}px;width:12px;height:12px;transform:rotate(45deg);background:${row.color||'#3b82f6'};cursor:${canDrag?'grab':'default'}" title="${escHtml(row.name||'')}"></div>`);
+      }
+      y+=24;
+    });
+  });
+  return`<div class="g2-container g2g-container" style="position:relative;height:${y}px">${parts.join('')}</div>`;
+}
+// Drag state for _ganttRenderGeneric, deliberately separate from Workboards' own _ganttDrag/
+// _ganttSrc (different DOM id prefix, different record lookup — a generic model has no DB.tasks
+// to search). _ganttGenericSrc is set on every render that passes handlers, mirroring how
+// renderGantt sets _ganttSrc, so a drag started on whichever row is currently on screen always
+// resolves against the model/handlers that actually drew it.
+let _ganttGenericDrag=null,_ganttGenericSrc=null,_ganttGenericViewStart=null;
+function _ganttGenericMouseDown(evt,domId,type){
+  if(!_ganttGenericSrc)return;
+  const rows=(_ganttGenericSrc.model.sections||[]).flatMap(s=>s.rows||[]);
+  const row=rows.find(r=>(r.key||r.id)===domId);
+  if(!row)return;
+  evt.preventDefault();evt.stopPropagation();
+  const isMilestone=!row.start||!row.end;
+  _ganttGenericDrag={domId,recordId:row.id,type,startX:evt.clientX,origStart:row.start,origEnd:row.end,moved:false,isMilestone};
+  const bar=document.getElementById('g2g-bar-'+domId);
+  if(bar)bar.classList.add('dragging');
+  document.addEventListener('mousemove',_ganttGenericOnMove);
+  document.addEventListener('mouseup',_ganttGenericOnUp);
+  document.body.style.cursor=type==='move'?'grabbing':'ew-resize';
+}
+function _ganttGenericOnMove(evt){
+  if(!_ganttGenericDrag||!_ganttGenericViewStart)return;
+  evt.preventDefault();
+  const DW=10;
+  const delta=evt.clientX-_ganttGenericDrag.startX;
+  _ganttGenericDrag.moved=true;
+  const bar=document.getElementById('g2g-bar-'+_ganttGenericDrag.domId);
+  if(!bar)return;
+  if(_ganttGenericDrag.isMilestone){
+    const refDate=_ganttGenericDrag.origStart||_ganttGenericDrag.origEnd;
+    const ox=Math.round((new Date(refDate+'T00:00:00Z')-_ganttGenericViewStart)/86400000*DW);
+    bar.style.left=(ox-6+delta)+'px';
+    return;
+  }
+  const ox=Math.round((new Date(_ganttGenericDrag.origStart+'T00:00:00Z')-_ganttGenericViewStart)/86400000*DW);
+  const ow=Math.max(Math.round((new Date(_ganttGenericDrag.origEnd+'T00:00:00Z')-new Date(_ganttGenericDrag.origStart+'T00:00:00Z'))/86400000*DW),4);
+  let nl,nw;
+  if(_ganttGenericDrag.type==='move'){nl=ox+delta;nw=ow;}
+  else if(_ganttGenericDrag.type==='resize-start'){nl=ox+delta;nw=Math.max(ow-delta,4);}
+  else{nl=ox;nw=Math.max(ow+delta,4);}
+  bar.style.left=nl+'px';bar.style.width=nw+'px';
+}
+function _ganttGenericAddDays(ds,n){const d=new Date(ds+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function _ganttGenericOnUp(evt){
+  document.removeEventListener('mousemove',_ganttGenericOnMove);
+  document.removeEventListener('mouseup',_ganttGenericOnUp);
+  document.body.style.cursor='';
+  if(!_ganttGenericDrag)return;
+  const drag=_ganttGenericDrag;
+  _ganttGenericDrag=null;
+  const bar=document.getElementById('g2g-bar-'+drag.domId);
+  if(bar)bar.classList.remove('dragging');
+  if(!drag.moved||!_ganttGenericSrc)return;
+  const DW=10;
+  const deltaDays=Math.round((evt.clientX-drag.startX)/DW);
+  if(deltaDays===0){_ganttGenericSrc.handlers.rerender();return;}
+  let ns=drag.origStart,ne=drag.origEnd;
+  if(drag.isMilestone){
+    if(ns)ns=_ganttGenericAddDays(ns,deltaDays);
+    if(ne)ne=_ganttGenericAddDays(ne,deltaDays);
+  } else if(drag.type==='move'){ns=_ganttGenericAddDays(drag.origStart,deltaDays);ne=_ganttGenericAddDays(drag.origEnd,deltaDays);}
+  else if(drag.type==='resize-start'){ns=_ganttGenericAddDays(drag.origStart,deltaDays);if(ns>=ne)ns=_ganttGenericAddDays(ne,-1);}
+  else{ne=_ganttGenericAddDays(drag.origEnd,deltaDays);if(ne<=ns)ne=_ganttGenericAddDays(ns,1);}
+  _ganttCommitDrag(_ganttGenericSrc.handlers,drag.recordId,ns,ne);
+}
+// Plan 2.3: async commit — beforeCommit() gates the move (a rejection, e.g. a dependency
+// violation, cancels before anything is written), then commitMove() does the actual write.
+// "Rollback" is a fresh handlers.rerender() rather than a manual bar-position restore — the
+// contract is that a rejected commitMove must not mutate the model's own data (same contract
+// _mtCellCommit uses for cell saves), so re-rendering from the model shows the still-original
+// dates. Not yet called by the real mouse-drag path (ganttOnUp still calls applyGanttMove
+// directly) — see the Phase 2 scoping note above _wbGanttHandlers.
+function _ganttCommitDrag(handlers,taskId,newStart,newEnd){
+  return Promise.resolve(handlers.beforeCommit(taskId,newStart,newEnd)).then(ok=>{
+    if(!ok){const e=new Error('rejected by beforeCommit');e.beforeCommit=true;throw e;}
+    return Promise.resolve(handlers.commitMove(taskId,newStart,newEnd));
+  }).then(()=>{ handlers.rerender(); }).catch(e=>{
+    showToast('Could not move — showing the previous dates'+(e&&e.message?': '+e.message:''),'error',4000);
+    handlers.rerender();
+    throw e;
+  });
+}
+
+// ── Gantt PDF export (plan Phase 7b.6/D14) — shared by any caller whose model is shaped like
+// _ganttRenderGeneric's own (sections:[{id,label,rows:[{id,name,start,end,color,progress}]}]); the
+// first (and so far only) caller is ISO's Action plan tab (Workboards doesn't get this button in
+// release 1 — the plan's own words — so this is never wired to renderGantt's own leftRows/
+// rightRows model). No DOM screenshot (no html2canvas/svg plugin is loaded, §3.2) — every mark is
+// a jsPDF primitive drawn straight from the model's own plain data, the same discipline
+// tsExportPDF's own table already follows for Timesheets.
+function _ganttPdf(model,opts){
+  opts=opts||{};
+  _ensureJsPdf(()=>{
+    try{ _ganttPdfNow(model,opts); }
+    catch(e){ console.error(e); showAlert('The PDF could not be built: '+e.message,'Export failed'); }
+  },()=>showAlert('The PDF writer could not be loaded. Check your connection and try again.','Export failed'));
+}
+function _ganttHexToRgb(hex){
+  const h=String(hex||'6b8399').replace('#','');
+  const full=h.length===3?h.split('').map(c=>c+c).join(''):h;
+  const n=parseInt(/^[0-9a-f]{6}$/i.test(full)?full:'6b8399',16);
+  return[(n>>16)&255,(n>>8)&255,n&255];
+}
+function _ganttPdfNow(model,opts){
+  const rows=(model.sections||[]).flatMap(s=>s.rows||[]);
+  const allDates=rows.flatMap(r=>[r.start,r.end].filter(Boolean).map(d=>new Date(d+'T00:00:00Z')));
+  const minD=allDates.length?new Date(Math.min(...allDates)):new Date();
+  const maxD=allDates.length?new Date(Math.max(...allDates)):new Date();
+  // §7b.6: "paper A4/A3 landscape" — a wide date span needs the extra width A3 gives; a narrow
+  // one stays on the more printable A4. A simple day-count threshold, not a pixel-fit search.
+  const spanDays=Math.max(1,Math.round((maxD-minD)/86400000));
+  const format=spanDays>120?'a3':'a4';
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format});
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),mX=12;
+  const DARK=[13,28,51],TEAL=[23,120,130],GREY=[90,90,90],BORDER=[210,218,228];
+  const labelW=72,chartX=mX+labelW+4,chartW=W-mX-chartX;
+  const viewStart=new Date(minD.getTime()-3*86400000);
+  const totalDays=spanDays+6;
+  const dayW=chartW/totalDays;
+  const xOf=ds=>chartX+Math.max(0,(new Date(ds+'T00:00:00Z')-viewStart)/86400000*dayW);
+  const todayStr=toDateStr(new Date());
+  const rowH=7,secH=6;
+  function drawHeader(y){
+    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(...DARK);
+    doc.text(opts.clientName||'',mX,y);
+    doc.setFontSize(15);doc.setTextColor(...TEAL);
+    doc.text('Action Plan'+(opts.clientVersion?' (Client version)':''),W-mX,y,{align:'right'});
+    y+=6;
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...GREY);
+    doc.text(`${opts.ref||''}  ·  ${opts.title||''}`,mX,y);
+    doc.text('Data as at '+formatDate((opts.dataAsAt||new Date().toISOString()).slice(0,10)),W-mX,y,{align:'right'});
+    y+=5;
+    doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);doc.line(mX,y,W-mX,y);
+    return y+6;
+  }
+  let y=drawHeader(14);
+  const chartTop=y;
+  (model.sections||[]).forEach(sec=>{
+    if(y+secH>H-14){doc.addPage();y=drawHeader(14);}
+    doc.setFillColor(248,251,253);
+    doc.rect(mX,y-4.5,W-mX*2,secH,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...DARK);
+    doc.text(sec.label||'',mX+2,y);
+    y+=secH;
+    (sec.rows||[]).forEach(row=>{
+      if(y+rowH>H-14){doc.addPage();y=drawHeader(14);}
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...DARK);
+      const label=(row.name||'').length>44?row.name.slice(0,43)+'…':(row.name||'');
+      doc.text(label,mX,y+1.5);
+      const col=_ganttHexToRgb(row.color);
+      if(row.start&&row.end){
+        const bx=xOf(row.start),bw=Math.max(xOf(row.end)-bx,1.5);
+        doc.setFillColor(...col);
+        doc.roundedRect(bx,y-3.2,bw,4.4,0.8,0.8,'F');
+        // Progress fill — a lighter blend of the bar's own colour over the left portion, same
+        // visual idea the on-screen bar's own white-overlay progress strip uses. Blended by hand
+        // (mix 38% toward white) rather than jsPDF's GState/alpha API, which isn't guaranteed
+        // present across the versions this app's other PDF exports already pin to.
+        if(row.progress>0){
+          const lighten=c=>Math.round(c+(255-c)*0.38);
+          doc.setFillColor(lighten(col[0]),lighten(col[1]),lighten(col[2]));
+          doc.roundedRect(bx,y-3.2,bw*Math.min(row.progress,100)/100,4.4,0.8,0.8,'F');
+        }
+      } else if(row.start||row.end){
+        const mxp=xOf(row.start||row.end);
+        doc.setFillColor(...col);
+        doc.triangle(mxp,y-3.2,mxp+2.2,y-1,mxp,y+1.2,'F');
+        doc.triangle(mxp,y-3.2,mxp-2.2,y-1,mxp,y+1.2,'F');
+      }
+      y+=rowH;
+    });
+  });
+  if(allDates.length){
+    const tx=xOf(todayStr);
+    doc.setDrawColor(239,68,68);doc.setLineWidth(0.4);
+    doc.line(tx,chartTop-2,tx,y);
+    doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(239,68,68);
+    doc.text('Today',tx+1,chartTop-3);
+  }
+  // No dependency lines are drawn — ISO actions carry no dependency data at all (unlike
+  // Workboards' own tasks), so "when present" (the plan's own phrasing) correctly means never yet.
+  const pages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...GREY);
+    doc.text(`Page ${p} of ${pages}`,W-mX,H-6,{align:'right'});
+  }
+  doc.save(opts.filename||`${(opts.ref||'Action_Plan')}_Action_Plan_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 // ── Gantt toolbar actions ────────────────────────────────
@@ -10236,7 +10663,33 @@ function tmOnPercentModeChange(mode){
 // ═══════════════════════════════════════════════════════════
 // TIMESHEETS
 // ═══════════════════════════════════════════════════════════
-let _teMode='task'; // 'task' | 'client' — which selector the log form shows
+let _teMode='task'; // 'task' | 'client' | 'iso' — which selector the log form shows
+// Phase 7b.2 (D12): the ISO board/action picker's own data — fetched once, lazily (the log form
+// renders synchronously; ISO.timeTargets() does not), then cached here until the next full page
+// load. null = not yet fetched, [] = fetched and empty (no ISO boards the caller can see).
+let _teIsoTargets=null,_teIsoTargetsLoading=false;
+function _teLoadIsoTargets(){
+  if(_teIsoTargetsLoading||_teIsoTargets||!(window._isoEnabled&&window.ISO&&ISO.timeTargets))return;
+  _teIsoTargetsLoading=true;
+  const draft=_teCaptureFormDraft();
+  ISO.timeTargets().then(targets=>{
+    _teIsoTargets=targets||[];
+    _teIsoTargetsLoading=false;
+    if(_teMode==='iso'){renderView('time');setTimeout(()=>_teRestoreFormDraft(draft),0);}
+  }).catch(()=>{
+    _teIsoTargets=[];_teIsoTargetsLoading=false;
+    if(_teMode==='iso')renderView('time');
+  });
+}
+// Repopulate the Action select when the ISO board changes — that list is per-board, not
+// known until a board is picked, so it cannot be baked into the initial render.
+function _teIsoBoardChanged(auditId){
+  const sel=document.getElementById('te-iso-action');
+  if(!sel)return;
+  const target=(_teIsoTargets||[]).find(t=>t.auditId===auditId);
+  const actions=target?target.actions||[]:[];
+  sel.innerHTML=`<option value="">General audit work</option>`+actions.map(a=>`<option value="${escHtml(a.id)}">${escHtml(a.ref)} — ${escHtml(a.title)}</option>`).join('');
+}
 let _teBillableOn=true; // billable toggle state for the log form
 let _teViewAll=false; // admin: false = My Timesheets, true = All Staff
 
@@ -10261,8 +10714,9 @@ function _teRestoreFormDraft(draft){
 }
 function _teSetMode(mode){
   const draft=_teCaptureFormDraft();
-  _teMode=(mode==='client')?'client':'task';
+  _teMode=mode==='client'?'client':mode==='iso'?'iso':'task';
   renderView('time');
+  if(_teMode==='iso')_teLoadIsoTargets();
   setTimeout(()=>_teRestoreFormDraft(draft),0);
 }
 function _teSetViewAll(v){
@@ -10343,7 +10797,8 @@ function renderTime(){
 
   const todayStr=toDateStr(new Date());
   const isAdmin=currentUser.role==='admin';
-  const mode=_teMode==='client'?'client':'task';
+  const mode=_teMode==='client'?'client':_teMode==='iso'&&window._isoEnabled?'iso':'task';
+  if(mode==='iso')_teLoadIsoTargets();
 
   const _teLoggableTasks=DB.tasks.filter(t=>!t.archived&&!_isTaskOnPersonalBoard(t));
   const taskOpts=_teLoggableTasks.map(t=>{
@@ -10360,7 +10815,7 @@ function renderTime(){
 
   const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
 
-  const selectorCols=isAdmin?'1.3fr 1fr':'1.6fr';
+  const selectorCols=mode==='iso'?(isAdmin?'1fr 1fr 0.8fr':'1fr 1fr'):(isAdmin?'1.3fr 1fr':'1.6fr');
   const teStyleBlock=`<style>
     #te-hours::-webkit-outer-spin-button,#te-hours::-webkit-inner-spin-button,.te-inline-hours::-webkit-outer-spin-button,.te-inline-hours::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     #te-hours,.te-inline-hours{-moz-appearance:textfield}
@@ -10375,7 +10830,7 @@ function renderTime(){
     <div style="display:flex;align-items:center;margin-bottom:16px;gap:12px">
       <h3 style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin:0">Log Time</h3>
       <div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:8px;padding:2px">
-        ${toggleBtn('task','Task')}${toggleBtn('client','Client')}
+        ${toggleBtn('task','Task')}${toggleBtn('client','Client')}${window._isoEnabled?toggleBtn('iso','ISO audit'):''}
       </div>
     </div>
     <div class="te-log-form-grid" style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
@@ -10384,6 +10839,20 @@ function renderTime(){
         <input id="te-task-input" class="form-input" autocomplete="off" placeholder="Search task…" oninput="_teTaskFilter(this)" onfocus="_teTaskOpen(this)" onblur="_teTaskBlur()" style="cursor:text"/>
         <input type="hidden" id="te-task" value=""/>
         <div id="te-task-drop" style="display:none;position:absolute;left:0;width:200%;background:#fff;border:1px solid #d4dde8;border-radius:8px;box-shadow:0 4px 16px rgba(13,28,51,0.13);max-height:220px;overflow-y:auto;z-index:9999"></div></div>`
+        :mode==='iso'
+        ?(_teIsoTargets===null
+          ?`<div><label class="form-label">ISO board <span style="color:#ef4444">*</span></label><select class="form-input" disabled><option>Loading ISO boards…</option></select></div>
+             <div><label class="form-label">Action</label><select class="form-input" disabled><option>—</option></select></div>`
+          :(()=>{
+              const isoBoardOpts=`<option value="" disabled selected>Choose an ISO board</option>`+_teIsoTargets.map(t=>{
+                const cl=DB.clients.find(c=>c.id===t.clientId);
+                return`<option value="${escHtml(t.auditId)}">${cl?escHtml(cl.name)+' · ':''}${escHtml(t.ref)} · ${escHtml((t.standards||[]).join('/'))}</option>`;
+              }).join('');
+              return`<div><label class="form-label">ISO board <span style="color:#ef4444">*</span></label>
+              <select id="te-iso-board" class="form-input" onchange="_teIsoBoardChanged(this.value)">${isoBoardOpts}</select></div>
+              <div><label class="form-label">Action</label>
+              <select id="te-iso-action" class="form-input"><option value="">General audit work</option></select></div>`;
+            })())
         :`<div><label class="form-label">Client <span style="color:#ef4444">*</span></label>
         <select id="te-client" class="form-input">${clientOpts}</select></div>`}
       ${isAdmin?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
@@ -10499,7 +10968,7 @@ function renderTime(){
     const rowBg=isSelDay?'#e8f4f4':(isApproved?'#f8fcfa':'transparent');
     // Short client badge: up to 4 uppercase chars from initials of each word
     const clientShort=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
-    const taskLabel=task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
+    const taskLabel=e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
     return`<div data-terowdate="${e.date}" class="te-row${e.note?' te-hasnote':''}" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
       <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
       <div id="te-name-cell-${e.id}" class="_te-name-wrapper" onclick="${canEdit?`_teOpenTaskPicker('${e.id}',this)`:''}" style="display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;min-width:0;${canEdit?'cursor:pointer;':''}" ${canEdit?'title="Click to change task or client"':''}><span class="_te-name-body" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLabel}</span><span class="_te-name-chev" onclick="event.stopPropagation();_teNameToggle(this.closest('._te-name-wrapper'))" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;visibility:hidden;cursor:pointer;transition:transform 0.15s;padding:2px 0 2px 4px">▾</span></div>
@@ -10933,6 +11402,9 @@ function _tePickClient(id,clientId){
   const e=DB.timeEntries.find(x=>x.id===id);
   if(!e||e.status==='approved')return;
   e.clientId=clientId||null;   // taskId deliberately untouched
+  // Switching an ISO entry's client here moves it off ISO entirely (D12: switching *to* ISO
+  // is done by logging a new entry, not by editing an existing one in place).
+  if(e.isoAuditId){delete e.isoAuditId;delete e.isoLabel;delete e.isoActionId;delete e.isoActionRef;}
   e.updatedAt=new Date().toISOString();
   saveDB(DB);
   document.getElementById('_te-picker-pop')?.remove();
@@ -10969,6 +11441,9 @@ function _tePickerPick(id,taskId,clientId,el){
   if(!e)return;
   e.taskId=taskId||null;
   e.clientId=taskId?(DB.tasks.find(t=>t.id===taskId)?.clientId||(getTaskClient(DB.tasks.find(t=>t.id===taskId))?.id)||null):clientId||null;
+  // Switching an ISO entry to a task/client here moves it off ISO entirely (D12: switching *to*
+  // ISO is done by logging a new entry, not by editing an existing one in place).
+  if(e.isoAuditId){delete e.isoAuditId;delete e.isoLabel;delete e.isoActionId;delete e.isoActionRef;}
   e.updatedAt=new Date().toISOString();
   if(taskId)applyHourBudgetPct(taskId);
   saveDB(DB);
@@ -11035,7 +11510,7 @@ function _teTaskPick(id,el){
 // or false if a validation message was already shown.
 function _teCreateEntry(opts){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return false;}
-  const{taskId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}=opts;
+  const{taskId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable,isoAuditId,isoLabel,isoActionId,isoActionRef}=opts;
   let clientId=opts.clientId||null;
   // Every entry carries a note. A task name says what the work was attached to, not what
   // was actually done, and that is what a timesheet is read for later.
@@ -11053,16 +11528,25 @@ function _teCreateEntry(opts){
   // and never reached Pending Approval.
   const _now=new Date().toISOString();
   const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'submitted',submittedAt:_now,createdAt:_now,updatedAt:_now};
+  // Phase 7b.2 (D12): an ISO-mode entry carries no task at all (hours are an ordinary time
+  // entry against the ISO board, not a linked task — D12 explicitly replaces the earlier
+  // linked-task design so deleting a task/board can never take ISO hours with it). isoLabel is
+  // frozen at log time so the entry stays readable even if the board is later renamed or its
+  // ISO data becomes unreachable — the same reasoning a frozen snapshot gets anywhere else in
+  // this app (e.g. requirement imports' own `imported` field).
+  if(isoAuditId){entry.isoAuditId=isoAuditId;entry.isoLabel=isoLabel||null;entry.isoActionId=isoActionId||null;entry.isoActionRef=isoActionRef||null;}
   DB.timeEntries.push(entry);
-  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
+  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null,...(isoAuditId?{isoAuditId,isoActionId:isoActionId||null}:{})});
   if(taskId)applyHourBudgetPct(taskId);
   saveDB(DB);
   return entry;
 }
 function logTime(){
-  const mode=_teMode==='client'?'client':'task';
+  const mode=_teMode==='client'?'client':_teMode==='iso'&&window._isoEnabled?'iso':'task';
   const taskId=mode==='task'?(document.getElementById('te-task')?.value||''):'';
   const selectedClientId=mode==='client'?(document.getElementById('te-client')?.value||''):'';
+  const isoAuditId=mode==='iso'?(document.getElementById('te-iso-board')?.value||''):'';
+  const isoActionId=mode==='iso'?(document.getElementById('te-iso-action')?.value||''):'';
   // Only an admin may log against another person. The Staff select is not rendered for
   // anyone else, so this held by markup alone; state it in the handler too.
   const staffId=currentUser.role==='admin'?(document.getElementById('te-staff')?.value||currentUser.id):currentUser.id;
@@ -11073,12 +11557,21 @@ function logTime(){
   const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||'Ordinary Hours';
   const location=document.getElementById('te-location')?.value||'remote';
   const billable=_teBillableOn;
-  // Mode-specific validation stays here: it is about the form's task/client toggle, not
+  // Mode-specific validation stays here: it is about the form's task/client/ISO toggle, not
   // about what makes an entry valid on its own.
   if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
-  const clientId=mode==='client'?selectedClientId:null;
-  if(!_teCreateEntry({taskId,clientId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}))return;
+  if(mode==='iso'&&!isoAuditId){showAlert('Please select an ISO board.','Validation');return;}
+  const clientId=mode==='client'?selectedClientId:mode==='iso'?((_teIsoTargets||[]).find(t=>t.auditId===isoAuditId)?.clientId||null):null;
+  let isoLabel=null,isoActionRef=null;
+  if(mode==='iso'){
+    const target=(_teIsoTargets||[]).find(t=>t.auditId===isoAuditId);
+    isoLabel='ISO · '+(target?target.ref:isoAuditId)+' · '+(target&&target.standards&&target.standards.length?target.standards.join('/'):'');
+    const action=target&&isoActionId?target.actions.find(a=>a.id===isoActionId):null;
+    isoActionRef=action?action.ref:null;
+  }
+  if(!_teCreateEntry({taskId,clientId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable,
+    isoAuditId:mode==='iso'?isoAuditId:null,isoLabel,isoActionId:mode==='iso'?(isoActionId||null):null,isoActionRef}))return;
   renderView('time');
 }
 
@@ -11089,25 +11582,27 @@ function logTime(){
 let _teQuickPicked={taskId:null,clientId:null,label:'Select task or client…'};
 let _teQuickHours=1;
 function _teRecentTargets(){
-  // Last 5 distinct task/client combinations this person logged, most recent first —
-  // one tap replaces the search-and-type picker for routine, repeat work.
+  // Last 5 distinct task/client/ISO-board+action combinations this person logged, most recent
+  // first — one tap replaces the search-and-type picker for routine, repeat work. An ISO
+  // combination's key includes isoAuditId so it never collides with a plain task/client one.
   const mine=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&e.staffId===currentUser.id)
     .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   const seen=new Set(),out=[];
   for(const e of mine){
-    const key=(e.taskId||'')+'|'+(e.clientId||'');
-    if(seen.has(key)||(!e.taskId&&!e.clientId))continue;
+    const key=(e.taskId||'')+'|'+(e.clientId||'')+'|'+(e.isoAuditId||'')+'|'+(e.isoActionId||'');
+    if(seen.has(key)||(!e.taskId&&!e.clientId&&!e.isoAuditId))continue;
     seen.add(key);
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
     const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
-    out.push({taskId:e.taskId||null,clientId:e.clientId||null,label:task?task.name:(client?.name||'Unknown')});
+    const label=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?task.name:(client?.name||'Unknown');
+    out.push({taskId:e.taskId||null,clientId:e.clientId||null,isoAuditId:e.isoAuditId||null,isoLabel:e.isoLabel||null,isoActionId:e.isoActionId||null,isoActionRef:e.isoActionRef||null,label});
     if(out.length>=5)break;
   }
   return out;
 }
 function teQuickPick(i,recent){
   const r=recent[i];
-  _teQuickPicked={taskId:r.taskId,clientId:r.clientId,label:r.label};
+  _teQuickPicked={taskId:r.taskId,clientId:r.clientId,isoAuditId:r.isoAuditId||null,isoLabel:r.isoLabel||null,isoActionId:r.isoActionId||null,isoActionRef:r.isoActionRef||null,label:r.label};
   document.querySelectorAll('.qte-recent-chip').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
   const disp=document.getElementById('qte-picked-label');if(disp)disp.textContent=r.label;
 }
@@ -11144,10 +11639,11 @@ function teQuickLogClose(){document.getElementById('te-quicklog-wrap')?.classLis
 function teQuickLogSave(){
   const note=(document.getElementById('qte-note')?.value||'').trim();
   if(!note){document.getElementById('qte-note')?.focus();return;}
-  if(!_teQuickPicked.taskId&&!_teQuickPicked.clientId){showAlert('Pick a recent task or client first.','Validation');return;}
+  if(!_teQuickPicked.taskId&&!_teQuickPicked.clientId&&!_teQuickPicked.isoAuditId){showAlert('Pick a recent task or client first.','Validation');return;}
   const entry=_teCreateEntry({taskId:_teQuickPicked.taskId,clientId:_teQuickPicked.clientId,staffId:currentUser.id,
     hours:_teQuickHours,date:_teFmtYMD(new Date()),note,earningsRateId:'er1',earningsRateName:'Ordinary Hours',
-    location:'remote',billable:true});
+    location:'remote',billable:true,isoAuditId:_teQuickPicked.isoAuditId||null,isoLabel:_teQuickPicked.isoLabel||null,
+    isoActionId:_teQuickPicked.isoActionId||null,isoActionRef:_teQuickPicked.isoActionRef||null});
   if(!entry)return;
   teQuickLogClose();
   renderView('time');
@@ -11188,16 +11684,23 @@ function renderReports(){
   if(rptTab==='timesheet'){
     filterRow=''; // filter bar is fully embedded inside _rptTimesheetHtml()
   } else {
-    filterRow=''; // invoice management UI is fully embedded inside _rptInvoiceHtml()
+    filterRow=''; // invoice management UI / ISO audits tab build their own, if any
   }
 
-  const body=rptTab==='timesheet'?_rptTimesheetHtml():_rptInvoiceHtml();
+  // D13: a third tab, only when ISO is enabled — its own body is filled asynchronously
+  // (ISO.fillReportsTab needs real api() round trips: audit.list + one metric.audit per board),
+  // same pattern as ISO.renderAdmin/fillAdmin.
+  const body=rptTab==='timesheet'?_rptTimesheetHtml()
+    :rptTab==='iso'&&window._isoEnabled?`<div id="rpt-iso-body"><div class="card" style="padding:40px;text-align:center;color:#8da2b2">Loading ISO audits…</div></div>`
+    :_rptInvoiceHtml();
+  if(rptTab==='iso'&&window._isoEnabled)setTimeout(()=>{ if(window.ISO&&ISO.fillReportsTab)ISO.fillReportsTab(); },0);
 
   return`<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:18px">
     <div class="card" style="padding:14px 20px">
       <div style="display:flex;gap:8px;margin-bottom:16px;background:#f4f7fa;border-radius:9px;padding:4px">
         <button style="${tabStyle('timesheet')}" onclick="rptTab='timesheet';renderView('reports')">Timesheet</button>
         <button style="${tabStyle('invoice')}" onclick="rptTab='invoice';renderView('reports')">Pro Forma Invoice</button>
+        ${window._isoEnabled?`<button style="${tabStyle('iso')}" onclick="rptTab='iso';renderView('reports')">ISO audits</button>`:''}
       </div>
       <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
         ${filterRow}
@@ -11225,7 +11728,7 @@ function timeEntryForReport(e){
     staffId:e.staffId,
     staffName:staff?.name||'Unknown',
     taskId:e.taskId,
-    taskTitle:task?.name||task?.title||'—',
+    taskTitle:e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||'—'),
     date:e.date,
     hours:e.hours,
     note:e.note||null,
@@ -11325,12 +11828,18 @@ function tsStatusMeta(status){
 // TIMESHEETS — Filter
 // ══════════════════════════════════════════════════════════════════════════
 function _tsFilterEntries(){
-  const isAdmin=currentUser?.role==='admin';
+  // D16: this is the Reports page's own entry set (every caller below is Reports-area: the
+  // detail table, CSV/Xero exports, select-all) — a Billing-flagged staff member needs to see and
+  // act on OTHER people's entries here for approve/reject/invoice to mean anything, same as an
+  // admin. This is deliberately separate from the Timesheets LOGGING page's own admin-only
+  // "view all"/"log for another staff member" affordances (renderTime/_teViewAll/#te-staff),
+  // which stay admin-only per the plan.
+  const canBill=_canBill(currentUser);
   const _tsExcl=_excludedBoardIds();
   const _tsInvMap=tsInvoicedFilter!=='all'?pfiInvoicedEntryMap(null):null;
   return (DB.timeEntries||[]).filter(e=>{
     if(e.deletedAt) return false;
-    if(!isAdmin&&e.staffId!==currentUser?.id) return false;
+    if(!canBill&&e.staffId!==currentUser?.id) return false;
     // exclude entries whose task belongs to an internal-only board
     if(_tsExcl.size){
       const _tsTask=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
@@ -11346,6 +11855,9 @@ function _tsFilterEntries(){
       const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
       if(!task||(task.workboardId||task.boardId)!==tsBoardFilter) return false;
     }
+    // D13: 'any_iso' = any ISO-mode entry; a specific value = that one board's own isoAuditId.
+    if(tsIsoFilter==='any_iso'&&!e.isoAuditId) return false;
+    if(tsIsoFilter!=='all'&&tsIsoFilter!=='any_iso'&&e.isoAuditId!==tsIsoFilter) return false;
     if(tsEarningsRateFilter!=='all'&&(e.earningsRateId||'er1')!==tsEarningsRateFilter) return false;
     if(tsBillableFilter==='billable'&&e.billable===false) return false;
     if(tsBillableFilter==='nonbillable'&&e.billable!==false) return false;
@@ -11422,8 +11934,10 @@ function tsSetPeriod(period){
 // ══════════════════════════════════════════════════════════════════════════
 function tsApproveEntry(id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
-  if(currentUser.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can approve timesheets.');return;}
   const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
+  // A14: a Billing (non-admin) user cannot approve their own entries.
+  if(currentUser.role!=='admin'&&e.staffId===currentUser.id){showAlert('You cannot approve your own timesheet entries.');return;}
   e.status='approved';e.approvedAt=new Date().toISOString();e.approvedByUserId=currentUser.id;
   delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
   e.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
@@ -11445,10 +11959,12 @@ function openTsRejectModal(id){
 }
 function tsRejectEntry(id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
-  if(currentUser.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can reject timesheets.');return;}
   const reason=(document.getElementById('ts-reject-reason')?.value||'').trim();
   if(!reason){showAlert('Please enter a rejection reason.');return;}
   const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
+  // A14: a Billing (non-admin) user cannot reject their own entries.
+  if(currentUser.role!=='admin'&&e.staffId===currentUser.id){showAlert('You cannot reject your own timesheet entries.');return;}
   e.status='rejected';e.rejectedAt=new Date().toISOString();e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
   delete e.approvedAt;delete e.approvedByUserId;
   e.updatedAt=new Date().toISOString();saveDB(DB);closeGenericModal();renderView('reports');
@@ -11463,7 +11979,7 @@ function tsSubmitEntry(id){
 function openTsBulkApproveModal(){
   const ids=[...tsSelectedIds];
   if(!ids.length){showAlert('Select entries to approve.');return;}
-  if(currentUser?.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can approve timesheets.');return;}
   document.getElementById('generic-modal-title').textContent='Bulk Approve Timesheets';
   document.getElementById('generic-modal-body').innerHTML=`
     <p style="font-size:13px;color:#4a5568;margin-bottom:10px">Approve <strong>${ids.length}</strong> selected timesheet entr${ids.length!==1?'ies':'y'}?</p>
@@ -11475,29 +11991,33 @@ function openTsBulkApproveModal(){
   document.getElementById('generic-modal').classList.remove('hidden');
 }
 function tsBulkApprove(){
-  if(currentUser?.role!=='admin'){showAlert('Only admins can approve timesheets.','Permission');return;}
-  const ids=[...tsSelectedIds];const now=new Date().toISOString();let count=0;
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can approve timesheets.','Permission');return;}
+  const isTrueAdmin=currentUser.role==='admin';
+  const ids=[...tsSelectedIds];const now=new Date().toISOString();let count=0,skippedOwn=0;
   ids.forEach(id=>{
     const e=DB.timeEntries.find(t=>t.id===id);
     // Was 'submitted' only, which quietly matched nothing on a board of drafts: entries are
     // created as draft and the Submit button is rendered for non-admins alone, so an admin's
     // own time never reaches submitted. The single-row tick approves a draft happily, so the
     // two disagreed — approve anything not already approved, as that button does.
-    if(e&&e.status!=='approved'){
-      e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
-      delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
-      e.updatedAt=now;count++;
-    }
+    if(!e||e.status==='approved')return;
+    // A14: a Billing (non-admin) user's own entries are silently skipped, not an error for the
+    // whole batch — the same entries a true admin could still select and approve alongside them.
+    if(!isTrueAdmin&&e.staffId===currentUser.id){skippedOwn++;return;}
+    e.status='approved';e.approvedAt=now;e.approvedByUserId=currentUser.id;
+    delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
+    e.updatedAt=now;count++;
   });
   saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
   // Never finish silently: a run that changed nothing used to look identical to one that worked.
-  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved.`,'Timesheets Approved');
+  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved.`+(skippedOwn?` ${skippedOwn} of your own entr${skippedOwn!==1?'ies were':'y was'} skipped.`:''),'Timesheets Approved');
+  else if(skippedOwn)showAlert('Nothing to approve — you cannot approve your own timesheet entries.','Timesheets');
   else showAlert('Nothing to approve — every entry selected was already approved.','Timesheets');
 }
 function openTsBulkRejectModal(){
   const ids=[...tsSelectedIds];
   if(!ids.length){showAlert('Select entries to reject.');return;}
-  if(currentUser?.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can reject timesheets.');return;}
   document.getElementById('generic-modal-title').textContent='Bulk Reject Timesheets';
   document.getElementById('generic-modal-body').innerHTML=`
     <p style="font-size:13px;color:#4a5568;margin-bottom:12px">Reject <strong>${ids.length}</strong> selected timesheet entr${ids.length!==1?'ies':'y'}?</p>
@@ -11511,24 +12031,27 @@ function openTsBulkRejectModal(){
   setTimeout(()=>document.getElementById('ts-bulk-reject-reason')?.focus(),40);
 }
 function tsBulkReject(){
-  if(currentUser?.role!=='admin'){showAlert('Only admins can reject timesheets.','Permission');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can reject timesheets.','Permission');return;}
+  const isTrueAdmin=currentUser.role==='admin';
   const ids=[...tsSelectedIds];
   const reason=(document.getElementById('ts-bulk-reject-reason')?.value||'').trim();
   if(!reason){showAlert('Please enter a rejection reason.');return;}
-  const now=new Date().toISOString();let count=0;
+  const now=new Date().toISOString();let count=0,skippedOwn=0;
   ids.forEach(id=>{
     const e=DB.timeEntries.find(t=>t.id===id);
-    if(e&&(e.status==='submitted'||e.status==='draft')){
-      e.status='rejected';e.rejectedAt=now;e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
-      delete e.approvedAt;delete e.approvedByUserId;
-      e.updatedAt=now;count++;
-    }
+    if(!e||!(e.status==='submitted'||e.status==='draft'))return;
+    // A14: same own-entry skip as tsBulkApprove.
+    if(!isTrueAdmin&&e.staffId===currentUser.id){skippedOwn++;return;}
+    e.status='rejected';e.rejectedAt=now;e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
+    delete e.approvedAt;delete e.approvedByUserId;
+    e.updatedAt=now;count++;
   });
   saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
-  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} rejected.`,'Timesheets Rejected');
+  if(count)showAlert(`${count} entr${count!==1?'ies':'y'} rejected.`+(skippedOwn?` ${skippedOwn} of your own entr${skippedOwn!==1?'ies were':'y was'} skipped.`:''),'Timesheets Rejected');
+  else if(skippedOwn)showAlert('Nothing to reject — you cannot reject your own timesheet entries.','Timesheets');
 }
 function tsClearFilters(){
-  tsStaffFilter='all';tsClientFilter='all';tsBoardFilter='all';tsEarningsRateFilter='all';
+  tsStaffFilter='all';tsClientFilter='all';tsBoardFilter='all';tsIsoFilter='all';tsEarningsRateFilter='all';
   tsBillableFilter='all';tsInvoicedFilter='all';tsDateFrom='';tsDateTo='';tsSearch='';tsStatusTab='all';
   tsSelectedIds=new Set();renderView('reports');
 }
@@ -11552,7 +12075,9 @@ function tsToggleAllSelected(checked){
 function tsBulkApproveForStaff(staffId,fortnightEnding){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   // Same lock as the single-entry tsApproveEntry — this bulk version never had it.
-  if(currentUser.role!=='admin'){showAlert('Only admins can approve timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can approve timesheets.');return;}
+  // A14: a Billing (non-admin) user cannot approve their own fortnight.
+  if(currentUser.role!=='admin'&&staffId===currentUser.id){showAlert('You cannot approve your own timesheet entries.');return;}
   const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
   const allDays=[...tsGetWeekDates(w1),...tsGetWeekDates(w2)];
   const now=new Date().toISOString();let count=0;
@@ -11584,7 +12109,9 @@ function openTsBulkRejectForStaff(staffId,fortnightEnding){
 function tsBulkRejectForStaff(staffId,fortnightEnding){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   // Same lock as the single-entry tsRejectEntry — this bulk version never had it.
-  if(currentUser.role!=='admin'){showAlert('Only admins can reject timesheets.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can reject timesheets.');return;}
+  // A14: a Billing (non-admin) user cannot reject their own fortnight.
+  if(currentUser.role!=='admin'&&staffId===currentUser.id){showAlert('You cannot reject your own timesheet entries.');return;}
   const reason=(document.getElementById('ts-staff-reject-reason')?.value||'').trim();
   if(!reason){showAlert('Please enter a rejection reason.');return;}
   const[w1,w2]=tsGetFortnightWeeks(fortnightEnding);
@@ -11615,8 +12142,9 @@ function tsExportCSV(){
     const parent=task?.parentTaskId?DB.tasks.find(t=>t.id===task.parentTaskId):null;
     const approvedBy=e.approvedByUserId?getStaff(e.approvedByUserId):null;
     const rejectedBy=e.rejectedByUserId?getStaff(e.rejectedByUserId):null;
+    const taskCol=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?task.name||task.title||'':'');
     rows.push([e.date,staff?.name||'',staff?.email||'',client?.name||'',board?.name||'',group?.name||'',
-      parent?parent.name||parent.title||'':'',task?task.name||task.title||'':'',
+      parent?parent.name||parent.title||'':'',taskCol,
       e.earningsRateName||'Ordinary Hours',e.hours,e.billable!==false?'Yes':'No',e.status||'draft',
       e.note||'',e.submittedAt||'',e.approvedAt||'',approvedBy?.name||'',
       e.rejectedAt||'',rejectedBy?.name||'',e.rejectionReason||'']);
@@ -11697,8 +12225,9 @@ function tsExportPDF(){
           body:entries.map(e=>{
             const task=e.taskId?DB.tasks.find(x=>x.id===e.taskId):null;
             const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
+            const pdfTaskCol=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?(task.name||task.title||''):'—');
             return[fmtD(e.date),getStaff(e.staffId)?.name||'',client?.name||'',
-              task?(task.name||task.title||''):'—',e.earningsRateName||'Ordinary Hours',
+              pdfTaskCol,e.earningsRateName||'Ordinary Hours',
               e.hours.toFixed(1),e.billable!==false?'Bill.':'Non-bill.',
               tsStatusMeta(e.status).label,e.note||''];
           }),
@@ -11728,12 +12257,12 @@ function tsExportXeroCSV(){
   const[w1,w2]=tsGetFortnightWeeks(fe);
   const week1Days=tsGetWeekDates(w1);const week2Days=tsGetWeekDates(w2);
   const allDays=[...week1Days,...week2Days];
-  // _tsXeroView (the on-screen version of this same fortnight) restricts a non-admin to their
-  // own entries before rendering — this export, triggered by a button inside that same view,
-  // had no such restriction, so a non-admin could download every staff member's hours.
-  const isAdmin=currentUser?.role==='admin';
+  // _tsXeroView (the on-screen version of this same fortnight) restricts a non-admin/non-Billing
+  // caller to their own entries before rendering — this export, triggered by a button inside
+  // that same view, must match it exactly (D16: a Billing user sees everyone's here too).
+  const canBill=_canBill(currentUser);
   let entries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date));
-  if(!isAdmin)entries=entries.filter(e=>e.staffId===currentUser?.id);
+  if(!canBill)entries=entries.filter(e=>e.staffId===currentUser?.id);
   entries=entries.filter(e=>tsStaffFilter==='all'||e.staffId===tsStaffFilter);
   const rows=[['Employee','Employee Email','Timesheet Status','Fortnight Ending','Week Ending','Earnings Rate','Fri','Sat','Sun','Mon','Tue','Wed','Thu','Hours','Notes']];
   // Scoping by surviving staff records silently dropped any entry whose staff member has
@@ -11771,7 +12300,7 @@ function tsExportXeroCSV(){
 // ══════════════════════════════════════════════════════════════════════════
 function _tsBulkBarHtml(){
   const n=tsSelectedIds.size;
-  if(!n||currentUser?.role!=='admin')return'';
+  if(!n||!_canBill(currentUser))return'';
   return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0d1c33;border-radius:8px;margin-bottom:10px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:#97bcbd">${n} selected</span>
     <button onclick="openTsBulkApproveModal()" style="padding:0 12px;height:28px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#22c55e;color:#fff">Approve</button>
@@ -11783,7 +12312,7 @@ function _tsBulkBarHtml(){
 // ══════════════════════════════════════════════════════════════════════════
 // TIMESHEETS — Detail table view
 // ══════════════════════════════════════════════════════════════════════════
-function _tsDetailTable(entries,isAdmin){
+function _tsDetailTable(entries,canBill){
   if(!entries.length)return`<div class="card" style="text-align:center;padding:48px;color:#8da2b2"><p style="font-size:14px">No timesheet entries match the current filters.</p><p style="font-size:12px;margin-top:8px;color:#b0bec5">Try adjusting your filters or date range.</p></div>`;
   const sorted=[...entries].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffId||'').localeCompare(b.staffId||''));
   const thS='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
@@ -11800,7 +12329,9 @@ function _tsDetailTable(entries,isAdmin){
     const approvedBy=e.approvedByUserId?getStaff(e.approvedByUserId):null;
     const rejectedBy=e.rejectedByUserId?getStaff(e.rejectedByUserId):null;
     const isOwn=e.staffId===currentUser?.id;
-    const canAct=isAdmin;
+    // A14: a Billing (non-admin) user cannot approve/reject their own entries — those buttons
+    // simply don't render on their own rows. A true admin is unaffected (today's behaviour).
+    const canAct=canBill&&(currentUser?.role==='admin'||!isOwn);
     const actionBtns=canAct?`
       ${e.status!=='approved'?`<button onclick="tsApproveEntry('${e.id}')" title="Approve" style="padding:3px 8px;height:24px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:none;background:#dcfce7;color:#166534">✓</button>`:''}
       ${e.status!=='rejected'?`<button onclick="openTsRejectModal('${e.id}')" title="Reject" style="padding:3px 8px;height:24px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c">✕</button>`:''}
@@ -11809,11 +12340,11 @@ function _tsDetailTable(entries,isAdmin){
     if(e.status==='approved'&&approvedBy) approvalNote=`<div style="font-size:9px;color:#8da2b2;margin-top:2px">${escHtml(approvedBy.name)}</div>`;
     if(e.status==='rejected'&&e.rejectionReason) approvalNote=`<div style="font-size:9px;color:#b91c1c;margin-top:2px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.rejectionReason)}">${escHtml(e.rejectionReason)}</div>`;
     return`<tr onmouseenter="this.style.background='#f8fbff'" onmouseleave="this.style.background=''">
-      ${isAdmin?`<td style="${tdS};width:36px"><input type="checkbox" ${checked?'checked':''} onchange="tsToggleSelected('${e.id}',this.checked)" style="accent-color:#0d1c33"/></td>`:''}
+      ${canBill?`<td style="${tdS};width:36px"><input type="checkbox" ${checked?'checked':''} onchange="tsToggleSelected('${e.id}',this.checked)" style="accent-color:#0d1c33"/></td>`:''}
       <td style="${tdS};white-space:nowrap;font-weight:600;color:#1a2940">${formatDate(e.date)}</td>
       <td style="${tdS}"><div style="display:flex;align-items:center;gap:6px">${avatarHtml(staff,18)}<span>${escHtml(staff?.name||'Unknown')}</span></div></td>
       <td style="${tdS}">${client?`<span style="color:${client.color};font-weight:700;background:${client.color}18;padding:2px 7px;border-radius:8px;font-size:11px">${escHtml(client.shortCode||client.name)}</span>`:'<span style="color:#c8d7e1">—</span>'}</td>
-      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(task?.name||task?.title||'')}">${task?escHtml(task.name||task.title||'Untitled'):'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||''))}">${e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name||task.title||'Untitled'):'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="${tdS};color:#6b8399;white-space:nowrap">${escHtml(e.earningsRateName||'Ordinary Hours')}</td>
       <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif;text-align:right;white-space:nowrap">${e.hours.toFixed(1)}h</td>
       <td style="${tdS};text-align:center">${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:8px;font-weight:700">Bill.</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:8px;font-weight:700">N/B</span>`}</td>
@@ -11832,7 +12363,7 @@ function _tsDetailTable(entries,isAdmin){
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;min-width:820px">
       <thead><tr>
-        ${isAdmin?`<th style="${thS};width:36px"><input type="checkbox" ${allSel?'checked':''} onchange="tsToggleAllSelected(this.checked)" style="accent-color:#0d1c33"/></th>`:''}
+        ${canBill?`<th style="${thS};width:36px"><input type="checkbox" ${allSel?'checked':''} onchange="tsToggleAllSelected(this.checked)" style="accent-color:#0d1c33"/></th>`:''}
         <th style="${thS}">Date</th>
         <th style="${thS}">Staff</th>
         <th style="${thS}">Client</th>
@@ -11915,9 +12446,12 @@ function _tsXeroView(){
   const[w1,w2]=tsGetFortnightWeeks(fe);
   const week1Days=tsGetWeekDates(w1);const week2Days=tsGetWeekDates(w2);
   const allDays=[...week1Days,...week2Days];
-  const isAdmin=currentUser?.role==='admin';
+  // D16: same widening as _tsFilterEntries above — a Billing user sees/acts on every staff
+  // member's fortnight here, not just their own; true-admin-only bits (none in this view) would
+  // stay keyed off currentUser.role directly, same pattern as everywhere else in this file.
+  const canBill=_canBill(currentUser);
   let ftEntries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&allDays.includes(e.date));
-  if(!isAdmin)ftEntries=ftEntries.filter(e=>e.staffId===currentUser?.id);
+  if(!canBill)ftEntries=ftEntries.filter(e=>e.staffId===currentUser?.id);
   if(tsStaffFilter!=='all')ftEntries=ftEntries.filter(e=>e.staffId===tsStaffFilter);
   if(tsClientFilter!=='all')ftEntries=ftEntries.filter(e=>{
     const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
@@ -11935,7 +12469,7 @@ function _tsXeroView(){
     <button onclick="tsFortnightEnding='${nextFe}';renderView('reports')" style="padding:0 12px;height:30px;border-radius:7px;font-size:12px;cursor:pointer;border:1.5px solid #e2eaf2;background:#fff;color:#1a2940">Next →</button>
     <button onclick="tsExportXeroCSV()" class="btn btn-teal btn-sm" style="margin-left:auto">↓ Xero CSV</button>
   </div>`;
-  const staffInScope=(isAdmin?DB.staff:DB.staff.filter(s=>s.id===currentUser?.id))
+  const staffInScope=(canBill?DB.staff:DB.staff.filter(s=>s.id===currentUser?.id))
     .filter(s=>(tsStaffFilter==='all'||s.id===tsStaffFilter)&&ftEntries.some(e=>e.staffId===s.id));
   if(!staffInScope.length)return navBar+`<div class="card" style="text-align:center;padding:48px;color:#8da2b2">No timesheet data for this fortnight.<br><span style="font-size:12px;margin-top:8px;display:block">Navigate to another fortnight or adjust filters.</span></div>`;
   const thSty='font-size:10px;font-weight:700;color:#8da2b2;padding:8px 10px;text-align:center;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
@@ -11958,7 +12492,9 @@ function _tsXeroView(){
         <td style="${tdSty};font-weight:700;color:#0d1c33;border-left:2px solid #e4ecf4">${weekTotal.toFixed(2)}</td>
       </tr>`;
     }).join('');
-    const actBtns=isAdmin?`<div style="display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e4ecf4">
+    // A14: a Billing (non-admin) user gets no act buttons on their own fortnight card.
+    const canActStaff=canBill&&(currentUser?.role==='admin'||staff.id!==currentUser?.id);
+    const actBtns=canActStaff?`<div style="display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e4ecf4">
       ${overallStatus!=='approved'?`<button onclick="tsBulkApproveForStaff('${staff.id}','${fe}')" style="padding:0 14px;height:30px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#22c55e;color:#fff">Approve All</button>`:''}
       ${overallStatus==='submitted'?`<button onclick="openTsBulkRejectForStaff('${staff.id}','${fe}')" style="padding:0 14px;height:30px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:#ef4444;color:#fff">Reject</button>`:''}
     </div>`:'';
@@ -12007,8 +12543,12 @@ function _tsXeroView(){
 // ══════════════════════════════════════════════════════════════════════════
 function _rptTimesheetHtml(){
   const isAdmin=currentUser?.role==='admin';
+  // D16: a Billing-flagged staff member gets the same approve/reject table affordances as an
+  // admin (see _tsDetailTable) — kept separate from `isAdmin` above, which still gates the
+  // broader "view every staff member's entries" + Staff filter below (left admin-only, per plan).
+  const canBill=_canBill(currentUser);
   const entries=_tsFilterEntries();
-  const allEntries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&(isAdmin||e.staffId===currentUser?.id));
+  const allEntries=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&(canBill||e.staffId===currentUser?.id));
   const cnt={
     all:allEntries.length,
     pending:allEntries.filter(e=>e.status==='submitted').length,
@@ -12031,7 +12571,13 @@ function _rptTimesheetHtml(){
   const clientOpts='<option value="all">All Clients</option>'+DB.clients.map(c=>`<option value="${c.id}"${tsClientFilter===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
   const boardOpts='<option value="all">All Boards</option>'+(DB.boards||[]).filter(b=>!b.archived&&!b.excludeFromReports).map(b=>`<option value="${b.id}"${tsBoardFilter===b.id?' selected':''}>${escHtml(b.name)}</option>`).join('');
   const erOpts='<option value="all">All Rates</option>'+(DB.earningsRates||[]).map(er=>`<option value="${er.id}"${tsEarningsRateFilter===er.id?' selected':''}>${escHtml(er.name)}</option>`).join('');
-  const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsInvoicedFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
+  // D13: one option per distinct ISO board with an entry in the period (date range only — other
+  // filters don't narrow this list, so picking an ISO board doesn't make itself disappear).
+  const _isoInPeriod=(DB.timeEntries||[]).filter(e=>e.isoAuditId&&!e.deletedAt&&(!tsDateFrom||e.date>=tsDateFrom)&&(!tsDateTo||e.date<=tsDateTo));
+  const _isoBoardsInPeriod=[...new Map(_isoInPeriod.map(e=>[e.isoAuditId,e.isoLabel||e.isoAuditId])).entries()];
+  const isoOpts=window._isoEnabled?'<option value="all">All work</option><option value="any_iso"'+(tsIsoFilter==='any_iso'?' selected':'')+'>Any ISO work</option>'
+    +_isoBoardsInPeriod.map(([auditId,label])=>`<option value="${escHtml(auditId)}"${tsIsoFilter===auditId?' selected':''}>${escHtml(label)}</option>`).join(''):'';
+  const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsIsoFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsInvoicedFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
 
   const filterBar=`<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:12px 14px;background:#f8fbff;border:1.5px solid #e4ecf4;border-radius:8px;margin-bottom:12px">
     <div style="position:relative">
@@ -12042,9 +12588,10 @@ function _rptTimesheetHtml(){
         ${tsSearch?`<button onclick="tsSearch='';renderView('reports')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0">×</button>`:''}
       </div>
     </div>
-    ${isAdmin?`<div><label style="${lbSty}">Staff</label><select ${selSty} onchange="tsStaffFilter=this.value;renderView('reports')">${staffOpts}</select></div>`:''}
+    ${canBill?`<div><label style="${lbSty}">Staff</label><select ${selSty} onchange="tsStaffFilter=this.value;renderView('reports')">${staffOpts}</select></div>`:''}
     <div><label style="${lbSty}">Client</label><select ${selSty} onchange="tsClientFilter=this.value;renderView('reports')">${clientOpts}</select></div>
     <div><label style="${lbSty}">Board</label><select ${selSty} onchange="tsBoardFilter=this.value;renderView('reports')">${boardOpts}</select></div>
+    ${window._isoEnabled?`<div><label style="${lbSty}">ISO board</label><select ${selSty} onchange="tsIsoFilter=this.value;renderView('reports')">${isoOpts}</select></div>`:''}
     <div><label style="${lbSty}">Earnings Rate</label><select ${selSty} onchange="tsEarningsRateFilter=this.value;renderView('reports')">${erOpts}</select></div>
     <div><label style="${lbSty}">Billable</label><select ${selSty} onchange="tsBillableFilter=this.value;renderView('reports')">
       <option value="all"${tsBillableFilter==='all'?' selected':''}>All</option>
@@ -12112,7 +12659,7 @@ function _rptTimesheetHtml(){
   let content='';
   if(tsViewMode==='summary')content=_tsSummaryView(entries);
   else if(tsViewMode==='xero')content=_tsXeroView();
-  else content=_tsDetailTable(entries,isAdmin);
+  else content=_tsDetailTable(entries,canBill);
 
   return filterBar+controlBar+summaryCards+bulkBar+content;
 }
@@ -12206,7 +12753,7 @@ function pfiEffectiveLocation(li){
 
 function pfiCreate(){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
-  if(currentUser.role!=='admin'){showAlert('Only admins can create invoices.');return;}
+  if(!_canBill(currentUser)){showAlert('Only admins or Billing-enabled staff can create invoices.');return;}
   const now=new Date().toISOString();
   const inv={id:'pfi'+uid(),number:pfiNextNumber(),clientId:'',dateFrom:'',dateTo:'',
     issueDate:now.slice(0,10),status:'draft',preparedById:currentUser.id,
@@ -12297,7 +12844,7 @@ function _pfiOpenImportModal(invId,candidates){
       <td style="padding:6px 8px;text-align:center"><input type="checkbox" class="pfi-import-cb" data-hours="${e.hours}" value="${e.id}" ${invoiced?'':'checked'} onchange="_pfiImportUpdateCount()" style="accent-color:#0d1c33"/></td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${formatDate(e.date)}</td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${escHtml(staff?.name||'Unknown')}</td>
-      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(task?.name||task?.title||'')}">${task?escHtml(task.name||task.title):'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||''))}">${e.isoAuditId?escHtml(e.isoActionRef||e.isoLabel||'ISO audit'):task?escHtml(task.name||task.title):'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:600;white-space:nowrap">${e.hours.toFixed(2)}h</td>
       <td style="padding:6px 8px 6px 4px;font-size:10px">${invoiced?`<span title="Already on ${escHtml(invoiced.number)}" style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap">⚠ ${escHtml(invoiced.number)}</span>`:''}</td>
     </tr>`;
@@ -12352,10 +12899,12 @@ function pfiConfirmImport(invId){
       id:'li'+uid(),timeEntryId:e.id,date:e.date,day:pfiDayName(e.date),
       staffId:e.staffId,staffName:staff?.name||'Unknown',
       memberCode:staff?.initials||((staff?.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3)),
-      taskId:e.taskId||null,taskTitle:task?.name||task?.title||'—',
+      // D13/7b.4: an ISO-mode entry carries no task (D12) — its own ref/label stand in for the
+      // task title and project grouping instead, exactly as every other ISO display site does.
+      taskId:e.taskId||null,taskTitle:e.isoAuditId?(e.isoActionRef||'General audit work'):(task?.name||task?.title||'—'),
       activity:e.earningsRateName||'Ordinary Hours',
       activityCode:(e.earningsRateName||'ORD').replace(/[aeiou\s]/gi,'').slice(0,4).toUpperCase()||'ORD',
-      boardId:board?.id||null,boardName:board?.name||null,
+      boardId:e.isoAuditId?('iso:'+e.isoAuditId):(board?.id||null),boardName:e.isoAuditId?(e.isoLabel||null):(board?.name||null),
       clientId:client?.id||e.clientId||null,clientName:client?.name||'',
       // Was hardcoded null, so the Location column in the editor, the CSV export and the
       // Excel export — all three already existed — have been blank on every invoice since
@@ -14809,6 +15358,18 @@ function _dgGetAutoItems(clientId){
 function _dgOnClientChange(val){
   const ta=document.getElementById('dg-items');
   if(ta)ta.value=_dgGetAutoItems(val).join('\n');
+  // Phase 7b.5 (R9): append client-safe ISO progress lines, server-built from real audit/action
+  // data (digest.items) — fetched async, so guard against the user having already switched to a
+  // different client (or none) by the time it resolves; appending to the wrong client's draft
+  // would be a real, if quiet, client-safety mistake, not just a cosmetic race.
+  if(val&&window._isoEnabled&&window.ISO&&ISO.digestItems){
+    ISO.digestItems(val).then(lines=>{
+      if(!lines.length)return;
+      const stillSameClient=document.getElementById('dg-client')?.value===val;
+      const taNow=document.getElementById('dg-items');
+      if(stillSameClient&&taNow)taNow.value=(taNow.value?taNow.value+'\n':'')+lines.join('\n');
+    }).catch(()=>{});
+  }
 }
 function openCreateDigest(){
   const clientOpts=DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
@@ -14893,7 +15454,10 @@ function openDigestDetail(digestId){
       <textarea id="dg-edit-intro" class="form-input" rows="2" style="resize:vertical">${escHtml(d.intro||'')}</textarea>
     </div>
     <div>
-      <label class="form-label">Items (one per line)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label class="form-label" style="margin-bottom:0">Items (one per line)</label>
+        ${window._isoEnabled?`<span onclick="_dgAddIsoProgress('${d.id}')" style="font-size:11px;color:#0d6e4e;cursor:pointer;font-weight:600">+ Add ISO progress</span>`:''}
+      </div>
       <textarea id="dg-edit-items" class="form-input" rows="7" style="resize:vertical;font-size:12px">${(d.items||[]).map(i=>i.text).join('\n')}</textarea>
     </div>
     <div>
@@ -14913,6 +15477,21 @@ function openDigestDetail(digestId){
     </div>`}
   </div>`;
   openGenericModal(d.title||'Digest',body,'620px');
+}
+// Phase 7b.5 (R9): same real digest.items call as _dgOnClientChange, triggered on demand here
+// instead of on every client switch — the edit form's client select can change independently of
+// this digest's own stored clientId, so read the SELECT's current value (the one the items would
+// actually be saved against), not d.clientId, which may already be stale by the time this runs.
+function _dgAddIsoProgress(digestId){
+  const clientId=document.getElementById('dg-edit-client')?.value||'';
+  if(!clientId){showToast('Pick a client first.','error');return;}
+  if(!(window._isoEnabled&&window.ISO&&ISO.digestItems))return;
+  ISO.digestItems(clientId).then(lines=>{
+    if(!lines.length){showToast('No ISO progress to add for this client right now.');return;}
+    const stillOpen=document.getElementById('dg-edit-client')?.value===clientId;
+    const ta=document.getElementById('dg-edit-items');
+    if(stillOpen&&ta)ta.value=(ta.value?ta.value+'\n':'')+lines.join('\n');
+  }).catch(e=>showToast('Could not load ISO progress: '+e.message,'error'));
 }
 
 function updateDigest(digestId){
@@ -16074,13 +16653,14 @@ function openStaffModal(id){
             <div><label class="form-label">Confirm Password</label><input id="sm-pw2" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password"/></div>
           </div>`}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><label class="form-label">Role</label><select id="sm-role" class="form-input">
+        <div><label class="form-label">Role</label><select id="sm-role" class="form-input" onchange="document.getElementById('sm-billing-wrap').style.display=this.value==='staff'?'':'none';if(this.value!=='staff')document.getElementById('sm-billing').checked=false;">
           <option value="restricted" ${s.role==='restricted'?'selected':''}>Restricted — view only</option>
           <option value="staff" ${s.role==='staff'?'selected':''}>Staff — standard access</option>
           <option value="admin" ${s.role==='admin'?'selected':''}>Admin — full access</option>
         </select></div>
         <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color||'#7aa3a4'}" style="height:36px;padding:2px 4px"/></div>
       </div>
+      ${currentUser.role==='admin'?`<div id="sm-billing-wrap" style="${s.role==='staff'?'':'display:none'}"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155"><input id="sm-billing" type="checkbox" ${s.billing?'checked':''}/> Billing — can approve time and create pro forma invoices</label></div>`:''}
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
         ${id?`<button onclick="deleteStaff('${id}')" class="btn btn-danger" style="margin-right:auto">Remove</button>`:''}
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
@@ -16157,7 +16737,12 @@ async function saveStaff(id){
     // Same detached-object hazard as saveClient: a merge during the await can rebuild DB.users,
     // so re-resolve before writing rather than mutating a copy that is no longer in the array.
     s=DB.staff.find(x=>x.id===id)||s;
+    const _billingBefore=!!s.billing;
+    const _billingChecked=!!document.getElementById('sm-billing')?.checked;
+    const _billingAfter=role==='staff'&&_billingChecked;
     s.name=name;s.role=role;s.color=color;s.displayColor=color;s.initials=initials;
+    if(_billingAfter)s.billing=true;else delete s.billing;
+    if(_billingBefore!==_billingAfter)writeAuditEvent('User',id,'billing_changed',{billing:_billingBefore},{billing:_billingAfter});
     s.updatedAt=new Date().toISOString();
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
@@ -16172,7 +16757,9 @@ async function saveStaff(id){
       const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,role,color,initials,password:pw})});
       const result=await resp.json();
       if(!resp.ok)throw new Error(result.error||'Failed to create account');
-      DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      const _billingNew=role==='staff'&&!!document.getElementById('sm-billing')?.checked;
+      DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,...(_billingNew?{billing:true}:{}),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      if(_billingNew)writeAuditEvent('User',result.id,'billing_changed',{billing:false},{billing:true});
       DB.staff=DB.users;
       _savePw(result.id,pw); // persist in _pwStore so login survives page reload in localStorage mode
       saveDB(DB);closeGenericModal();renderView('staff');
@@ -17183,13 +17770,61 @@ function confirmDelete(type, id){
   document.getElementById('confirm-modal').classList.remove('hidden');
 }
 function closeConfirm(){document.getElementById('confirm-modal').classList.add('hidden');confirmCallback=null;}
-function closeGenericModal(){document.getElementById('generic-modal').classList.add('hidden');}
-function openGenericModal(title,bodyHtml,width){
+// A second openGenericModal call while one is already open (e.g. "Add evidence" opened from inside a
+// requirement drawer) used to just overwrite the first one in place — closing it then closed
+// everything, with no way back to the drawer. _genericModalStack remembers what was showing before each
+// nested open, so closeGenericModal steps back one level at a time instead of discarding it outright.
+// The restored content is the snapshot from the moment the nested modal opened, not re-fetched live
+// data — same scope as the bug report (go back to where you were), not a data-refresh guarantee.
+let _genericModalStack=[];
+function _genericModalAnchor(width){
+  document.getElementById('generic-modal').classList.toggle('modal-top',(parseInt(width,10)||0)>=700);
+}
+function closeGenericModal(){
+  if(_genericModalStack.length){
+    const prev=_genericModalStack.pop();
+    const box=document.querySelector('#generic-modal .modal-box');
+    if(box)box.style.maxWidth=prev.width;
+    _genericModalAnchor(prev.width);
+    document.getElementById('generic-modal-title').textContent=prev.title;
+    document.getElementById('generic-modal-body').innerHTML=prev.bodyHtml;
+    const hx=document.getElementById('generic-modal-header-extra');if(hx)hx.innerHTML=prev.headerHtml||'';
+    return;
+  }
+  document.getElementById('generic-modal').classList.add('hidden');
+}
+// headerHtml (optional): controls shown in the header next to the × (e.g. an ISO requirement's senior-
+// review status). Cleared on every open that doesn't pass one, so it never leaks into another dialog.
+function openGenericModal(title,bodyHtml,width,headerHtml){
+  const modal=document.getElementById('generic-modal');
   const box=document.querySelector('#generic-modal .modal-box');
+  const curTitle=document.getElementById('generic-modal-title').textContent;
+  const backTo=_genericModalStack.map(s=>s.title).lastIndexOf(title);
+  if(!modal.classList.contains('hidden')&&backTo>=0){
+    // Returning to a dialog already below this one (e.g. "Add relationship" saving and reopening its
+    // requirement drawer directly, without closing itself first): that is going back, not deeper —
+    // drop that level and everything above it, so a later close never steps back into the form.
+    _genericModalStack.length=backTo;
+  }else if(!modal.classList.contains('hidden')&&title!==curTitle){
+    // Several existing flows (e.g. accepting an action's review, iso-core.js's _reviewDecide) call
+    // openGenericModal again on the SAME drawer purely to refresh it in place after a save, title
+    // unchanged — that is not a nested dialog and must never be pushed, or closing the drawer later
+    // would step back into a stale copy of itself instead of actually closing (found via a real
+    // suite regression: doing this unconditionally broke the Actions drawer's own review/extension
+    // flow two steps later). Only a genuinely different title is treated as opening on top.
+    _genericModalStack.push({title:curTitle,bodyHtml:document.getElementById('generic-modal-body').innerHTML,width:box?box.style.maxWidth:'500px',headerHtml:document.getElementById('generic-modal-header-extra')?.innerHTML||''});
+  }else if(modal.classList.contains('hidden')&&_genericModalStack.length){
+    // The modal is closed, yet a stack remains — some other code path hid it directly (several ISO
+    // save-success handlers do, bypassing closeGenericModal) rather than stepping back one level. A
+    // fresh top-level open always starts clean rather than carrying a stale entry into the next close.
+    _genericModalStack=[];
+  }
   if(box)box.style.maxWidth=width||'500px';
+  _genericModalAnchor(width||'500px');
   document.getElementById('generic-modal-title').textContent=title;
   document.getElementById('generic-modal-body').innerHTML=bodyHtml;
-  document.getElementById('generic-modal').classList.remove('hidden');
+  const hx=document.getElementById('generic-modal-header-extra');if(hx)hx.innerHTML=headerHtml||'';
+  modal.classList.remove('hidden');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -19140,8 +19775,307 @@ sections.forEach(sec=>_wsOrderTasks(sec.tasks));
   return sections;
 }
 
-function renderWorkspace(){
+// Main Table context contract (ISO plan Phase 1.1). renderWorkspace(ctx) and the generic
+// fallback renderer _mtRenderGeneric(ctx) below are built against this shape:
+//   ctx = {
+//     key,                    // 'wb:<boardId>' | 'iso:<auditId>:<entity>' — keys colmeta, sort, group, expand state
+//     columns(),              // [{key,label,width,type,editable,align,options?}] replaces WS_COL_DEFS for this ctx
+//     subColumns(),           // for child rows (or null)
+//     customColumns(),        // Workboards only; [] elsewhere
+//     sections(),             // [{id,label,color,rows:[row]}] — grouping + sorting already applied
+//     children(row),          // child rows
+//     rowId(row), rowAttrs(row),        // Workboards must keep data-tid, classes exactly
+//     cell(row, key),         // {html, title}
+//     editor(row, key),       // spec for #ws-cell-dd, or null
+//     save(rowId, key, value),// may return a Promise
+//     open(rowId),            // name click / row open
+//     bulkActions(),          // [{id,label,run(ids)}]
+//     toolbar(),              // html for the universal toolbar region, or default
+//     rerender(),
+//     rowHtml(row, depth, isLast),   // optional — Workboards returns today's renderWsRow(...) output unchanged
+//     groupByOptions(),       // [{val,label}]   (replaces the hard-coded GB_OPTIONS for this ctx)
+//     sortOptions(),          // [{key,label}]
+//     emptyHtml(), canDragRows(),
+//   }
+// Row identity: each row carries `key` (instance id, unique on screen — `<sectionId>~<recordId>`)
+// and `id` (record id). DOM ids/data-* attributes/selection/expand/drag state use `key`; `save`,
+// `open` and bulk `run(ids)` receive de-duplicated record ids. For Workboards key === id, so
+// output is unchanged (a shared ISO action can appear under several findings/standards, Phase 6+).
+// _mtCtx is the ctx from the last renderWorkspace(ctx) call; every handler below resolves state
+// through _mtStateFor(_mtCtx.key) rather than assuming currentWorkboard/DB.tasks directly.
+//
+// Generic Main Table renderer for any ctx that has no rowHtml() of its own (i.e. every ctx
+// except Workboards — see _wbMtContext.rowHtml). Not reachable from today's Workboards UI; it
+// exists for a future ISO ctx (Phase 6+) and is exercised now by .agents/mt-adapter-test.cjs
+// against a fake ctx, so the contract is proven before anything real depends on it.
+function _mtRenderGeneric(ctx){
+  const st=_mtStateFor(ctx.key);
+  const cols=ctx.columns()||[];
+  const sections=ctx.sections()||[];
+  // Exactly the header's own cells (checkbox + name + cols). It was +1: a colspan wider than the
+  // header made the browser invent an unseen trailing column, which then took half of the spare
+  // width — rows stopped short of the right edge and the name column got only the other half.
+  const totalCols=2+cols.length;
+  // ctx.fixedColumns: each column keeps its set width (no drag handle) and the name column takes the
+  // rest, never narrower than 320px — the table scrolls sideways before the name would wrap.
+  const fixed=!!ctx.fixedColumns;
+  const fixedMin=fixed?36+320+cols.reduce((s,c)=>s+(parseInt(c.width,10)||120),0):0;
+  setTimeout(_mtSyncSelectAll,0); // after the caller has put this HTML on the page
+  return `<div id="ws-table-scroll" style="overflow:auto;max-height:78vh;border:1.5px solid #e8edf4;border-radius:10px;background:#fff">
+    <table class="ws-table${fixed?' mt-fixed':''}"${fixed?` style="table-layout:fixed;width:100%;min-width:${fixedMin}px"`:''}>
+      <thead><tr>
+        <th style="width:36px;text-align:center"><input type="checkbox" id="mt-select-all-cb" aria-label="Select all rows" ${_mtAllTopIds(ctx).length&&_mtAllTopIds(ctx).every(id=>st.selected.has(id))?'checked':''} onchange="_mtToggleAllSelect(this.checked)" style="cursor:pointer;accent-color:#97bcbd"/></th>
+        <th>Name</th>
+        ${cols.map(c=>fixed?`<th style="width:${escHtml(c.width||'120px')}" data-field="${escHtml(c.key)}">${escHtml(c.label)}</th>`:`<th style="width:${escHtml(st.columns[c.key]||c.width||'120px')}" data-field="${escHtml(c.key)}">${escHtml(c.label)}<span class="col-resize" onmousedown="_mtStartColResize(event,'${escHtml(ctx.key)}','${escHtml(c.key)}')" title="Drag to resize"></span></th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${sections.map(sec=>`
+          <tr class="ws-grp-hdr" data-gid="${escHtml(sec.id)}" onclick="_mtToggleSection(${escHtml(JSON.stringify(sec.id))})">
+            <td colspan="${totalCols}">
+              <div style="display:flex;align-items:center;gap:8px;padding:0 14px;height:36px;border-left:4px solid ${sec.color||'#97bcbd'}">
+                <span style="font-size:9px;color:#8da2b2;width:10px">${st.collapsed.has(sec.id)?'▶':'▼'}</span>
+                <span style="font-weight:700">${escHtml(sec.label||'')}</span>
+                <span class="ws-grp-count">${(sec.rows||[]).length}</span>
+              </div>
+            </td>
+          </tr>
+          ${st.collapsed.has(sec.id)?'':_mtRowsHtml(ctx,sec.rows||[],0)}
+        `).join('')}
+        ${sections.every(s=>!(s.rows||[]).length)?`<tr><td colspan="${totalCols}" style="padding:24px;text-align:center;color:#c8d4e0">${escHtml(ctx.emptyHtml?ctx.emptyHtml():'Nothing here yet.')}</td></tr>`:''}
+      </tbody>
+    </table>
+  </div>`;
+}
+// Recurses into ctx.children(row) when a ctx defines it — Workboards never does (it has its own
+// bespoke renderWsRow/renderSubitemGrid, entirely separate from this generic path), so this only
+// ever takes effect for an ISO ctx that implements it (Phase 7.4's Actions ctx, for subtasks).
+// _mtRowHtml already accepted a depth param from Phase 1 on, unused until now ("so a future ISO
+// ctx has something to implement" — that Phase 1 comment's own words).
+function _mtRowsHtml(ctx,rows,depth){
+  return rows.map(row=>{
+    const kids=ctx.children?ctx.children(row):null;
+    return _mtRowHtml(ctx,row,depth)+(kids&&kids.length?_mtRowsHtml(ctx,kids,depth+1):'');
+  }).join('');
+}
+// Same recursion, flattened — _mtCellClick's own row lookup only ever searched top-level
+// sec.rows, so a click on a child row's cell silently found nothing and did nothing.
+function _mtAllRowsFlat(ctx){
+  const out=[];
+  const walk=rows=>{ for(const row of rows){ out.push(row); const kids=ctx.children?ctx.children(row):null; if(kids&&kids.length)walk(kids); } };
+  (ctx.sections()||[]).forEach(s=>walk(s.rows||[]));
+  return out;
+}
+function _mtToggleSection(sectionId){
+  const st=_mtStateFor(_mtCtx.key);
+  if(st.collapsed.has(sectionId))st.collapsed.delete(sectionId);else st.collapsed.add(sectionId);
+  _mtCtx.rerender();
+}
+function _mtRowHtml(ctx,row,depth){
+  const st=_mtStateFor(ctx.key);
+  const domId=ctx.rowId(row);
+  const attrs=ctx.rowAttrs?ctx.rowAttrs(row):{};
+  const attrHtml=Object.entries(attrs).map(([k,v])=>`${k}="${escHtml(String(v))}"`).join(' ');
+  const cols=ctx.columns()||[]; // ctx.nameHtml (optional) returns the name cell as already-escaped HTML
+  const selected=st.selected.has(row.id);
+  return `<tr ${attrHtml} class="ws-row${selected?' ws-row-selected':''}" style="${depth?`padding-left:${depth*20}px`:''}">
+    <td style="text-align:center" onclick="event.stopPropagation()"><input type="checkbox" ${selected?'checked':''} onchange="_mtToggleRowSelect(${escHtml(JSON.stringify(row.id))},this.checked)" style="cursor:pointer;accent-color:#97bcbd"/></td>
+    <td onclick="_mtCtx.open(${escHtml(JSON.stringify(row.id))})" style="cursor:pointer;padding-left:${8+depth*20}px">${ctx.nameHtml?ctx.nameHtml(row):escHtml(row.name||row.title||'')}</td>
+    ${cols.map(c=>{
+      const cell=ctx.cell(row,c.key)||{};
+      return `<td class="ws-editable" data-field="${escHtml(c.key)}" onclick="event.stopPropagation();_mtCellClick(${escHtml(JSON.stringify(domId))},${escHtml(JSON.stringify(row.id))},${escHtml(JSON.stringify(c.key))},this)" title="${escHtml(cell.title||'')}">${cell.html||''}</td>`;
+    }).join('')}
+  </tr>`;
+}
+// The header tick box selects every row currently shown (after the view's own filter), top-level only
+// — the generic path's own id and handler: it used to reuse Workboards' ws-select-all-cb, with no
+// handler at all, so ticking it did nothing (and Workboards' updateBulkBar reads that id).
+function _mtAllTopIds(ctx){ return (ctx.sections()||[]).flatMap(s=>(s.rows||[]).map(r=>r.id)); }
+function _mtToggleAllSelect(checked){
+  const st=_mtStateFor(_mtCtx.key);
+  const ids=_mtAllTopIds(_mtCtx);
+  if(checked)ids.forEach(id=>st.selected.add(id));else st.selected.clear();
+  if(_mtCtx.rerender)_mtCtx.rerender();
+  _mtSyncSelectAll();
+}
+// Partly selected shows the header box as indeterminate (a property, not an attribute — set after render).
+function _mtSyncSelectAll(){
+  const cb=document.getElementById('mt-select-all-cb');
+  if(!cb||!_mtCtx)return;
+  const st=_mtStateFor(_mtCtx.key),ids=_mtAllTopIds(_mtCtx);
+  const all=ids.length>0&&ids.every(id=>st.selected.has(id));
+  cb.checked=all;cb.indeterminate=!all&&ids.some(id=>st.selected.has(id));
+}
+function _mtToggleRowSelect(id,checked){
+  const st=_mtStateFor(_mtCtx.key);
+  if(checked)st.selected.add(id);else st.selected.delete(id);
+  // Only the generic ctx path's checkbox calls this (renderWsRow has its own, separate bulk-select
+  // markup for Workboards, untouched by this change) — a bulk-action bar keyed off st.selected.size
+  // needs a rerender to actually appear/disappear as the user (de)selects rows. Found while building
+  // Phase 6's Requirements register: the very first real consumer of this generic checkbox.
+  if(_mtCtx.rerender)_mtCtx.rerender();
+  _mtSyncSelectAll();
+}
+// Minimal generic resize: persists under _mtStateFor(ctx.key), so a fake/ISO ctx's column
+// widths never touch wsColumns (the Workboards bucket) or another ctx's own widths. A full
+// drag-resize matching wsStartColResize's exact pixel tracking is built when ISO needs it
+// (Phase 6+); this proves the per-ctx storage contract now.
+function _mtSetColWidth(ctxKey,fieldKey,width){
+  _mtStateFor(ctxKey).columns[fieldKey]=width;
+}
+function _mtStartColResize(evt,ctxKey,fieldKey){
+  evt.stopPropagation();
+  const th=evt.target.closest('th');
+  const startX=evt.clientX,startW=th.getBoundingClientRect().width;
+  function onMove(e){ _mtSetColWidth(ctxKey,fieldKey,Math.max(50,startW+(e.clientX-startX))+'px'); if(_mtCtx&&_mtCtx.key===ctxKey)_mtCtx.rerender(); }
+  function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+// Inline editing for a generic ctx: real, not stubbed, but deliberately simpler than
+// wsBuildDropdownHtml's full popover — a plain modal per field, three input types (plan Phase 6
+// needed 'select'/'date' beyond the original text-only showPrompt; a fourth ctx could add its own
+// type later the same way). _mtCellClick is the UI entry point; _mtCellCommit is the part that
+// actually calls ctx.save — kept separate so a test can drive it directly without simulating the
+// modal. A ctx.editor() returning {label,value} with no `type` behaves exactly as before (plain
+// text via showPrompt) — existing ctxs (Workboards' fallback, the adapter-test fixtures) are
+// unaffected.
+// Opens as a dropdown anchored right at the cell — Workboards' own #ws-cell-dd popover and the same
+// placement rules (flips above the cell near the bottom of the screen, a bottom sheet on a phone) —
+// never a centred modal far from the value being changed (user, 2026-10-03: "extremely annoying").
+// Options may carry a `color`, shown as the same coloured pill the cell itself shows.
+function _mtCellClick(domId,recordId,fieldKey,anchorEl){
+  const row=_mtAllRowsFlat(_mtCtx).find(r=>_mtCtx.rowId(r)===domId);
+  if(!row)return;
+  const spec=_mtCtx.editor?_mtCtx.editor(row,fieldKey):null;
+  if(!spec)return;
+  // The clicked cell itself — child rows (an action's subtasks) carry no data-tid to look it up by.
+  const cellEl=anchorEl||document.querySelector(`tr[data-tid="${CSS.escape(domId)}"] td[data-field="${CSS.escape(fieldKey)}"]`);
+  const ctx=_mtCtx;
+  _mtOpenDropdown(cellEl,{label:fieldKey,...spec},v=>_mtCellCommit(ctx,domId,recordId,fieldKey,v).catch(()=>{}));
+}
+// The anchored dropdown itself, for any trigger element — a register cell above, or an ISO bulk bar's
+// "State ▾" button — so every edit looks and behaves the same. onCommit gets the chosen value; it is
+// never called on Escape or a click elsewhere (null is a real value, e.g. "Clear" on a date).
+function _mtOpenDropdown(anchorEl,spec,onCommit){
+  const dd=document.getElementById('ws-cell-dd'),body=document.getElementById('ws-cell-dd-body');
+  if(!anchorEl||!dd||!body)return;
+  _mtEditCommitCb=v=>{ wsCellClose(); if(v!==undefined) onCommit(v); };
+  const cellEl=anchorEl;
+  const label=escHtml(spec.label||'');
+  let inner;
+  if(spec.type==='select'){
+    const opts=(spec.allowBlank?[{value:'',label:'— None'}]:[]).concat(spec.options||[]);
+    inner=`<div class="mt-dd-list" role="listbox" aria-label="${label}">${opts.map(o=>{
+      const on=String(o.value??'')===String(spec.value??'');
+      const text=escHtml(o.label||o.value);
+      const shown=o.color?`<span class="mt-dd-pill" style="background:${escHtml(o.color)}1f;color:${escHtml(o.color)}">${text}</span>`:`<span>${text}</span>`;
+      return `<button type="button" role="option" aria-selected="${on}" class="ws-cell-dd-item mt-dd-opt${on?' ws-dd-active':''}" data-value="${escHtml(o.value??'')}" onclick="_mtEditCommitCb(this.dataset.value)"><span class="mt-dd-check" aria-hidden="true">${on?'✓':''}</span>${shown}</button>`;
+    }).join('')}</div>`;
+  } else if(spec.type==='date'){
+    inner=`<div class="mt-dd-form"><input id="mt-edit-date" type="date" class="form-input" value="${escHtml(spec.value||'')}" aria-label="${label}" onkeydown="if(event.key==='Enter'){event.preventDefault();_mtEditCommitCb(this.value||null);}"/>
+      <div class="mt-dd-actions"><button type="button" class="btn btn-ghost btn-sm mt-dd-clear" onclick="_mtEditCommitCb(null)">Clear</button><button type="button" class="btn btn-teal btn-sm mt-dd-save" onclick="_mtEditCommitCb(document.getElementById('mt-edit-date').value||null)">Save</button></div></div>`;
+  } else {
+    inner=`<div class="mt-dd-form"><input id="mt-edit-text" class="form-input" value="${escHtml(spec.value??'')}" aria-label="${label}" onkeydown="if(event.key==='Enter'){event.preventDefault();_mtEditCommitCb(this.value);}"/>
+      <div class="mt-dd-actions"><button type="button" class="btn btn-teal btn-sm mt-dd-save" onclick="_mtEditCommitCb(document.getElementById('mt-edit-text').value)">Save</button></div></div>`;
+  }
+  body.innerHTML=`<div class="mt-dd" onkeydown="_mtDdKey(event)"><div class="mt-dd-head">${label}</div>${inner}</div>`;
+  _wsCellTask=null;_wsCellField=null;
+  // Same measure-then-place as wsCellOpen: a cell near the bottom flips the menu above it.
+  const r=cellEl.getBoundingClientRect();
+  dd.style.visibility='hidden';dd.style.left=r.left+'px';dd.style.top='0px';dd.style.display='block';
+  requestAnimationFrame(()=>{
+    const h=dd.offsetHeight,w=dd.offsetWidth;
+    let top=r.bottom+4,left=r.left;
+    if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-4);
+    if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+    dd.style.top=top+'px';dd.style.left=left+'px';
+    dd.style.visibility='visible';
+    (body.querySelector('.mt-dd-opt.ws-dd-active')||body.querySelector('.mt-dd-opt')||body.querySelector('input'))?.focus();
+  });
+}
+// Arrow keys move between options, Escape closes without saving (Enter/Space press the focused one).
+function _mtDdKey(e){
+  if(e.key==='Escape'){e.preventDefault();wsCellClose();return;}
+  if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;
+  const opts=[...document.querySelectorAll('#ws-cell-dd .mt-dd-opt')];
+  if(!opts.length)return;
+  e.preventDefault();
+  const i=opts.indexOf(document.activeElement);
+  opts[(i+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length].focus();
+}
+let _mtEditCommitCb=null;
+// Plan 1.5: optimistic cell update, pending state, rollback + toast on rejection. ctx.save() may
+// return a value or a Promise; either way the cell shows a pending style until it settles.
+// "Rollback" is a fresh ctx.rerender() rather than a manual snapshot/restore — the contract is
+// that a ctx must not mutate its own data before save() resolves, so re-rendering from
+// ctx.sections()/ctx.cell() after a rejection shows whatever the ctx still has, i.e. the old value.
+function _mtCellCommit(ctx,domId,recordId,fieldKey,value){
+  const cellEl=document.querySelector(`tr[data-tid="${CSS.escape(domId)}"] td[data-field="${CSS.escape(fieldKey)}"]`);
+  if(cellEl)cellEl.classList.add('mt-cell-pending');
+  return Promise.resolve().then(()=>ctx.save(recordId,fieldKey,value))
+    .then(()=>{ ctx.rerender(); })
+    .catch(e=>{
+      showToast('Could not save — showing the previous value'+(e&&e.message?': '+e.message:''),'error',4000);
+      ctx.rerender();
+      throw e;
+    });
+}
+
+// Workboards adapter: a thin, delegate-only wrapper over the existing globals/functions — no
+// logic is duplicated here, so behaviour for Workboards is unchanged by construction. The heavy
+// per-row rendering (renderWsRow, renderWsSection, renderSubitemGrid) is deliberately NOT
+// decomposed in Phase 1 (plan 1.1); this ctx exists so handlers can be ctx-aware and so a future
+// ISO ctx has something to implement, not to change how Workboards actually renders today.
+function _wbMtContext(board){
+  const key='wb:'+(board?board.id:'none');
+  return {
+    key,
+    columns(){ return WS_COL_DEFS; },
+    subColumns(){ return SUB_COL_DEFS; },
+    customColumns(){ return mtGetBoardCustomCols(); },
+    sections(){ return _wsBuildSections(getFilteredTasks()); },
+    children(row){ return (_wsCache?.childMap.get(row.id)||DB.tasks.filter(t=>t.parentTaskId===row.id)).filter(t=>!t.archived); },
+    rowId(row){ return row.id; },
+    rowAttrs(row){ return {'data-tid':row.id}; },
+    cell(row,fieldKey){ return _mtWbCellFallback(row,fieldKey); },
+    editor(){ return null; },
+    save(rowId,fieldKey,value){ return wsCellSave(rowId,fieldKey,value); },
+    open(rowId){ return openTaskPanel(rowId); },
+    bulkActions(){ return [
+      {id:'archive', label:'Archive', run:()=>wsBulkArchiveTasks()},
+      {id:'delete',  label:'Delete',  run:()=>wsBulkDeleteTasks()},
+    ]; },
+    toolbar(){ return null; },
+    rerender(){ renderView('workspace'); },
+    rowHtml(row,depth,isLast){ return renderWsRow(row,wsColumns,_mtWbVisCols(),mtGetBoardCustomCols(),board?.color||'#97bcbd',depth,isLast); },
+    groupByOptions(){ return [{val:'group',label:'Group'},{val:'client',label:'Client'},{val:'status',label:'Status'},{val:'owner',label:'Owner'},{val:'priority',label:'Priority'}]; },
+    sortOptions(){ return [{key:'name',label:'Task Name'},...WS_COL_DEFS]; },
+    emptyHtml(){ return 'No tasks match the current filters.'; },
+    canDragRows(){ return currentUser?.role!=='client'&&!wsSort.col; },
+  };
+}
+// Shared by _wbMtContext.columns()/rowHtml() and renderWorkspace's own header row so the two
+// never compute a different visible-column set from the same wsColumns/colOrder state.
+function _mtWbVisCols(){
+  const _colOrder=_wsGetColOrder('item')||_WS_DEFAULT_COL_ORDER;
+  const sortedDefs=[...WS_COL_DEFS].sort((a,b)=>{const ai=_colOrder.indexOf(a.key),bi=_colOrder.indexOf(b.key);return(ai===-1?999:ai)-(bi===-1?999:bi);});
+  return sortedDefs.filter(c=>wsColumns[c.key]);
+}
+// cell() is unused by the Workboards render path today (rowHtml() short-circuits it — see the
+// "do not decompose renderWsRow" note above) but must still return something sane: it is real
+// production surface for a future ctx-driven bulk/inline-edit tool that inspects any ctx's cells
+// without caring whether that ctx has a custom rowHtml.
+function _mtWbCellFallback(row,fieldKey){
+  if(fieldKey==='status'){const m=getStatusMeta(row.status);return{html:escHtml(m.label),title:m.label};}
+  if(fieldKey==='priority'){const m=getPrioMeta(row.priority);return{html:escHtml(m.label),title:m.label};}
+  return{html:escHtml(String(row[fieldKey]??'')),title:''};
+}
+
+function renderWorkspace(ctx){
+  ctx=ctx||_wbMtContext(currentWorkboard);
+  _mtCtx=ctx;
   if(currentUser.role==='client') return renderClientDashboard();
+  if(!ctx.rowHtml) return _mtRenderGeneric(ctx);
   // Pre-compute O(1) lookup maps — eliminates O(n²) scans inside renderWsRow
   const _childMap=new Map();
   const _commentCountMap=new Map();
@@ -23537,9 +24471,19 @@ async function wsPreviewFile(id,preData){
   // that gets parsed as code at all.
   const f=(DB.taskFiles||[]).find(x=>x.id===id);
   const name=f?.name||'', type=f?.type||'';
+  _previewFileData(data,name,type,{id:id});
+}
+// Shared viewer (ISO plan 8.2): Workboards' wsPreviewFile and ISO evidence both hand it the file as a
+// data: URL. opts.allowSvg (default true — Workboards' behaviour, unchanged) false treats an SVG as not
+// previewable, so ISO never renders an uploaded SVG inline. opts.id only feeds the sheet-tab buttons,
+// exactly as before.
+function _previewFileData(data,name,type,opts){
+  opts=opts||{};
+  const id=opts.id||'';
   const lower=String(name||'').toLowerCase();
   const ext=(lower.match(/\.([a-z0-9]+)$/)||[])[1]||'';
-  const isImg=(type&&type.startsWith('image/'))||['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext);
+  const isSvg=ext==='svg'||String(type||'').toLowerCase()==='image/svg+xml';
+  const isImg=(opts.allowSvg!==false||!isSvg)&&((type&&type.startsWith('image/'))||['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext));
   const isPdf=type==='application/pdf'||ext==='pdf';
   const isDocx=ext==='docx';
   const isSheet=['xlsx','xls','csv'].includes(ext);
@@ -23791,7 +24735,7 @@ function _wsMtExportNow(){
     const ai=order.indexOf(a.key),bi=order.indexOf(b.key);
     return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const vis=defs.filter(c=>cols[c.key]);
-  const custCols=mtGetBoardCustomCols();
+  const custCols=(_mtCtx||_wbMtContext(currentWorkboard)).customColumns();
   // Description is never one of the board's own toggleable columns (WS_COL_DEFS) — it lives in
   // the task panel, not the table — but an exported spreadsheet is exactly the place someone
   // wants the full text without opening every task, so it always goes out with the export
@@ -23820,7 +24764,10 @@ function _wsMtExportNow(){
   ws.getRow(r).getCell(1).font={name:'Calibri',size:10,color:{argb:'FF8DA2B2'}};
   r+=2;
 
-  const sections=_wsBuildSections(getFilteredTasks());
+  // Plan 1.6: walks the ctx's own sections()/customColumns() (identical to the direct calls
+  // this replaced — _wbMtContext delegates straight through — so Workboards output is
+  // unchanged; a future ISO export, Phase 10, reuses this same walk with its own ctx).
+  const sections=(_mtCtx||_wbMtContext(currentWorkboard)).sections();
   sections.forEach(sec=>{
     // group title
     _xlWrite(ws,r,1,[{v:sec.label+(sec.sub?'  ·  '+sec.sub:''),bold:true,fg:sec.color}],{border:false});
@@ -26043,6 +26990,10 @@ document.addEventListener('keydown',e=>{
 <script src="/supabase-client.js" defer></script>
 <!-- Data sync layer (Supabase ↔ localStorage DB mapping; sets window._dbSync) -->
 <script src="/db-sync.js" defer></script>
+<!-- ISO Audit module (plan Phase 4-5). Self-contained window.ISO; no-op until window._isoEnabled. -->
+<script src="/iso/iso-import.js" defer></script>
+<script src="/iso/iso-charts.js" defer></script>
+<script src="/iso/iso-core.js" defer></script>
 
 <!-- TOAST NOTIFICATIONS ROOT -->
 <div id="app-toast-root"></div>

@@ -1,0 +1,190 @@
+{
+  "templateId": "ims-policy",
+  "title": "IMS Policy",
+  "filenameStem": "IMS_Policy",
+  "documentType": "policy",
+  "purpose": "A short, signed statement from top management of the organisation's commitments for quality, the environment and work health and safety, suited to its purpose and context, that gives a framework for its objectives.",
+  "requiredProfileFields": [
+    "legal_name",
+    "trading_name",
+    "business_activities",
+    "products_services",
+    "ims_scope",
+    "standards_in_scope",
+    "approval_roles",
+    "operating_locations"
+  ],
+  "questions": [
+    {
+      "id": "quality",
+      "text": "What does the organisation commit to for its customers and the quality of its work?",
+      "kind": "text"
+    },
+    {
+      "id": "environment",
+      "text": "What environmental commitments apply (for example protecting the environment, preventing pollution, specific local matters)?",
+      "kind": "text"
+    },
+    {
+      "id": "whs",
+      "text": "What work health and safety commitments apply (for example safe and healthy working conditions, eliminating hazards, consulting workers)?",
+      "kind": "text"
+    },
+    {
+      "id": "signatory",
+      "text": "Who signs the policy (name and position)?",
+      "kind": "text"
+    },
+    {
+      "id": "communication",
+      "text": "How is the policy communicated and made available (induction, noticeboards, intranet, website)?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Purpose and scope of the policy",
+    "Commitments — quality",
+    "Commitments — environment",
+    "Commitments — work health and safety",
+    "How the policy frames objectives",
+    "Communication and availability",
+    "Review of the policy",
+    "Authorisation (signature block)"
+  ],
+  "optionalSections": [
+    "Values or guiding principles",
+    "Commitment to meeting legal and other requirements"
+  ],
+  "expectedRecords": [
+    "Signed and dated policy",
+    "Evidence the policy is communicated (induction records, noticeboard photo, intranet page)",
+    "Management review minutes showing the policy was reviewed"
+  ],
+  "draftingRules": [
+    "Keep it to about one page in plain language suitable for display.",
+    "Only commit to what the organisation can show it does; no claims it cannot evidence.",
+    "State commitments in the organisation's own words — do not quote or paraphrase standard text."
+  ],
+  "reviewerChecklist": [
+    "Signed by the stated top-management role and dated",
+    "Every commitment matches what the organisation actually does",
+    "The scope matches the management-system scope statement",
+    "The communication method described is real and current"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.1.1",
+      "stableKey": "9001|5.1.1|2b5495ab|0",
+      "workbookRow": 15,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.2.1",
+      "stableKey": "9001|5.2.1|c41453cd|0",
+      "workbookRow": 18,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.2.2",
+      "stableKey": "9001|5.2.2|eaaec521|0",
+      "workbookRow": 19,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.2.2",
+      "stableKey": "9001|5.2.2|97128f9|0",
+      "workbookRow": 20,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.1",
+      "stableKey": "14001|5.1|2b54689f|0",
+      "workbookRow": 13,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.2",
+      "stableKey": "14001|5.2|c41453cd|0",
+      "workbookRow": 14,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.2",
+      "stableKey": "14001|5.2|eaaec521|0",
+      "workbookRow": 15,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.2",
+      "stableKey": "14001|5.2|97128f9|0",
+      "workbookRow": 16,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.2",
+      "stableKey": "45001|5.2|c41453cd|0",
+      "workbookRow": 14,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.2",
+      "stableKey": "45001|5.2|eaaec521|0",
+      "workbookRow": 15,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.2",
+      "stableKey": "45001|5.2|97128f9|0",
+      "workbookRow": 16,
+      "why": "clause"
+    }
+  ],
+  "documents": [
+    "Integrated Quality, Environmental and OH&S Policy"
+  ]
+}

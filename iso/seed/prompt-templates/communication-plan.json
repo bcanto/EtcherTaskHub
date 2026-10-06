@@ -1,0 +1,207 @@
+{
+  "templateId": "communication-plan",
+  "title": "Communication Plan",
+  "filenameStem": "Communication_Plan",
+  "documentType": "plan",
+  "purpose": "Sets out what the organisation communicates about its management system — internally and externally — when, with whom, how and by whom, including how workers are consulted and can take part.",
+  "requiredProfileFields": [
+    "legal_name",
+    "org_roles",
+    "interested_parties"
+  ],
+  "questions": [
+    {
+      "id": "internal",
+      "text": "What is communicated internally (for example toolbox talks, notices, meetings), how often and by whom?",
+      "kind": "text"
+    },
+    {
+      "id": "external",
+      "text": "What is communicated externally (customers, regulators, the community, contractors), when and by whom?",
+      "kind": "text"
+    },
+    {
+      "id": "consultation",
+      "text": "How are workers consulted and how do they take part (for example health and safety representatives, committees, toolbox meetings)?",
+      "kind": "text"
+    },
+    {
+      "id": "records",
+      "text": "How are communications recorded?",
+      "kind": "text"
+    }
+  ],
+  "requiredSections": [
+    "Purpose and scope",
+    "Internal communication (what, when, who, how)",
+    "External communication (what, when, who, how)",
+    "Worker consultation and participation",
+    "Records of communication",
+    "Review record"
+  ],
+  "optionalSections": [
+    "Communication during emergencies (cross-reference to the emergency plan)"
+  ],
+  "expectedRecords": [
+    "Toolbox and meeting records",
+    "Records of consultation with workers",
+    "Records of significant external communications"
+  ],
+  "draftingRules": [
+    "Lay the plan out as a table: Topic | Audience | Method | Frequency | Responsible | Record kept.",
+    "Use only the methods and audiences the user confirmed.",
+    "Do not name a regulator unless the user confirmed it."
+  ],
+  "reviewerChecklist": [
+    "Internal and external communication are both covered",
+    "Worker consultation is real and recorded",
+    "Each line has an owner",
+    "Records are actually kept"
+  ],
+  "sources": [
+    {
+      "title": "Etcher ISO gap analysis workbook V2.0 — evidence examples (column G)",
+      "publisher": "Etcher Solutions",
+      "url": null,
+      "checkedOn": "2026-10-02",
+      "sha256": "8031a9503beecda8e0f27c57b865cda0d944a4f395fbedd082f5b84f0311673f"
+    },
+    {
+      "title": "Work Health and Safety Act 2020 (WA) — official home page",
+      "publisher": "Western Australian Legislation",
+      "url": "https://www.legislation.wa.gov.au/legislation/statutes.nsf/law_a147282.html",
+      "checkedOn": "2026-10-03"
+    }
+  ],
+  "version": "1",
+  "reviewStatus": "draft",
+  "approvedBy": null,
+  "approvedAt": null,
+  "docControlFields": [
+    "Document number",
+    "Revision",
+    "Effective date",
+    "Document owner (role)",
+    "Approved by (role)",
+    "Next review date",
+    "Revision history"
+  ],
+  "brandingInstructions": "Use the organisation's confirmed legal or trading name in the header, its logo reference (describe where the logo goes — do not invent one) and its confirmed brand colours for headings and table header rows. Put the document-control block in the footer or on a cover table. If a branding value is not confirmed, leave a placeholder.",
+  "supportsRequirements": [
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "5.1.1",
+      "stableKey": "9001|5.1.1|2b5495ab|0",
+      "workbookRow": 15,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.1.3",
+      "stableKey": "9001|7.1.3|9cd7e542|0",
+      "workbookRow": 34,
+      "why": "evidence example"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "7.4",
+      "stableKey": "9001|7.4|868c16f8|0",
+      "workbookRow": 45,
+      "why": "clause"
+    },
+    {
+      "standard": "9001",
+      "edition": "2015",
+      "clause": "8.5.3",
+      "stableKey": "9001|8.5.3|d6c39818|0",
+      "workbookRow": 81,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "5.1",
+      "stableKey": "14001|5.1|2b54689f|0",
+      "workbookRow": 13,
+      "why": "evidence example"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.4.1",
+      "stableKey": "14001|7.4.1|868c16f8|0",
+      "workbookRow": 40,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.4.1",
+      "stableKey": "14001|7.4.1|236c5b66|0",
+      "workbookRow": 41,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.4.2",
+      "stableKey": "14001|7.4.2|ff784b6e|0",
+      "workbookRow": 42,
+      "why": "clause"
+    },
+    {
+      "standard": "14001",
+      "edition": "2015",
+      "clause": "7.4.3",
+      "stableKey": "14001|7.4.3|1a83645b|0",
+      "workbookRow": 43,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "5.1",
+      "stableKey": "45001|5.1|a8676fb4|0",
+      "workbookRow": 13,
+      "why": "evidence example"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.4.1",
+      "stableKey": "45001|7.4.1|868c16f8|0",
+      "workbookRow": 44,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.4.1",
+      "stableKey": "45001|7.4.1|236c5b66|0",
+      "workbookRow": 45,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.4.2",
+      "stableKey": "45001|7.4.2|d00abb39|0",
+      "workbookRow": 46,
+      "why": "clause"
+    },
+    {
+      "standard": "45001",
+      "edition": "2018",
+      "clause": "7.4.3",
+      "stableKey": "45001|7.4.3|6ebb566|0",
+      "workbookRow": 47,
+      "why": "clause"
+    }
+  ],
+  "documents": [
+    "Consultation and Communication Procedure"
+  ]
+}
