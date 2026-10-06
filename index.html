@@ -6127,8 +6127,10 @@ function renderSidebarWorkboards(){
     </div>`;
   }
 
-  // Unfiled drop zone
+  // Unfiled drop zone — under its own "Team Boards" heading (staff/admin), so team boards outside a
+  // folder no longer sit directly under "Personal Boards" looking like they belong to it.
   const unfiled=wbs.filter(wb=>!wb.folderId);
+  if(isStaffOrAdmin&&unfiled.length)html+=`<div class="sb-team-boards-h" style="padding:6px 10px 5px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Team Boards</div>`;
   html+=dropZone('', unfiled.map(wb=>wbRow(wb,14)).join(''));
 
   // Folders
@@ -6204,7 +6206,10 @@ function _wbRowDrop(e,targetWbId,targetFolderId){
   let idx=ordered.findIndex(w=>w.id===targetWbId);
   if(idx===-1)idx=ordered.length;
   ordered.splice(before?idx:idx+1,0,dragged);
-  ordered.forEach((w,i)=>w.order=i);
+  // Stamp what moved: an unstamped folder/order change loses every sync merge (mergeById keeps the
+  // local copy unless the incoming one is newer), so a peer's stale copy pushed the old folder back.
+  const movedAt=new Date().toISOString();
+  ordered.forEach((w,i)=>{if(w.order!==i||w===dragged){w.order=i;w.updatedAt=movedAt;}});
   saveDB(DB);
   renderSidebarWorkboards();
   if(currentView==='dashboard')renderView('dashboard');
@@ -6298,6 +6303,7 @@ function moveWbToFolder(wbId,folderId){
   // Dropped into folder empty space rather than on a specific row — append to the end.
   const siblings=(DB.workboards||[]).filter(w=>!w.archived&&w.id!==wbId&&(w.folderId||null)===(folderId||null));
   wb.order=siblings.reduce((m,w)=>Math.max(m,w.order||0),-1)+1;
+  wb.updatedAt=new Date().toISOString(); // see _wbRowDrop: an unstamped move loses the sync merge
   saveDB(DB);
   renderSidebarWorkboards();
   if(currentView==='dashboard')renderView('dashboard');
@@ -6385,6 +6391,7 @@ function saveBoardVisibility(boardId,visibility){
   const wb=DB.workboards.find(w=>w.id===boardId);
   if(!wb)return;
   wb.visibility=visibility;
+  wb.updatedAt=new Date().toISOString();
   saveDB(DB);
   renderSidebarWorkboards();
   openBoardShareModal(boardId);
@@ -6403,6 +6410,7 @@ function saveBoardPersonal(boardId,checked){
   // Turning personal ON drops any client link and pulls it out of a team folder — a personal
   // board has no place in a client's portal (api/_portal.js's own exclusion) or a shared folder.
   if(checked){wb.clientId='';wb.folderId=null;}
+  wb.updatedAt=new Date().toISOString();
   saveDB(DB);
   renderSidebarWorkboards();
   openBoardShareModal(boardId);
