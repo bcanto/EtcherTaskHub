@@ -31,7 +31,22 @@ intake-queue.json
 appdata.json
 
 # ── Agent scratch ─────────────────────────────────────────────────────────────
-.agents/
+# .agents/: scratch, probes, one-off fix scripts and golden captures stay local; the regression
+# suites, their shared helpers, fixtures and the gate are tracked (D55, 2026-10-06).
+.agents/*
+!.agents/*-test.cjs
+!.agents/tp-regress.cjs
+!.agents/notes-access.cjs
+!.agents/session-audit.cjs
+!.agents/audit-access.cjs
+!.agents/audit-portal.cjs
+!.agents/_*.cjs
+!.agents/gate.sh
+!.agents/lane.sh
+!.agents/golden-capture.cjs
+!.agents/iso-db-verify.cjs
+!.agents/iso-shots.cjs
+!.agents/fixtures/
 skills-lock.json
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
@@ -43,3 +58,10 @@ supabase/.temp
 # ── ISO Audit workboard (local-only client data; not part of the live app) ────
 workboard/ISO Audit/data/
 workboard/ISO Audit/source/
+
+# --- ISO Audit dev/env (Phase 0.4) ------------------------------------------------
+.env.*
+!.env.example
+!.env.dev.example
+.iso-offline/
+!iso/templates/*.xlsx
