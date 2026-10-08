@@ -858,6 +858,10 @@ async function callIso(port, user, body) {
     ok(!/\btarget\s*=\s*['"]/.test(isoSrc), 'iso/*.js never sets a target= attribute in a template string');
     ok(!/location\.href\s*=/.test(isoSrc), 'iso/*.js never assigns location.href');
     ok(!/_clickDownload\(\s*[^,)]*\s*\)/.test(isoSrc), 'iso/*.js never calls _clickDownload with fewer than 2 arguments');
+    // Plan 2.5, closed 2026-10-06 (release-1 B0.6): ISO data must never be served stale from Task Hub's
+    // view cache. The ISO route renders straight through ISO.render — guard that it stays that way.
+    const isoRouteLine = (fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').match(/case 'iso':[^\n]*/) || [''])[0];
+    ok(/ISO\.render\(vc\)/.test(isoRouteLine) && !/_renderCached/.test(isoRouteLine), `the ISO route renders directly, never through _renderCached (got ${JSON.stringify(isoRouteLine.trim().slice(0, 120))})`);
 
     ok(consoleErrors.length === 0, `no console errors through the whole flow (got ${JSON.stringify(consoleErrors)})`);
   } finally {

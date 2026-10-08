@@ -19,9 +19,9 @@ to fail, clean full gate per batch).
 | **B0** | Build speed and safety: checkpoint commits, shared test harness, can-fail helper, fast test lanes | S | Q12 |
 | **B1** | Defensible conclusions: basis required, gap reason, OFI flag, Out of scope, controlled Apply to related, risk-sorted sign-off, consistency warnings, evidence sufficiency | L | Q1–Q5 |
 | **B2** | Findings and actions that close properly: Track this action, closure rules, reopen, repeat findings | M | Q6–Q7 |
-| **B3** | History foundation: library frozen per board, close snapshot, evidence fingerprints, learning signals | M | — |
+| **B3** | History foundation: library frozen per board, close snapshot, evidence fingerprints, learning signals — **and the gap-analysis Excel workbook (the client deliverable, plan 10.2)** | L | Review 3 exported workbooks (STOP 2b) |
 | **B6** | Go-live: security headers, pinned scripts, Microsoft sign-in, Supabase dev project and access rules, accessibility and responsive checks | M | Q13 and dashboard steps |
-| ▶ **Pilot** | One real gap analysis on the live system, delivered with the existing Excel export | — | Pick the client |
+| ▶ **Pilot** | One real gap analysis on the live system, delivered with the B3.5 gap-analysis workbook | — | Pick the client |
 | **B4** | Follow-ups and the client programme page, audit setup, evidence request letter, on-site audit pack | L | Q8–Q10 |
 | **B5** | Notifications, formal reports (audit, follow-up, maintenance), CSV export | L | Q11 |
 | **B7** | Client portal ISO tab (Phase 13) | L | After the pilot |
@@ -30,7 +30,10 @@ to fail, clean full gate per batch).
 
 **Shortest path to real use:** B0 → B1 → B2 → B3, with B6 in parallel → pilot. Follow-up and maintenance
 audits happen months after a first audit, so B4 and B5 get built *during* the pilot instead of blocking it.
-A gap analysis can already be delivered with the existing Excel export.
+The pilot's client deliverable is the gap-analysis Excel workbook filled from Etcher's own template (B3.5,
+plan 10.2). **Correction, 2026-10-06 (B1 prep):** an earlier version of this plan said that workbook already
+existed — it does not; only the sanitised template (10.1) and the Reports-tab portfolio CSV/XLSX exist. B3.5
+puts it on the pilot path.
 
 **Dependencies:**
 - B2 uses B1's statuses.
@@ -194,6 +197,7 @@ and **what it deliberately doesn't do**.
 | **B3.1 Library frozen per board** | Each board stores `library_release` (today `v3`). Cross-standard links, the document catalogue and cheat sheets load from `iso/seed/releases/<release>/`, not from one live file. A release manifest records editions, transition dates (with source and last-verified date), technical reviewer, review date and change notes. | A test adds a fake `v4` release: new boards use it, existing boards are unchanged. Covers "plain-language library" governance and "transition dates as controlled configuration". |
 | **B3.2 Close snapshot** | When a board moves to *closed*, one immutable `iso_audit_snapshots` row is written. Per clause: status, OFI, gap reason, basis, baseline, changed-since-baseline, approval. Plus library release and calculation version. | It can't be edited (an immutability trigger like migration 011's design). B5's reports and the later learning work read it. |
 | **B3.3 Evidence fingerprints** | The snapshot records, for each linked document: title, revision, date, URL, who linked it and when, and a SHA-256 for uploaded files. Optional **Attach a copy** for key SharePoint documents. | A later broken or changed SharePoint link no longer erases what was seen. Honest limit: links can't be checksummed, only uploaded files. |
+| **B3.5 Gap-analysis Excel workbook** (plan 10.2, D36) | **Export to Excel** on the board (Overview / ⚙): one workbook per standard, `<REF>_ISO<code>_Gap_Analysis.xlsx`, filled from `iso/templates/gap-analysis-template.xlsx` by direct XML filling through `api/_isoZip.js` (the A94 path — ExcelJS loses template parts). Op `export.dataset`: staff only, rows projected through an `EXPORT_FIELDS` allowlist (display names not uids; no record ids, `stable_key`, `storage_path` or internal-only actions). | Status mapping onto the template's own list (Fully conforming · Partially conforming · Not conforming · To be updated): Compliant → Fully conforming; Compliant+OFI → Fully conforming with "OFI:" before Current system (D36/D44); Partial (+OFI) → Partially conforming; Non-Compliant → Not conforming; Not assessed → To be updated; N/A and Out of scope → status blank with "Not applicable — <reason>" / "Outside this audit's scope" in Current system (exact cells checked against the template's validation list in build). Gap reason prefixed to Current system. User text written only as escaped strings, never formulas; leading `= + - @` tab/CR prefixed with `'`. Plan 10's tests (sheets, titles/footer per standard, one section row per clause 4–10, row count = clauses, Summary formulas and cached values = `_isoCalc`, validations / conditional formats / data bars / logo / freeze intact, no internal-only fields). **STOP 2b:** you open the three exported files (9001, 14001, 45001) in Excel and compare with your template. |
 | **B3.4 Learning signals** | No new UI. Activity entries with fixed payloads: `related_applied` (from B1.5); `doc_linked {source: register suggestion · history suggestion · search · custom}`. The existing 8b.5 suggestion decisions are included. An admin-only **Export signals** (JSON) to check what's being captured. | Each signal is written once per action with the documented payload (server-level test). |
 
 - **Reuses:** `buildGuidance`, `LIBRARY_RELATIONSHIPS` / `DOCUMENT_CATALOG` loaders, the activity log (`iso_activity` already stores before/after, actor, time, reason), the D24 seed-file review process.
@@ -206,9 +210,10 @@ and **what it deliberately doesn't do**.
   - **Changed:** `audit.update` (writes the snapshot on close), `relationship.library`, `document.list`, `guidance.list` (resolve the board's release).
 - **Tests:**
   - New `iso-history-test` (server-level).
+  - `iso-export-test` gains the plan-10.2 sections (export.dataset projection, the filled workbooks per standard, the status mapping above).
   - Lane: `api`.
   - Can-fail mutations: read the live release instead of the board's; allow a snapshot update; skip a signal.
-- **Not in B3:** the learning features themselves (§4). This batch only makes sure the data exists.
+- **Not in B3:** the learning features themselves (§4) — this batch only makes sure the data exists; CSV export of on-screen views (B5.3).
 
 ### B6 — Go-live (M) · runs in parallel, any time
 
@@ -252,7 +257,7 @@ and **what it deliberately doesn't do**.
 
 ### ▶ Pilot (after B0–B3 + B6)
 
-- One real gap analysis for one client, built only by staff, delivered with the existing Excel export.
+- One real gap analysis for one client, built only by staff, delivered with the B3.5 gap-analysis workbook.
 - Walk the brief §1–§32 against the live system (plan 14.1) and list anything missing.
 - Feedback from the pilot sets the order of B4, B5 and B7.
 
@@ -287,11 +292,11 @@ and **what it deliberately doesn't do**.
 |---|---|---|
 | **B5.1 Notifications** (plan 7.6) | **Event** notifications are stored in `iso_notifications` (table already drafted in 009): evidence submitted, awaiting approval, returned, derived awaiting confirmation, finding reopened, action assigned. **Due** reminders are worked out when the bell opens: action due within 7 days or overdue, effectiveness review due, follow-up / maintenance due, report due. | The bell merges ISO items (the planned 7.6 hook). Clicking jumps to the row. No scheduler or cron needed. |
 | **B5.2 Formal reports** (Phase 11) | Three templates: **Audit report**, **Follow-up report**, **Maintenance report**. Sections come pre-filled from the setup, findings and snapshot: executive summary, scope and criteria, dates and team, method, limitations, objectives achieved, findings, non-conformities, OFIs and good practice, coverage, evidence index, unverified carried-forward items, library release, sign-off, client acknowledgement. Plus a "Requirement wording is Etcher's plain-language interpretation" disclaimer. | A **Ready to report** checklist blocks issue while any of these remain: basis missing, unapproved, derived unconfirmed, findings unclassified. **Issue** freezes a snapshot (kind `report`, version *n*), downloads the PDF, and records the acknowledgement ("received and discussed"). Reissue creates version *n*+1 and keeps the old one. |
-| **B5.3 CSV / dataset export** (10.2, 14.2) | Export any ISO view. | Staff only. Formula-injection guard `/^[=+\-@\t\r]/`. |
+| **B5.3 CSV export of views** (14.2) | Export any on-screen ISO view as CSV. | Staff only. Formula-injection guard `/^[=+\-@\t\r]/`. |
 
 - **Data:** migration 011 as designed (§5.5), plus acknowledgement fields; `iso_notifications` as designed.
 - **Ops:**
-  - **New:** `notification.list` / `markRead`, `report.readiness`, `report.saveDraft`, `report.issue`, `report.list` / `get`, `report.acknowledge`, `export.dataset`.
+  - **New:** `notification.list` / `markRead`, `report.readiness`, `report.saveDraft`, `report.issue`, `report.list` / `get`, `report.acknowledge`.
 - **Tests:**
   - New `iso-report-test`.
   - Lanes: `api` + `board`.
@@ -370,9 +375,9 @@ Emails start here.
 - **New:**
   - B1: `requirement.confirmDerived`
   - B2: `action.trackPlan`, `finding.reopen`
-  - B3: `signal.export`
+  - B3: `signal.export`, `export.dataset`
   - B4: `audit.startFollowUp`, `programme.get`, `clientSettings.get` / `update`, `evidenceRequest.create` / `list` / `update`
-  - B5: `notification.list` / `markRead`, `report.readiness` / `saveDraft` / `issue` / `list` / `get` / `acknowledge`, `export.dataset`
+  - B5: `notification.list` / `markRead`, `report.readiness` / `saveDraft` / `issue` / `list` / `get` / `acknowledge`
 - **Changed:** `requirement.update` / `approve` / `bulkApprove`, `audit.update` (close gate, snapshot, setup), `relationship.applyToRelated` / `library`, `document.list`, `guidance.list`, `evidence.addLink`, finding status transitions, `audit.startMaintenance`.
 
 ## 8. Permissions
@@ -465,7 +470,8 @@ All checked on the server (hard rule 10). Each B-batch suite includes deny check
 | Wireframe leftovers | D40 shared custom documents | §4 |
 | Plan leftovers | 2.5, 7.5, 8.3 | B0.6 |
 | Plan leftovers | 7.6 notifications | B5.1 |
-| Plan leftovers | 10.2, 14.2 exports | B5.3 |
+| Plan leftovers | 10.2 gap-analysis Excel workbook | B3.5 (pilot path) |
+| Plan leftovers | 14.2 CSV export of views | B5.3 |
 | Plan leftovers | 11 reports | B5.2 |
 | Plan leftovers | 12 registers | §4 |
 | Plan leftovers | 13 portal | B7 |
