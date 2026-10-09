@@ -60,7 +60,7 @@ const iso = d => d.toISOString().slice(0, 10);
     // API: status_by_audit
     const pm = data(await callIso(ADMIN, { op: 'metric.portfolio' }));
     const s1 = pm.status_by_audit && pm.status_by_audit[b1.id];
-    ok(s1 && s1['9001'].total === r9.length && s1['9001'].counts.compliant === 1 && s1['9001'].counts.non_compliant === 1 && s1['14001'].counts.ofi === 1 && s1['9001'].counts.not_assessed === r9.length - 2, `metric.portfolio counts each board's clauses per standard and status (got ${JSON.stringify(s1 && s1['9001'])})`);
+    ok(s1 && s1['9001'].total === r9.length && s1['9001'].counts.compliant === 1 && s1['9001'].counts.non_compliant === 1 && s1['14001'].counts.compliant === 1 && s1['9001'].counts.not_assessed === r9.length - 2, `metric.portfolio counts each board's clauses per standard and status (got ${JSON.stringify(s1 && s1['9001'])})`);
 
     browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1440, height: 1000 } });
     const page = await browser.newPage();

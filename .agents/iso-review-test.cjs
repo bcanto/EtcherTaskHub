@@ -98,7 +98,9 @@ function report() {
     // non-Lead's change would (seniorReviewReset's own generic behaviour, still exercised above by
     // the dates/visibility case, which touches neither compliance_status nor a Lead-only path).
     await callIso(ADMIN, { op: 'requirement.bulkUpdate', auditId: board.id, ids: [r1.id], patch: { compliance_status: 'partially_compliant' } });
-    ok((await get(r1.id)).senior_review_status === 'partially_compliant', 'a Lead\'s own bulk status change mirrors the new verdict immediately (D35/R2)');
+    ok((await get(r1.id)).senior_review_status === 'pending', 'D46/D48: a Lead\'s own bulk Partially Compliant without a gap reason is not final yet');
+    await upd(ADMIN, r1.id, { gap_reason: 'ineffective' });
+    ok((await get(r1.id)).senior_review_status === 'partially_compliant', 'adding the gap reason makes the Lead\'s own status final and mirrors the verdict (D35/R2, D46)');
     await sr(ADMIN, r1.id, 'compliant');
     const undo = data(await sr(ADMIN, r1.id, 'pending'));
     ok(undo.senior_review_status === 'pending' && undo.senior_review_note == null && undo.senior_reviewed_by == null && undo.senior_reviewed_at == null, 'Reset to awaiting clears who/when/note');

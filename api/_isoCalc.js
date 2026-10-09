@@ -47,7 +47,7 @@ function computeRequirementMetrics(reqs, findingsById, findingIdsByRequirementId
   // req_applicable excludes only 'not_applicable' — 'review' still counts as applicable (plan §7:
   // "req_total − result/applicability not_applicable"; 'review' is a staff-side triage state, not
   // a conformity verdict, so it stays in every denominator below until someone resolves it).
-  const applicable = reqs.filter(r => r.applicability !== 'not_applicable');
+  const applicable = reqs.filter(r => APPLICABLE_VALUES.includes(r.applicability));
   const req_applicable = applicable.length;
 
   // req_assessed / assessment_completion_pct need a RECORDED RESULT, not just assessment_state
@@ -110,7 +110,7 @@ function computeRequirementMetrics(reqs, findingsById, findingIdsByRequirementId
 // baselined requirements on both sides, so the two distributions always have the same total. null when
 // nothing on the board was ever imported — there is no baseline to compare, and the UI says so.
 function computeBaselineVsCurrent(reqs) {
-  const baselined = reqs.filter(r => r.applicability !== 'not_applicable' && r.baseline_at);
+  const baselined = reqs.filter(r => APPLICABLE_VALUES.includes(r.applicability) && r.baseline_at);
   if (!baselined.length) return null;
   const side = rows => ({
     baseline: rows.reduce((m, r) => bump(m, r.baseline_result || 'unassessed'), {}),
@@ -292,7 +292,7 @@ function scopeInputsToStandard(input, standard) {
 // which — or a single-element array [responsible_uid] for "by owner"). One generic function so the
 // two dashboard cuts can never disagree about what "progress" means per group.
 function computeProgressByGroup(reqs, groupKeysFn) {
-  const applicable = reqs.filter(r => r.applicability !== 'not_applicable');
+  const applicable = reqs.filter(r => APPLICABLE_VALUES.includes(r.applicability));
   const byGroup = new Map();
   for (const r of applicable) {
     for (const key of groupKeysFn(r) || []) {
@@ -342,7 +342,7 @@ function computeProgressOverTime(activityRows) {
 function computeClauseMatrix(reqs, evidenceSummary) {
   const cells = {};
   for (const r of reqs) {
-    if (r.applicability === 'not_applicable') continue;
+    if (!APPLICABLE_VALUES.includes(r.applicability)) continue;
     const std = r.standard_code, fam = clauseFamilyOf(r.clause);
     if (!std || !fam) continue;
     cells[std] = cells[std] || {};
@@ -617,7 +617,7 @@ function computePortfolioMetrics(input) {
       if (act.owner_uid && !ACTION_CLOSED_STATUSES.includes(act.status)) bump(workload_by_auditor, act.owner_uid);
     }
     for (const r of ((input.perAuditReqs && input.perAuditReqs.get(a.id)) || [])) {
-      if (r.responsible_uid && r.applicability !== 'not_applicable' && !(r.assessment_state === 'complete' && r.assessment_result != null)) bump(workload_by_auditor, r.responsible_uid);
+      if (r.responsible_uid && APPLICABLE_VALUES.includes(r.applicability) && !(r.assessment_state === 'complete' && r.assessment_result != null)) bump(workload_by_auditor, r.responsible_uid);
     }
   }
 

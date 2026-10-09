@@ -260,9 +260,10 @@
       ? `<span class="iso-land-closed">${a.maintenance_due ? 'Maintenance due ' + esc(fmtDate(a.maintenance_due)) : 'Closed'}</span>`
       : codes.map(c => {
         const b = stat[c] || { total: 0, counts: {} };
-        const n = b.total || 1, done = b.total - (b.counts.not_assessed || 0);
-        const bar = COMPLIANCE_STATUSES.filter(st => st !== 'not_assessed' && b.counts[st]).map(st => `<i style="width:${b.counts[st] / n * 100}%;background:${complianceColor(st)}"></i>`).join('');
-        return `<span class="iso-ps-item"><span class="iso-tag iso-tag-xs" style="--std:${STANDARD_COLOR[c] || '#6b8399'}">${esc(STANDARD_BADGE[c] || '•')}</span><b>${done}</b> /${b.total}<span class="iso-stack" aria-hidden="true">${bar}</span></span>`;
+        const total = b.total - (b.counts.out_of_scope || 0); // D45: out of scope is not part of this audit's progress
+        const n = total || 1, done = total - (b.counts.not_assessed || 0);
+        const bar = COMPLIANCE_STATUSES.filter(st => st !== 'not_assessed' && st !== 'out_of_scope' && b.counts[st]).map(st => `<i style="width:${b.counts[st] / n * 100}%;background:${complianceColor(st)}"></i>`).join('');
+        return `<span class="iso-ps-item"><span class="iso-tag iso-tag-xs" style="--std:${STANDARD_COLOR[c] || '#6b8399'}">${esc(STANDARD_BADGE[c] || '•')}</span><b>${done}</b> /${total}<span class="iso-stack" aria-hidden="true">${bar}</span></span>`;
       }).join('');
     const late = a.stage !== 'closed' && a.report_due && a.report_due < today;
     const title = !boardTitleIsDefault(a) ? a.title : (AUDIT_TYPE_LABEL[a.audit_type] || a.title || a.ref);
@@ -395,7 +396,7 @@
     const codes = (audit.standards || []).filter(c => !std || c === std);
     const strip = document.getElementById('iso-pstrip');
     if (strip) strip.innerHTML = codes.map(c => {
-      const rows = reqs.filter(r => r.standard_code === c);
+      const rows = reqs.filter(r => r.standard_code === c && r.compliance_status !== 'out_of_scope'); // D45: out of scope is not part of this audit's progress
       const done = rows.filter(r => r.compliance_status && r.compliance_status !== 'not_assessed').length;
       const n = rows.length || 1;
       const cnt = {};
@@ -935,10 +936,27 @@
   // D35/R2 (P4): one status replaces assessment_state + assessment_result + applicability +
   // effectiveness. The register/drawer read and write only this field now; api/_iso.js derives the
   // retired fields above so isoCalc.js and the dashboard (R5, not yet rebuilt) stay correct untouched.
-  const COMPLIANCE_STATUS_LABEL = { not_assessed: 'Not assessed', compliant: 'Compliant', partially_compliant: 'Partially Compliant', non_compliant: 'Non-Compliant', ofi: 'OFI', not_applicable: 'N/A' };
-  const COMPLIANCE_STATUS_FULL = { ofi: 'Opportunity for Improvement', not_applicable: 'Not Applicable' };
-  const COMPLIANCE_STATUS_COLOR = { not_assessed: '#94a3b8', compliant: '#2b7356', partially_compliant: '#87590a', non_compliant: '#a8362d', ofi: '#45579a', not_applicable: '#56606e' }; // wireframe --c/--pc/--nc/--ofi/--nap
+  // D44 (2026-10-06): OFI is a flag on Compliant / Partially Compliant ("Compliant · OFI"), not a
+  // status — the OFI button stores Compliant + ofi. D45: "Outside this audit's scope" is a status.
+  const COMPLIANCE_STATUS_LABEL = { not_assessed: 'Not assessed', compliant: 'Compliant', partially_compliant: 'Partially Compliant', non_compliant: 'Non-Compliant', not_applicable: 'N/A', out_of_scope: 'Out of scope' };
+  const COMPLIANCE_STATUS_FULL = { ofi: 'Opportunity for Improvement', not_applicable: 'Not Applicable', out_of_scope: "Outside this audit's scope" };
+  const COMPLIANCE_STATUS_COLOR = { not_assessed: '#94a3b8', compliant: '#2b7356', partially_compliant: '#87590a', non_compliant: '#a8362d', ofi: '#45579a', not_applicable: '#56606e', out_of_scope: '#7a8799' }; // wireframe --c/--pc/--nc/--ofi/--nap
   const COMPLIANCE_STATUSES = Object.keys(COMPLIANCE_STATUS_LABEL);
+  // D48: why a Partially Compliant / Non-Compliant clause falls short (the old workbook's vocabulary).
+  const GAP_REASON_LABEL = { not_implemented: 'Not implemented', ineffective: 'Implemented but ineffective', no_evidence: 'No evidence provided' };
+  const isGapStatus = cs => cs === 'partially_compliant' || cs === 'non_compliant';
+  // Mirrors api/_iso.js basisProblem (D46–D48) so the screen explains itself; the server still decides.
+  function basisProblemLocal(r) {
+    const cs = r.compliance_status || 'not_assessed';
+    if (cs === 'not_assessed' || cs === 'out_of_scope') return null;
+    if (r.derived_from_id) return 'Derived from a related clause — confirm it first.';
+    if (cs !== 'not_applicable' && !String(r.current_system || '').trim()) return 'Basis missing — write the current system (what you saw) first.';
+    if (isGapStatus(cs) && !r.gap_reason) return 'Gap reason missing — pick why it falls short.';
+    return null;
+  }
+  // A clause needs an action when it falls short, or carries an OFI (D44).
+  function needsAction(r) { return isGapStatus(r.compliance_status) || (r.compliance_status === 'compliant' && !!r.ofi); }
+  function statusText(r) { const cs = r.compliance_status || 'not_assessed'; return complianceLabel(cs) + (r.ofi && (cs === 'compliant' || cs === 'partially_compliant') ? ' · OFI' : ''); }
   // The approval mark (P7): a status is proposed by whoever set it, approved or returned by the
   // Lead Auditor. null until a status exists — nothing to approve yet.
   const APPROVAL_STATE_LABEL = { proposed: 'Awaiting Lead approval', approved: 'Approved', returned: 'Returned' };
@@ -957,7 +975,9 @@
   const QUICK_VIEWS = [
     { id: 'all', label: 'All requirements', where: [] },
     { id: 'not_assessed', label: 'Not assessed', where: [{ field: 'compliance_status', op: 'in', value: ['not_assessed'] }] },
-    { id: 'needs_action', label: 'Needs action', where: [{ field: 'compliance_status', op: 'in', value: ['partially_compliant', 'non_compliant', 'ofi'] }] },
+    { id: 'needs_action', label: 'Needs action', where: [{ field: '_needsAction', op: 'in', value: [true] }] },
+    // D46: assessed, but the basis or gap reason is still missing (derived rows have their own mark).
+    { id: 'needs_basis', label: 'Needs basis', where: [{ field: '_needsBasis', op: 'in', value: [true] }] },
     { id: 'client_visible', label: 'Client-visible', where: [{ field: 'visibility', op: 'in', value: ['client_selected', 'client_all'] }] },
     // 8b.5: a pending evidence suggestion, or a link still waiting for a reviewer's verdict.
     { id: 'evidence_review', label: 'Evidence to review', where: [{ field: '_evdReview', op: 'in', value: [true] }] },
@@ -1063,7 +1083,7 @@
     const pill = st ? `<span class="iso-sr-pill" data-status="${st}" style="--c:${APPROVAL_STATE_COLOR[st]}" title="${st === 'approved' && row.approved_by ? esc(_uidName(row.approved_by) || '') : ''}">${esc(APPROVAL_STATE_LABEL[st] || st)}</span>` : (row.compliance_status === 'not_assessed' ? '' : `<span class="iso-sr-pill" data-status="proposed" style="--c:${APPROVAL_STATE_COLOR.proposed}">${esc(APPROVAL_STATE_LABEL.proposed)}</span>`);
     if (!canApproveRequirementLocally() || !row.compliance_status || row.compliance_status === 'not_assessed') return pill ? `<div class="iso-sr" role="group" aria-label="Approval">${pill}</div>` : '';
     if (st === 'approved') return `<div class="iso-sr" role="group" aria-label="Approval">${pill}</div>`;
-    return `<div class="iso-sr" role="group" aria-label="Approval">${pill}<button type="button" class="iso-sr-btn is-review" data-id="${esc(row.id)}" onclick="event.stopPropagation();ISO._reqApprove(this.dataset.id)">Approve</button><button type="button" class="iso-sr-btn" data-id="${esc(row.id)}" onclick="event.stopPropagation();ISO._reqReturn(this.dataset.id)">Return</button></div>`;
+    return `<div class="iso-sr" role="group" aria-label="Approval">${pill}<button type="button" class="iso-sr-btn is-review" data-id="${esc(row.id)}"${basisProblemLocal(row) ? ` disabled title="${esc(basisProblemLocal(row))}"` : ''} onclick="event.stopPropagation();ISO._reqApprove(this.dataset.id)">Approve</button><button type="button" class="iso-sr-btn" data-id="${esc(row.id)}" onclick="event.stopPropagation();ISO._reqReturn(this.dataset.id)">Return</button></div>`;
   }
   // Shown at the top of the Assessment tab: the return note, or who approved it and when.
   function reqApprovalNoteHtml(row) {
@@ -1115,9 +1135,61 @@
   function reqPill(text, color) { return `<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;background:${color}18;color:${color};font-weight:600">${esc(text)}</span>`; }
   // The Clauses row's own status mark (wireframe P3): a dot + text, no filled background — quieter
   // than reqPill, which stays in use for the approval note/drawer and other registers.
-  function reqStatusDotHtml(cs) {
+  function reqStatusDotHtml(cs, row) {
     const color = complianceColor(cs);
-    return `<span class="iso-status-dot iso-pill${!cs || cs === 'not_assessed' ? ' is-na' : ''}" style="--c:${color}">${esc(complianceLabel(cs))}</span>`;
+    const text = row ? statusText(row) : complianceLabel(cs);
+    return `<span class="iso-status-dot iso-pill${!cs || cs === 'not_assessed' ? ' is-na' : ''}${cs === 'out_of_scope' ? ' is-oos' : ''}" style="--c:${color}">${esc(text)}</span>`;
+  }
+  // Small marks after the clause name: derived, basis missing, consistency (B1.1/B1.5/B1.6). On the
+  // Awaiting approval view the same facts become the risk reasons the Lead sorts by.
+  function reqFlagsHtml(row) {
+    if (_req.view === 'approval_awaiting') {
+      const why = reqRiskReasons(row);
+      return why.length ? `<span class="iso-flags">${why.map(w => `<span class="iso-why">${esc(w)}</span>`).join('')}</span>` : '';
+    }
+    const out = [];
+    if (row.derived_from_id) out.push('<span class="iso-flag iso-derived-pill" title="Copied from a related clause — check it, then Confirm">Derived</span>');
+    const bp = basisProblemLocal(row);
+    if (bp && !row.derived_from_id) out.push(`<span class="iso-flag iso-basis-missing" title="${esc(bp)}">${/^Gap/.test(bp) ? 'Gap reason missing' : 'Basis missing'}</span>`);
+    if (row._consistency && row._consistency.length) out.push(`<span class="iso-flag iso-consistency" title="${esc('Same documents as ' + row._consistency.join(', ') + ' but the opposite conclusion — check both')}">Check consistency</span>`);
+    return out.length ? `<span class="iso-flags">${out.join('')}</span>` : '';
+  }
+  // B1.6: why a proposed clause matters to the Lead, most serious first.
+  const RISK_WEIGHT = { 'Non-Compliant': 60, Derived: 50, 'Check consistency': 40, 'Changed since last audit': 30, 'Basis missing': 20, 'Gap reason missing': 20, 'No evidence': 15, 'Partially Compliant': 10 };
+  function reqRiskReasons(row) {
+    const cs = row.compliance_status;
+    const out = [];
+    if (cs === 'non_compliant') out.push('Non-Compliant');
+    if (row.derived_from_id) out.push('Derived');
+    if (row._consistency && row._consistency.length) out.push('Check consistency');
+    if (row.baseline_at && (row.baseline_result || null) !== (row.assessment_result || null)) out.push('Changed since last audit');
+    const bp = basisProblemLocal(row);
+    if (bp && !row.derived_from_id) out.push(/^Gap/.test(bp) ? 'Gap reason missing' : 'Basis missing');
+    const sum = (_req.evidenceSummary || {})[row.id];
+    if ((cs === 'compliant' || cs === 'partially_compliant') && !(sum && ((sum.accepted || 0) + (sum.partial || 0) + (sum.toReview || 0)))) out.push('No evidence');
+    if (cs === 'partially_compliant') out.push('Partially Compliant');
+    return out;
+  }
+  function reqRiskScore(row) { const w = reqRiskReasons(row).map(x => RISK_WEIGHT[x] || 0); return (w.length ? Math.max(...w) : 0) + w.length; }
+  // B1.6 consistency: a related clause sharing at least one provided document, with the opposite
+  // conclusion (Compliant vs Non-Compliant). N/A is left out on purpose — it legitimately differs
+  // between standards — recorded as a deviation from the plan's "N/A vs anything" wording.
+  function reqComputeConsistency() {
+    const docsByReq = new Map();
+    for (const d of (_req.docs || [])) for (const c of d.clauses) if (c.provided) { if (!docsByReq.has(c.requirementId)) docsByReq.set(c.requirementId, new Set()); docsByReq.get(c.requirementId).add(d.name); }
+    const byId = new Map(_req.requirements.map(r => [r.id, r]));
+    for (const r of _req.requirements) {
+      r._consistency = [];
+      if (r.compliance_status !== 'compliant' && r.compliance_status !== 'non_compliant') continue;
+      const mine = docsByReq.get(r.id); if (!mine) continue;
+      for (const x of ((_req.relLibrary || {})[r.id] || [])) {
+        if (x.rejected) continue;
+        const o = byId.get(x.requirementId); if (!o) continue;
+        const opposite = (r.compliance_status === 'compliant' && o.compliance_status === 'non_compliant') || (r.compliance_status === 'non_compliant' && o.compliance_status === 'compliant');
+        const theirs = docsByReq.get(o.id);
+        if (opposite && theirs && [...mine].some(n => theirs.has(n))) r._consistency.push(o.standard_code + ' ' + o.clause);
+      }
+    }
   }
   function reqOwnerName(uid) { const u = (_DB().users || []).find(x => x.id === uid); return u ? u.name : ''; }
 
@@ -1210,10 +1282,15 @@
     </div>`;
   }
   function reqApplyPanelHtml(row, applicable) {
-    const cs = row.compliance_status;
+    const docs = ((_req.evidenceByReq || {})[row.id] || []).filter(d => !['rejected', 'superseded', 'insufficient'].includes(d.reviewStatus));
+    const what = [statusText(row), row.current_system ? 'basis' : '', row.gap_reason ? 'gap reason' : '', row.recommended_action ? 'planned action' : '', docs.length ? `+${docs.length} document${docs.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+    const byId = new Map(_req.requirements.map(r => [r.id, r]));
+    const ref = r => `${STANDARD_BADGE[r.standard_code] || ''} ${r.clause} ${r.clause_name || ''}`;
     return `<div class="card iso-apply-panel">
-      <div class="iso-apply-panel-title">Apply "${esc(complianceLabel(cs))}" to:</div>
-      ${applicable.map(x => `<label class="iso-apply-item"><input type="checkbox" checked value="${esc(x.requirementId)}"/> ${esc(x.standardCode)} ${esc(x.clause)} ${esc(x.clauseName || '')} <span class="muted">(currently ${esc(complianceLabel(x.complianceStatus))})</span></label>`).join('')}
+      <div class="iso-apply-panel-title">Propose for related clauses: ${esc(what)}</div>
+      <div class="iso-apply-panel-sub">Each ticked clause gets this as a proposal marked "Derived" — check it on that clause, then confirm (D47).</div>
+      ${applicable.map(x => { const t = byId.get(x.requirementId); return `<div class="iso-apply-row"><label class="iso-apply-item"><input type="checkbox" checked value="${esc(x.requirementId)}"/> ${esc(x.standardCode)} ${esc(x.clause)} ${esc(x.clauseName || '')} <span class="muted">(currently ${esc(complianceLabel(x.complianceStatus))})</span></label>
+        <details class="iso-apply-compare"><summary>Compare wording</summary><div class="iso-apply-texts"><div><b>${esc(ref(row))}</b><p>${esc(row.requirement_text || '')}</p></div><div><b>${esc(t ? ref(t) : x.standardCode + ' ' + x.clause)}</b><p>${esc(t ? t.requirement_text || '' : '')}</p></div></div></details></div>`; }).join('')}
       <div class="iso-apply-panel-actions">
         <button type="button" class="btn btn-teal btn-sm" data-id="${esc(row.id)}" onclick="ISO._reqApplyToRelated(this)">Apply</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="ISO._reqCloseApplyPanel()">Cancel</button>
@@ -1228,12 +1305,14 @@
     const fromId = btn.dataset.id;
     const panel = btn.closest('.iso-apply-panel');
     const toIds = [...panel.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+    const offeredIds = [...panel.querySelectorAll('input[type=checkbox]')].map(cb => cb.value);
     if (!toIds.length) return;
     try {
-      const r = await mutate('relationship.applyToRelated', { auditId: _req.auditId, fromId: fromId, toIds: toIds });
+      const r = await mutate('relationship.applyToRelated', { auditId: _req.auditId, fromId: fromId, toIds: toIds, offeredIds: offeredIds });
       _req.applyPanel = null;
+      toIds.forEach(id => { if (_req.evidenceByReq) delete _req.evidenceByReq[id]; });
       await fillRequirementsTab({ id: _req.auditId });
-      root.showToast ? root.showToast(`Applied to ${r.applied.length} clause${r.applied.length === 1 ? '' : 's'}.`) : null;
+      root.showToast ? root.showToast(`Proposed for ${r.applied.length} clause${r.applied.length === 1 ? '' : 's'} — confirm each one there.`) : null;
     } catch (e) { root.showToast ? root.showToast('Could not apply: ' + e.message, true) : alert(e.message); }
   }
   async function _reqRejectRelated(btn) {
@@ -1245,16 +1324,53 @@
     catch (e) { root.showToast ? root.showToast('Could not restore that link: ' + e.message, true) : alert(e.message); }
   }
   // Status buttons (P3/P4): one click sets the status, no editor popup, no Save button.
+  // The same five buttons as the wireframe (D44: OFI = Compliant + OFI). N/A ▾ opens a small menu with
+  // Not applicable and Outside this audit's scope (D45).
   function reqStatusBarHtml(row) {
     const cs = row.compliance_status || 'not_assessed';
+    const ofi = !!row.ofi;
+    const btn = (key, label, on, color, handler) => `<button type="button" role="radio" class="iso-status-btn${on ? ' is-active' : ''}" style="--c:${color}" aria-checked="${on}" data-id="${esc(row.id)}" data-status="${key}" onclick="${handler || 'ISO._reqSetStatus(this.dataset.id,this.dataset.status)'}">${esc(label)}</button>`;
+    const naOn = cs === 'not_applicable' || cs === 'out_of_scope';
     return `<div class="iso-clause-statusbar" role="radiogroup" aria-label="Status">
-      ${COMPLIANCE_STATUSES.filter(s => s !== 'not_assessed').map(s => `<button type="button" role="radio" class="iso-status-btn${s === cs ? ' is-active' : ''}" style="--c:${complianceColor(s)}" aria-checked="${s === cs}" data-id="${esc(row.id)}" data-status="${esc(s)}" onclick="ISO._reqSetStatus(this.dataset.id,this.dataset.status)">${esc(complianceLabel(s))}</button>`).join('')}
+      ${btn('compliant', 'Compliant', cs === 'compliant' && !ofi, complianceColor('compliant'))}
+      ${btn('partially_compliant', 'Partially Compliant', cs === 'partially_compliant', complianceColor('partially_compliant'))}
+      ${btn('non_compliant', 'Non-Compliant', cs === 'non_compliant', complianceColor('non_compliant'))}
+      ${btn('ofi', 'OFI', cs === 'compliant' && ofi, complianceColor('ofi'))}
+      ${btn('na', cs === 'out_of_scope' ? 'Out of scope ▾' : 'N/A ▾', naOn, complianceColor(cs === 'out_of_scope' ? 'out_of_scope' : 'not_applicable'), 'ISO._reqOpenScopeMenu(this.dataset.id)')}
+    </div>${_req.scopeMenu === row.id ? `<div class="iso-na-menu" role="menu"><button type="button" role="menuitem" data-id="${esc(row.id)}" onclick="ISO._reqSetStatus(this.dataset.id,'not_applicable')">Not applicable</button><button type="button" role="menuitem" data-id="${esc(row.id)}" onclick="ISO._reqSetStatus(this.dataset.id,'out_of_scope')">Outside this audit's scope</button></div>` : ''}${reqGapAndOfiHtml(row)}`;
+  }
+  function reqGapAndOfiHtml(row) {
+    const cs = row.compliance_status;
+    if (!isGapStatus(cs)) return '';
+    return `<div class="iso-gap-row">
+      <div class="iso-gap-reason" role="radiogroup" aria-label="Why it falls short"><span class="iso-gap-label">Why it falls short</span>${Object.keys(GAP_REASON_LABEL).map(g => `<button type="button" role="radio" class="iso-gap-btn${row.gap_reason === g ? ' is-active' : ''}" aria-checked="${row.gap_reason === g}" data-id="${esc(row.id)}" data-gap="${g}" onclick="ISO._reqSetGap(this.dataset.id,this.dataset.gap)">${esc(GAP_REASON_LABEL[g])}</button>`).join('')}</div>
+      ${cs === 'partially_compliant' ? `<button type="button" class="iso-ofi-toggle${row.ofi ? ' is-on' : ''}" aria-pressed="${!!row.ofi}" data-id="${esc(row.id)}" onclick="ISO._reqToggleOfi(this.dataset.id)">${row.ofi ? 'OFI ✓' : '+ OFI'}</button>` : ''}
     </div>`;
+  }
+  function _reqOpenScopeMenu(id) { _req.scopeMenu = _req.scopeMenu === id ? null : id; renderRequirementsTable(_req.auditId); }
+  async function _reqSetGap(id, gap) {
+    try { await saveRequirementField(_req.auditId, id, 'gap_reason', gap); renderRequirementsTable(_req.auditId); }
+    catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
+  }
+  async function _reqToggleOfi(id) {
+    const row = _req.requirements.find(r => r.id === id); if (!row) return;
+    try { await saveRequirementField(_req.auditId, id, 'ofi', !row.ofi); renderRequirementsTable(_req.auditId); }
+    catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
+  }
+  async function _reqConfirmDerived(id) {
+    try { await mutate('requirement.confirmDerived', { auditId: _req.auditId, ids: [id] }); await fillRequirementsTab({ id: _req.auditId }); if (root.showToast) root.showToast('Confirmed.'); }
+    catch (e) { if (root.showToast) root.showToast('Could not confirm: ' + e.message, true); }
+  }
+  function reqDerivedBannerHtml(row) {
+    const src = _req.requirements.find(r => r.id === row.derived_from_id);
+    const ref = src ? `${STANDARD_BADGE[src.standard_code] || ''} ${src.clause} ${src.clause_name || ''}` : 'a related clause';
+    return `<div class="iso-derived-banner" role="status"><span><b>Derived from ${esc(ref)}</b> — the status, basis and plan were copied from it. Check they hold for this clause, then confirm.</span><button type="button" class="btn btn-teal btn-sm iso-derived-confirm" data-id="${esc(row.id)}" onclick="ISO._reqConfirmDerived(this.dataset.id)">Confirm</button></div>`;
   }
   async function _reqSetStatus(id, status) {
     const row = _req.requirements.find(r => r.id === id);
     if (!row) return;
-    const patch = { compliance_status: status };
+    _req.scopeMenu = null;
+    const patch = status === 'ofi' ? { compliance_status: 'compliant', ofi: true } : status === 'compliant' ? { compliance_status: 'compliant', ofi: false } : { compliance_status: status };
     if (status === 'not_applicable') {
       let reason = row.na_justification;
       if (!(reason && reason.trim())) {
@@ -1267,7 +1383,7 @@
       const updated = await mutate('requirement.update', { auditId: _req.auditId, id: id, patch: patch, expectedVersion: row.row_version });
       Object.assign(row, updated);
       renderRequirementsTable(_req.auditId);
-      root.showToast ? root.showToast('Status: ' + complianceLabel(status) + '.') : null;
+      root.showToast ? root.showToast('Status: ' + statusText(row) + '.') : null;
     } catch (e) { root.showToast ? root.showToast('Could not update the status: ' + e.message, true) : alert(e.message); }
   }
   function _looseEq(a, b) { return (a || '') === (b || ''); }
@@ -1281,12 +1397,14 @@
   function _reqSaveFieldSelect(el) { _reqSaveFieldGeneric(el.dataset.id, el.dataset.field, el.value || null); }
   function reqAssessmentColHtml(row) {
     const cs = row.compliance_status;
-    const showPlan = ['partially_compliant', 'non_compliant', 'ofi'].includes(cs);
+    const showPlan = needsAction(row);
+    const basisMissing = !!basisProblemLocal(row) && !row.derived_from_id && !String(row.current_system || '').trim();
     const staffOptions = (_DB().users || []).filter(u => u.role !== 'client');
     return `<div class="iso-clause-col">
       <div class="iso-clause-col-label">Assessment</div>
-      <label class="iso-clause-field iso-clause-field-bare"><span class="sr">Current system</span><textarea class="form-input" rows="3" placeholder="Current system — what the client does today" data-id="${esc(row.id)}" data-field="current_system" onblur="ISO._reqSaveField(this)">${esc(row.current_system || '')}</textarea></label>
+      <label class="iso-clause-field iso-clause-field-bare"><span class="sr">Basis — current system</span><textarea class="form-input${basisMissing ? ' is-missing' : ''}" rows="3" placeholder="Basis — the current system: what you saw and checked (needed before approval)" data-id="${esc(row.id)}" data-field="current_system" onblur="ISO._reqSaveField(this)">${esc(row.current_system || '')}</textarea></label>
       ${cs === 'not_applicable' ? `<label class="iso-clause-field">Why not applicable<textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="na_justification" onblur="ISO._reqSaveField(this)">${esc(row.na_justification || '')}</textarea></label>` : ''}
+      ${cs === 'out_of_scope' ? `<label class="iso-clause-field">Why outside this audit's scope <span class="muted">(optional)</span><textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="na_justification" onblur="ISO._reqSaveField(this)">${esc(row.na_justification || '')}</textarea></label>` : ''}
       ${showPlan ? `<label class="iso-clause-field">Planned action<textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="recommended_action" onblur="ISO._reqSaveField(this)">${esc(row.recommended_action || '')}</textarea></label>
         <div class="iso-clause-row2">
           <label class="iso-clause-field">Owner<select class="form-input" data-id="${esc(row.id)}" data-field="responsible_uid" onchange="ISO._reqSaveFieldSelect(this)"><option value="">Unassigned</option>${staffOptions.map(u => `<option value="${esc(u.id)}"${row.responsible_uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
@@ -1311,21 +1429,62 @@
       }).catch(() => { cache[row.id] = []; });
     }
     const list = (items || []).filter(d => !['rejected', 'superseded'].includes(d.reviewStatus));
+    const okCount = list.filter(d => d.reviewStatus !== 'insufficient').length; // B1.7: insufficient ≠ provided
     // Wireframe: "Documents 2 of 3" — ✓ what is linked, then dashed ○ the register's (Column P)
     // suggestions for this clause that are not here yet, each with Generator (when a template has
     // it) and + Add. Names travel in data-doc (A81).
     const have = new Set(list.map(d => String(d.title || '').trim().toLowerCase()));
     const suggested = items === null ? [] : (((_req.guidance || {})[row.id] || {}).documents || []).filter(n => !have.has(String(n).toLowerCase()));
-    const linkedLi = list.map(d => `<li class="iso-doc-item is-ok"><span class="iso-doc-check" aria-hidden="true">✓</span><span class="iso-doc-name">${esc(d.title)}</span><span class="iso-doc-meta">${[d.versionLabel, d.evidenceDate ? fmtDate(d.evidenceDate) : null].filter(Boolean).map(esc).join(' · ')}</span></li>`).join('');
+    const SUFF = { partially_sufficient: 'Partial', insufficient: 'Insufficient' };
+    const sample = d => d.kind === 'sample' && (d.sampleSize != null || d.samplePopulation != null) ? `${d.sampleSize != null ? d.sampleSize : '?'} of ${d.samplePopulation != null ? d.samplePopulation : '?'} sampled${d.sampleExceptions ? ' · ' + d.sampleExceptions : ''}` : null;
+    const linkedLi = list.map(d => `<li class="iso-doc-item is-ok${d.reviewStatus === 'insufficient' ? ' is-insufficient' : ''}"><span class="iso-doc-check" aria-hidden="true">${d.reviewStatus === 'insufficient' ? '✕' : '✓'}</span><span class="iso-doc-name">${esc(d.title)}</span>${SUFF[d.reviewStatus] ? `<span class="iso-doc-suff">${SUFF[d.reviewStatus]}</span>` : ''}<span class="iso-doc-meta">${[d.versionLabel, d.evidenceDate ? fmtDate(d.evidenceDate) : null, sample(d)].filter(Boolean).map(esc).join(' · ')}</span>${d.uploadedVia === 'client' ? '' : `<button type="button" class="iso-mini-btn iso-doc-suff-btn" title="Is this enough evidence?" data-req="${esc(row.id)}" data-link="${esc(d.linkId)}" onclick="ISO._reqOpenSuffMenu(this)">⋯</button>`}</li>${_req.suffMenu === d.linkId ? `<li class="iso-suff-menu" role="menu"><span class="muted">This document is</span>${[['', 'Sufficient'], ['partial', 'Partly sufficient'], ['insufficient', 'Insufficient']].map(([v, l]) => `<button type="button" role="menuitem" data-req="${esc(row.id)}" data-link="${esc(d.linkId)}" data-v="${v}" onclick="ISO._reqSetSufficiency(this)">${l}</button>`).join('')}</li>` : ''}`).join('');
     const sugLi = suggested.map(n => { const t = docTemplateFor(n); return `<li class="iso-doc-item is-sug"><span class="iso-doc-ring" aria-hidden="true"></span><span class="iso-doc-name">${esc(n)}</span><span class="iso-doc-acts">${t ? `<button type="button" class="iso-mini-btn iso-doc-gen" data-doc="${esc(n)}" data-req="${esc(row.id)}" onclick="ISO._reqDocGenerator(this)">Generator</button>` : ''}<button type="button" class="iso-mini-btn iso-doc-sug-add" data-doc="${esc(n)}" data-req="${esc(row.id)}" onclick="ISO._reqDocAdd(this)">+ Add</button></span></li>`; }).join('');
     const total = list.length + suggested.length;
     const body = items === null ? '<div class="muted">Loading…</div>'
       : total ? `<ul class="iso-doc-list">${linkedLi}${sugLi}</ul>`
       : '<div class="muted">No documents linked yet.</div>';
     return `<div class="iso-clause-col">
-      <div class="iso-clause-col-head"><span class="iso-clause-col-label">Documents${total ? ` <b class="muted">${list.length} of ${total}</b>` : ''}</span><button type="button" class="linkbtn" onclick="ISO._reqAddDocument('${esc(row.id)}')">+ Add document</button></div>
+      <div class="iso-clause-col-head"><span class="iso-clause-col-label">Documents${total ? ` <b class="muted">${okCount} of ${total}</b>` : ''}</span><button type="button" class="linkbtn" onclick="ISO._reqAddDocument('${esc(row.id)}')">+ Add document</button></div>
       ${body}
+      <div class="iso-doc-quick"><span class="muted">Add a note:</span>${[['interview', 'Interview'], ['observation', 'Observation'], ['sample', 'Sample']].map(([k, l]) => `<button type="button" class="linkbtn" data-req="${esc(row.id)}" data-kind="${k}" onclick="ISO._reqQuickNote(this)">${l}</button>`).join('')}</div>
     </div>`;
+  }
+  function _reqOpenSuffMenu(el) { _req.suffMenu = _req.suffMenu === el.dataset.link ? null : el.dataset.link; renderRequirementsTable(_req.auditId); }
+  async function _reqSetSufficiency(el) {
+    const reqId = el.dataset.req, linkId = el.dataset.link;
+    const d = ((_req.evidenceByReq || {})[reqId] || []).find(x => x.linkId === linkId);
+    if (!d) return;
+    try {
+      await mutate('evidence.setSufficiency', { auditId: _req.auditId, linkId: linkId, sufficiency: el.dataset.v || null, expectedVersion: d.linkRowVersion });
+      _req.suffMenu = null;
+      delete _req.evidenceByReq[reqId];
+      _req.docs = await api('document.list', { auditId: _req.auditId }).catch(() => _req.docs);
+      renderRequirementsTable(_req.auditId);
+    } catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
+  }
+  // B1.7: interview / observation / sample notes are evidence too — quick add from the clause.
+  function _reqQuickNote(el) {
+    const kind = el.dataset.kind, reqId = el.dataset.req;
+    const label = { interview: 'Interview', observation: 'Observation', sample: 'Sample' }[kind];
+    root.openGenericModal(label + ' note', `<div class="iso-da">
+        <label class="iso-clause-field">Title<input class="form-input" id="qn-title" placeholder="${kind === 'interview' ? 'e.g. Interview — HSE Manager' : kind === 'sample' ? 'e.g. Competency files' : 'e.g. Toolbox talk observed'}"/></label>
+        <label class="iso-clause-field">Note<textarea class="form-input" id="qn-note" rows="3"></textarea></label>
+        ${kind === 'sample' ? `<div class="iso-field-grid"><label>Population<input type="number" min="0" class="form-input" id="qn-pop"/></label><label>Sample size<input type="number" min="0" class="form-input" id="qn-size"/></label><label style="grid-column:1/-1">Exceptions found<input class="form-input" id="qn-exc" placeholder="e.g. 2 lacked authorisation"/></label></div>` : ''}
+        <div class="iso-da-foot"><span class="muted"></span><button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('generic-modal').classList.add('hidden')">Cancel</button><button type="button" class="btn btn-teal btn-sm" data-req="${esc(reqId)}" data-kind="${kind}" onclick="ISO._reqQuickNoteSave(this)">Save</button></div>
+      </div>`, '520px');
+  }
+  async function _reqQuickNoteSave(el) {
+    const v = id => (document.getElementById(id) || {}).value || '';
+    const title = v('qn-title').trim();
+    if (!title) { if (root.showToast) root.showToast('Give it a title.', true); return; }
+    const payload = { auditId: _req.auditId, targetType: 'requirement', targetId: el.dataset.req, kind: el.dataset.kind, title: title, description: v('qn-note').trim() || undefined };
+    if (el.dataset.kind === 'sample') Object.assign(payload, { samplePopulation: v('qn-pop') || undefined, sampleSize: v('qn-size') || undefined, sampleExceptions: v('qn-exc').trim() || undefined });
+    try {
+      await mutate('evidence.addLink', payload);
+      document.getElementById('generic-modal').classList.add('hidden');
+      delete _req.evidenceByReq[el.dataset.req];
+      renderRequirementsTable(_req.auditId);
+    } catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
   }
   // "+ Add document" on a clause opens the one document chooser (P5 round 3), in this clause's context.
   function _reqAddDocument(id) { _docOpenChooser(id); }
@@ -1354,6 +1513,7 @@
   function reqExpandedBodyHtml(row) {
     return `<div class="iso-clause-body">
       ${row.approval_state === 'returned' ? reqApprovalNoteHtml(row) : ''}
+      ${row.derived_from_id ? reqDerivedBannerHtml(row) : ''}
       <div class="iso-clause-reqtext">${esc(row.requirement_text || '')}</div>
       ${reqStatusBarHtml(row)}
       <div class="iso-clause-cols">
@@ -1385,8 +1545,9 @@
         <span class="iso-clause-num">${esc(row.clause)}</span>
         <span class="iso-clause-name">${esc(row.clause_name || '')}</span>
         ${reqCheatSheetBtnHtml(row)}
+        ${reqFlagsHtml(row)}
         <span class="iso-clause-meta">
-          ${reqStatusDotHtml(cs)}
+          ${reqStatusDotHtml(cs, row)}
           ${reqDocCountHtml(row)}
           ${reqRelatedDotsHtml(row)}
           ${reqAvatarHtml(row)}
@@ -1424,9 +1585,12 @@
     if (!sections.length || sections.every(s => !(s.rows || []).length)) return `<div class="card" style="padding:24px;text-align:center;color:#c8d4e0">No requirements match the current filter.</div>`;
     const allIds = sections.flatMap(s => (s.rows || []).map(r => r.id));
     const allSelected = allIds.length > 0 && allIds.every(id => st.selected.has(id));
+    // B1.6: on Awaiting approval, the riskiest clauses first — sections by their riskiest row, rows by risk.
+    const byRisk = _req.view === 'approval_awaiting';
+    const ordered = byRisk ? sections.map(sec => ({ sec, top: Math.max(0, ...(sec.rows || []).map(reqRiskScore)) })).sort((a, b) => b.top - a.top).map(x => x.sec) : sections;
     return `<div class="iso-clause-list">
-      ${sections.map(sec => {
-        const rows = sec.rows || [];
+      ${ordered.map(sec => {
+        const rows = byRisk ? (sec.rows || []).slice().sort((a, b) => reqRiskScore(b) - reqRiskScore(a)) : (sec.rows || []);
         const assessed = rows.filter(r => r.compliance_status && r.compliance_status !== 'not_assessed').length;
         return `<div class="iso-clause-section">
           <div class="iso-clause-section-hdr" onclick="_mtToggleSection(${JSON.stringify(sec.id)})" role="button" tabindex="0">
@@ -1445,7 +1609,7 @@
 
   // The "Evidence to review" view filters on this flag, so it must be set BEFORE any filtering — it was
   // set at the end of buildRequirementSections, which left the view empty on a freshly loaded register.
-  function reqSetEvidenceFlags() { for (const r of _req.requirements) { const sum = (_req.evidenceSummary || {})[r.id]; r._evdReview = !!(sum && (sum.suggested || sum.toReview)); r._srAwaiting = srStatus(r) === 'pending' && srReady(r); } }
+  function reqSetEvidenceFlags() { for (const r of _req.requirements) { const sum = (_req.evidenceSummary || {})[r.id]; r._evdReview = !!(sum && (sum.suggested || sum.toReview)); r._srAwaiting = srStatus(r) === 'pending' && srReady(r); r._needsAction = needsAction(r); r._needsBasis = !r.derived_from_id && !!basisProblemLocal(r); } }
   // While filtered from the dashboard, _req.requirements IS already exactly the server-filtered set —
   // a stale _req.view (left over from before navigating away) on top could silently drop rows the
   // banner said were there, so only the view the dashboard itself asked for (dashView) applies.
@@ -1551,7 +1715,8 @@
     // auditor). Client-visible and Evidence to review stay as views a dashboard click can land on,
     // just not as chips. "Approve all" shows only while the Lead is on Awaiting approval.
     const lead = canApproveRequirementLocally();
-    const chipIds = ['all', 'not_assessed', 'needs_action'].concat(sole ? [] : ['approval_awaiting', 'returned']);
+    const showBasis = reqQuickViewCount('needs_basis') > 0 || _req.view === 'needs_basis';
+    const chipIds = ['all', 'not_assessed', 'needs_action'].concat(showBasis ? ['needs_basis'] : []).concat(sole ? [] : ['approval_awaiting', 'returned']);
     const chipLabel = { all: 'All', approval_awaiting: lead ? 'Awaiting your approval' : 'Awaiting approval' };
     const views = chipIds.map(id => QUICK_VIEWS.find(v => v.id === id)).filter(Boolean);
     const approveAllCount = lead && !sole && _req.view === 'approval_awaiting' ? reqVisibleRows().filter(r => r.approval_state === 'proposed').length : 0;
@@ -1580,6 +1745,8 @@
     if (!host) return;
     const ctx = buildRequirementsCtx(auditId);
     root._isoSetMtCtx(ctx);
+    reqSetEvidenceFlags();
+    reqComputeConsistency();
     // Redesign: no selection bar — the wireframe has no row checkboxes; bulk sign-off is Approve
     // section / Approve all, shown on the Awaiting approval chip.
     host.innerHTML = _dashFilterBannerHtml(_req, _req.dashFilter ? reqVisibleRows().length : 0, '_reqClearDashFilter') + reqToolbarHtml(auditId) + reqSectionsListHtml(ctx);
@@ -4328,7 +4495,9 @@
     rows.forEach(r => { const st = r.compliance_status || 'not_assessed'; cnt[st] = (cnt[st] || 0) + 1; });
     const order = COMPLIANCE_STATUSES.filter(st => st !== 'not_assessed');
     const bar = order.filter(st => cnt[st]).map(st => `<i style="width:${cnt[st] / n * 100}%;background:${complianceColor(st)}"></i>`).join('');
+    const ofiN = rows.filter(r => r.ofi && (r.compliance_status === 'compliant' || r.compliance_status === 'partially_compliant')).length; // D44: OFI is counted from the flag
     const legend = order.filter(st => cnt[st]).map(st => `<span><i class="iso-ov-ldot" style="--c:${complianceColor(st)}"></i>${esc(complianceLabel(st))} ${cnt[st]}</span>`).join('')
+      + (ofiN ? `<span><i class="iso-ov-ldot" style="--c:${complianceColor('ofi')}"></i>OFI ${ofiN}</span>` : '')
       + (cnt.not_assessed ? `<span><i class="iso-ov-ldot is-na"></i>Not assessed ${cnt.not_assessed}</span>` : '');
     return `<span class="iso-stack iso-ov-stack" aria-hidden="true">${bar}</span><span class="iso-ov-legend">${legend}</span>`;
   }
@@ -4350,7 +4519,7 @@
   }
   function ovAttentionHtml(reqs, dash) {
     const nc = reqs.filter(r => r.compliance_status === 'non_compliant');
-    const missingPlan = reqs.filter(r => ['partially_compliant', 'non_compliant', 'ofi'].includes(r.compliance_status) && !(r.recommended_action || '').trim());
+    const missingPlan = reqs.filter(r => needsAction(r) && !(r.recommended_action || '').trim());
     const dueSoonTile = ((dash.panels && dash.panels.actions_panel) || []).find(t => t.key === 'due_soon');
     const notAssessed = reqs.filter(r => !r.compliance_status || r.compliance_status === 'not_assessed');
     const items = [];
@@ -4443,9 +4612,28 @@
       const g = rows.filter(c => c.standardCode === s).sort((a, b) => reqClauseCompare({ clause: a.clause }, { clause: b.clause }));
       if (!g.length) return '';
       return `<div class="iso-da-group"><div class="iso-da-gh"><span class="iso-tag" style="--std:${STANDARD_COLOR[s] || '#97bcbd'}">${esc(STANDARD_BADGE[s] || '•')}</span><b>${esc(stdLabel(s))}</b><button type="button" class="linkbtn" data-std="${esc(s)}" onclick="ISO._docTickAll(this.dataset.std)">Tick all</button></div>
-        ${g.map(c => { const on = c.provided || (prev.has(c.requirementId) ? prev.get(c.requirementId) : (_da.on.has(c.requirementId) || (_da.sug.has(c.requirementId) ? false : (c.added || (!_da.custom && !(_da.doc && _da.doc.latest)))))); return `<label class="iso-apply-item"><input type="checkbox" data-std="${esc(c.standardCode)}" value="${esc(c.requirementId)}" ${on ? 'checked' : ''} ${c.provided ? 'data-linked="1"' : ''} onchange="ISO._docUpdateSum()"/> ${esc(c.clause)} ${esc(c.clauseName || '')}${c.provided ? ' <span class="muted">(linked)</span>' : _da.sug.has(c.requirementId) ? ' <span class="muted">Related — may also apply</span>' : ''}</label>`; }).join('')}</div>`;
+        ${g.map(c => { const on = c.provided || (prev.has(c.requirementId) ? prev.get(c.requirementId) : (_da.on.has(c.requirementId) || (_da.sug.has(c.requirementId) ? false : (c.added || (!_da.custom && !(_da.doc && _da.doc.latest)))))); return `<div class="iso-da-row">${_docStatusPickHtml(c)}<label class="iso-apply-item"><input type="checkbox" data-std="${esc(c.standardCode)}" value="${esc(c.requirementId)}" ${on ? 'checked' : ''} ${c.provided ? 'data-linked="1"' : ''} onchange="ISO._docUpdateSum()"/> ${esc(c.clause)} ${esc(c.clauseName || '')}${c.provided ? ' <span class="muted">(linked)</span>' : _da.sug.has(c.requirementId) ? ' <span class="muted">Related — may also apply</span>' : ''}</label></div>`; }).join('')}</div>`;
     }).join('') || '<p class="muted">No clauses yet — search below to add the ones it supports.</p>';
     _docUpdateSum();
+  }
+  // B1.8: conclude while linking. Compliant · Partial · Non-Compliant · OFI per clause (N/A needs a
+  // written reason, so it stays on the clause itself). The clause's current status shows as chosen.
+  const DA_STATUSES = [['compliant', 'C', 'Compliant'], ['partially_compliant', 'PC', 'Partially Compliant'], ['non_compliant', 'NC', 'Non-Compliant'], ['ofi', 'OFI', 'Compliant · OFI']];
+  function _docCurrentStatus(id) {
+    const r = _docReqs().find(x => x.id === id);
+    if (!r) return null;
+    return r.compliance_status === 'compliant' && r.ofi ? 'ofi' : r.compliance_status;
+  }
+  function _docStatusPickHtml(c) {
+    const chosen = (_da.st && _da.st[c.requirementId]) || _docCurrentStatus(c.requirementId);
+    const g = (_req.auditId === _docAuditId() && _req.guidance) ? _req.guidance[c.requirementId] : null;
+    return `<span class="iso-da-st" role="radiogroup" aria-label="Status for ${esc(c.clause)}">${g ? reqCheatSheetBtnHtml({ id: c.requirementId, clause: c.clause }) : ''}${DA_STATUSES.map(([v, short, full]) => `<button type="button" role="radio" class="iso-da-st-btn${chosen === v ? ' is-active' : ''}" aria-checked="${chosen === v}" title="${esc(full)}" style="--c:${complianceColor(v)}" data-id="${esc(c.requirementId)}" data-v="${v}" onclick="ISO._docPickStatus(this)">${short}</button>`).join('')}</span>`;
+  }
+  function _docPickStatus(el) {
+    if (!_da) return;
+    _da.st = _da.st || {};
+    _da.st[el.dataset.id] = el.dataset.v;
+    el.parentElement.querySelectorAll('.iso-da-st-btn').forEach(b => { const on = b === el; b.classList.toggle('is-active', on); b.setAttribute('aria-checked', String(on)); });
   }
   function _docTickAll(std) {
     const boxes = [...document.querySelectorAll(`#iso-da-groups input[type=checkbox][data-std="${std}"]:not([disabled])`)];
@@ -4487,8 +4675,9 @@
     const requirementIds = _docNewTicks();
     const removals = _docRemovals();
     const toast = (m, bad) => { if (root.showToast) root.showToast(m, bad); };
-    if (!removals.length && _da.ctx && _da.doc && _da.doc.latest && _da.doc.clauses.some(c => c.requirementId === _da.ctx && c.provided) && !requirementIds.length) { toast('Already linked to this clause.'); return; }
-    if (!requirementIds.length && !removals.length) { toast('Tick at least one clause.', true); return; }
+    if (!removals.length && _da.ctx && _da.doc && _da.doc.latest && _da.doc.clauses.some(c => c.requirementId === _da.ctx && c.provided) && !requirementIds.length && !Object.keys(_da.st || {}).length) { toast('Already linked to this clause.'); return; }
+    const anyStatus = Object.keys((_da && _da.st) || {}).some(id => _da.st[id] !== _docCurrentStatus(id));
+    if (!requirementIds.length && !removals.length && !anyStatus) { toast('Tick at least one clause.', true); return; }
     if (removals.length && confirmed !== true) {
       const names = removals.map(id => { const r = _docReqs().find(x => x.id === id); return r ? (STANDARD_BADGE[r.standard_code] || '') + ' ' + r.clause : ''; }).filter(Boolean).join(', ');
       if (root.openConfirm) root.openConfirm('Remove from ' + removals.length + ' clause' + (removals.length === 1 ? '' : 's') + '?',
@@ -4514,8 +4703,22 @@
         });
         for (const id of rest) await mutate('evidence.link', { auditId: auditId, targetType: 'requirement', targetId: id, evidenceIds: [r.evidence.id] });
       }
+      const statusChanges = Object.entries((_da && _da.st) || {}).filter(([id, v]) => v !== _docCurrentStatus(id) && (requirementIds.includes(id) || ((_da.doc && _da.doc.clauses) || []).some(c => c.requirementId === id && c.provided)));
+      if (statusChanges.length) {
+        const latest = _da.doc && _da.doc.latest;
+        const rev = latest ? latest.versionLabel : (document.getElementById('ovda-version') || {}).value;
+        const date = latest ? latest.evidenceDate : (document.getElementById('ovda-date') || {}).value;
+        const note = `Evidence — ${_da.name}${rev ? ', ' + rev : ''}${date ? ' · ' + fmtDate(date) : ''}`;
+        const fresh = await api('requirement.list', { auditId: auditId });
+        for (const [id, v] of statusChanges) {
+          const row = fresh.find(r => r.id === id); if (!row) continue;
+          const patch = v === 'ofi' ? { compliance_status: 'compliant', ofi: true } : v === 'compliant' ? { compliance_status: 'compliant', ofi: false } : { compliance_status: v };
+          if (!String(row.current_system || '').trim()) patch.current_system = note;
+          await mutate('requirement.update', { auditId: auditId, id: id, patch: patch, expectedVersion: row.row_version });
+        }
+      }
       document.getElementById('generic-modal').classList.add('hidden');
-      toast([requirementIds.length ? `Linked to ${requirementIds.length} clause${requirementIds.length === 1 ? '' : 's'}` : '', removals.length ? `removed from ${removals.length}` : ''].filter(Boolean).join(', ').replace(/^r/, 'R') + '.');
+      toast([requirementIds.length ? `Linked to ${requirementIds.length} clause${requirementIds.length === 1 ? '' : 's'}` : '', removals.length ? `removed from ${removals.length}` : '', statusChanges.length ? `${statusChanges.length} status${statusChanges.length === 1 ? '' : 'es'} set` : ''].filter(Boolean).join(', ').replace(/^r/, 'R') + '.');
       _da = null;
       requirementIds.push(...removals); // refresh those clauses' document lists too
       if (!_auditCache) return;
@@ -4667,7 +4870,7 @@
     const m = new Map();
     for (const r of reqs || []) {
       const st = r.compliance_status;
-      if (!['partially_compliant', 'non_compliant', 'ofi'].includes(st)) continue;
+      if (!needsAction(r)) continue;
       const plan = String(r.recommended_action || '').trim();
       if (!plan) continue;
       const k = plan.toLowerCase();
@@ -5109,7 +5312,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

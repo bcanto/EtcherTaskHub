@@ -194,7 +194,7 @@ create table if not exists iso_requirements (
   requirement_text          text not null,
   evidence_guidance         text,
   -- Applicability
-  applicability             text not null default 'applicable' check (applicability in ('applicable','review','not_applicable')),
+  applicability             text not null default 'applicable' check (applicability in ('applicable','review','not_applicable','out_of_scope')),
   na_justification          text,
   unit_ids                  text[] not null default '{}',
   -- Assessment (staff)
@@ -228,7 +228,16 @@ create table if not exists iso_requirements (
   -- the dashboard — without any change there; see api/_iso.js's COMPLIANCE_DERIVED). The columns
   -- above are kept, not dropped — D35's "retiring" rule, same as R1's archived library seeds.
   compliance_status         text not null default 'not_assessed' check (compliance_status in
-                              ('not_assessed','compliant','partially_compliant','non_compliant','ofi','not_applicable')),
+                              ('not_assessed','compliant','partially_compliant','non_compliant','not_applicable','out_of_scope')),
+  -- Release-1 B1 (2026-10-06, D44–D48): OFI is a flag on Compliant / Partially Compliant, not a status;
+  -- "Outside this audit's scope" (out_of_scope) is a status of its own; a gap reason says why a
+  -- Partially Compliant / Non-Compliant clause falls short; derived_from_id marks a status proposed by
+  -- "Apply to related" until someone confirms it on this clause.
+  ofi                       boolean not null default false,
+  ofi_note                  text,
+  gap_reason                text check (gap_reason in ('not_implemented','ineffective','no_evidence')),
+  derived_from_id           text references iso_requirements(id) on delete set null,
+  derived_at                timestamptz,
   -- The Lead Auditor's review of compliance_status (P7) — proposed by whoever set it, approved or
   -- returned by the Lead; null until a real status exists. Independent of senior_review_* below,
   -- which stays exactly as D32 built it, untouched, still reachable through requirement.seniorReview.
@@ -276,7 +285,10 @@ create table if not exists iso_requirements (
   -- assessment_result may only be set once the workflow is complete or needs follow-up (plan §6.1).
   constraint iso_requirements_result_state_ck check (
     assessment_result is null or assessment_state in ('complete','needs_follow_up')
-  )
+  ),
+  -- D44 / D48: the OFI flag and the gap reason only live on the statuses they belong to.
+  constraint iso_requirements_ofi_status_ck check (not ofi or compliance_status in ('compliant','partially_compliant')),
+  constraint iso_requirements_gap_status_ck check (gap_reason is null or compliance_status in ('partially_compliant','non_compliant'))
 );
 
 create table if not exists iso_relationships (
@@ -809,6 +821,7 @@ begin
       'current_system','evidence_expected','interview_notes','sampling_details','auditor_observations',
       'assessment_state','assessment_result','implementation_level','effectiveness','assessed_at','assessed_by',
       'compliance_status','approval_state','approved_by','approved_at','return_note',
+      'ofi','ofi_note','gap_reason','derived_from_id','derived_at',
       'gap_description','gap_category','current_controls','impact','risk_severity','recommended_action',
       'responsible_uid','target_date','verification_requirements','internal_notes','client_visible_comment',
       'sort_key','visibility','visible_to_uids',

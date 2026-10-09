@@ -69,8 +69,8 @@ function report() {
     // D35/R2: compliance_status replaces applicability/assessment_state/assessment_result; gap
     // description merges into current_system (P4) — no separate field any more.
     await upd(r1, { compliance_status: 'not_applicable', na_justification: 'No design work on site.' });
-    await upd(r2, { compliance_status: 'compliant', risk_severity: 'high' });
-    await upd(r3, { compliance_status: 'non_compliant', current_system: 'Informal. No procedure.' });
+    await upd(r2, { compliance_status: 'compliant', risk_severity: 'high', current_system: 'Procedure followed on the sample checked.' });
+    await upd(r3, { compliance_status: 'non_compliant', current_system: 'Informal. No procedure.', gap_reason: 'not_implemented' });
     const custom = data(await callIso(ADMIN, { op: 'requirement.addCustom', auditId: P.id, standardCode: '9001', clause: 'C1', clauseName: 'Client rule', requirementText: 'Toolbox talks are recorded weekly.' }));
     const fOpen = data(await callIso(ADMIN, { op: 'finding.create', auditId: P.id, requirementId: r3.id, classification: 'major_nc', title: 'No procedure' }));
     const fClosed = data(await callIso(ADMIN, { op: 'finding.create', auditId: P.id, requirementId: r2.id, classification: 'observation', title: 'Closed out' }));
@@ -191,7 +191,7 @@ function report() {
     // A genuinely new clause — proves "the amendment's new rows start fresh".
     await db.insert('iso_library_requirements', { id: 'ilr_9001_synth2027_new', version_id: 'iver_9001_synth2027', section_id: 'isec_9001_synth2027_8', clause: '8.9', clause_name: 'Synthetic new clause (test only)', requirement_text: 'A requirement that exists only in the synthetic 2027 edition.', stable_key: '9001|8.9|synthetic2027|0', sort_key: 1 });
     let qv = (await list(Q.id)).find(x => x.id === q83.id);
-    await callIso(ADMIN, { op: 'requirement.update', auditId: Q.id, id: q83.id, patch: { compliance_status: 'partially_compliant' }, expectedVersion: qv.row_version });
+    await callIso(ADMIN, { op: 'requirement.update', auditId: Q.id, id: q83.id, patch: { compliance_status: 'partially_compliant', current_system: 'Partly in place.', gap_reason: 'ineffective' }, expectedVersion: qv.row_version });
     let qa = await getAudit(Q.id);
     ok((await callIso(ADMIN, { op: 'audit.update', auditId: Q.id, patch: { stage: 'closed', maintenance_due: 'soon' }, expectedVersion: qa.row_version })).status === 400, 'a maintenance date that is not a date is refused');
     await callIso(ADMIN, { op: 'audit.update', auditId: Q.id, patch: { stage: 'closed', maintenance_due: '2027-01-15' }, expectedVersion: qa.row_version });

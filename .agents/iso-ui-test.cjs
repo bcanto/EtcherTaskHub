@@ -282,7 +282,7 @@ async function callIso(port, user, body) {
       return { count: btns.length, values: btns.map(b => b.dataset.status), active: btns.filter(b => b.classList.contains('is-active')).map(b => b.dataset.status) };
     }, stateCellId);
     ok(statusBar.count === 5, `the expanded row shows a status button for each of the 5 real statuses, Not assessed excluded (got ${statusBar.count})`);
-    ok(statusBar.values.includes('compliant') && statusBar.values.includes('not_applicable'), `the button bar includes Compliant and N/A (got ${JSON.stringify(statusBar.values)})`);
+    ok(statusBar.values.includes('compliant') && statusBar.values.includes('na'), `the button bar includes Compliant and the N/A ▾ menu (D45) (got ${JSON.stringify(statusBar.values)})`);
     await page.evaluate((id) => document.querySelector(`[data-ireq="${id}"] .iso-status-btn[data-status="compliant"]`).click(), stateCellId);
     await new Promise(r => setTimeout(r, 700));
     const afterClick = await page.evaluate((id) => {

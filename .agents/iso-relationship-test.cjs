@@ -134,7 +134,7 @@ function report() {
       ok(applyLead.status === 200, 'the Lead Auditor can apply-to-related');
       const peer2Req = (data(await callIso(ADMIN, { op: 'requirement.list', auditId: board.id }))).find(r => r.id === peer2.requirementId);
       ok(peer2Req.compliance_status === 'compliant', 'the second peer\'s status was copied too');
-      ok(peer2Req.approval_state === 'approved', `the Lead Auditor's apply-to-related auto-approves (got ${peer2Req.approval_state})`);
+      ok(peer2Req.approval_state === 'proposed' && !!peer2Req.derived_from_id, `D47: even the Lead Auditor's apply-to-related arrives derived and proposed, to be confirmed on the clause (got ${peer2Req.approval_state} / ${peer2Req.derived_from_id})`);
     } else {
       ok(false, 'fixture needs a second related clause to test Lead auto-approval — 9001 4.1 only has one peer');
     }

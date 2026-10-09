@@ -52,7 +52,7 @@ function report() {
     const get = async id => (data(await callIso(ADMIN, { op: 'requirement.list', auditId: board.id })) || []).find(r => r.id === id);
     const propose = async (key, status) => {
       const cur = await get(byKey.get(key).id);
-      const res = await callIso(AUD, { op: 'requirement.update', auditId: board.id, id: cur.id, expectedVersion: cur.row_version, patch: { compliance_status: status } });
+      const res = await callIso(AUD, { op: 'requirement.update', auditId: board.id, id: cur.id, expectedVersion: cur.row_version, patch: { compliance_status: status, current_system: 'Seen on site and in the register.', ...(['partially_compliant', 'non_compliant'].includes(status) ? { gap_reason: 'not_implemented' } : {}) } });
       if (res.status !== 200) throw new Error('propose ' + key + ' ' + JSON.stringify(res.body));
     };
     // Section 4 (three clauses across both standards) and one in section 5.

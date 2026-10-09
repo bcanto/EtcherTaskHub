@@ -20,10 +20,14 @@ create table if not exists iso_evidence (
   audit_id               text not null references iso_audits(id),
   client_id              text not null,
   kind                   text not null check (kind in
-                           ('file','link','sharepoint','photo','meeting_note','interview','sample',
+                           ('file','link','sharepoint','photo','meeting_note','interview','observation','sample',
                             'policy_ref','procedure_ref','note')),
   title                  text not null,
   description            text,
+  -- Release-1 B1.7 (2026-10-06): what a 'sample' note sampled.
+  sample_population      integer check (sample_population >= 0),
+  sample_size            integer check (sample_size >= 0),
+  sample_exceptions      text,
   -- File fields (Phase 8.2, unused by 8.2a's link-only flow — all nullable, populated together).
   storage_path           text,
   original_filename      text,

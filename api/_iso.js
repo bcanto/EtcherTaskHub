@@ -455,6 +455,13 @@ defineOp('audit.update', {
     // D31: closing a board records when, and gives it a maintenance audit date — the one asked for,
     // or 12 months after today (the board's timezone) — editable later. Reopening clears completed_at.
     if (patch.stage === 'closed' && ctx.audit.stage !== 'closed') {
+      // D46: a board closes only when every assessed clause has its basis, gap reason and confirmation.
+      const reqs = await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 5000 });
+      const open = reqs.map(r => ({ r, why: basisProblem(r) })).filter(x => x.why);
+      if (open.length) {
+        const list = open.slice(0, 12).map(x => `${x.r.standard_code} ${x.r.clause} (${BASIS_SHORT(x.why)})`).join(', ');
+        throw badRequest(`Can't close yet — ${open.length} clause${open.length === 1 ? ' needs' : 's need'} a basis, gap reason or confirmation: ${list}${open.length > 12 ? ', …' : ''}.`);
+      }
       patch.completed_at = ctx.now.toISOString();
       if (!patch.maintenance_due && !ctx.audit.maintenance_due) patch.maintenance_due = await boardDatePlusMonths(ctx, 12);
     } else if ('stage' in patch && patch.stage !== 'closed' && ctx.audit.stage === 'closed') {
@@ -831,22 +838,49 @@ const REQUIREMENT_WRITABLE_FIELDS = [
   'implementation_level', 'gap_category', 'current_controls', 'impact',
   'risk_severity', 'recommended_action', 'responsible_uid', 'target_date', 'verification_requirements',
   'internal_notes', 'client_visible_comment', 'visibility', 'visible_to_uids',
+  'ofi', 'ofi_note', 'gap_reason',
 ];
-const COMPLIANCE_STATUSES = ['not_assessed', 'compliant', 'partially_compliant', 'non_compliant', 'ofi', 'not_applicable'];
+// D44 (2026-10-06): OFI is a flag on Compliant / Partially Compliant, not a status — 'ofi' is still
+// accepted on input as an alias for Compliant + ofi=true (normaliseRequirementPatch). D45: a clause can
+// be "Outside this audit's scope" — its own status, excluded from coverage like N/A but not N/A.
+const COMPLIANCE_STATUSES = ['not_assessed', 'compliant', 'partially_compliant', 'non_compliant', 'not_applicable', 'out_of_scope'];
+const OFI_STATUSES = ['compliant', 'partially_compliant'];
+// D48: why a Partially Compliant / Non-Compliant clause falls short — the old workbook's own vocabulary.
+const GAP_STATUSES = ['partially_compliant', 'non_compliant'];
+const GAP_REASONS = ['not_implemented', 'ineffective', 'no_evidence'];
 // compliance_status → the retired fields it derives, so every consumer that still reads them
 // (isoCalc.js, the maintenance-audit baseline carry-forward, filters) sees correct values.
 const COMPLIANCE_DERIVED = {
   not_assessed: { assessment_state: 'not_started', assessment_result: null, applicability: 'applicable' },
   compliant: { assessment_state: 'complete', assessment_result: 'implemented_effective', applicability: 'applicable' },
-  ofi: { assessment_state: 'complete', assessment_result: 'implemented_effective', applicability: 'applicable' },
   partially_compliant: { assessment_state: 'complete', assessment_result: 'partially_implemented', applicability: 'applicable' },
   non_compliant: { assessment_state: 'complete', assessment_result: 'not_implemented', applicability: 'applicable' },
   not_applicable: { assessment_state: 'complete', assessment_result: null, applicability: 'not_applicable' },
+  // Its own applicability value, so every formula and filter that keys on APPLICABLE_VALUES
+  // (_isoCalc) leaves it out of coverage exactly as it does N/A — counts and click-through lists agree.
+  out_of_scope: { assessment_state: 'not_started', assessment_result: null, applicability: 'out_of_scope' },
 };
 // compliance_status → the senior-review verdict it mirrors once approved (D32's fields stay real
 // and populated; the old per-clause "Review ▾" UI is gone — P7 — but requirement.seniorReview
 // still exists and works independently, untouched, for anything that still calls it directly).
-const COMPLIANCE_TO_VERDICT = { compliant: 'compliant', ofi: 'compliant', partially_compliant: 'partially_compliant', non_compliant: 'non_compliant', not_applicable: 'na_confirmed' };
+const COMPLIANCE_TO_VERDICT = { compliant: 'compliant', partially_compliant: 'partially_compliant', non_compliant: 'non_compliant', not_applicable: 'na_confirmed', out_of_scope: 'na_confirmed' };
+// D46/D48/D47: what still stands between an assessed clause and approval / board close / report issue,
+// or null. Not assessed and Outside scope need nothing; N/A's basis is its (already required) reason.
+function basisProblem(r) {
+  const cs = r.compliance_status || 'not_assessed';
+  if (cs === 'not_assessed' || cs === 'out_of_scope') return null;
+  if (r.derived_from_id) return 'Derived from a related clause — confirm it first.';
+  if (cs !== 'not_applicable' && !String(r.current_system || '').trim()) return 'Basis missing — write the current system (what you saw) first.';
+  if (GAP_STATUSES.includes(cs) && !r.gap_reason) return 'Gap reason missing — pick why it falls short.';
+  return null;
+}
+const BASIS_SHORT = p => (/^Derived/.test(p) ? 'derived — confirm' : /^Gap reason/.test(p) ? 'gap reason missing' : 'basis missing');
+function approvedPatch(ctx, cs) {
+  return { approval_state: 'approved', approved_by: ctx.caller.uid, approved_at: ctx.now.toISOString(), return_note: null,
+    senior_review_status: COMPLIANCE_TO_VERDICT[cs], senior_review_note: null, senior_reviewed_by: ctx.caller.uid, senior_reviewed_at: ctx.now.toISOString() };
+}
+const PROPOSED_PATCH = { approval_state: 'proposed', approved_by: null, approved_at: null, return_note: null,
+  senior_review_status: 'pending', senior_review_note: null, senior_reviewed_by: null, senior_reviewed_at: null };
 // Mirrors the DB's own check constraints (plan §6.1) so a bad write gets a clear 400 here rather
 // than a raw constraint-violation error from the adapter.
 // D35/R2 (P7, P10): who holds final review and approval authority on this board. Keyed off the
@@ -868,7 +902,7 @@ function isEffectiveLeadAuditor(ctx) {
 // resubmits either by picking a status again or by changing what they wrote (P7's "Change the
 // status or the notes to resubmit"). Mirrors the old SENIOR_REVIEW_INVALIDATING's spirit without
 // touching that list or anything that reads it.
-const APPROVAL_INVALIDATING = ['compliance_status', 'current_system', 'recommended_action', 'na_justification'];
+const APPROVAL_INVALIDATING = ['compliance_status', 'current_system', 'recommended_action', 'na_justification', 'gap_reason', 'ofi'];
 // The one place compliance_status actually gets written: derives the retired old fields (so
 // isoCalc.js and the dashboard need no changes, D35/R2), sets who/when assessed, and runs the
 // approval workflow (P7) — proposed by default, approved immediately for the Lead Auditor or a
@@ -884,26 +918,42 @@ function applyComplianceStatusPatch(ctx, existing, patch) {
         senior_review_status: 'pending', senior_review_note: null, senior_reviewed_by: null, senior_reviewed_at: null });
     } else {
       patch.assessed_by = ctx.caller.uid; patch.assessed_at = ctx.now.toISOString();
-      if (isEffectiveLeadAuditor(ctx)) {
-        Object.assign(patch, { approval_state: 'approved', approved_by: ctx.caller.uid, approved_at: ctx.now.toISOString(), return_note: null,
-          senior_review_status: COMPLIANCE_TO_VERDICT[cs], senior_review_note: null, senior_reviewed_by: ctx.caller.uid, senior_reviewed_at: ctx.now.toISOString() });
-      } else {
-        Object.assign(patch, { approval_state: 'proposed', approved_by: null, approved_at: null, return_note: null,
-          senior_review_status: 'pending', senior_review_note: null, senior_reviewed_by: null, senior_reviewed_at: null });
-      }
+      // D46: the Lead's (or sole auditor's) status is final on entry only once its basis is complete.
+      if (isEffectiveLeadAuditor(ctx) && !basisProblem(Object.assign({}, existing, patch))) Object.assign(patch, approvedPatch(ctx, cs));
+      else Object.assign(patch, PROPOSED_PATCH);
     }
   } else {
     // No status change: a resubmit-on-edit only applies once something has actually been assessed.
     const ex = Object.assign({}, existing, patch);
     if (ex.compliance_status && ex.compliance_status !== 'not_assessed' && (existing.approval_state === 'approved' || existing.approval_state === 'returned')
       && APPROVAL_INVALIDATING.some(k => k in patch && !sameValue(patch[k], existing[k]))) {
-      Object.assign(patch, { approval_state: 'proposed', approved_by: null, approved_at: null, return_note: null,
-        senior_review_status: 'pending', senior_review_note: null, senior_reviewed_by: null, senior_reviewed_at: null });
+      Object.assign(patch, PROPOSED_PATCH);
+    }
+    // D46: the Lead completing the basis of their OWN assessment approves it there and then — the
+    // same "final on entry" as before, just once the basis exists. Someone else's proposal still needs
+    // an explicit Approve.
+    const post = Object.assign({}, existing, patch);
+    if (post.compliance_status && post.compliance_status !== 'not_assessed' && post.approval_state === 'proposed'
+      && post.assessed_by === ctx.caller.uid && isEffectiveLeadAuditor(ctx) && !basisProblem(post)) {
+      Object.assign(patch, approvedPatch(ctx, post.compliance_status));
     }
   }
 }
+// D44/D48: the old 'ofi' status becomes Compliant + ofi; the OFI flag and the gap reason only live on
+// the statuses they belong to and are cleared (never refused) when the status moves elsewhere.
+function normaliseRequirementPatch(existing, patch) {
+  if (patch.compliance_status === 'ofi') { patch.compliance_status = 'compliant'; if (!('ofi' in patch)) patch.ofi = true; }
+  if ('ofi' in patch && patch.ofi != null) patch.ofi = patch.ofi === true || patch.ofi === 'true';
+  if ('gap_reason' in patch && patch.gap_reason === '') patch.gap_reason = null;
+  const cs = 'compliance_status' in patch ? patch.compliance_status : (existing.compliance_status || 'not_assessed');
+  if (!OFI_STATUSES.includes(cs) && (existing.ofi || patch.ofi)) { patch.ofi = false; patch.ofi_note = null; }
+  if (!GAP_STATUSES.includes(cs) && (existing.gap_reason || patch.gap_reason)) patch.gap_reason = null;
+}
 function validateRequirementPatch(existing, patch) {
+  normaliseRequirementPatch(existing, patch);
   if ('compliance_status' in patch && !COMPLIANCE_STATUSES.includes(patch.compliance_status)) throw badRequest('Invalid status.');
+  if ('gap_reason' in patch && patch.gap_reason != null && !GAP_REASONS.includes(patch.gap_reason)) throw badRequest('Invalid gap reason.');
+  if ('ofi_note' in patch && patch.ofi_note != null && String(patch.ofi_note).length > 2000) throw badRequest('That OFI note is too long.');
   const complianceStatus = 'compliance_status' in patch ? patch.compliance_status : (existing.compliance_status || 'not_assessed');
   const naJustification = 'na_justification' in patch ? patch.na_justification : existing.na_justification;
   if (complianceStatus === 'not_applicable' && !(naJustification && String(naJustification).trim())) {
@@ -1087,9 +1137,9 @@ defineOp('requirement.approve', {
     const existing = await ctx.db.get('iso_requirements', ctx.payload.id);
     if (!existing || existing.audit_id !== ctx.audit.id || existing.archived_at) throw notFound('Requirement not found.');
     if (!existing.compliance_status || existing.compliance_status === 'not_assessed') throw badRequest('Nothing to approve yet — set a status first.');
-    const cs = existing.compliance_status;
-    const patch = { approval_state: 'approved', approved_by: ctx.caller.uid, approved_at: ctx.now.toISOString(), return_note: null,
-      senior_review_status: COMPLIANCE_TO_VERDICT[cs], senior_review_note: null, senior_reviewed_by: ctx.caller.uid, senior_reviewed_at: ctx.now.toISOString() };
+    const why = basisProblem(existing);
+    if (why) throw badRequest(why);
+    const patch = approvedPatch(ctx, existing.compliance_status);
     try {
       return await ctx.db.update('iso_requirements', existing.id, patch, ctx.payload.expectedVersion, {
         audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: existing.id,
@@ -1139,9 +1189,9 @@ defineOp('requirement.bulkApprove', {
       const existing = await ctx.db.get('iso_requirements', id);
       if (!existing || existing.audit_id !== ctx.audit.id || existing.archived_at) continue;
       if (existing.approval_state !== 'proposed') { skipped.push({ id, reason: existing.approval_state === 'approved' ? 'Already approved.' : existing.approval_state === 'returned' ? 'Returned — not proposed.' : 'Not assessed yet.' }); continue; }
-      const cs = existing.compliance_status;
-      const patch = { approval_state: 'approved', approved_by: ctx.caller.uid, approved_at: ctx.now.toISOString(), return_note: null,
-        senior_review_status: COMPLIANCE_TO_VERDICT[cs], senior_review_note: null, senior_reviewed_by: ctx.caller.uid, senior_reviewed_at: ctx.now.toISOString() };
+      const why = basisProblem(existing);
+      if (why) { skipped.push({ id, reason: why }); continue; }
+      const patch = approvedPatch(ctx, existing.compliance_status);
       await ctx.db.update('iso_requirements', id, patch, existing.row_version, {
         audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: id,
         entity_ref: `${existing.standard_code} ${existing.clause}`, action: 'approved', source: 'user',
@@ -1417,18 +1467,58 @@ defineOp('relationship.unrejectLibrary', {
 // clause's compliance_status/current_system/recommended_action onto selected related clauses in
 // one call. Each target still goes through applyComplianceStatusPatch (same approval/derive-on-write
 // rules as a normal edit — Q7 deliberately keeps this a real per-clause save, not a status stamp).
+// D47: confirming a derived (Apply to related) status on its own clause. Clears the mark; the Lead
+// (or sole auditor) approves it there and then when the basis is complete, anyone else leaves it
+// proposed for the Lead — the normal approval rules from that point.
+defineOp('requirement.confirmDerived', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canAssessRequirement(ctx); },
+  async validate(payload) {
+    if (!Array.isArray(payload.ids) || !payload.ids.length || payload.ids.length > 500 || payload.ids.some(id => !isValidId(id))) throw badRequest('Choose the clauses to confirm.');
+  },
+  async run(ctx) {
+    const confirmed = [], skipped = [];
+    for (const id of new Set(ctx.payload.ids)) {
+      const existing = await ctx.db.get('iso_requirements', id);
+      if (!existing || existing.audit_id !== ctx.audit.id || existing.archived_at) { skipped.push({ id, reason: 'not found' }); continue; }
+      if (!existing.derived_from_id) { skipped.push({ id, reason: 'Not derived.' }); continue; }
+      const patch = { derived_from_id: null, derived_at: null };
+      const post = Object.assign({}, existing, patch);
+      if (isEffectiveLeadAuditor(ctx) && post.compliance_status !== 'not_assessed' && !basisProblem(post)) Object.assign(patch, approvedPatch(ctx, post.compliance_status));
+      await ctx.db.update('iso_requirements', id, patch, existing.row_version, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: id,
+        entity_ref: `${existing.standard_code} ${existing.clause}`, action: 'derived_confirmed', source: 'user',
+        actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+      confirmed.push(id);
+    }
+    return { confirmed, skipped };
+  },
+});
+
 defineOp('relationship.applyToRelated', {
   scope: 'audit', clientProjection: null,
   allow(ctx) { return canAssessRequirement(ctx); },
   async validate(payload) {
     if (!isValidId(payload.fromId)) throw badRequest('A source clause is required.');
     if (!Array.isArray(payload.toIds) || !payload.toIds.length || payload.toIds.some(id => !isValidId(id))) throw badRequest('At least one related clause is required.');
+    if (payload.offeredIds != null && (!Array.isArray(payload.offeredIds) || payload.offeredIds.length > 200 || payload.offeredIds.some(id => !isValidId(id)))) throw badRequest('Invalid related clauses.');
   },
   async run(ctx) {
     const source = await ctx.db.get('iso_requirements', ctx.payload.fromId);
     if (!source || source.audit_id !== ctx.audit.id) throw notFound('Requirement not found.');
-    const basePatch = { compliance_status: source.compliance_status, current_system: source.current_system, recommended_action: source.recommended_action };
-    if (source.compliance_status === 'not_applicable') basePatch.na_justification = source.na_justification;
+    // D47: the source's answer is copied as a PROPOSAL — derived_from_id marks it, and it stays
+    // proposed for everyone (Lead and sole auditor included) until someone confirms it on the target.
+    const nowIso = ctx.now.toISOString();
+    const basePatch = { compliance_status: source.compliance_status, current_system: source.current_system, recommended_action: source.recommended_action,
+      gap_reason: source.gap_reason || null, ofi: !!source.ofi, ofi_note: source.ofi_note || null, derived_from_id: source.id, derived_at: nowIso };
+    if (source.compliance_status === 'not_applicable' || source.compliance_status === 'out_of_scope') basePatch.na_justification = source.na_justification;
+    // The source's live documents go across too (D47) — not superseded / rejected / insufficient.
+    const srcLinks = (await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }, { field: 'target_id', op: 'eq', value: source.id }] }))
+      .filter(l => !DEAD_LINK_STATUSES.includes(l.review_status) && l.review_status !== 'insufficient');
+    const srcEvidence = [];
+    for (const l of srcLinks) { const e = await ctx.db.get('iso_evidence', l.evidence_id); if (e && !e.archived_at && !e.superseded_by) srcEvidence.push(e); }
+    let documentsLinked = 0;
     const applied = [], skipped = [];
     for (const id of new Set(ctx.payload.toIds)) {
       if (id === source.id) continue;
@@ -1438,14 +1528,33 @@ defineOp('relationship.applyToRelated', {
       validateRequirementPatch(existing, rowPatch);
       seniorReviewReset(existing, rowPatch);
       applyComplianceStatusPatch(ctx, existing, rowPatch);
+      if (rowPatch.compliance_status && rowPatch.compliance_status !== 'not_assessed') Object.assign(rowPatch, PROPOSED_PATCH, { assessed_by: ctx.caller.uid, assessed_at: nowIso });
       const updated = await ctx.db.update('iso_requirements', id, rowPatch, existing.row_version, {
         audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: id,
         entity_ref: `${existing.standard_code} ${existing.clause}`, action: 'applied_from_related', source: 'user',
         actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
       });
       applied.push(updated.id);
+      const have = new Set((await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }, { field: 'target_id', op: 'eq', value: id }] })).map(l => l.evidence_id));
+      for (const e of srcEvidence) {
+        if (have.has(e.id)) continue;
+        const link = await ctx.db.insert('iso_evidence_links', {
+          id: uid('ievl_'), evidence_id: e.id, audit_id: ctx.audit.id, client_id: ctx.audit.client_id,
+          target_type: 'requirement', target_id: id, role: 'primary', relevance_note: null,
+          review_status: 'submitted', created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
+        });
+        await logEvidenceLinked(ctx, e, link);
+        documentsLinked++;
+      }
     }
-    return { applied, skipped };
+    // Learning signal (release-1 B3.4 footprint): which related clauses were offered, applied, unticked.
+    const offered = [...new Set(ctx.payload.offeredIds || ctx.payload.toIds)];
+    await ctx.db.log({
+      audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: source.id,
+      entity_ref: `${source.standard_code} ${source.clause}`, action: 'related_applied', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      after: { offered, applied, unticked: offered.filter(x => !ctx.payload.toIds.includes(x)), documentsLinked },
+    });
+    return { applied, skipped, documentsLinked };
   },
 });
 
@@ -2357,7 +2466,22 @@ function evidenceKindForUrl(href) {
 
 // Plan 8b.4: "Other evidence" can be free-typed with no link at all (a note, an interview, a sample,
 // a policy or procedure reference); a URL still decides link vs sharepoint by itself.
-const EVIDENCE_NO_URL_KINDS = ['note', 'meeting_note', 'interview', 'sample', 'policy_ref', 'procedure_ref'];
+const EVIDENCE_NO_URL_KINDS = ['note', 'meeting_note', 'interview', 'observation', 'sample', 'policy_ref', 'procedure_ref'];
+// B1.7: a sample note records what was sampled — population, sample size, exceptions found.
+function samplePatch(p) {
+  const out = {};
+  for (const [k, col] of [['samplePopulation', 'sample_population'], ['sampleSize', 'sample_size']]) {
+    if (p[k] == null || p[k] === '') continue;
+    const n = Number(p[k]);
+    if (!Number.isInteger(n) || n < 0 || n > 10000000) throw badRequest('Sample numbers must be whole numbers.');
+    out[col] = n;
+  }
+  if (p.sampleExceptions != null && String(p.sampleExceptions).trim()) {
+    if (String(p.sampleExceptions).length > 2000) throw badRequest('That note is too long.');
+    out.sample_exceptions = String(p.sampleExceptions).trim();
+  }
+  return out;
+}
 const EVIDENCE_LINK_ROLES = ['primary', 'supporting'];
 // D21: relationship kinds that mean "the same evidence can serve both" — never `supporting`, and not
 // `mapping` either (that one only says both requirements share an action, not their evidence).
@@ -2395,6 +2519,7 @@ defineOp('evidence.addLink', {
     if (payload.confidentiality && !['normal', 'restricted'].includes(payload.confidentiality)) throw badRequest('Invalid confidentiality.');
     if (payload.role && !EVIDENCE_LINK_ROLES.includes(payload.role)) throw badRequest('Invalid evidence role.');
     if (payload.relevanceNote != null && String(payload.relevanceNote).length > 2000) throw badRequest('That note is too long.');
+    samplePatch(payload);
   },
   async run(ctx) {
     const target = await evidenceTarget(ctx, ctx.payload.targetType, ctx.payload.targetId);
@@ -2414,6 +2539,7 @@ defineOp('evidence.addLink', {
       confidentiality: ctx.payload.confidentiality || 'normal', visibility: ctx.payload.visibility || 'internal',
       suggest_related: ctx.payload.suggestRelated !== false,
       uploaded_by: ctx.caller.uid, uploaded_via: 'staff', created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
+      ...(kind === 'sample' ? samplePatch(ctx.payload) : {}),
     }, {
       audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'evidence', entity_id: null,
       action: 'created', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
@@ -2591,6 +2717,7 @@ defineOp('document.list', {
     for (const l of liveLinks) {
       const e = evidenceById[l.evidence_id];
       if (!e || e.archived_at || e.superseded_by) continue;
+      if (l.review_status === 'insufficient') continue; // B1.7: flagged insufficient = not provided
       const t = String(e.title || '').trim().toLowerCase();
       if (!titlesByReq.has(l.target_id)) titlesByReq.set(l.target_id, new Set());
       titlesByReq.get(l.target_id).add(t);
@@ -2723,6 +2850,7 @@ defineOp('evidence.list', {
         id: e.id, ref: e.ref, kind: e.kind, title: e.title, description: e.description, url: e.url,
         versionLabel: e.version_label, evidenceDate: e.evidence_date, ownerUid: e.owner_uid,
         confidentiality: e.confidentiality, visibility: e.visibility, createdAt: e.created_at, suggestRelated: e.suggest_related !== false,
+        samplePopulation: e.sample_population == null ? null : e.sample_population, sampleSize: e.sample_size == null ? null : e.sample_size, sampleExceptions: e.sample_exceptions || null,
         // 8.2: an uploaded file's name, size, type and document status — never its storage path.
         hasFile: !!e.storage_path, originalFilename: e.original_filename || null, sizeBytes: e.size_bytes == null ? null : Number(e.size_bytes), mime: e.mime || null, documentStatus: e.document_status || 'draft',
         linkId: l.id, role: l.role || 'primary', relevanceNote: l.relevance_note || null,
@@ -2874,6 +3002,36 @@ defineOp('evidence.review', {
       return await ctx.db.update('iso_evidence_links', link.id, patch, ctx.payload.expectedVersion, {
         audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: link.target_type, entity_id: link.target_id,
         action: 'evidence_reviewed', field: 'review_status', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+    } catch (e2) { if (e2.code === 'version_conflict') throw conflict(); throw e2; }
+  },
+});
+
+// B1.7 (D35: for staff-added evidence the auditor's own confirmation IS the review): the auditor
+// flags a document they linked as only partly sufficient, or insufficient — or clears the flag. Client
+// uploads keep the independent reviewer flow (evidence.review, no self-review).
+const SUFFICIENCY_STATUS = { partial: 'partially_sufficient', insufficient: 'insufficient' };
+defineOp('evidence.setSufficiency', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canManageEvidence(ctx); },
+  async validate(payload) {
+    if (!isValidId(payload.linkId)) throw badRequest('A link is required.');
+    if (payload.sufficiency != null && !SUFFICIENCY_STATUS[payload.sufficiency]) throw badRequest('Invalid sufficiency.');
+    if (payload.note != null && String(payload.note).length > 2000) throw badRequest('That note is too long.');
+    if (payload.expectedVersion == null) throw badRequest('expectedVersion is required.');
+  },
+  async run(ctx) {
+    const link = await ctx.db.get('iso_evidence_links', ctx.payload.linkId);
+    if (!link || link.audit_id !== ctx.audit.id) throw notFound('Evidence link not found.');
+    if (DEAD_LINK_STATUSES.includes(link.review_status)) throw badRequest('That link is no longer live.');
+    const e = await ctx.db.get('iso_evidence', link.evidence_id);
+    if (!e || e.uploaded_via !== 'staff') throw forbidden('Client uploads are reviewed through Evidence review.');
+    const patch = { review_status: ctx.payload.sufficiency ? SUFFICIENCY_STATUS[ctx.payload.sufficiency] : 'submitted',
+      review_comment: ctx.payload.note ? String(ctx.payload.note).trim() : null };
+    try {
+      return await ctx.db.update('iso_evidence_links', link.id, patch, ctx.payload.expectedVersion, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: link.target_type, entity_id: link.target_id,
+        action: 'evidence_sufficiency', field: 'review_status', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
       });
     } catch (e2) { if (e2.code === 'version_conflict') throw conflict(); throw e2; }
   },
