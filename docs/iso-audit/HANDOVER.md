@@ -11,8 +11,9 @@ offline only, no SQL, never push/deploy without the user, CRLF in `index.html`, 
 | Batch | State |
 |---|---|
 | B0 build tooling | **Done and committed** (`b7299d8` on local branch `iso-release-1`, never pushed) |
-| B1 defensible conclusions | **Built, tested, NOT committed yet** — finish the steps below |
-| B2 → B7 | Not started — follow the plan's §3 in order (B6 can run in parallel) |
+| B1 defensible conclusions | **Done and committed** (`eb5837f`) |
+| B2 findings and actions that close | **Done and committed** (see the 2026-10-11 Progress Log row) |
+| B3 → B7 | B3 next (B3.5 export, then STOP 2b for the user); B6 can run in parallel |
 
 Branch: `iso-release-1` (local only). Commits on this branch are allowed at batch close (D55);
 **pushing or deploying needs the user's explicit OK.**

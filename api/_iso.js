@@ -509,7 +509,8 @@ function occurrenceKeys(rows) {
 }
 defineOp('audit.startMaintenance', {
   scope: 'audit', clientProjection: null,
-  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ctx.membership.audit_role === 'audit_manager'); },
+  // Release-1 B2.6: the Lead Auditor starts next year's board too (R2 left it manager-only).
+  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ['audit_manager', 'lead_auditor'].includes(ctx.membership.audit_role)); },
   async validate(payload) {
     if (payload.title != null && !isNonEmptyText(payload.title, 200)) throw badRequest('Invalid title.');
     if (payload.editions != null) {
@@ -1634,7 +1635,10 @@ const FINDING_TRANSITIONS = {
   draft: ['released_for_review', 'withdrawn'],
   released_for_review: ['final', 'withdrawn'],
   final: ['closed'],
-  closed: [],
+  // Release-1 B2.4 (Q7): the Lead reopens a closed finding with a reason (finding.reopen); a reopened
+  // finding closes again under the same closure rule as a final one.
+  closed: ['reopened'],
+  reopened: ['closed'],
   withdrawn: [],
 };
 function isAllowedFindingTransition(from, to) { return (FINDING_TRANSITIONS[from] || []).includes(to); }
@@ -1693,6 +1697,7 @@ defineOp('finding.create', {
       evidence_basis: ctx.payload.evidenceBasis || null, status: 'draft',
       visibility: ctx.payload.visibility || ctx.audit.default_visibility || 'internal',
       root_cause_required: ctx.payload.classification === 'major_nc',
+      repeat_of_ref: await repeatOfRef(ctx, req),
       created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
     }, {
       audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'finding', entity_id: null,
@@ -1751,6 +1756,7 @@ function findingTransitionOp(name, to, extraPatch) {
       const existing = await ctx.db.get('iso_findings', ctx.payload.id);
       if (!existing || existing.audit_id !== ctx.audit.id) throw notFound();
       if (!isAllowedFindingTransition(existing.status, to)) throw badRequest(`Cannot move a finding from ${existing.status} to ${to}.`);
+      if (to === 'closed') { const why = await findingClosureProblem(ctx, existing); if (why) throw badRequest(why); }
       try {
         // db.transition() is the dedicated primitive (plan §4.4) — for Supabase this calls the
         // matching iso_release_finding/iso_finalize_finding/iso_close_finding/iso_withdraw_finding
@@ -1768,6 +1774,71 @@ findingTransitionOp('finding.release', 'released_for_review', ctx => ({ released
 findingTransitionOp('finding.finalize', 'final');
 findingTransitionOp('finding.close', 'closed', ctx => ({ closed_at: ctx.now.toISOString(), closed_by: ctx.caller.uid }));
 findingTransitionOp('finding.withdraw', 'withdrawn');
+
+// Release-1 B2.3 (D50, Q7): a finding closes only when every action linked to it is closed AND
+// verified effective — nothing closes because a box was ticked. The refusal names the blockers.
+async function findingClosureProblem(ctx, finding) {
+  const links = await ctx.db.list('iso_action_links', { where: [{ field: 'target_type', op: 'eq', value: 'finding' }, { field: 'target_id', op: 'eq', value: finding.id }, { field: 'link_state', op: 'eq', value: 'confirmed' }] });
+  const blocking = [];
+  for (const l of links) {
+    const a = await ctx.db.get('iso_actions', l.action_id);
+    if (!a || a.archived_at) continue;
+    if (a.status === 'closed' && a.verification_status === 'effective') continue;
+    blocking.push(`${a.ref} (${a.status === 'closed' ? 'not verified effective' : String(a.status).replace(/_/g, ' ')})`);
+  }
+  return blocking.length ? `This finding can't close until its actions are closed and verified effective: ${blocking.join(', ')}.` : null;
+}
+
+// Release-1 B2.5: a finding on a clause that had a finding, or was Non-Compliant, on an earlier board
+// in the client's chain (previous_audit_id, newest first) is a repeat — stamped
+// "<earlier board ref> / <its finding ref>" (or "/ ISO <std> <clause>" when it was a status only).
+// Matched by standard + clause, narrowed to the same stable key when the earlier board has it.
+async function repeatOfRef(ctx, req) {
+  let prevId = ctx.audit.previous_audit_id, hops = 0;
+  while (prevId && hops++ < 20) {
+    const prev = await ctx.db.get('iso_audits', prevId);
+    if (!prev) break;
+    const rows = (await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: prev.id }, { field: 'standard_code', op: 'eq', value: req.standard_code }, { field: 'clause', op: 'eq', value: req.clause }] })).filter(r => !r.archived_at);
+    const same = req.stable_key ? rows.filter(r => r.stable_key === req.stable_key) : [];
+    const matches = same.length ? same : rows;
+    if (matches.length) {
+      const links = await ctx.db.list('iso_finding_requirements', { where: [{ field: 'requirement_id', op: 'in', value: matches.map(r => r.id) }] });
+      for (const l of links) {
+        const f = await ctx.db.get('iso_findings', l.finding_id);
+        if (f && !f.archived_at && f.status !== 'withdrawn') return `${prev.ref} / ${f.ref}`;
+      }
+      if (matches.some(r => r.compliance_status === 'non_compliant')) return `${prev.ref} / ISO ${req.standard_code} ${req.clause}`;
+    }
+    prevId = prev.previous_audit_id;
+  }
+  return null;
+}
+
+// Release-1 B2.4 (Q7): only the Lead (or an admin) reopens a closed finding, with one of the action
+// reopen reasons. closed -> reopened, reopened_count + 1, the reason kept on the row and in history.
+defineOp('finding.reopen', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ctx.membership.audit_role === 'lead_auditor'); },
+  async validate(payload) {
+    if (payload.expectedVersion == null) throw badRequest('expectedVersion is required.');
+    if (!ACTION_REOPEN_REASONS.includes(payload.reasonCode)) throw badRequest('Invalid reopen reason.');
+    if (payload.reasonText != null && (typeof payload.reasonText !== 'string' || payload.reasonText.length > 2000)) throw badRequest('Invalid reason text.');
+  },
+  async run(ctx) {
+    const existing = await ctx.db.get('iso_findings', ctx.payload.id);
+    if (!existing || existing.audit_id !== ctx.audit.id || existing.archived_at) throw notFound();
+    if (!isAllowedFindingTransition(existing.status, 'reopened')) throw badRequest('Only a closed finding can be reopened.');
+    const reasonText = ctx.payload.reasonText ? ctx.payload.reasonText.trim() : null;
+    try {
+      return await ctx.db.reopenFinding(existing.id, ctx.payload.reasonCode, reasonText, ctx.payload.expectedVersion, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'finding', entity_id: existing.id,
+        entity_ref: existing.ref, action: 'reopened', field: 'status',
+        reason: ctx.payload.reasonCode + (reasonText ? `: ${reasonText}` : ''),
+        source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+    } catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+  },
+});
 
 // ── action.* (plan Phase 7.3 — slice 1: create/update/list/link/unlink + core status workflow.
 // Slice 2 (this one): action.verify/action.reopen, calling the dedicated db.verifyAction()/
@@ -1928,6 +1999,89 @@ defineOp('action.create', {
       link_state: 'confirmed', decided_by: ctx.caller.uid, decided_at: ctx.now.toISOString(),
     });
     return action;
+  },
+});
+
+// ── action.trackPlan — release-1 B2.1 (D49, Q6) ─────────────────────────────────────────────────
+// "Track this action" on an open clause (Partial / Non-Compliant / OFI with a plan) or a derived
+// Actions row: one op creates the action and links it to every ticked clause; on a formal audit type
+// it also raises a finding per clause (each keeps its own record under the shared action — findings
+// are never merged because their action text matches). The finding's statement is the clause's
+// basis, its criterion the requirement reference, its evidence basis the clause's live documents.
+// A clause already linked to an open action can't be tracked again — there are never two records.
+const FORMAL_AUDIT_TYPES = ['internal', 'surveillance', 'recertification', 'certification_prep', 'follow_up'];
+const TRACK_STATUS_WORD = { non_compliant: 'Non-Compliant', partially_compliant: 'Partially Compliant', compliant: 'OFI' };
+const TRACK_PRIORITY = { non_compliant: 'high', partially_compliant: 'med', compliant: 'low' };
+function trackableProblem(r) {
+  if (['non_compliant', 'partially_compliant'].includes(r.compliance_status) || (r.compliance_status === 'compliant' && r.ofi)) return null;
+  return `ISO ${r.standard_code} ${r.clause} is not Partial, Non-Compliant or OFI.`;
+}
+defineOp('action.trackPlan', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canManageAction(ctx) && (!FORMAL_AUDIT_TYPES.includes(ctx.audit.audit_type) || canManageFinding(ctx)); },
+  async validate(payload, ctx) {
+    if (!Array.isArray(payload.requirementIds) || !payload.requirementIds.length || payload.requirementIds.length > 500 || !payload.requirementIds.every(isValidId)) throw badRequest('Pick at least one clause.');
+    if (payload.title != null && !isNonEmptyText(payload.title, 300)) throw badRequest('Invalid title.');
+    if (payload.ownerUid != null && !isValidId(payload.ownerUid)) throw badRequest('Invalid owner.');
+    if (payload.dueDate != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.dueDate))) throw badRequest('Invalid due date.');
+    if (payload.priority != null && !ACTION_PRIORITIES.includes(payload.priority)) throw badRequest('Invalid priority.');
+    if (FORMAL_AUDIT_TYPES.includes(ctx.audit.audit_type)) {
+      if (!(await findingClassifications(ctx)).includes(payload.classification)) throw badRequest('Pick a classification — this audit type records a finding.');
+    } else if (payload.classification != null) throw badRequest('This audit type tracks actions only — no finding classification.');
+  },
+  async run(ctx) {
+    const reqs = [];
+    for (const id of new Set(ctx.payload.requirementIds)) {
+      const r = await ctx.db.get('iso_requirements', id);
+      if (!r || r.audit_id !== ctx.audit.id || r.archived_at) throw badRequest('That clause is not on this audit.');
+      const why = trackableProblem(r);
+      if (why) throw badRequest(why);
+      reqs.push(r);
+    }
+    const reqLinks = await ctx.db.list('iso_action_links', { where: [{ field: 'target_type', op: 'eq', value: 'requirement' }, { field: 'target_id', op: 'in', value: reqs.map(r => r.id) }, { field: 'link_state', op: 'eq', value: 'confirmed' }] });
+    for (const l of reqLinks) {
+      const a = await ctx.db.get('iso_actions', l.action_id);
+      if (!a || a.archived_at || ACTION_CLOSED_STATUSES.includes(a.status)) continue;
+      const r = reqs.find(x => x.id === l.target_id);
+      throw badRequest(`ISO ${r.standard_code} ${r.clause} is already tracked by ${a.ref}.`);
+    }
+    const planned = reqs.map(r => String(r.recommended_action || '').trim()).find(Boolean) || '';
+    const title = String(ctx.payload.title || planned).trim();
+    if (!title) throw badRequest('Write the planned action first.');
+    const worst = reqs.some(r => r.compliance_status === 'non_compliant') ? 'non_compliant' : reqs.some(r => r.compliance_status === 'partially_compliant') ? 'partially_compliant' : 'compliant';
+    const caller = ctx.caller, nowIso = ctx.now.toISOString();
+    const visibility = ctx.audit.default_visibility || 'internal';
+    const action = await ctx.db.insertNumbered('iso_actions', 'child', ctx.audit.id + ':A', {
+      id: uid('iact_'), audit_id: ctx.audit.id, client_id: ctx.audit.client_id, title: title.slice(0, 300), description: null, owner_kind: 'etcher',
+      owner_uid: ctx.payload.ownerUid || (reqs.find(r => r.responsible_uid) || {}).responsible_uid || null,
+      due_date: ctx.payload.dueDate || reqs.map(r => r.target_date).filter(Boolean).sort()[0] || null,
+      priority: ctx.payload.priority || TRACK_PRIORITY[worst],
+      status: 'draft', verification_status: 'not_verified', progress: 0, reopened_count: 0, visibility,
+      created_by: caller.uid, updated_by: caller.uid,
+    }, { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'action', entity_id: null, action: 'created', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
+    const link = (targetType, targetId) => ctx.db.insert('iso_action_links', { id: uid('ial_'), action_id: action.id, target_type: targetType, target_id: targetId, link_state: 'confirmed', decided_by: caller.uid, decided_at: nowIso });
+    for (const r of reqs) await link('requirement', r.id);
+    const findings = [];
+    if (FORMAL_AUDIT_TYPES.includes(ctx.audit.audit_type)) {
+      for (const r of reqs) {
+        const evLinks = (await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }, { field: 'target_id', op: 'eq', value: r.id }] }))
+          .filter(l => !DEAD_LINK_STATUSES.includes(l.review_status) && l.review_status !== 'insufficient');
+        const docs = [];
+        for (const l of evLinks) { const e = await ctx.db.get('iso_evidence', l.evidence_id); if (e && !e.archived_at && !e.superseded_by) docs.push(e.title + (e.version_label ? `, ${e.version_label}` : '')); }
+        const ref = `ISO ${r.standard_code} ${r.clause}${r.clause_name ? ' ' + r.clause_name : ''}`;
+        const f = await ctx.db.insertNumbered('iso_findings', 'child', ctx.audit.id + ':F', {
+          id: uid('ifnd_'), audit_id: ctx.audit.id, client_id: ctx.audit.client_id, classification: ctx.payload.classification,
+          title: `${TRACK_STATUS_WORD[r.compliance_status === 'compliant' ? 'compliant' : r.compliance_status]} — ${ref}`.slice(0, 300),
+          statement: String(r.current_system || '').trim() || null, criteria: ref, evidence_basis: docs.join('; ') || null, status: 'draft',
+          visibility, root_cause_required: ctx.payload.classification === 'major_nc', repeat_of_ref: await repeatOfRef(ctx, r),
+          created_by: caller.uid, updated_by: caller.uid,
+        }, { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'finding', entity_id: null, action: 'created', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
+        await ctx.db.insert('iso_finding_requirements', { finding_id: f.id, requirement_id: r.id });
+        await link('finding', f.id);
+        findings.push(f);
+      }
+    }
+    return { action, findings };
   },
 });
 
@@ -3427,7 +3581,7 @@ const ACTION_CLOSED_STATUSES = ['verified', 'closed'];
 // dashboard "open" filter descriptor (Phase 9.2) can derive its positive enumeration from the
 // complement rather than hand-duplicating it; the shared filter schema (api/_isoFilter.js) has no
 // negation operator, only `in`.
-const FINDING_STATUSES = ['draft', 'released_for_review', 'final', 'closed', 'withdrawn'];
+const FINDING_STATUSES = ['draft', 'released_for_review', 'final', 'closed', 'withdrawn', 'reopened'];
 const ACTION_STATUSES = ['draft', 'assigned', 'in_progress', 'awaiting_evidence', 'submitted_for_review', 'more_info_required', 'ready_for_verification', 'verified', 'closed', 'on_hold'];
 const FINDING_OPEN_STATUSES = FINDING_STATUSES.filter(s => !FINDING_CLOSED_STATUSES.includes(s));
 const ACTION_OPEN_STATUSES = ACTION_STATUSES.filter(s => !ACTION_CLOSED_STATUSES.includes(s));

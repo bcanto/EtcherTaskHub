@@ -411,6 +411,14 @@ button.iso-shared-open:hover { text-decoration: underline; }
 .iso-act-clause-c { flex: none; min-width: 40px; font-weight: 700; color: #0d1c33; }
 .iso-act-clause-n { flex: 1; min-width: 0; color: #4a5f73; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iso-act-clause-via { flex: none; font-size: 10px; font-weight: 700; color: #6b8399; background: #f1f5f8; border-radius: 999px; padding: 1px 8px; }
+button.iso-act-clause-via { border: none; font-family: inherit; cursor: pointer; transition: transform 180ms var(--spring); }
+button.iso-act-clause-via:hover { background: var(--teal-wash); color: var(--teal-deep); }
+button.iso-act-clause-via:active { transform: scale(.97); }
+button.iso-act-clause-via:focus-visible { outline: 2px solid var(--teal-deep); outline-offset: 1px; }
+/* Release-1 B2: Reopened / Repeat finding badges */
+.iso-fnd-badge { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; vertical-align: middle; }
+.iso-fnd-badge.is-reopened { background: #fbe9e7; color: #a8362d; }
+.iso-fnd-badge.is-repeat { background: #fdf3e1; color: #87590a; }
 button.iso-act-clause-x { flex: none; font: inherit; font-size: 11px; color: #9aabb9; background: none; border: none; border-radius: 6px; padding: 2px 6px; cursor: pointer; transition: transform 160ms cubic-bezier(.34,1.56,.64,1), opacity 160ms ease; }
 button.iso-act-clause-x:hover { color: #b91c1c; background: #fef2f2; }
 button.iso-act-clause-x:active { transform: scale(0.95); }
@@ -826,6 +834,25 @@ button.iso-cv:hover { background: var(--teal-wash); }
 button.iso-cv:active { transform: scale(.97); }
 button.iso-cv:focus-visible { outline: 2px solid var(--teal-deep); outline-offset: 1px; }
 .iso-wl-own, .iso-wl-due { font-size: 13px; color: var(--ink-2); }
+/* Release-1 B2.1: Track this action */
+.iso-wl-main { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.iso-wl-state { font-size: 12px; color: var(--ink-2); }
+button.iso-track-btn { height: 28px; padding: 0 8px; margin-left: -8px; }
+.iso-tracked { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; margin-top: 6px; }
+.iso-tracked-k { font-weight: 700; color: var(--teal-deep); }
+button.iso-tracked-ref { border: none; background: var(--paper); border-radius: 6px; padding: 2px 8px; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; transition: transform 180ms var(--spring); }
+button.iso-tracked-ref:hover { background: var(--teal-wash); }
+button.iso-tracked-ref:active { transform: scale(.97); }
+button.iso-tracked-ref:focus-visible { outline: 2px solid var(--teal-deep); outline-offset: 1px; }
+.iso-track { display: grid; gap: 14px; min-width: 0; }
+.iso-track .iso-field-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.iso-track-plan { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.iso-track-clauses { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 10px; margin: 0; min-width: 0; display: grid; gap: 2px; max-height: 240px; overflow: auto; }
+.iso-track-clauses legend { font-size: 12px; font-weight: 700; color: var(--ink-2); padding: 0 4px; }
+.iso-track-clause { display: flex; align-items: center; gap: 8px; min-height: 36px; min-width: 0; font-size: 13px; cursor: pointer; }
+.iso-track-clause .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.iso-track-note { margin: 0; font-size: 12.5px; }
+.iso-track-btns { display: flex; justify-content: flex-end; }
 .iso-tl { padding: 8px 16px 20px; display: grid; gap: 8px; }
 .iso-tl-head, .iso-tl-row { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 12px; align-items: center; }
 .iso-tl-months { display: grid; font-size: 12px; color: var(--ink-3); border-bottom: 1px solid var(--line); padding-bottom: 4px; }

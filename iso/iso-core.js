@@ -1395,6 +1395,14 @@
   }
   function _reqSaveField(el) { _reqSaveFieldGeneric(el.dataset.id, el.dataset.field, el.value); }
   function _reqSaveFieldSelect(el) { _reqSaveFieldGeneric(el.dataset.id, el.dataset.field, el.value || null); }
+  // Release-1 B2.1: Track › under a clause's plan, or the action that already tracks it.
+  function reqTrackHtml(row) {
+    if (!String(row.recommended_action || '').trim()) return '';
+    const a = trackedActionFor(row, _req.actions);
+    if (a) return `<div class="iso-tracked"><span class="iso-tracked-k">Tracked</span><button type="button" class="iso-tracked-ref" data-id="${esc(a.id)}" onclick="ISO._reqOpenTracked(this.dataset.id)">${esc(a.ref || 'Action')}</button><span class="muted">${esc(actionStateText(a.status, a.verification_status))}</span></div>`;
+    if (!canManageFindingLocally()) return '';
+    return `<button type="button" class="iso-mini-btn iso-track-btn" data-ids="${esc(row.id)}" data-src="req" onclick="ISO._trackOpen(this.dataset.ids,this.dataset.src)">Track ›</button>`;
+  }
   function reqAssessmentColHtml(row) {
     const cs = row.compliance_status;
     const showPlan = needsAction(row);
@@ -1409,7 +1417,7 @@
         <div class="iso-clause-row2">
           <label class="iso-clause-field">Owner<select class="form-input" data-id="${esc(row.id)}" data-field="responsible_uid" onchange="ISO._reqSaveFieldSelect(this)"><option value="">Unassigned</option>${staffOptions.map(u => `<option value="${esc(u.id)}"${row.responsible_uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
           <label class="iso-clause-field">Due<input type="date" class="form-input" data-id="${esc(row.id)}" data-field="target_date" value="${esc(row.target_date || '')}" onchange="ISO._reqSaveFieldSelect(this)"/></label>
-        </div>` : ''}
+        </div>${reqTrackHtml(row)}` : ''}
     </div>`;
   }
   // A real, minimal documents list (P3's right column) — not R4's full add-any-document chooser,
@@ -1766,7 +1774,7 @@
     // assessed, Needs action) simply selects that chip: the real view, with its own Approve buttons.
     if (dashFilter && !(dashFilter.where || []).length && dashView && QUICK_VIEWS.some(v => v.id === dashView)) { chipView = dashView; dashFilter = null; dashView = null; dashLabel = ''; }
     try {
-      const [requirements, sections, savedViews, evidenceSummary, guidance, relLibrary, docList] = await Promise.all([
+      const [requirements, sections, savedViews, evidenceSummary, guidance, relLibrary, docList, reqActions] = await Promise.all([
         dashFilter ? api('requirement.list', { auditId: audit.id, filter: dashFilter }) : api('requirement.list', { auditId: audit.id }),
         api('section.list', { auditId: audit.id }),
         api('view.list', { auditId: audit.id }).catch(() => []),
@@ -1774,12 +1782,13 @@
         api('guidance.list', { auditId: audit.id }).catch(() => ({})), // Column O cheat sheet (R3)
         api('relationship.library', { auditId: audit.id }).catch(() => ({})), // Column P related clauses (R3)
         api('document.list', { auditId: audit.id }).catch(() => []), // open row's suggested documents + the add-document chooser
+        api('action.list', { auditId: audit.id }).catch(() => []), // B2.1: which clauses are already tracked
         _promptTemplates ? Promise.resolve(_promptTemplates) : api('promptTemplate.list').then(t => (_promptTemplates = t || [])).catch(() => []),
       ]);
       _req = {
         auditId: audit.id, requirements: requirements, sections: sections, view: chipView || (_req.auditId === audit.id ? _req.view : 'all'),
         savedViews: (savedViews || []).filter(v => v.entity === 'requirement'), evidenceSummary: evidenceSummary || {},
-        guidance: guidance || {}, relLibrary: relLibrary || {}, docs: docList || [],
+        guidance: guidance || {}, relLibrary: relLibrary || {}, docs: docList || [], actions: reqActions || [],
         expanded: same ? (_req.expanded || new Set()) : new Set(), relEdit: same ? (_req.relEdit || new Set()) : new Set(), applyPanel: null,
         evidenceByReq: same ? (_req.evidenceByReq || {}) : {}, q: same ? (_req.q || '') : '',
         dashFilter: dashFilter, dashView: dashFilter ? dashView : null, dashLabel: dashFilter ? dashLabel : '',
@@ -2240,13 +2249,13 @@
   // (finding.create requires requirementId, plan §6.2) — "+ New finding" here picks one from a
   // dropdown of this audit's requirements rather than assuming the user came from that drawer. ────
   const FINDING_CLASSIFICATION_LABEL = { major_nc: 'Major NC', minor_nc: 'Minor NC', observation: 'Observation', ofi: 'OFI' };
-  const FINDING_STATUS_LABEL = { draft: 'Draft', released_for_review: 'Released for review', final: 'Final', closed: 'Closed', withdrawn: 'Withdrawn' };
+  const FINDING_STATUS_LABEL = { draft: 'Draft', released_for_review: 'Released for review', final: 'Final', closed: 'Closed', withdrawn: 'Withdrawn', reopened: 'Reopened' };
   // Findings/actions share this 5-value visibility set (009's own check constraint) — wider than
   // requirements' 3-value one (VISIBILITY_LABEL above), so kept separate rather than reused.
   const FA_VISIBILITY_LABEL = { internal: 'Internal', client_selected: 'Selected clients', client_all: 'All client members', after_approval: 'After approval', report_only: 'Report only' };
   const FINDING_QUICK_VIEWS = [
     { id: 'all', label: 'All findings', test: () => true },
-    { id: 'open', label: 'Open', test: r => r.status === 'draft' || r.status === 'released_for_review' },
+    { id: 'open', label: 'Open', test: r => r.status === 'draft' || r.status === 'released_for_review' || r.status === 'reopened' },
     { id: 'major_nc', label: 'Major NC', test: r => r.classification === 'major_nc' },
     { id: 'client_visible', label: 'Client-visible', test: r => r.visibility === 'client_selected' || r.visibility === 'client_all' },
   ];
@@ -2254,9 +2263,20 @@
 
   function fndPill(text, color) { return `<span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;background:${color}18;color:${color};font-weight:600">${esc(text)}</span>`; }
   function fndClassColor(c) { return c === 'major_nc' ? '#b91c1c' : c === 'minor_nc' ? '#b45309' : '#4a5568'; }
-  function fndStatusColor(s) { return s === 'closed' ? '#0d6e4e' : s === 'withdrawn' ? '#8da2b2' : s === 'final' ? '#1d6fb8' : '#b45309'; }
+  function fndStatusColor(s) { return s === 'closed' ? '#0d6e4e' : s === 'withdrawn' ? '#8da2b2' : s === 'final' ? '#1d6fb8' : s === 'reopened' ? '#b91c1c' : '#b45309'; }
+  // Release-1 B2.4 / B2.5: "Reopened" (with the last reason) and "Repeat" (seen on an earlier board).
+  function fndBadgesHtml(row) {
+    let out = '';
+    if (row.reopened_count) {
+      const parts = String(row.reopen_reason || '').split(': ');
+      const why = row.reopen_reason ? (ACTION_REOPEN_REASON_LABEL[parts[0]] || parts[0]) + (parts.length > 1 ? ' — ' + parts.slice(1).join(': ') : '') : '';
+      out += ` <span class="iso-fnd-badge is-reopened" title="${esc(why ? 'Last reopened: ' + why : 'Reopened')}">Reopened${row.reopened_count > 1 ? ' ×' + row.reopened_count : ''}</span>`;
+    }
+    if (row.repeat_of_ref) out += ` <span class="iso-fnd-badge is-repeat" title="${esc('Also found on an earlier board: ' + row.repeat_of_ref)}">Repeat</span>`;
+    return out;
+  }
   function fndCellHtml(row, fieldKey) {
-    if (fieldKey === 'status') return { html: fndPill(FINDING_STATUS_LABEL[row.status] || row.status, fndStatusColor(row.status)) };
+    if (fieldKey === 'status') return { html: fndPill(FINDING_STATUS_LABEL[row.status] || row.status, fndStatusColor(row.status)) + fndBadgesHtml(row) };
     if (fieldKey === 'visibility') return { html: esc(FA_VISIBILITY_LABEL[row.visibility] || row.visibility) };
     if (fieldKey === 'released_at') return { html: row.released_at ? esc(fmtTs(row.released_at)) : '<span style="color:#c8d4e0">—</span>' };
     return { html: '' };
@@ -2393,7 +2413,9 @@
     const btn = (label, op, to) => `<button class="btn btn-ghost btn-sm" onclick="ISO._fndTransition('${esc(row.id)}','${op}',${row.row_version})">${esc(label)}</button>`;
     if (row.status === 'draft') return btn('Release for review', 'finding.release', 'released_for_review') + ' ' + btn('Withdraw', 'finding.withdraw', 'withdrawn');
     if (row.status === 'released_for_review') return btn('Finalize', 'finding.finalize', 'final') + ' ' + btn('Withdraw', 'finding.withdraw', 'withdrawn');
-    if (row.status === 'final') return btn('Close', 'finding.close', 'closed');
+    if (row.status === 'final' || row.status === 'reopened') return btn('Close', 'finding.close', 'closed');
+    // B2.4: only the Lead (or an admin) reopens a closed finding, with a reason.
+    if (row.status === 'closed' && ['lead_auditor', 'admin'].includes(_myAuditRole())) return `<button class="btn btn-ghost btn-sm" data-id="${esc(row.id)}" onclick="ISO._fndOpenReopen(this.dataset.id,${Number(row.row_version)})">Reopen</button>`;
     return '';
   }
   async function _fndTransition(id, op, expectedVersion) {
@@ -2414,6 +2436,25 @@
       root.showToast ? root.showToast('Updated.') : null;
     } catch (e) { root.showToast ? root.showToast('Could not update: ' + e.message, true) : alert(e.message); }
   }
+  function _fndOpenReopen(id, expectedVersion) {
+    root.openGenericModal('Reopen finding', `
+      <div class="iso-field-grid">
+        <label>Reason<select class="form-input" id="rf-reason">${Object.keys(ACTION_REOPEN_REASON_LABEL).map(k => `<option value="${k}">${esc(ACTION_REOPEN_REASON_LABEL[k])}</option>`).join('')}</select></label>
+        <label style="grid-column:1/-1">Details (optional)<textarea class="form-input" id="rf-text"></textarea></label>
+      </div>
+      <button class="btn btn-teal btn-sm" style="margin-top:14px" data-id="${esc(id)}" onclick="ISO._fndReopenApply(this.dataset.id,${Number(expectedVersion)})">Reopen</button>
+    `, '460px');
+  }
+  async function _fndReopenApply(id, expectedVersion) {
+    try {
+      const updated = await mutate('finding.reopen', { auditId: _fnd.auditId, id: id, reasonCode: document.getElementById('rf-reason').value, reasonText: document.getElementById('rf-text').value.trim() || null, expectedVersion: expectedVersion });
+      const row = _fnd.findings.find(r => r.id === id); if (row) Object.assign(row, updated);
+      document.getElementById('generic-modal').classList.add('hidden');
+      openFindingDrawer(_fnd.auditId, id);
+      renderFindingsTable(_fnd.auditId);
+      if (root.showToast) root.showToast('Finding reopened.');
+    } catch (e) { if (root.showToast) root.showToast('Could not reopen: ' + e.message, true); }
+  }
   async function openFindingDrawer(auditId, id) {
     const row = _fnd.findings.find(r => r.id === id);
     if (!row) return;
@@ -2429,7 +2470,7 @@
     body.innerHTML = `
       <div class="card" style="padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         ${fndPill(FINDING_CLASSIFICATION_LABEL[row.classification] || row.classification, fndClassColor(row.classification))}
-        ${fndPill(FINDING_STATUS_LABEL[row.status] || row.status, fndStatusColor(row.status))}
+        ${fndPill(FINDING_STATUS_LABEL[row.status] || row.status, fndStatusColor(row.status))}${fndBadgesHtml(row)}
         <div style="margin-left:auto">${fndTransitionButtons(row)}</div>
       </div>
       <div class="card" style="padding:16px;margin-bottom:12px">
@@ -3168,7 +3209,7 @@
     const clauseRow = c => `<div class="iso-act-clause">
       <span class="iso-act-clause-c">${esc(c.req.clause)}</span>
       <span class="iso-act-clause-n" title="${esc(c.req.requirement_text || '')}">${esc(c.req.clause_name || String(c.req.requirement_text || '').slice(0, 80))}</span>
-      ${c.via ? `<span class="iso-act-clause-via">via ${esc(c.via.ref || 'finding')}</span>` : ''}
+      ${c.via ? `<button type="button" class="iso-act-clause-via" data-id="${esc(c.via.id)}" title="Open this finding" onclick="ISO._actOpenFinding(this.dataset.id)">via ${esc(c.via.ref || 'finding')}</button>${fndBadgesHtml(c.via)}` : ''}
       ${isManager && c.linkId ? `<button type="button" class="iso-act-clause-x" data-link="${esc(c.linkId)}" data-act="${esc(row.id)}" title="${c.via ? 'Unlink finding ' + esc(c.via.ref || '') : 'Remove this clause'}" onclick="ISO._actUnlink(this)">Remove</button>` : ''}
     </div>`;
     return `<div class="card iso-act-cover">
@@ -4871,6 +4912,7 @@
     for (const r of reqs || []) {
       const st = r.compliance_status;
       if (!needsAction(r)) continue;
+      if (trackedActionFor(r, actions)) continue; // B2.1: its tracked action is listed instead — never two
       const plan = String(r.recommended_action || '').trim();
       if (!plan) continue;
       const k = plan.toLowerCase();
@@ -4887,9 +4929,29 @@
       if (WL_DONE.includes(a.status)) continue;
       const linked = (a.links || []).filter(l => l.target_type === 'requirement').map(l => l.target_id);
       if (linked.length && !linked.some(id => reqIdSet.has(id))) continue; // other standard (scoped)
-      out.push({ kind: 'action', id: a.id, title: a.title, reqIds: linked.filter(id => reqIdSet.has(id)), owner: a.owner_uid || null, due: a.due_date || null, p: WL_ACTION_PRIO[a.priority] || 2 });
+      out.push({ kind: 'action', id: a.id, ref: a.ref || '', status: a.status, verification: a.verification_status, title: a.title, reqIds: linked.filter(id => reqIdSet.has(id)), owner: a.owner_uid || null, due: a.due_date || null, p: WL_ACTION_PRIO[a.priority] || 2 });
     }
     return out.sort((a, b) => b.p - a.p || (a.due || '9').localeCompare(b.due || '9'));
+  }
+  // Release-1 B2.1: the action tracking a clause — an open one linked to it, or a finished one whose
+  // title is still the clause's plan (so a closed record never brings the derived row back).
+  function trackedActionFor(r, actions) {
+    const plan = String(r.recommended_action || '').trim().toLowerCase();
+    let done = null;
+    for (const a of actions || []) {
+      if (!(a.links || []).some(l => l.target_type === 'requirement' && l.target_id === r.id)) continue;
+      if (!WL_DONE.includes(a.status)) return a;
+      if (plan && String(a.title || '').trim().toLowerCase() === plan) done = a;
+    }
+    return done;
+  }
+  function actionStateText(status, verification) {
+    const v = verification === 'effective' ? ' · verified effective' : verification === 'ineffective' ? ' · verified ineffective' : '';
+    return (ACTION_STATUS_LABEL[status] || status || '') + v;
+  }
+  function wlStateHtml(x) {
+    if (x.kind === 'action') return `<span class="iso-wl-state">${x.ref ? esc(x.ref) + ' · ' : ''}${esc(actionStateText(x.status, x.verification))}</span>`;
+    return canManageFindingLocally() ? `<button type="button" class="iso-mini-btn iso-track-btn" data-ids="${esc(x.reqIds.join(','))}" data-src="wl" onclick="ISO._trackOpen(this.dataset.ids,this.dataset.src)">Track ›</button>` : '';
   }
   let _wl = { auditId: null, reqs: [], actions: [], mode: 'list' };
   async function fillWorklistTab(audit) {
@@ -4932,7 +4994,7 @@
     }
     host.innerHTML = tb + items.map(x => `<div class="iso-wl-row">
         <span class="iso-prio p${x.p}"><i class="iso-prio-dot" aria-hidden="true"></i>${WL_PRIO[x.p]}</span>
-        ${titleHtml(x)}
+        <span class="iso-wl-main">${titleHtml(x)}${wlStateHtml(x)}</span>
         <span class="iso-covers">${x.reqIds.map(id => byId.get(id)).filter(Boolean).sort(reqClauseCompare).map(r => `<button type="button" class="iso-cv" data-id="${esc(r.id)}" title="${esc(r.clause_name || '')}" onclick="ISO._reqJumpTo(this.dataset.id)"><span class="iso-tag" style="--std:${STANDARD_COLOR[r.standard_code] || '#97bcbd'}">${esc(STANDARD_BADGE[r.standard_code] || '•')}</span>${esc(r.clause)}</button>`).join('')}</span>
         <span class="iso-wl-own">${esc((x.owner && _uidName(x.owner)) || '—')}</span>
         <span class="iso-wl-due">${esc(fmtDate(x.due))}</span>
@@ -4942,8 +5004,8 @@
   function _wlAuditId() { return _wl.auditId; }
   // The action drawer reads the Actions register's own state (_act) — fill it for this board first,
   // the same shape fillActionsTab builds, so a legacy action opens from the merged list.
-  async function _wlOpenAction(id) {
-    const auditId = _wl.auditId;
+  async function _wlOpenAction(id, auditIdArg) {
+    const auditId = auditIdArg || _wl.auditId;
     if (_act.auditId !== auditId || !(_act.actions || []).some(a => a.id === id)) {
       try {
         const [actions, findings, requirements, subtasks] = await Promise.all([api('action.list', { auditId: auditId }), api('finding.list', { auditId: auditId }), api('requirement.list', { auditId: auditId }), api('subtask.list', { auditId: auditId })]);
@@ -4952,6 +5014,80 @@
     }
     openActionDrawer(auditId, id);
   }
+  function _reqOpenTracked(id) { return _wlOpenAction(id, _req.auditId); }
+
+  // ── Release-1 B2.1: Track this action ─────────────────────────────────────────────────────────
+  // One small panel: the clauses (a shared plan pre-ticks every open clause with that plan), owner,
+  // due, priority (from the worst status) and — on a formal audit type only — the finding
+  // classification. action.trackPlan does the rest in one call.
+  const FORMAL_AUDIT_TYPES = ['internal', 'surveillance', 'recertification', 'certification_prep', 'follow_up'];
+  let _trk = null;
+  function _trackOpen(idsCsv, src) {
+    const pool = src === 'wl' ? { auditId: _wl.auditId, reqs: _wl.reqs, actions: _wl.actions } : { auditId: _req.auditId, reqs: _req.requirements, actions: _req.actions || [] };
+    const byId = new Map((pool.reqs || []).map(r => [r.id, r]));
+    const start = String(idsCsv || '').split(',').map(id => byId.get(id)).filter(Boolean);
+    if (!start.length) return;
+    const plan = String(start[0].recommended_action || '').trim();
+    const key = plan.toLowerCase();
+    const rows = pool.reqs.filter(r => needsAction(r) && String(r.recommended_action || '').trim().toLowerCase() === key && !trackedActionFor(r, pool.actions)).sort(reqClauseCompare);
+    for (const r of start) if (!rows.includes(r)) rows.unshift(r);
+    const worst = rows.some(r => r.compliance_status === 'non_compliant') ? 'non_compliant' : rows.some(r => r.compliance_status === 'partially_compliant') ? 'partially_compliant' : 'ofi';
+    const formal = FORMAL_AUDIT_TYPES.includes((_auditCache || {}).audit_type);
+    const owner = (rows.find(r => r.responsible_uid) || {}).responsible_uid || '';
+    const due = rows.map(r => r.target_date).filter(Boolean).sort()[0] || '';
+    const prio = { non_compliant: 'high', partially_compliant: 'med', ofi: 'low' }[worst];
+    const cls = { non_compliant: 'minor_nc', partially_compliant: 'minor_nc', ofi: 'ofi' }[worst];
+    const staff = (_DB().users || []).filter(u => u.role !== 'client');
+    _trk = { auditId: pool.auditId };
+    root.openGenericModal('Track this action', `<div class="iso-track">
+      <p class="iso-track-plan">${esc(plan)}</p>
+      <fieldset class="iso-track-clauses"><legend>Clauses${rows.length > 1 ? ` <span class="muted">· shared plan, ${rows.length} clauses</span>` : ''}</legend>
+        ${rows.map(r => `<label class="iso-track-clause"><input type="checkbox" class="iso-trk-cb" value="${esc(r.id)}" checked/><span class="iso-tag" style="--std:${STANDARD_COLOR[r.standard_code] || '#97bcbd'}">${esc(STANDARD_BADGE[r.standard_code] || '•')}</span><b>${esc(r.clause)}</b><span class="muted">${esc(r.clause_name || '')} · ${esc(statusText(r))}</span></label>`).join('')}
+      </fieldset>
+      <div class="iso-field-grid">
+        <label>Owner<select class="form-input" id="trk-owner"><option value="">Unassigned</option>${staff.map(u => `<option value="${esc(u.id)}"${u.id === owner ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+        <label>Due<input type="date" class="form-input" id="trk-due" value="${esc(due)}"/></label>
+        <label>Priority<select class="form-input" id="trk-prio">${Object.keys(ACTION_PRIORITY_LABEL).map(k => `<option value="${k}"${k === prio ? ' selected' : ''}>${esc(ACTION_PRIORITY_LABEL[k])}</option>`).join('')}</select></label>
+        ${formal ? `<label>Finding classification<select class="form-input" id="trk-class">${Object.keys(FINDING_CLASSIFICATION_LABEL).map(k => `<option value="${k}"${k === cls ? ' selected' : ''}>${esc(FINDING_CLASSIFICATION_LABEL[k])}</option>`).join('')}</select></label>` : ''}
+      </div>
+      <p class="muted iso-track-note">${formal ? 'One action for the ticked clauses, and a finding for each — its statement from the basis, its evidence from the linked documents.' : 'One action for the ticked clauses. A gap analysis records actions only — no findings.'}</p>
+      <div class="iso-track-btns"><button type="button" class="btn btn-teal btn-sm" id="trk-go" onclick="ISO._trackApply()">Track</button></div>
+    </div>`, '560px');
+  }
+  async function _trackApply() {
+    if (!_trk) return;
+    const ids = [...document.querySelectorAll('.iso-trk-cb')].filter(c => c.checked).map(c => c.value);
+    if (!ids.length) { if (root.showToast) root.showToast('Tick at least one clause.', true); return; }
+    const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    const payload = { auditId: _trk.auditId, requirementIds: ids, ownerUid: v('trk-owner') || null, dueDate: v('trk-due') || null, priority: v('trk-prio') || null };
+    if (document.getElementById('trk-class')) payload.classification = v('trk-class');
+    const btn = document.getElementById('trk-go'); if (btn) btn.disabled = true;
+    try {
+      const res = await mutate('action.trackPlan', payload);
+      const findings = res.findings || [];
+      const tracked = Object.assign({}, res.action, { links: ids.map(id => ({ target_type: 'requirement', target_id: id })).concat(findings.map(f => ({ target_type: 'finding', target_id: f.id }))) });
+      for (const st of [_wl, _req]) if (st.auditId === _trk.auditId) st.actions = (st.actions || []).concat([tracked]);
+      document.getElementById('generic-modal').classList.add('hidden');
+      renderWorklistTab(_trk.auditId);
+      renderRequirementsTable(_trk.auditId);
+      if (root.showToast) root.showToast(`Tracked as ${res.action.ref}${findings.length ? ` with ${findings.length} finding${findings.length === 1 ? '' : 's'}` : ''}.`);
+    } catch (e) {
+      if (btn) btn.disabled = false;
+      if (root.showToast) root.showToast('Could not track: ' + e.message, true);
+    }
+  }
+  // The action drawer's "via F-…" chip opens that finding (close / reopen live there).
+  async function _actOpenFinding(id) {
+    const auditId = _act.auditId;
+    if (_fnd.auditId !== auditId || !(_fnd.findings || []).some(f => f.id === id)) {
+      try {
+        const [findings, requirements] = await Promise.all([api('finding.list', { auditId: auditId }), api('requirement.list', { auditId: auditId })]);
+        _fnd = { auditId: auditId, findings: findings, requirements: requirements, view: 'all', dashFilter: null, dashLabel: '' };
+      } catch (e) { if (root.showToast) root.showToast('Could not open the finding: ' + e.message, true); return; }
+    }
+    openFindingDrawer(auditId, id);
+  }
+
   // A clause chip anywhere (Actions) opens Clauses with that clause expanded and in view.
   let _reqPendingJump = null;
   function _reqJumpTo(id) { _reqPendingJump = id; setTab('requirements'); }
@@ -5312,7 +5448,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

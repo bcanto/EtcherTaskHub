@@ -201,6 +201,15 @@ async function reopenAction(id, reasonCode, reasonText, expectedVersion, activit
   });
   return _asJson(r, 'iso_reopen_action');
 }
+// Release-1 B2.4: closed -> reopened through its own RPC (iso_reopen_finding), same shape as reopenAction.
+async function reopenFinding(id, reasonCode, reasonText, expectedVersion, activity) {
+  const act = activity || {};
+  const r = await fetch(`${_rpcBase()}/iso_reopen_finding`, {
+    method: 'POST', headers: _headers(),
+    body: JSON.stringify({ p_id: id, p_reason_code: reasonCode, p_reason_text: reasonText || null, p_expected_version: expectedVersion, p_actor_uid: act.actor_uid }),
+  });
+  return _asJson(r, 'iso_reopen_finding');
+}
 
 async function log(activity) {
   const r = await fetch(`${_rpcBase()}/iso_log`, {
@@ -335,6 +344,6 @@ async function patchRow(table, id, patch) {
 
 module.exports = {
   get, list, insertNumbered, insert, update, transition, log, counterNext, importApply,
-  updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
+  updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, reopenFinding, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
   storageSignedUpload, storageSignedDownload, storageHead, storagePut, storageRemove,
 };

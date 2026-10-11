@@ -303,6 +303,31 @@ function reopenAction(id, reasonCode, reasonText, expectedVersion, activity) {
   });
 }
 
+// Release-1 B2.4: mirrors iso_reopen_finding (009_iso_core.sql) — closed -> reopened, the count and
+// the reason on the row, the closing stamp cleared (the finding is open again).
+function reopenFinding(id, reasonCode, reasonText, expectedVersion, activity) {
+  return withLock(async () => {
+    const store = await _readRaw();
+    const rows = store.iso_findings || [];
+    const idx = rows.findIndex(r => r.id === id);
+    if (idx === -1) { const e = new Error('unknown finding'); e.code = 'not_found'; throw e; }
+    const row = rows[idx];
+    if (row.row_version !== expectedVersion) { const e = new Error('version_conflict'); e.code = 'version_conflict'; throw e; }
+    if (row.status !== 'closed') { const e = new Error('only a closed finding can be reopened'); e.code = 'invalid_transition'; throw e; }
+    if (!reasonCode) { const e = new Error('a reason is required to reopen a finding'); e.code = 'bad_request'; throw e; }
+    const before = { ...row };
+    const updated = {
+      ...row, status: 'reopened', reopened_count: (row.reopened_count || 0) + 1,
+      reopen_reason: reasonCode + (reasonText ? ': ' + reasonText : ''), closed_at: null, closed_by: null,
+      row_version: row.row_version + 1, updated_at: nowIso(),
+    };
+    rows[idx] = updated;
+    if (activity) store.iso_activity.push(Object.assign({}, activity, { id: ++store._activitySeq, at: activity.at || nowIso(), before, after: updated }));
+    await _writeRaw(store);
+    return updated;
+  });
+}
+
 function log(activity) {
   return withLock(async () => {
     const store = await _readRaw();
@@ -502,6 +527,6 @@ function patchRow(table, id, patch) {
 
 module.exports = {
   get, list, insertNumbered, insert, update, transition, log, counterNext, importApply,
-  updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
+  updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, reopenFinding, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
   storageSignedUpload, storageSignedDownload, storageHead, storagePut, storageGet, storageRemove,
 };

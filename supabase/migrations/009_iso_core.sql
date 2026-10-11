@@ -397,7 +397,8 @@ create table if not exists iso_findings (
   statement          text,
   criteria           text,
   evidence_basis     text,
-  status             text not null default 'draft' check (status in ('draft','released_for_review','final','closed','withdrawn')),
+  -- 'reopened' (release-1 B2.4): a closed finding the Lead reopened with a reason (iso_reopen_finding).
+  status             text not null default 'draft' check (status in ('draft','released_for_review','final','closed','withdrawn','reopened')),
   visibility         text not null default 'internal' check (visibility in
                        ('internal','client_selected','client_all','after_approval','report_only')),
   visible_to_uids    text[] not null default '{}',
@@ -409,6 +410,11 @@ create table if not exists iso_findings (
   reopened_count     int not null default 0,
   -- Phase 9b (D31): carried over from the previous board's open record — "<audit ref> / <ref>".
   carried_from_ref       text,
+  -- Release-1 B2: the last reopen's reason (reopened_count above counts them); repeat_of_ref is
+  -- "<earlier board ref> / <finding ref | ISO std clause>" when the clause had a finding or a
+  -- Non-Compliant status on an earlier board in the client's chain.
+  reopen_reason      text,
+  repeat_of_ref      text,
   row_version        int not null default 1,
   archived_at        timestamptz,
   created_at         timestamptz not null default now(),
@@ -1095,13 +1101,37 @@ begin
   select * into v_row from iso_findings where id = p_id;
   if v_row.id is null then raise exception 'unknown finding %', p_id; end if;
   if v_row.row_version <> p_expected_version then raise exception 'version_conflict' using errcode = '40001'; end if;
-  if v_row.status <> 'final' then raise exception 'only a finalised finding can be closed'; end if;
+  -- B2.3: the app checks first that every linked action is closed and verified effective (D50).
+  if v_row.status not in ('final','reopened') then raise exception 'only a finalised or reopened finding can be closed'; end if;
   v_before := to_jsonb(v_row);
   update iso_findings set status = 'closed', closed_at = now(), closed_by = p_actor_uid,
     updated_at = now(), updated_by = p_actor_uid, row_version = row_version + 1
     where id = p_id returning * into v_row;
   perform iso_log(v_row.audit_id, v_row.client_id, 'finding', p_id, v_row.ref, 'closed', 'status',
     v_before, to_jsonb(v_row), null, 'user', p_actor_uid, 'staff');
+  return v_row;
+end;
+$$;
+
+-- Release-1 B2.4: the Lead reopens a closed finding with a reason (the action reopen reasons).
+create or replace function iso_reopen_finding(
+  p_id text, p_reason_code text, p_reason_text text, p_expected_version int, p_actor_uid text
+) returns iso_findings
+language plpgsql security invoker set search_path = public as $$
+declare v_row iso_findings; v_before jsonb;
+begin
+  select * into v_row from iso_findings where id = p_id;
+  if v_row.id is null then raise exception 'unknown finding %', p_id; end if;
+  if v_row.row_version <> p_expected_version then raise exception 'version_conflict' using errcode = '40001'; end if;
+  if v_row.status <> 'closed' then raise exception 'only a closed finding can be reopened'; end if;
+  if p_reason_code is null then raise exception 'a reason is required to reopen a finding'; end if;
+  v_before := to_jsonb(v_row);
+  update iso_findings set status = 'reopened', reopened_count = reopened_count + 1,
+    reopen_reason = p_reason_code || case when p_reason_text is not null then ': ' || p_reason_text else '' end,
+    closed_at = null, closed_by = null, updated_at = now(), updated_by = p_actor_uid, row_version = row_version + 1
+    where id = p_id returning * into v_row;
+  perform iso_log(v_row.audit_id, v_row.client_id, 'finding', p_id, v_row.ref, 'reopened', 'status',
+    v_before, to_jsonb(v_row), v_row.reopen_reason, 'user', p_actor_uid, 'staff');
   return v_row;
 end;
 $$;
@@ -1144,7 +1174,8 @@ begin
     'iso_release_finding(text,int,text)',
     'iso_finalize_finding(text,int,text)',
     'iso_close_finding(text,int,text)',
-    'iso_withdraw_finding(text,int,text)'
+    'iso_withdraw_finding(text,int,text)',
+    'iso_reopen_finding(text,text,text,int,text)'
   ])
   loop
     execute format('revoke execute on function %s from public, anon, authenticated', sig);
@@ -1203,7 +1234,7 @@ on conflict (key) do nothing;
 --     iso_requirements, iso_audit_members, iso_audit_units, iso_audit_standards, iso_templates,
 --     iso_audits, iso_counters, iso_config, iso_library_requirements, iso_clause_sections,
 --     iso_standard_versions, iso_standards cascade;
---   drop function if exists iso_release_finding, iso_reopen_action, iso_verify_action,
+--   drop function if exists iso_release_finding, iso_reopen_finding, iso_reopen_action, iso_verify_action,
 --     iso_transition_action, iso_import_apply, iso_update_row, iso_create_action,
 --     iso_create_finding, iso_create_audit, iso_log, iso_config_timezone, iso_pad_number,
 --     iso_next_number, iso_library_requirements_immutable, iso_no_hard_delete,
