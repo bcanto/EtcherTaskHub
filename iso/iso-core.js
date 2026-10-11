@@ -1738,7 +1738,8 @@
     return `<div class="iso-toolbar iso-clause-toolbar">
       <label class="iso-search"><span class="sr">Search clauses</span><input type="search" class="form-input" placeholder="Search clause, name or text" value="${esc(_req.q || '')}" oninput="ISO._reqSetQuery(this.value)"/></label>
       <div class="iso-qv-track">${_req.dashFilter ? '' : views.map(v => `<button type="button" class="iso-fchip${_req.view === v.id ? ' is-on' : ''}" aria-pressed="${_req.view === v.id}" onclick="ISO._reqSetView('${v.id}')">${esc(chipLabel[v.id] || v.label)} <b>${reqQuickViewCount(v.id)}</b></button>`).join('')}</div>
-      ${approveAllCount ? `<span class="iso-tb-spacer"></span><button type="button" class="btn btn-teal btn-sm" onclick="ISO._reqApproveAll()">✓ Approve all ${approveAllCount}</button>` : ''}
+      ${approveAllCount ? `<span class="iso-tb-spacer"></span><button type="button" class="btn btn-teal btn-sm" onclick="ISO._reqApproveAll()">✓ Approve all ${approveAllCount}</button>` : '<span class="iso-tb-spacer"></span>'}
+      <button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportClausesCsv()">Export CSV<span class="sr"> — clauses</span></button>
     </div>`;
   }
   function _reqSetQuery(q) { _req.q = q; renderRequirementsTable(_req.auditId); }
@@ -4214,7 +4215,7 @@
   }
   // Release-1 B3.5: Overview (compact and full) offers the workbook per standard — staff only.
   function _exportRowHtml(audit) {
-    return audit && _cu() && _cu().role !== 'client' && (audit.standards || []).length ? `<div class="iso-dash-export"><span class="iso-dash-export-k">Export to Excel</span>${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}<button type="button" class="btn btn-ghost btn-sm iso-audit-pack" onclick="ISO._openAuditPack()">On-site audit pack (PDF)</button></div>` : '';
+    return audit && _cu() && _cu().role !== 'client' && (audit.standards || []).length ? `<div class="iso-dash-export"><span class="iso-dash-export-k">Export to Excel</span>${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}<button type="button" class="btn btn-ghost btn-sm iso-audit-pack" onclick="ISO._openAuditPack()">On-site audit pack (PDF)</button><button type="button" class="btn btn-teal btn-sm iso-report-open" onclick="ISO._openReport()">Report…</button></div>` : '';
   }
   // Release-1 B3.5: the gap-analysis workbook for one standard, built server-side from the template.
   async function _exportGapAnalysis(std, btn) {
@@ -4877,6 +4878,7 @@
         <label class="iso-search"><span class="sr-only">Search documents</span><input type="search" id="iso-doc-q" value="${esc(_docs.q)}" placeholder="Search documents" oninput="ISO._docSetQuery(this.value)"/></label>
         <div class="iso-fchips">${chips.map(([f, l, n]) => `<button type="button" class="iso-fchip${_docs.filter === f ? ' is-on' : ''}" aria-pressed="${_docs.filter === f}" data-f="${f}" onclick="ISO._docSetFilter(this.dataset.f)">${esc(l)} <b>${n}</b></button>`).join('')}</div>
         <span class="iso-tb-spacer"></span>
+        <button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportDocumentsCsv()">Export CSV<span class="sr"> — documents</span></button>
         <button type="button" class="btn btn-ghost iso-doc-request" onclick="ISO._docOpenRequest()">Request from client</button>
         <button type="button" class="btn btn-ghost iso-doc-new" onclick="ISO._docOpenChooser(null)"><span aria-hidden="true">+</span> Add other document</button>
       </div>
@@ -5011,7 +5013,7 @@
     const tb = `<div class="iso-toolbar iso-wl-toolbar"><div class="iso-fchips">
         <button type="button" class="iso-fchip${_wl.mode === 'list' ? ' is-on' : ''}" aria-pressed="${_wl.mode === 'list'}" data-m="list" onclick="ISO._wlSetMode(this.dataset.m)">List</button>
         <button type="button" class="iso-fchip${_wl.mode === 'timeline' ? ' is-on' : ''}" aria-pressed="${_wl.mode === 'timeline'}" data-m="timeline" onclick="ISO._wlSetMode(this.dataset.m)">Timeline</button></div>
-        <span class="muted iso-wl-count">${items.length} action${items.length === 1 ? '' : 's'} · ${shared} shared across clauses</span></div>`;
+        <span class="muted iso-wl-count">${items.length} action${items.length === 1 ? '' : 's'} · ${shared} shared across clauses</span><span class="iso-tb-spacer"></span><button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportActionsCsv()">Export CSV<span class="sr"> — actions</span></button></div>`;
     if (!items.length) { host.innerHTML = tb + '<div class="iso-empty"><strong>No actions.</strong><span>Mark a clause Partial, Non-Compliant or OFI and write a planned action.</span></div>'; return; }
     const titleHtml = x => x.kind === 'action' ? `<button type="button" class="iso-wl-plan is-link" data-id="${esc(x.id)}" onclick="ISO._wlOpenAction(this.dataset.id)">${esc(x.title)}</button>` : `<span class="iso-wl-plan">${esc(x.title)}</span>`;
     if (_wl.mode === 'timeline') {
@@ -5427,6 +5429,234 @@
     catch (e) { fail(); }
   }
 
+  // ── Release-1 B5.1: ISO items in Task Hub's bell (plan 7.6) ────────────────────────────────────
+  // A cache filled from notification.list every 60 s and on window focus; index.html's
+  // renderNotifications / updateNotifBadge merge it (the 7.6 hook). Clicking jumps to the record.
+  const ISO_NOTIF_META = {
+    awaiting_approval: { label: 'ISO · Sign-off', color: '#31585a', icon: '✓' }, returned: { label: 'ISO · Returned', color: '#b45309', icon: '↩' },
+    derived_awaiting: { label: 'ISO · Derived', color: '#45579a', icon: '⇄' }, evidence_submitted: { label: 'ISO · Evidence', color: '#31585a', icon: '📄' },
+    finding_reopened: { label: 'ISO · Reopened', color: '#a8362d', icon: '↺' }, action_assigned: { label: 'ISO · Action', color: '#31585a', icon: '→' },
+    action_due: { label: 'ISO · Due', color: '#b45309', icon: '⏰' }, action_overdue: { label: 'ISO · Overdue', color: '#a8362d', icon: '⏰' },
+    effectiveness_due: { label: 'ISO · Review due', color: '#b45309', icon: '⏰' }, follow_up_due: { label: 'ISO · Follow-up due', color: '#b45309', icon: '⏰' },
+    report_due: { label: 'ISO · Report due', color: '#b45309', icon: '⏰' },
+  };
+  let _notif = { items: [], unread: 0, at: 0, busy: false };
+  async function refreshNotifs() {
+    if (_notif.busy || !root._isoEnabled || !_cu() || _cu().role === 'client') return;
+    _notif.busy = true;
+    try { const r = await api('notification.list', {}); _notif = { items: r.items || [], unread: r.unread || 0, at: Date.now(), busy: false }; if (root.updateNotifBadge) root.updateNotifBadge(); }
+    catch (e) { _notif.busy = false; }
+  }
+  if (typeof setInterval === 'function') setInterval(refreshNotifs, 60000);
+  if (root.addEventListener) root.addEventListener('focus', refreshNotifs);
+  setTimeout(refreshNotifs, 3000);
+  function notifUnread() { return _notif.unread || 0; }
+  function notifItems() {
+    if (Date.now() - _notif.at > 30000) refreshNotifs();
+    const rel = ts => (root._relativeTime ? root._relativeTime(ts) : fmtTs(ts));
+    return (_notif.items || []).map(n => {
+      const meta = ISO_NOTIF_META[n.type] || { label: 'ISO', color: '#8da2b2', icon: '●' };
+      const unread = !n.due && !n.read_at;
+      const at = Date.parse(n.created_at || '') || 0;
+      return { at: n.due ? Date.now() + 1 : at, html: `<div class="iso-notif-row" style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${unread ? '#f8fbff' : ''};align-items:flex-start;cursor:pointer" data-iso-notif="${esc(n.due ? '' : n.id)}" data-iso-audit="${esc(n.audit_id || '')}" data-iso-entity="${esc(n.entity_type)}" data-iso-id="${esc(n.entity_id)}" onclick="ISO.onNotifClick(this)" role="button" tabindex="0">
+        <div style="width:32px;height:32px;border-radius:8px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${meta.color}" aria-hidden="true">${meta.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${meta.color}">${esc(meta.label)}</span>${unread ? `<div style="width:7px;height:7px;border-radius:50%;background:${meta.color};flex-shrink:0"></div>` : ''}<span style="font-size:10px;color:#8da2b2;margin-left:auto">${n.due ? 'Due' : esc(rel(n.created_at))}</span></div>
+          <div style="font-size:13px;font-weight:${unread ? 600 : 500};color:#1a2940;line-height:1.4">${esc(n.message)}</div>
+        </div>
+        ${n.due ? '' : `<button type="button" class="iso-notif-x" aria-label="Dismiss" data-id="${esc(n.id)}" onclick="event.stopPropagation();ISO.notifDismiss(this.dataset.id)" style="background:none;border:none;color:#8da2b2;cursor:pointer;font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px">✕</button>`}
+      </div>` };
+    });
+  }
+  async function onNotifClick(el) {
+    const id = el.dataset.isoNotif;
+    if (id) { const n = _notif.items.find(x => x.id === id); if (n && !n.read_at) { n.read_at = new Date().toISOString(); _notif.unread = Math.max(0, _notif.unread - 1); if (root.updateNotifBadge) root.updateNotifBadge(); api('notification.markRead', { ids: [id] }).catch(() => {}); } }
+    openRecord(el.dataset.isoEntity, el.dataset.isoId, el.dataset.isoAudit);
+  }
+  async function notifDismiss(id) {
+    const n = _notif.items.find(x => x.id === id);
+    _notif.items = _notif.items.filter(x => x.id !== id);
+    if (n && !n.read_at) _notif.unread = Math.max(0, _notif.unread - 1);
+    if (root.updateNotifBadge) root.updateNotifBadge();
+    if (root.renderView) root.renderView('notifications');
+    api('notification.dismiss', { ids: [id] }).catch(() => {});
+  }
+  // Task Hub's Mark all read / Clear all reach ISO's stored items too (due reminders stay — they are worked out).
+  function notifMarkAllRead() {
+    const ids = _notif.items.filter(n => !n.due && !n.read_at).map(n => n.id);
+    const nowIso = new Date().toISOString();
+    _notif.items.forEach(n => { if (!n.due) n.read_at = n.read_at || nowIso; }); _notif.unread = 0;
+    if (ids.length) api('notification.markRead', { ids: ids }).catch(() => {});
+  }
+  function notifClearAll() {
+    const ids = _notif.items.filter(n => !n.due).map(n => n.id);
+    _notif.items = _notif.items.filter(n => n.due); _notif.unread = 0;
+    if (ids.length) api('notification.dismiss', { ids: ids }).catch(() => {});
+  }
+  // Opens the ISO record a notification is about: board → tab → the row or drawer.
+  async function openRecord(entityType, entityId, auditId) {
+    if (!auditId) return;
+    try { await api('audit.get', { auditId: auditId }); }
+    catch (e) { if (root.showToast) root.showToast('You no longer have access to this ISO board.', true); return; }
+    if (entityType === 'requirement') { _reqPendingJump = entityId; openBoard(auditId, 'requirements'); return; }
+    if (entityType === 'finding') { openBoard(auditId, 'findings'); setTimeout(() => { if (_fnd.auditId === auditId) openFindingDrawer(auditId, entityId); }, 1800); return; }
+    if (entityType === 'action') { openBoard(auditId, 'worklist'); setTimeout(() => _wlOpenAction(entityId, auditId), 1800); return; }
+    openBoard(auditId, 'dashboard');
+  }
+
+  // ── Release-1 B5.3: CSV export of the on-screen view (staff only) ───────────────────────────────
+  function _csvCell(v) {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // formula-injection guard
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function _csvDownload(filename, header, rows) {
+    const csv = [header].concat(rows).map(r => r.map(_csvCell).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function _csvName(what) { return `${(_auditCache && _auditCache.ref) || 'ISO'}_${what}_${new Date().toISOString().slice(0, 10)}.csv`; }
+  function _exportClausesCsv() {
+    const ids = [...document.querySelectorAll('#iso-req-tab [data-ireq]')].map(x => x.dataset.ireq);
+    const byId = new Map((_req.requirements || []).map(r => [r.id, r]));
+    const rows = (ids.length ? ids.map(id => byId.get(id)).filter(Boolean) : _req.requirements || []);
+    _csvDownload(_csvName('Clauses'), ['Standard', 'Clause', 'Clause name', 'Status', 'OFI', 'Gap reason', 'Basis', 'Planned action', 'Owner', 'Due', 'Approval'],
+      rows.map(r => [`ISO ${r.standard_code}`, r.clause, r.clause_name || '', statusText(r), r.ofi ? 'Yes' : '', GAP_REASON_LABEL[r.gap_reason] || '', r.current_system || '', r.recommended_action || '', _uidName(r.responsible_uid) || '', r.target_date || '', r.approval_state || '']));
+  }
+  function _exportActionsCsv() {
+    const std = boardStd();
+    const reqs = _wl.reqs.filter(r => !std || r.standard_code === std);
+    const byId = new Map(_wl.reqs.map(r => [r.id, r]));
+    const items = worklistItemsFrom(reqs, _wl.actions);
+    _csvDownload(_csvName('Actions'), ['Priority', 'Action', 'Reference', 'State', 'Clauses', 'Owner', 'Due'],
+      items.map(x => [WL_PRIO[x.p], x.title, x.ref || '', x.kind === 'action' ? actionStateText(x.status, x.verification) : 'Not tracked yet', x.reqIds.map(id => byId.get(id)).filter(Boolean).map(r => `ISO ${r.standard_code} ${r.clause}`).join('; '), (x.owner && _uidName(x.owner)) || '', x.due || '']));
+  }
+  function _exportDocumentsCsv() {
+    const std = boardStd();
+    const docs = _docs.docs.map(d => Object.assign({}, d, { clauses: d.clauses.filter(c => !std || c.standardCode === std) })).filter(d => d.clauses.length);
+    _csvDownload(_csvName('Documents'), ['Document', 'Clauses', 'Provided', 'Revision', 'Date', 'Requested'],
+      docs.map(d => [d.name, d.clauses.map(c => `ISO ${c.standardCode} ${c.clause}`).join('; '), d.clauses.some(c => c.provided) ? 'Yes' : 'No', (d.latest && d.latest.versionLabel) || '', (d.latest && d.latest.evidenceDate) || '', d.requestedAt ? d.requestedAt.slice(0, 10) : '']));
+  }
+
+  // ── Release-1 B5.2: formal report (Overview → Report) ──────────────────────────────────────────
+  const REPORT_SECTION_LABEL = { executiveSummary: 'Executive summary', method: 'Method', objectivesAchieved: 'Objectives achieved', goodPractice: 'Good practice', conclusion: 'Conclusion' };
+  const REPORT_SECTION_HINT = { executiveSummary: 'Two or three sentences a director can read on its own.', method: 'e.g. Document review, interviews and site observation against the clauses in scope; sampling as noted per clause.', objectivesAchieved: 'Was the audit objective met? Anything that limited it?', goodPractice: 'What the client does well.', conclusion: 'The overall conclusion.' };
+  let _rep = null;
+  async function _openReport() {
+    const audit = _auditCache; if (!audit) return;
+    let data;
+    try { data = await api('report.get', { auditId: audit.id }); } catch (e) { if (root.showToast) root.showToast('Could not open the report: ' + e.message, true); return; }
+    _rep = { auditId: audit.id, data: data };
+    const d = data, rd = d.readiness, sec = (d.draft && d.draft.config && d.draft.config.sections) || {};
+    const blockers = rd.blockers.filter(b => b.items.length);
+    root.openGenericModal(`${d.title} — ${audit.ref}`, `<div class="iso-rep">
+      <section class="iso-rep-ready ${rd.ready ? 'is-ready' : 'is-blocked'}" aria-label="Ready to report">
+        <strong>${rd.ready ? 'Ready to report.' : 'Not ready to report yet.'}</strong>
+        ${blockers.map(b => `<div class="iso-rep-blocker">${esc(b.label)} — ${b.items.length}: <span class="muted">${esc(b.items.slice(0, 8).join(', '))}${b.items.length > 8 ? ', …' : ''}</span></div>`).join('')}
+        ${rd.notAssessed ? `<div class="muted iso-rep-note">${rd.notAssessed} clause${rd.notAssessed === 1 ? ' is' : 's are'} not assessed — the report will say so.</div>` : ''}
+      </section>
+      ${Object.keys(REPORT_SECTION_LABEL).map(k => `<label class="iso-clause-field">${esc(REPORT_SECTION_LABEL[k])}<textarea class="form-input iso-rep-sec" data-k="${k}" rows="${k === 'executiveSummary' ? 4 : 3}" placeholder="${esc(REPORT_SECTION_HINT[k])}">${esc(sec[k] || '')}</textarea></label>`).join('')}
+      <p class="muted iso-rep-note">Scope, criteria, dates, team, limitations, findings, coverage, the evidence index and unverified carried-forward items come from the board and the audit setup.</p>
+      ${d.versions.length ? `<label class="iso-clause-field">Why reissue? <span class="muted">(needed for a new version)</span><input class="form-input" id="iso-rep-reason"/></label>` : ''}
+      <div class="iso-track-btns" style="gap:8px">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ISO._repSave()">Save draft</button>
+        <button type="button" class="btn btn-teal btn-sm" id="iso-rep-issue" onclick="ISO._repIssue()"${rd.ready ? '' : ' disabled title="Clear the items above first"'}>${d.versions.length ? 'Reissue as version ' + (d.versions.length + 1) : 'Issue'} and download PDF</button>
+      </div>
+      ${d.versions.length ? `<section class="iso-rep-versions"><h4>Issued versions</h4>${d.versions.slice().reverse().map(v => `<div class="iso-rep-v">
+        <div><b>Version ${v.version_no}</b> <span class="muted">· ${esc(fmtTs(v.issued_at))}${v.supersede_reason ? ' · ' + esc(v.supersede_reason) : ''}</span></div>
+        <div class="muted">${v.acknowledgements.length ? v.acknowledgements.map(a => `${esc(a.wording)} by ${esc(a.name)}${a.role ? ', ' + esc(a.role) : ''} on ${esc(fmtDate(a.acknowledged_on))}`).join('; ') : 'Not acknowledged yet.'}</div>
+        <div class="iso-rep-v-btns"><button type="button" class="btn btn-ghost btn-sm" data-id="${esc(v.id)}" onclick="ISO._repDownload(this.dataset.id)">Download PDF</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-id="${esc(v.id)}" onclick="ISO._repAckForm(this.dataset.id)">Record acknowledgement</button></div>
+        <div class="iso-rep-ack" id="iso-rep-ack-${esc(v.id)}" hidden></div></div>`).join('')}</section>` : ''}
+    </div>`, '760px');
+  }
+  function _repSections() { const o = {}; document.querySelectorAll('.iso-rep-sec').forEach(t => { o[t.dataset.k] = t.value; }); return o; }
+  async function _repSave(quiet) {
+    if (!_rep) return null;
+    try {
+      const d = _rep.data.draft;
+      const saved = await mutate('report.saveDraft', d ? { auditId: _rep.auditId, sections: _repSections(), expectedVersion: d.row_version } : { auditId: _rep.auditId, sections: _repSections() });
+      _rep.data.draft = saved;
+      if (!quiet && root.showToast) root.showToast('Report draft saved.');
+      return saved;
+    } catch (e) { if (root.showToast) root.showToast('Could not save the draft: ' + e.message, true); return null; }
+  }
+  async function _repIssue() {
+    if (!_rep) return;
+    const btn = document.getElementById('iso-rep-issue'); if (btn) btn.disabled = true;
+    if (!(await _repSave(true))) { if (btn) btn.disabled = false; return; }
+    try {
+      const reason = (document.getElementById('iso-rep-reason') || {}).value || undefined;
+      const v = await mutate('report.issue', { auditId: _rep.auditId, reason: reason });
+      _repPdf(v);
+      if (root.showToast) root.showToast(`Version ${v.version_no} issued.`);
+      _openReport();
+    } catch (e) { if (btn) btn.disabled = false; if (root.showToast) root.showToast('Could not issue: ' + e.message, true); }
+  }
+  async function _repDownload(versionId) {
+    try { const list = await api('report.list', { auditId: _rep.auditId }); const v = list.find(x => x.id === versionId); if (v) _repPdf(v); }
+    catch (e) { if (root.showToast) root.showToast('Could not download: ' + e.message, true); }
+  }
+  function _repAckForm(versionId) {
+    const host = document.getElementById('iso-rep-ack-' + versionId); if (!host) return;
+    host.hidden = false;
+    host.innerHTML = `<div class="iso-field-grid"><label>Name<input class="form-input" id="iso-ack-name-${esc(versionId)}"/></label><label>Role<input class="form-input" id="iso-ack-role-${esc(versionId)}"/></label><label>Date<input type="date" class="form-input" id="iso-ack-date-${esc(versionId)}" value="${new Date().toISOString().slice(0, 10)}"/></label></div>
+      <p class="muted iso-rep-note">Recorded as "Received and discussed" — acknowledgement, not agreement.</p>
+      <button type="button" class="btn btn-teal btn-sm" data-id="${esc(versionId)}" onclick="ISO._repAck(this.dataset.id)">Record</button>`;
+  }
+  async function _repAck(versionId) {
+    const v = id => (document.getElementById(id + versionId) || {}).value || '';
+    try {
+      await mutate('report.acknowledge', { auditId: _rep.auditId, versionId: versionId, name: v('iso-ack-name-'), role: v('iso-ack-role-') || null, date: v('iso-ack-date-') });
+      if (root.showToast) root.showToast('Acknowledgement recorded.');
+      _openReport();
+    } catch (e) { if (root.showToast) root.showToast('Could not record it: ' + e.message, true); }
+  }
+  // The PDF, drawn only from the frozen version (never from live data).
+  function _repPdf(v) {
+    const go = () => {
+      const { jsPDF } = window.jspdf;
+      const c = v.content || {}, snap = c.snapshot || {}, a = c.audit || {}, s = c.sections || {}, setup = c.setup || {};
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
+      let y = M;
+      const need = h => { if (y + h > H - M) { doc.addPage(); y = M; } };
+      const text = (str, size, o) => { o = o || {}; doc.setFontSize(size); doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); const lines = doc.splitTextToSize(String(str == null ? '' : str), W - 2 * M - (o.indent || 0)); for (const ln of lines) { need(size * 1.3); doc.text(ln, M + (o.indent || 0), y + size); y += size * 1.3; } y += o.after != null ? o.after : 3; };
+      const h = t => { need(36); y += 8; text(t, 13, { bold: true, after: 4 }); };
+      const clauses = snap.clauses || [];
+      const count = st => clauses.filter(x => x.status === st).length;
+      text(v.title || 'Audit report', 20, { bold: true, after: 2 });
+      text(`${a.clientName || ''} · ${a.ref || ''} · version ${v.version_no}`, 11, { after: 2 });
+      text(`Issued ${new Date(v.issued_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })} by ${c.signedBy || ''}`, 9, { after: 10 });
+      h('Executive summary'); text(s.executiveSummary || '—', 10);
+      h('Scope and criteria'); text(setup.scope || a.title || '—', 10); text(`Standards: ${(c.standards || []).map(x => 'ISO ' + x.code + (x.edition ? ':' + x.edition : '')).join(', ')}${setup.criteria ? '. Also: ' + setup.criteria : ''}`, 10);
+      h('Dates and team'); text(`Planned ${a.plannedStart || '—'} to ${a.plannedEnd || '—'}${a.completedAt ? '; completed ' + a.completedAt.slice(0, 10) : ''}.`, 10); text((c.team || []).map(m => `${m.name} (${String(m.role || '').replace(/_/g, ' ')})`).join(', ') || '—', 10);
+      if (setup.objective) { h('Objective'); text(setup.objective, 10); }
+      h('Method'); text(s.method || 'Document review, interviews and observation against the clauses in scope.', 10);
+      h('Limitations'); text(setup.limitations || 'None recorded.', 10);
+      h('Objectives achieved'); text(s.objectivesAchieved || '—', 10);
+      h('Coverage'); text(`${clauses.length} clauses: ${count('compliant')} compliant, ${count('partially_compliant')} partially compliant, ${count('non_compliant')} non-compliant, ${count('not_assessed')} not assessed, ${count('not_applicable')} not applicable, ${count('out_of_scope')} outside this audit's scope.`, 10);
+      const findings = c.findings || [];
+      h('Findings'); if (!findings.length) text('No findings raised.', 10); for (const f of findings) { text(`${f.ref} · ${String(f.classification || '').replace(/_/g, ' ').toUpperCase()} · ${f.status}${f.repeatOf ? ' · repeat of ' + f.repeatOf : ''}`, 10, { bold: true, after: 1 }); text(f.title, 10, { after: 1 }); if (f.statement) text(f.statement, 9, { indent: 10 }); if (f.criteria) text('Criterion: ' + f.criteria, 9, { indent: 10, after: 5 }); }
+      const nc = clauses.filter(x => x.status === 'non_compliant');
+      h('Non-conformities'); text(nc.length ? nc.map(x => `ISO ${x.standard} ${x.clause} ${x.clauseName}${x.basis ? ' — ' + x.basis : ''}`).join('\n') : 'None.', 10);
+      const ofi = clauses.filter(x => x.ofi);
+      h('Opportunities for improvement and good practice'); text(ofi.length ? ofi.map(x => `ISO ${x.standard} ${x.clause} ${x.clauseName}`).join('\n') : 'No OFIs recorded.', 10); if (s.goodPractice) text(s.goodPractice, 10);
+      const carried = (c.findings || []).filter(f => f.carriedFrom && f.status !== 'closed').map(f => `${f.ref} (from ${f.carriedFrom})`).concat((c.actions || []).filter(x => x.carriedFrom && !['verified', 'closed'].includes(x.status)).map(x => `${x.ref} (from ${x.carriedFrom})`));
+      h('Carried forward, not yet verified'); text(carried.length ? carried.join('\n') : 'None.', 10);
+      h('Evidence index'); const docs = []; for (const x of clauses) for (const d of (x.documents || [])) docs.push(`${d.title}${d.revision ? ', ' + d.revision : ''}${d.date ? ' · ' + d.date : ''}${d.sha256 ? ' · SHA-256 ' + d.sha256.slice(0, 12) + '…' : ''} — ISO ${x.standard} ${x.clause}`); text(docs.length ? [...new Set(docs)].join('\n') : 'No documents linked.', 9);
+      if (s.conclusion) { h('Conclusion'); text(s.conclusion, 10); }
+      h('Library release'); text(`${c.libraryRelease || 'v3'} (calculation ${c.calcVersion || ''})`, 9);
+      h('Sign-off'); text(`Lead Auditor: ${c.signedBy || ''}    Date: ${new Date(v.issued_at).toISOString().slice(0, 10)}`, 10);
+      h('Client acknowledgement'); text(`${c.ackWording || 'Received and discussed'} by: ____________________   Role: ____________________   Date: ____________`, 10);
+      need(40); y += 10; text(c.disclaimer || '', 8);
+      doc.save(`${a.ref || 'ISO'}_${String(v.title || 'Report').replace(/\s+/g, '_')}_v${v.version_no}.pdf`);
+    };
+    const fail = () => { if (root.showToast) root.showToast('Could not load the PDF tools — check the connection.', true); };
+    try { if (root._ensureJsPdf) root._ensureJsPdf(() => { try { go(); } catch (e) { fail(); } }, fail); else if (window.jspdf) go(); else fail(); } catch (e) { fail(); }
+  }
+
   // A clause chip anywhere (Actions) opens Clauses with that clause expanded and in view.
   let _reqPendingJump = null;
   function _reqJumpTo(id) { _reqPendingJump = id; setTab('requirements'); }
@@ -5796,7 +6026,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, carryLabel: carryLabel, _saveAuditSetup: _saveAuditSetup, _openStartNext: _openStartNext, _snType: _snType, _snApply: _snApply, openProgramme: openProgramme, _progTile: _progTile, _progSaveSettings: _progSaveSettings, _docOpenRequest: _docOpenRequest, _docRequestApply: _docRequestApply, _docRequestCopy: _docRequestCopy, _docRequestDownload: _docRequestDownload, _openAuditPack: _openAuditPack, _auditPackApply: _auditPackApply, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, notifItems: notifItems, notifUnread: notifUnread, onNotifClick: onNotifClick, notifDismiss: notifDismiss, notifMarkAllRead: notifMarkAllRead, notifClearAll: notifClearAll, openRecord: openRecord, refreshNotifs: refreshNotifs, _csvCell: _csvCell, _exportClausesCsv: _exportClausesCsv, _exportActionsCsv: _exportActionsCsv, _exportDocumentsCsv: _exportDocumentsCsv, _openReport: _openReport, _repSave: _repSave, _repIssue: _repIssue, _repDownload: _repDownload, _repAckForm: _repAckForm, _repAck: _repAck, carryLabel: carryLabel, _saveAuditSetup: _saveAuditSetup, _openStartNext: _openStartNext, _snType: _snType, _snApply: _snApply, openProgramme: openProgramme, _progTile: _progTile, _progSaveSettings: _progSaveSettings, _docOpenRequest: _docOpenRequest, _docRequestApply: _docRequestApply, _docRequestCopy: _docRequestCopy, _docRequestDownload: _docRequestDownload, _openAuditPack: _openAuditPack, _auditPackApply: _auditPackApply, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

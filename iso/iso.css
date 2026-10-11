@@ -415,6 +415,21 @@ button.iso-act-clause-via { border: none; font-family: inherit; cursor: pointer;
 button.iso-act-clause-via:hover { background: var(--teal-wash); color: var(--teal-deep); }
 button.iso-act-clause-via:active { transform: scale(.97); }
 button.iso-act-clause-via:focus-visible { outline: 2px solid var(--teal-deep); outline-offset: 1px; }
+/* Release-1 B5 */
+.iso-notif-row:hover { background: #f4f8fb; }
+.iso-notif-row:focus-visible { outline: 2px solid var(--teal-deep); outline-offset: -2px; }
+button.iso-notif-x:hover { color: #1a2940; }
+button.iso-notif-x:focus-visible { outline: 2px solid var(--teal-deep); }
+.iso-rep { display: grid; gap: 12px; min-width: 0; }
+.iso-rep-ready { border-radius: 10px; padding: 10px 14px; display: grid; gap: 4px; font-size: 13px; }
+.iso-rep-ready.is-ready { background: #e8f4ef; color: #1d6b4f; }
+.iso-rep-ready.is-blocked { background: #fdf3e1; color: #87590a; }
+.iso-rep-blocker { color: #1a2940; }
+.iso-rep-note { margin: 0; font-size: 12.5px; }
+.iso-rep-versions h4 { margin: 4px 0 8px; font-size: 13px; }
+.iso-rep-v { border-top: 1px solid var(--line); padding: 10px 0; display: grid; gap: 4px; font-size: 13px; }
+.iso-rep-v-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.iso-rep-ack { display: grid; gap: 8px; margin-top: 6px; }
 /* Release-1 B4 */
 .iso-setup-wide { grid-column: 1 / -1; }
 .iso-setup-k { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-bottom: 6px; }

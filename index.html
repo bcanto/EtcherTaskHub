@@ -6091,7 +6091,7 @@ function _acDeniedHtml(){
 
 function updateNotifBadge(){
   if(!currentUser)return;
-  const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length;
+  const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length+((window._isoEnabled&&window.ISO&&ISO.notifUnread)?ISO.notifUnread():0); // + ISO 7.6
   const badge=document.getElementById('notif-count-badge');
   if(badge){if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}}
   _updateTabNotifIndicator(unread);
@@ -16876,9 +16876,9 @@ function _notifyAllStaff(type, message, taskId=null){
 function renderNotifications(){
   const myNotifs=[...DB.notifications.filter(n=>n.recipientId===currentUser.id)]
     .sort((a,b)=>new Date(b.createdAt||b.timestamp)-new Date(a.createdAt||a.timestamp));
-  const unreadCount=myNotifs.filter(n=>!n.read).length;
+  const unreadCount=myNotifs.filter(n=>!n.read).length+((window._isoEnabled&&window.ISO&&ISO.notifUnread)?ISO.notifUnread():0); // + ISO 7.6
 
-  const rows=myNotifs.map(n=>{
+  const rowObjs=myNotifs.map(n=>{
     const task=DB.tasks.find(t=>t.id===n.taskId);
     const meta=NOTIF_TYPES[n.type]||{label:n.type,color:'#8da2b2',icon:'●'};
     const bg=n.read?'':'#f8fbff';
@@ -16886,7 +16886,7 @@ function renderNotifications(){
     const goToTask=(n.type==='mention'||n.type==='comment')
       ?`notifGoToTask('${n.id}','${task?.id}','comments')`
       :`notifGoToTask('${n.id}','${task?.id}')`;
-    return`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task?'pointer':'default'}" onclick="${task?goToTask:''}">
+    return{at:new Date(n.createdAt||n.timestamp).getTime()||0,html:`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task?'pointer':'default'}" onclick="${task?goToTask:''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${meta.color}">${meta.icon}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
@@ -16920,8 +16920,11 @@ function renderNotifications(){
         </div>`:''}
       </div>
       <button onclick="event.stopPropagation();notifDismiss('${n.id}')" style="background:none;border:none;color:#c4d0db;cursor:pointer;font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px;transition:color 0.1s" title="Dismiss" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
-    </div>`;
-  }).join('');
+    </div>`};
+  });
+  // ISO 7.6 hook (release-1 B5.1): ISO's own items ({at, html}) merged into the same list, newest first.
+  const isoRows=(window._isoEnabled&&window.ISO&&ISO.notifItems)?ISO.notifItems():[];
+  const rows=rowObjs.concat(isoRows).sort((a,b)=>b.at-a.at).map(r=>r.html).join('');
 
   return`<div class="card" style="padding:0;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:10px">
@@ -16931,7 +16934,7 @@ function renderNotifications(){
         <button onclick="clearAllNotifs()" class="btn btn-ghost btn-sm">Clear all</button>
       </div>
     </div>
-    ${myNotifs.length===0
+    ${myNotifs.length===0&&!isoRows.length
       ?`<div style="text-align:center;padding:48px 24px;color:#8da2b2">No notifications.</div>`
       :rows}
   </div>`;
@@ -16973,6 +16976,7 @@ function notifGoToTask(notifId,taskId,tab){
 }
 function notifMarkAllRead(){
   DB.notifications.filter(n=>n.recipientId===currentUser.id).forEach(n=>n.read=true);
+  if(window._isoEnabled&&window.ISO&&ISO.notifMarkAllRead)ISO.notifMarkAllRead(); // ISO 7.6
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 function notifDismiss(id){
@@ -16996,6 +17000,7 @@ function clearAllNotifs(){
   const _before=DB.notifications;
   DB.notifications=DB.notifications.filter(n=>n.recipientId!==currentUser.id);
   _tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');
+  if(window._isoEnabled&&window.ISO&&ISO.notifClearAll)ISO.notifClearAll(); // ISO 7.6
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 

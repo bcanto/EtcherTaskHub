@@ -131,7 +131,7 @@ async function insert(table, row, activity) {
 }
 
 // Release-1 B3.2: snapshots are written once and never changed (migration 015's trigger is the backstop).
-const IMMUTABLE_TABLES = ['iso_audit_snapshots'];
+const IMMUTABLE_TABLES = ['iso_audit_snapshots', 'iso_report_versions', 'iso_report_acknowledgements']; // + B5.2
 function refuseImmutable(table) { if (IMMUTABLE_TABLES.includes(table)) { const e = new Error(`${table} is immutable`); e.code = 'immutable'; throw e; } }
 async function update(table, id, patch, expectedVersion, activity) {
   refuseImmutable(table);

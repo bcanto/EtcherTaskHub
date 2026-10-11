@@ -853,6 +853,10 @@ begin
     -- Release-1 B4: client settings and evidence-request status.
     when 'iso_client_settings' then array['next_audit_due','frequency','custom_months','industry','notes']
     when 'iso_evidence_requests' then array['status']
+    -- Release-1 B5.2: a report draft's narrative, title and state (versions are immutable — never here).
+    when 'iso_reports' then array['title','config','status','current_version']
+    -- Release-1 B5.1: a notification is read or dismissed by its recipient.
+    when 'iso_notifications' then array['read_at','dismissed_at']
     when 'iso_action_subtasks' then array['title','owner_uid','due_date','done','sort_key','archived_at']
     when 'iso_audit_units' then array['name']
     when 'iso_templates' then array['name','description','config']

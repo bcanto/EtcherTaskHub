@@ -132,7 +132,7 @@ function report() {
     const emptyBtn = await page.evaluate(() => [...document.querySelectorAll('.iso-clause-toolbar .btn')].some(b => /Approve all/.test(b.textContent)));
     ok(!emptyBtn, 'with nothing left, Approve all disappears');
     await page.evaluate(() => ISO._reqSetView('all')); await sleep(300);
-    const outside = await page.evaluate(() => ({ sec: document.querySelectorAll('.iso-clause-section-hdr .btn').length, all: [...document.querySelectorAll('.iso-clause-toolbar .btn')].length }));
+    const outside = await page.evaluate(() => ({ sec: document.querySelectorAll('.iso-clause-section-hdr .btn').length, all: [...document.querySelectorAll('.iso-clause-toolbar .btn')].filter(b => /Approve/.test(b.textContent)).length })); // release-1 B5.3: the toolbar now also has Export CSV
     ok(outside.sec === 0 && outside.all === 0, `outside Awaiting approval there are no standing approve buttons (got ${JSON.stringify(outside)})`);
     await page.evaluate(() => ISO.setTab('dashboard')); await sleep(2200);
     const quiet = await page.evaluate(() => document.querySelector('.iso-ov-signoff.is-quiet strong')?.textContent.trim());

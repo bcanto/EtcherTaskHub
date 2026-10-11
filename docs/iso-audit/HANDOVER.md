@@ -1,83 +1,50 @@
-# Handover — ISO release-1 build (written 2026-10-08)
+# Handover — ISO release-1 build (updated 2026-10-11)
 
-**For:** the next Claude Code session (any account) continuing the build. Read this first, then
-`docs/iso-audit/release-1-completion-plan.md` (the approved build plan, D44–D56) and the
-`⏸ RESUME HERE` block of `docs/iso-audit-integration-plan.md` (hard rules in its §1 still apply:
-offline only, no SQL, never push/deploy without the user, CRLF in `index.html`, no AI in the app,
-`data-*` not inline user text, every new test proven able to fail, clean full gate per batch).
+**For:** the next Claude Code session (any account). Read this first, then
+`docs/iso-audit/release-1-completion-plan.md` (the approved plan, D44–D56) and the `⏸ RESUME HERE`
+block of `docs/iso-audit-integration-plan.md`. Hard rules in its §1 still apply: offline only
+(`node serve.mjs --offline`), no SQL anywhere, never push or deploy without the user, `index.html` stays
+CRLF, no AI in the app, `data-*` never inline user text, every new test proven able to fail, a clean full
+gate per batch.
 
 ## Where things stand
 
-| Batch | State |
-|---|---|
-| B0 build tooling | **Done and committed** (`b7299d8` on local branch `iso-release-1`, never pushed) |
-| B1 defensible conclusions | **Done and committed** (`eb5837f`) |
-| B2 findings and actions that close | **Done and committed** (see the 2026-10-11 Progress Log row) |
-| B3 history + Excel export | **Done and committed** — waiting on STOP 2b (the user opens the three workbooks in Excel) |
-| B6 go-live code | In progress (B6.1–B6.6); the user's own steps are in docs/iso-audit/go-live-checklist.md |
-| Pilot → B4 → B5 → B7 | After STOP 2b and B6 |
+| Batch | State | Commit (local branch `iso-release-1`, never pushed) |
+|---|---|---|
+| B0 build tooling | Done | `b7299d8` |
+| B1 defensible conclusions | Done | `eb5837f` |
+| B2 findings and actions that close | Done | `e57bb83` |
+| B3 history + gap-analysis Excel export | Done — **STOP 2b waiting on the user** | `3a291c1` |
+| B6 go-live code | Done — **the user's steps in `docs/iso-audit/go-live-checklist.md`** | `e538690` |
+| B4 follow-ups and programme | Done (built ahead of the pilot) | `3c924e5` |
+| B5 notifications and reports | Done (built ahead of the pilot) | see `git log` |
+| Pilot | Waiting on STOP 2b + the checklist | — |
+| B7 client portal ISO tab | Not started — **after the pilot by plan** | — |
 
-Branch: `iso-release-1` (local only). Commits on this branch are allowed at batch close (D55);
-**pushing or deploying needs the user's explicit OK.**
+## What the user has to do next
+1. **STOP 2b:** open the three exported workbooks in Excel and compare with the template —
+   regenerate them with `node .agents/iso-export-test.cjs`; they land in `.agents/shots/`
+   (`<REF>_ISO9001|14001|45001_Gap_Analysis.xlsx`).
+2. Fill in the v3 manifest's transition dates and technical reviewer (`iso/seed/releases/v3/manifest.json`)
+   — left null on purpose, nothing invented.
+3. The go-live checklist (Supabase dev project + migrations 009/010/014/015/011, Microsoft Entra app,
+   operations, go-live order).
+4. Say "commit and push" when ready — the branch is local only.
 
-## Finish B1 (in this order)
+## Open items recorded in the plan
+- The Supabase adapter's `insertNumbered` passes only each create RPC's fixed columns (statement /
+  criteria / refs on findings, owner / due / priority on actions are not written on Supabase) — fix before
+  the first Supabase apply.
+- "Attach a copy" of a SharePoint document (B3.3, optional) not built.
+- Report PDFs are downloaded, not uploaded to storage (release-1 simplification of §5.5).
 
-1. **Make sure no file was left half-mutated.** A can-fail run (`_canfail.cjs`) was running when the
-   account was switched; it deliberately breaks a file, runs a test, then restores it. If the process
-   was killed mid-run, a file may still hold a break. Check:
-   ```bash
-   md5sum api/_iso.js api/_isoCalc.js iso/iso-core.js
-   ```
-   Expected (the correct B1 versions):
-   ```
-   2ca2313f7bcd1b0216d6ce0481b23bd6  api/_iso.js
-   bf0e422801fc37c6b0225638d60a73bb  api/_isoCalc.js
-   6103df3d2fa8d519726a79b401ebe8c7  iso/iso-core.js
-   ```
-   If one differs, the original bytes are in the temp folder as `canfail-<timestamp>-<file name>`
-   (`ls -t "$TMP"/canfail-*` or `%TEMP%\canfail-*`) — copy it back over the file, then re-check the md5.
-   The breaks are listed in `.agents/_mut-b1.cjs` (each `find` → `replace`), so a mutated line is easy to spot.
-2. **Can-fail (rerun to be sure):** `node .agents/_canfail.cjs .agents/_mut-b1.cjs --green`
-   (11 breaks against `iso-conclusions-test`; all must say ✓ and the clean re-run must be FAIL 0).
-   **Already done 2026-10-08:** all 11 caught, every file restored byte-identical (md5 verified), clean re-run 59/0 — skip this step unless step 1 found a changed file.
-3. **Dev server must be offline:** `curl -s localhost:3001/api/config` must show `"supabaseUrl":""`;
-   if not, start it with `node serve.mjs --offline` (never without `--offline`).
-4. **One visual round:** `node .agents/iso-shots.cjs b1` → look at `.agents/shots/b1-clauses-open.png`,
-   `b1-doc-add.png`, `b1-overview.png` (desktop) and the `-390` phone versions. It reports overflow itself.
-5. **Full gate once:** `bash .agents/gate.sh` (about 20 min). Known flake: `mt-golden-test` failing only on
-   `nav.html` under gate load — rerun `node .agents/mt-golden-test.cjs` alone; 390/0 alone = accept and note it.
-6. **Bookkeeping:** in the integration plan's Progress Log, the B1 row ends with "Can-fail: `_mut-b1.cjs`
-   (11 breaks) — see the gate line below." Replace that with: "Can-fail: `_mut-b1.cjs` 11/11 caught (each 1–4 failures), restored byte-identical, clean re-run 59/0." plus the gate total.
-7. **Commit B1** on `iso-release-1` (do not push):
-   ```bash
-   git add api/_iso.js api/_isoCalc.js iso/iso-core.js iso/iso.css supabase/migrations/009_iso_core.sql \
-     supabase/migrations/010_iso_evidence.sql .agents/iso-conclusions-test.cjs .agents/_mut-b1.cjs \
-     .agents/iso-approval-ui-test.cjs .agents/iso-landing-test.cjs .agents/iso-maintenance-test.cjs \
-     .agents/iso-relationship-test.cjs .agents/iso-review-test.cjs .agents/iso-ui-test.cjs \
-     docs/iso-audit-integration-plan.md docs/iso-audit/HANDOVER.md
-   git commit -m "Release-1 B1: defensible conclusions (D44-D48)"
-   ```
-   (Also add `.agents/iso-conclusions-test` to `SUITES` in `.agents/gate.sh` before the gate in step 5 —
-   it is **not in the gate yet**. Add it next to `iso-landing-test`.)
-
-## What B1 changed (so you can review quickly)
-Full detail: the 2026-10-08 "Release-1 B1" Progress Log row. In short: OFI is a flag on Compliant /
-Partial; "Outside this audit's scope" status; a basis (Current system) + gap reason are required before
-approval and board close; Apply to related proposes (derived → Confirm); risk-sorted Awaiting approval with
-reasons; consistency warning; staff sufficiency flag; interview/observation/sample notes; status per clause
-in the add-document form. Two new ops: `requirement.confirmDerived`, `evidence.setSufficiency`.
-
-## Then B2 (next batch)
-Plan §3 "B2 — Findings and actions that close properly": Track this action (`action.trackPlan`, finding on
-formal audit types only — D49), closure rule (finding closes only when its actions are verified effective —
-D50), Lead-only reopen, repeat findings, and `audit.startMaintenance` must also allow `lead_auditor`.
-New suite `iso-closure-test` on `.agents/_iso-harness.cjs` (port 3166 is free), a `_mut-b2.cjs` list,
-lanes `api` + `board` + `lifecycle` while building, full gate once at the end, then commit.
-
-## Tooling (from B0)
-- New suites: `const H = require('./_iso-harness.cjs'); H.run(name, port, async (t, srv) => { … })`
-- Fast lanes: `bash .agents/lane.sh api` (≈10 s), `board`, `evidence`, `lifecycle`, or suite names.
-- Prove tests can fail: `node .agents/_canfail.cjs .agents/_mut-<batch>.cjs --green`.
-- Screens: `node .agents/iso-shots.cjs <label>`.
-- Write regex-bearing edits with a Node script or the Edit tool, never a shell heredoc into a JS string
-  (a literal newline in a JS string broke a mutation file once already).
+## Tooling
+- New suites: `const H = require('./_iso-harness.cjs'); H.run(name, port, async (t, srv) => { … })`;
+  `H.startOffline(port, {dir, env})` for multi-server tests.
+- Lanes: `bash .agents/lane.sh api|board|evidence|lifecycle`. Full gate: `bash .agents/gate.sh` (~60–70 min
+  now; known flake: `mt-golden-test` under load — rerun alone, 390/0 = accept).
+- Can-fail: `node .agents/_canfail.cjs .agents/_mut-<batch>.cjs --green` (b1–b6 lists exist).
+- Write multi-line or regex-bearing edits with the Write tool or a script file — shell heredocs and
+  `node -e` quoting have mangled edits several times this release.
+- Ports used by suites: 3165–3173 (conclusions, closure, history, history-releases 3168/3169, export 3170,
+  a11y 3171, programme 3172, report 3173).

@@ -558,7 +558,9 @@ async function fileSha256(ctx, storagePath) {
     return bytes ? require('crypto').createHash('sha256').update(bytes).digest('hex') : null;
   } catch (e) { return null; }
 }
-async function writeCloseSnapshot(ctx, audit) {
+async function writeCloseSnapshot(ctx, audit) { return writeAuditSnapshot(ctx, audit, 'close'); }
+// B5.2: the same snapshot, kind 'report', is what an issued report is drawn from.
+async function writeAuditSnapshot(ctx, audit, kind) {
   const reqs = (await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 5000 }))
     .sort((a, b) => (a.sort_key || 0) - (b.sort_key || 0));
   const links = (await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }] }))
@@ -591,14 +593,14 @@ async function writeCloseSnapshot(ctx, audit) {
   const metrics = isoCalc.computeAuditMetrics(await fetchAuditCalcInputs(ctx));
   const release = libraryRelease(audit).name;
   const snap = await ctx.db.insert('iso_audit_snapshots', {
-    id: uid('isnap_'), audit_id: audit.id, client_id: audit.client_id, kind: 'close',
+    id: uid('isnap_'), audit_id: audit.id, client_id: audit.client_id, kind,
     library_release: release, calc_version: isoCalc.CALC_VERSION,
     data: { auditRef: audit.ref, title: audit.title, auditType: audit.audit_type, closedAt: audit.completed_at || ctx.now.toISOString(), clauses, metrics },
     created_by: ctx.caller.uid, created_at: ctx.now.toISOString(),
   });
   await ctx.db.log({ audit_id: audit.id, client_id: audit.client_id, entity_type: 'audit', entity_id: audit.id, entity_ref: audit.ref,
     action: 'snapshot_written', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
-    after: { snapshotId: snap.id, kind: 'close', clauses: clauses.length, libraryRelease: release, calcVersion: isoCalc.CALC_VERSION } });
+    after: { snapshotId: snap.id, kind, clauses: clauses.length, libraryRelease: release, calcVersion: isoCalc.CALC_VERSION } });
   return snap;
 }
 // Staff read the snapshots of a board (newest first). Nothing writes them except the close above.
@@ -4852,6 +4854,270 @@ defineOp('library.loadSeed', {
     }
     return results;
   },
+});
+
+// ── Release-1 B5.2: formal reports (Phase 11, Q11) ──────────────────────────────────────────────
+// Three templates chosen from the board: Audit report, Follow-up report (audit type follow_up),
+// Maintenance report (a board that follows another). One draft per board holds the narrative the
+// auditor writes; everything else is pre-filled from the setup, findings and a frozen snapshot.
+// A Ready-to-report check blocks issue while any clause lacks its basis, is unapproved or derived and
+// unconfirmed, or a finding is unclassified. Issue freezes a snapshot (kind 'report') and an immutable
+// version n; reissue makes n+1 and keeps n. The client's acknowledgement is recorded as "received and
+// discussed" — never "agreed". The PDF is drawn in the browser from the frozen version.
+const REPORT_KINDS = ['audit', 'follow_up', 'maintenance'];
+const REPORT_KIND_TITLE = { audit: 'Audit report', follow_up: 'Follow-up report', maintenance: 'Maintenance report' };
+const REPORT_NARRATIVE = ['executiveSummary', 'method', 'objectivesAchieved', 'goodPractice', 'conclusion'];
+const ACK_WORDING = 'Received and discussed';
+const REPORT_DISCLAIMER = "Requirement wording in this report is Etcher's plain-language interpretation of each clause, not the text of the standard. The licensed ISO standard is the authoritative wording.";
+function reportKindFor(audit) { return audit.audit_type === 'follow_up' ? 'follow_up' : audit.previous_audit_id ? 'maintenance' : 'audit'; }
+async function reportReadiness(ctx) {
+  const reqs = await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 5000 });
+  const findings = await ctx.db.list('iso_findings', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] });
+  const classes = await findingClassifications(ctx);
+  const ref = r => `${r.standard_code} ${r.clause}`;
+  const assessed = reqs.filter(r => !['not_assessed', 'out_of_scope'].includes(r.compliance_status || 'not_assessed'));
+  const blockers = [
+    { key: 'basis', label: 'Basis or gap reason missing', items: assessed.filter(r => !r.derived_from_id && basisProblem(r)).map(ref) },
+    { key: 'unapproved', label: 'Not yet approved by the Lead', items: assessed.filter(r => ['proposed', 'returned'].includes(r.approval_state)).map(ref) },
+    { key: 'derived', label: 'Derived status not confirmed', items: reqs.filter(r => r.derived_from_id).map(ref) },
+    { key: 'unclassified', label: 'Finding without a classification', items: findings.filter(f => f.status !== 'withdrawn' && !classes.includes(f.classification)).map(f => f.ref) },
+  ];
+  return { ready: blockers.every(b => !b.items.length), blockers, notAssessed: reqs.filter(r => (r.compliance_status || 'not_assessed') === 'not_assessed').length };
+}
+async function boardDraft(ctx) {
+  return (await ctx.db.list('iso_reports', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] }))[0] || null;
+}
+function cleanNarrative(raw) {
+  const out = {};
+  for (const k of REPORT_NARRATIVE) {
+    const v = raw && raw[k];
+    if (v == null || v === '') { out[k] = null; continue; }
+    if (typeof v !== 'string' || v.length > 20000) throw badRequest('A report section is too long.');
+    out[k] = v.trim() || null;
+  }
+  return out;
+}
+defineOp('report.readiness', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) { return reportReadiness(ctx); },
+});
+defineOp('report.get', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) {
+    const draft = await boardDraft(ctx);
+    const versions = (await ctx.db.list('iso_report_versions', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] })).sort((a, b) => a.version_no - b.version_no);
+    const acks = await ctx.db.list('iso_report_acknowledgements', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] });
+    const kind = reportKindFor(ctx.audit);
+    return { kind, title: REPORT_KIND_TITLE[kind], draft, versions: versions.map(v => ({ ...v, acknowledgements: acks.filter(a => a.version_id === v.id) })), readiness: await reportReadiness(ctx) };
+  },
+});
+defineOp('report.saveDraft', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ['lead_auditor', 'audit_manager', 'auditor'].includes(ctx.membership.audit_role)); },
+  async validate(payload) { if (payload.title != null && !isNonEmptyText(payload.title, 200)) throw badRequest('Invalid title.'); },
+  async run(ctx) {
+    const sections = cleanNarrative(ctx.payload.sections || {});
+    const existing = await boardDraft(ctx);
+    const activity = { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', action: 'report_draft_saved', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind };
+    if (!existing) {
+      // Numbered like findings / actions (<board>-R001) through the shared counter, which both adapters have.
+      const n = await ctx.db.counterNext(ctx.audit.id + ':R');
+      return ctx.db.insert('iso_reports', {
+        id: uid('irep_'), ref: `${ctx.audit.ref}-R${String(n).padStart(3, '0')}`, audit_id: ctx.audit.id, client_id: ctx.audit.client_id, kind: reportKindFor(ctx.audit), title: ctx.payload.title || REPORT_KIND_TITLE[reportKindFor(ctx.audit)],
+        status: 'draft', config: { sections }, current_version: 0, row_version: 1, created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
+        created_at: ctx.now.toISOString(), updated_at: ctx.now.toISOString(),
+      }, activity);
+    }
+    if (ctx.payload.expectedVersion == null) throw badRequest('expectedVersion is required.');
+    try { return await ctx.db.update('iso_reports', existing.id, { config: { sections }, ...(ctx.payload.title ? { title: ctx.payload.title } : {}) }, ctx.payload.expectedVersion, { ...activity, entity_id: existing.id, entity_ref: existing.ref }); }
+    catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+  },
+});
+defineOp('report.issue', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ['lead_auditor', 'audit_manager'].includes(ctx.membership.audit_role)); },
+  async validate(payload) { if (payload.reason != null && (typeof payload.reason !== 'string' || payload.reason.length > 1000)) throw badRequest('The reason is too long.'); },
+  async run(ctx) {
+    const readiness = await reportReadiness(ctx);
+    if (!readiness.ready) throw badRequest('Not ready to report: ' + readiness.blockers.filter(b => b.items.length).map(b => `${b.label} (${b.items.slice(0, 6).join(', ')}${b.items.length > 6 ? ', …' : ''})`).join('; ') + '.');
+    const draft = await boardDraft(ctx);
+    if (!draft) throw badRequest('Save the report draft first.');
+    const prior = (await ctx.db.list('iso_report_versions', { where: [{ field: 'report_id', op: 'eq', value: draft.id }] })).sort((a, b) => b.version_no - a.version_no)[0] || null;
+    if (prior && !String(ctx.payload.reason || '').trim()) throw badRequest('Say why this report is being reissued.');
+    const snap = await writeAuditSnapshot(ctx, ctx.audit, 'report');
+    // Everything the PDF shows, frozen: the narrative, the setup, the team, the findings and actions, the snapshot.
+    const members = ctx.members.filter(m => m.member_kind === 'staff');
+    const team = [];
+    for (const m of members) team.push({ name: (await ctx.getStaffName(m.user_uid)) || m.user_uid, role: m.audit_role });
+    const findings = (await ctx.db.list('iso_findings', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] })).filter(f => f.status !== 'withdrawn')
+      .map(f => ({ ref: f.ref, title: f.title, classification: f.classification, status: f.status, statement: f.statement || null, criteria: f.criteria || null, repeatOf: f.repeat_of_ref || null, carriedFrom: f.carried_from_ref || null }));
+    const actions = (await ctx.db.list('iso_actions', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] }))
+      .map(a => ({ ref: a.ref, title: a.title, status: a.status, verification: a.verification_status, due: a.due_date || null, carriedFrom: a.carried_from_ref || null }));
+    const standards = [];
+    for (const as of await ctx.db.list('iso_audit_standards', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] })) { const v = await ctx.db.get('iso_standard_versions', as.version_id); if (v) standards.push({ code: v.standard_code, edition: v.edition || null }); }
+    const signer = (await ctx.getStaffName(ctx.caller.uid)) || ctx.caller.uid;
+    const versionNo = prior ? prior.version_no + 1 : 1;
+    const version = await ctx.db.insert('iso_report_versions', {
+      id: uid('irv_'), report_id: draft.id, audit_id: ctx.audit.id, client_id: ctx.audit.client_id, version_no: versionNo, kind: draft.kind,
+      title: draft.title, snapshot_id: snap.id, supersedes_version_id: prior ? prior.id : null, supersede_reason: prior ? ctx.payload.reason.trim() : null,
+      content: { sections: (draft.config && draft.config.sections) || {}, setup: ctx.audit.setup || null, audit: { ref: ctx.audit.ref, title: ctx.audit.title, auditType: ctx.audit.audit_type, plannedStart: ctx.audit.planned_start || null, plannedEnd: ctx.audit.planned_end || null, completedAt: ctx.audit.completed_at || null, clientName: (await ctx.getClientName(ctx.audit.client_id)) || '' },
+        standards, team, findings, actions, snapshot: snap.data, libraryRelease: snap.library_release, calcVersion: snap.calc_version, disclaimer: REPORT_DISCLAIMER, signedBy: signer, ackWording: ACK_WORDING },
+      issued_at: ctx.now.toISOString(), issued_by: ctx.caller.uid, created_at: ctx.now.toISOString(),
+    });
+    await ctx.db.update('iso_reports', draft.id, { status: 'issued', current_version: versionNo }, draft.row_version, {
+      audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: draft.id, entity_ref: draft.ref, action: versionNo > 1 ? 'report_reissued' : 'report_issued',
+      reason: prior ? ctx.payload.reason.trim() : null, source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+    });
+    return version;
+  },
+});
+defineOp('report.list', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) { return (await ctx.db.list('iso_report_versions', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] })).sort((a, b) => a.version_no - b.version_no); },
+});
+defineOp('report.acknowledge', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async validate(payload) {
+    if (!isValidId(payload.versionId)) throw badRequest('Pick a report version.');
+    if (!isNonEmptyText(payload.name, 200)) throw badRequest('Who acknowledged it?');
+    if (payload.role != null && (typeof payload.role !== 'string' || payload.role.length > 200)) throw badRequest('The role is too long.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.date || ''))) throw badRequest('The acknowledgement date must be a date.');
+  },
+  async run(ctx) {
+    const v = await ctx.db.get('iso_report_versions', ctx.payload.versionId);
+    if (!v || v.audit_id !== ctx.audit.id) throw notFound();
+    return ctx.db.insert('iso_report_acknowledgements', {
+      id: uid('irack_'), version_id: v.id, report_id: v.report_id, audit_id: ctx.audit.id, client_id: ctx.audit.client_id,
+      name: ctx.payload.name.trim(), role: ctx.payload.role ? ctx.payload.role.trim() : null, acknowledged_on: ctx.payload.date, wording: ACK_WORDING,
+      recorded_by: ctx.caller.uid, created_at: ctx.now.toISOString(),
+    }, { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: v.report_id, action: 'report_acknowledged', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind });
+  },
+});
+
+// ── Release-1 B5.1: notifications (plan 7.6, Q11 — in-app only, no scheduler) ───────────────────
+// Event notifications are written to iso_notifications after the op that caused them succeeds (a
+// failure to notify never fails the op): evidence submitted, awaiting approval, returned, derived
+// awaiting confirmation, finding reopened, action assigned. Due reminders (action due within 7 days
+// or overdue, effectiveness review due, follow-up / maintenance due, report due) are worked out when
+// the bell asks — notification.list — so nothing has to run on a timer. Messages carry refs and
+// clause numbers only, never notes or client text.
+const ISO_NOTIF_TYPES = ['evidence_submitted', 'awaiting_approval', 'returned', 'derived_awaiting', 'finding_reopened', 'action_assigned'];
+function leadUidsOf(ctx) {
+  const staff = (ctx.members || []).filter(m => m.member_kind === 'staff');
+  const leads = staff.filter(m => m.audit_role === 'lead_auditor');
+  return (leads.length ? leads : staff.filter(m => m.audit_role === 'audit_manager')).map(m => m.user_uid);
+}
+async function notifyUids(ctx, recipients, n) {
+  const nowIso = ctx.now.toISOString();
+  for (const recipient of new Set((recipients || []).filter(r => r && r !== ctx.caller.uid))) {
+    await ctx.db.insert('iso_notifications', { id: uid('inot_'), recipient_uid: recipient, audit_id: ctx.audit ? ctx.audit.id : (n.audit_id || null),
+      entity_type: n.entity_type, entity_id: n.entity_id, type: n.type, message: String(n.message).slice(0, 300), read_at: null, dismissed_at: null, created_at: nowIso });
+  }
+}
+const isLeadCaller = ctx => ctx.caller.role === 'admin' || ['lead_auditor'].includes(ctx.membership && ctx.membership.audit_role);
+// Runs after an op succeeds; `before` (optional) reads state the op is about to change.
+function afterOp(name, before, hook) {
+  const def = registry[name];
+  if (!def) throw new Error('afterOp: unknown op ' + name);
+  const run = def.run;
+  def.run = async ctx => {
+    let b = null;
+    try { b = before ? await before(ctx) : null; } catch (e) { b = null; }
+    const out = await run(ctx);
+    try { await hook(ctx, out, b); } catch (e) { console.warn('[iso notify]', name, e.message); }
+    return out;
+  };
+}
+const clauseRef = r => `ISO ${r.standard_code} ${r.clause}`;
+afterOp('requirement.update', ctx => ctx.db.get('iso_requirements', ctx.payload.id), async (ctx, out, before) => {
+  if (out && out.approval_state === 'proposed' && (!before || before.approval_state !== 'proposed') && !isLeadCaller(ctx))
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'requirement', entity_id: out.id, type: 'awaiting_approval', message: `${clauseRef(out)} is waiting for your sign-off (${ctx.audit.ref}).` });
+});
+afterOp('requirement.return', ctx => ctx.db.get('iso_requirements', ctx.payload.id), async (ctx, out, before) => {
+  const to = (before && before.assessed_by) || (out && out.assessed_by);
+  if (out) await notifyUids(ctx, [to], { entity_type: 'requirement', entity_id: out.id, type: 'returned', message: `${clauseRef(out)} was returned to you by the Lead Auditor (${ctx.audit.ref}).` });
+});
+afterOp('relationship.applyToRelated', null, async (ctx, out) => {
+  const n = out && Array.isArray(out.applied) ? out.applied.length : 0;
+  if (n && !isLeadCaller(ctx)) await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'requirement', entity_id: ctx.payload.fromId, type: 'derived_awaiting', message: `${n} related clause${n === 1 ? '' : 's'} got a derived status to confirm (${ctx.audit.ref}).` });
+});
+afterOp('finding.reopen', null, async (ctx, out) => {
+  if (!out) return;
+  const links = await ctx.db.list('iso_action_links', { where: [{ field: 'target_type', op: 'eq', value: 'finding' }, { field: 'target_id', op: 'eq', value: out.id }, { field: 'link_state', op: 'eq', value: 'confirmed' }] });
+  const owners = [];
+  for (const l of links) { const a = await ctx.db.get('iso_actions', l.action_id); if (a && a.owner_uid) owners.push(a.owner_uid); }
+  await notifyUids(ctx, [out.created_by, ...owners], { entity_type: 'finding', entity_id: out.id, type: 'finding_reopened', message: `${out.ref} was reopened (${ctx.audit.ref}).` });
+});
+const notifyAssigned = async (ctx, a, prevOwner) => {
+  if (a && a.owner_uid && a.owner_uid !== prevOwner) await notifyUids(ctx, [a.owner_uid], { entity_type: 'action', entity_id: a.id, type: 'action_assigned', message: `${a.ref} was assigned to you${a.due_date ? ', due ' + a.due_date : ''} (${ctx.audit.ref}).` });
+};
+afterOp('action.create', null, (ctx, out) => notifyAssigned(ctx, out, null));
+afterOp('action.trackPlan', null, (ctx, out) => notifyAssigned(ctx, out && out.action, null));
+afterOp('action.update', ctx => ctx.db.get('iso_actions', ctx.payload.id), (ctx, out, before) => notifyAssigned(ctx, out, before ? before.owner_uid : null));
+for (const op of ['evidence.addLink', 'evidence.addLinkBulk', 'evidence.link', 'evidence.register']) {
+  afterOp(op, null, async (ctx, out) => {
+    if (isLeadCaller(ctx) || ctx.caller.kind !== 'staff') return;
+    const ev = out && (out.evidence || (out.linked && out.linked[0]) || out.link);
+    if (!ev) return;
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'audit', entity_id: ctx.audit.id, type: 'evidence_submitted', message: `New evidence on ${ctx.audit.ref} to review.` });
+  });
+}
+
+defineOp('notification.list', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async run(ctx) {
+    const me = ctx.caller.uid;
+    const stored = (await ctx.db.list('iso_notifications', { where: [{ field: 'recipient_uid', op: 'eq', value: me }, { field: 'dismissed_at', op: 'isnull' }], limit: 500 }))
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))).slice(0, 100);
+    // Due reminders over boards the caller is named on (owner or member) — not every open board.
+    const audits = await ctx.db.list('iso_audits', { where: [{ field: 'archived_at', op: 'isnull' }], limit: 2000 });
+    const today = await boardToday(ctx);
+    const plus = days => { const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+    const in7 = plus(7), in30 = plus(30);
+    const successorOf = new Set(audits.filter(a => a.previous_audit_id).map(a => a.previous_audit_id));
+    const due = [];
+    for (const a of audits) {
+      const members = await ctx.db.list('iso_audit_members', { where: [{ field: 'audit_id', op: 'eq', value: a.id }] });
+      const mine = members.find(m => m.user_uid === me);
+      if (!mine && a.owner_uid !== me) continue;
+      const lead = a.owner_uid === me || (mine && ['lead_auditor', 'audit_manager'].includes(mine.audit_role));
+      const acts = await ctx.db.list('iso_actions', { where: [{ field: 'audit_id', op: 'eq', value: a.id }, { field: 'archived_at', op: 'isnull' }] });
+      for (const x of acts) {
+        if (x.owner_uid !== me || ['verified', 'closed'].includes(x.status)) continue;
+        if (x.due_date && x.due_date <= in7) due.push({ id: `due:action:${x.id}`, due: true, audit_id: a.id, entity_type: 'action', entity_id: x.id, type: x.due_date < today ? 'action_overdue' : 'action_due', message: `${x.ref} is ${x.due_date < today ? 'overdue' : 'due'} (${x.due_date}).`, created_at: x.due_date });
+      }
+      for (const x of acts) {
+        if (x.owner_uid !== me || !x.effectiveness_review_date || x.verification_status === 'effective' || x.effectiveness_review_date > in7) continue;
+        due.push({ id: `due:effectiveness:${x.id}`, due: true, audit_id: a.id, entity_type: 'action', entity_id: x.id, type: 'effectiveness_due', message: `Effectiveness review for ${x.ref} is due (${x.effectiveness_review_date}).`, created_at: x.effectiveness_review_date });
+      }
+      if (lead && a.stage === 'closed' && !successorOf.has(a.id) && a.maintenance_due && a.maintenance_due <= in30)
+        due.push({ id: `due:followup:${a.id}`, due: true, audit_id: a.id, entity_type: 'audit', entity_id: a.id, type: 'follow_up_due', message: `The follow-up / maintenance audit after ${a.ref} is due (${a.maintenance_due}).`, created_at: a.maintenance_due });
+      if (lead && a.stage !== 'closed' && a.report_due && a.report_due <= in7)
+        due.push({ id: `due:report:${a.id}`, due: true, audit_id: a.id, entity_type: 'audit', entity_id: a.id, type: 'report_due', message: `The report for ${a.ref} is due (${a.report_due}).`, created_at: a.report_due });
+    }
+    return { items: stored.map(n => ({ ...n, due: false })).concat(due), unread: stored.filter(n => !n.read_at).length };
+  },
+});
+async function ownNotifications(ctx) {
+  if (!Array.isArray(ctx.payload.ids) || !ctx.payload.ids.length || ctx.payload.ids.length > 500 || !ctx.payload.ids.every(isValidId)) throw badRequest('Pick notifications.');
+  const out = [];
+  for (const id of ctx.payload.ids) { const n = await ctx.db.get('iso_notifications', id); if (n && n.recipient_uid === ctx.caller.uid) out.push(n); }
+  return out;
+}
+defineOp('notification.markRead', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async run(ctx) { const nowIso = ctx.now.toISOString(); for (const n of await ownNotifications(ctx)) if (!n.read_at) await ctx.db.patchRow('iso_notifications', n.id, { read_at: nowIso }); return { ok: true }; },
+});
+defineOp('notification.dismiss', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async run(ctx) { const nowIso = ctx.now.toISOString(); for (const n of await ownNotifications(ctx)) await ctx.db.patchRow('iso_notifications', n.id, { dismissed_at: nowIso, read_at: n.read_at || nowIso }); return { ok: true }; },
 });
 
 module.exports = {
