@@ -58,7 +58,7 @@ const EXEMPLAR_DATA_ROW = [
 ];
 const ALLOWED = new Set([...HEADERS, ...SECTION_TITLES, ...INSTRUCTION_LINE, ...VALIDATION_LISTS, ...SUMMARY_LABELS, ...EXEMPLAR_DATA_ROW]);
 
-(() => {
+(async () => {
   if (!fs.existsSync(TEMPLATE)) { fail.push(`iso/templates/gap-analysis-template.xlsx does not exist — run the Phase 10.1 build script first (see docs/iso-audit-integration-plan.md A95).`); return report(); }
   const entries = readZip(fs.readFileSync(TEMPLATE));
   ok(entries.length > 0, 'the template is a readable zip');
@@ -104,6 +104,10 @@ const ALLOWED = new Set([...HEADERS, ...SECTION_TITLES, ...INSTRUCTION_LINE, ...
   const rows2 = [...sheet2.matchAll(/<row r="(\d+)"/g)].map(m => Number(m[1]));
   ok(JSON.stringify(rows2) === JSON.stringify([1, 2, 3, 4, 5, 6, 7]), `the Register has exactly rows 1-7 (got ${JSON.stringify(rows2)})`);
   ok(!/<c r="D7"[^>]*t="s"/.test(sheet2) && !/<c r="E7"[^>]*t="s"/.test(sheet2) && !/<c r="M7"[^>]*t="s"/.test(sheet2), 'the kept data row\'s own client-finding columns (D, E, M) carry no string reference');
+
+
+  // 10.2 / release-1 B3.5: export.dataset and the filled workbook per standard.
+  try { await require('./_gap-export-checks.cjs')(ok); } catch (e) { ok(false, 'the 10.2 export checks crashed: ' + (e && e.stack || e)); }
 
   report();
 })();

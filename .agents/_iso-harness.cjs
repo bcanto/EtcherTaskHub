@@ -30,9 +30,10 @@ const STAFF = id => ({ id, role: 'staff' });
 const CLIENT = (id, clientId) => ({ id, role: 'client', clientId });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function startOffline(port) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'iso-h-'));
-  const proc = spawn(process.execPath, ['serve.mjs', '--offline', '--port', String(port)], { cwd: ROOT, env: { ...process.env, ISO_OFFLINE_DIR: dir }, stdio: 'pipe' });
+// opts.dir reuses a store (two servers in turn over one store); opts.env adds env vars (offline only).
+async function startOffline(port, opts = {}) {
+  const dir = opts.dir || fs.mkdtempSync(path.join(os.tmpdir(), 'iso-h-'));
+  const proc = spawn(process.execPath, ['serve.mjs', '--offline', '--port', String(port)], { cwd: ROOT, env: { ...process.env, ...(opts.env || {}), ISO_OFFLINE_DIR: dir }, stdio: 'pipe' });
   let up = false;
   for (let i = 0; i < 80 && !up; i++) {
     try { up = (await fetch(`http://127.0.0.1:${port}/api/config`)).ok; } catch (e) { await sleep(100); }

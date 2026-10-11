@@ -207,7 +207,11 @@ function insert(table, row, activity) {
   });
 }
 
+// Release-1 B3.2: snapshots are written once and never changed (migration 015's trigger online).
+const IMMUTABLE_TABLES = ['iso_audit_snapshots'];
+function refuseImmutable(table) { if (IMMUTABLE_TABLES.includes(table)) { const e = new Error(`${table} is immutable`); e.code = 'immutable'; throw e; } }
 function update(table, id, patch, expectedVersion, activity) {
+  refuseImmutable(table);
   return withLock(async () => {
     const store = await _readRaw();
     const rows = store[table] || [];
@@ -514,6 +518,7 @@ function removeMember(auditId, userUid, activity) {
 // user-facing versioned field. Same "extend the fixed interface rather than force-fit" reasoning
 // as updateMember/removeMember (A21); added for Phase 4's import ops (plan §14 A26).
 function patchRow(table, id, patch) {
+  refuseImmutable(table);
   return withLock(async () => {
     const store = await _readRaw();
     const rows = store[table] || [];

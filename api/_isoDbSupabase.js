@@ -130,7 +130,11 @@ async function insert(table, row, activity) {
   return inserted;
 }
 
+// Release-1 B3.2: snapshots are written once and never changed (migration 015's trigger is the backstop).
+const IMMUTABLE_TABLES = ['iso_audit_snapshots'];
+function refuseImmutable(table) { if (IMMUTABLE_TABLES.includes(table)) { const e = new Error(`${table} is immutable`); e.code = 'immutable'; throw e; } }
 async function update(table, id, patch, expectedVersion, activity) {
+  refuseImmutable(table);
   const r = await fetch(`${_rpcBase()}/iso_update_row`, {
     method: 'POST', headers: _headers(),
     body: JSON.stringify({
@@ -330,11 +334,19 @@ async function storageHead(filePath) {
   return { exists: true, size: Number(j.size != null ? j.size : meta.size != null ? meta.size : meta.contentLength) || 0, mime: j.content_type || j.contentType || meta.mimetype || null };
 }
 async function storagePut(filePath, bytes, type) { await putObject(filePath, bytes, type, EVIDENCE_BUCKET); return { path: filePath }; }
+// Release-1 B3.3: an uploaded file's bytes (the close snapshot's SHA-256), through a short signed URL.
+async function storageGet(filePath) {
+  try {
+    const r = await fetch(await signedUrl(filePath, 60, null, EVIDENCE_BUCKET));
+    return r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+  } catch (e) { return null; }
+}
 async function storageRemove(filePath) { await removeObjects([filePath], EVIDENCE_BUCKET); }
 
 // See _isoDbOffline.js's patchRow comment (plan §14 A26) — direct, unconditional, unlogged
 // single-row patch for tables with no row_version (iso_standard_versions, iso_import_runs).
 async function patchRow(table, id, patch) {
+  refuseImmutable(table);
   const r = await fetch(`${_base()}/${table}?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', headers: _headers({ Prefer: 'return=representation' }), body: JSON.stringify(patch),
   });
@@ -345,5 +357,5 @@ async function patchRow(table, id, patch) {
 module.exports = {
   get, list, insertNumbered, insert, update, transition, log, counterNext, importApply,
   updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, reopenFinding, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
-  storageSignedUpload, storageSignedDownload, storageHead, storagePut, storageRemove,
+  storageSignedUpload, storageSignedDownload, storageHead, storagePut, storageGet, storageRemove,
 };

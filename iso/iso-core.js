@@ -3666,7 +3666,7 @@
     const btn = document.getElementById('evd-save');
     if (btn) btn.disabled = true;
     try {
-      if (picked.length) await api('evidence.link', { auditId: auditId, targetType: targetType, targetId: targetId, evidenceIds: picked, roles: roles });
+      if (picked.length) await api('evidence.link', { auditId: auditId, targetType: targetType, targetId: targetId, evidenceIds: picked, roles: roles, linkSource: 'search' });
       if (file) {
         const onlyHere = document.getElementById('evd-only-here');
         await _evdUploadFile(file, targetType, targetId, auditId, {
@@ -3681,7 +3681,7 @@
       } else if (title) {
         const onlyHere = document.getElementById('evd-only-here');
         await api('evidence.addLink', {
-          auditId: auditId, targetType: targetType, targetId: targetId, title: title, url: url || null, kind: kind,
+          auditId: auditId, targetType: targetType, targetId: targetId, title: title, url: url || null, kind: kind, linkSource: 'custom',
           description: document.getElementById('evd-desc').value.trim() || null,
           versionLabel: document.getElementById('evd-version').value.trim() || null,
           evidenceDate: document.getElementById('evd-date').value || null,
@@ -4202,7 +4202,30 @@
         ${audit.stage === 'closed' && audit.maintenance_due ? item('Maintenance due', fmtDate(audit.maintenance_due)) : ''}
         ${item('Last update', d.last_update_at ? fmtTs(d.last_update_at) : 'No changes yet')}
       </dl>
+      ${_exportRowHtml(audit)}
     </section>`;
+  }
+  // Release-1 B3.5: Overview (compact and full) offers the workbook per standard — staff only.
+  function _exportRowHtml(audit) {
+    return audit && _cu() && _cu().role !== 'client' && (audit.standards || []).length ? `<div class="iso-dash-export"><span class="iso-dash-export-k">Export to Excel</span>${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}</div>` : '';
+  }
+  // Release-1 B3.5: the gap-analysis workbook for one standard, built server-side from the template.
+  async function _exportGapAnalysis(std, btn) {
+    const audit = _auditCache;
+    if (!audit || !std) return;
+    if (btn) btn.disabled = true;
+    try {
+      const res = await api('export.gapAnalysis', { auditId: audit.id, standard: std });
+      const bin = atob(res.base64), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = res.filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (root.showToast) root.showToast(`Exported ${res.filename} (${res.rows} clauses).`);
+    } catch (e) { if (root.showToast) root.showToast('Could not export: ' + e.message, true); }
+    finally { if (btn) btn.disabled = false; }
   }
   // D29: standard only, for now. The code travels in data-std (A81: nothing put into an inline handler).
   function _dashFilterBarHtml(audit, std) {
@@ -4498,7 +4521,8 @@
     host.innerHTML = ovSignoffHtml(reqs)
       + ovProgressHtml(dash.cards, reqs.length, reqs)
       + `<div class="iso-ov-two">${ovAttentionHtml(reqs, dash)}${ovCollectHtml(docs)}</div>`
-      + `<button type="button" class="iso-ov-fulldash" onclick="ISO._ovShowFull()"><span><b>Full dashboard</b> — KPIs, charts, clause matrix and activity</span><span aria-hidden="true">›</span></button>`;
+      + `<button type="button" class="iso-ov-fulldash" onclick="ISO._ovShowFull()"><span><b>Full dashboard</b> — KPIs, charts, clause matrix and activity</span><span aria-hidden="true">›</span></button>`
+      + _exportRowHtml(_auditCache);
   }
   function _ovFilterBtn(cls, filter, view, label, inner) {
     return `<button type="button" class="${cls}" data-filter="${esc(JSON.stringify(filter))}"${view ? ` data-view="${esc(view)}"` : ''} data-label="${esc(label)}" onclick="ISO._dashOpenFiltered(this)">${inner}</button>`;
@@ -4727,12 +4751,13 @@
       return;
     }
     const auditId = _docAuditId();
+    const linkSource = (!_da.doc || _da.doc.custom) ? 'custom' : 'register_suggestion'; // B3.4 signal
     try {
       if (removals.length) await mutate('evidence.unlinkDocument', { auditId: auditId, title: _da.name, requirementIds: removals });
       if (!requirementIds.length) {
         // removals only
       } else if (_da.doc && _da.doc.latest) {
-        for (const id of requirementIds) await mutate('evidence.link', { auditId: auditId, targetType: 'requirement', targetId: id, evidenceIds: [_da.doc.latest.evidenceId] });
+        for (const id of requirementIds) await mutate('evidence.link', { auditId: auditId, targetType: 'requirement', targetId: id, evidenceIds: [_da.doc.latest.evidenceId], linkSource: linkSource });
       } else {
         const url = document.getElementById('ovda-url').value.trim();
         if (!url) { toast('Add a file or link first.', true); return; }
@@ -4740,9 +4765,9 @@
         const r = await mutate('evidence.addLinkBulk', {
           auditId: auditId, title: _da.name, url: url,
           versionLabel: document.getElementById('ovda-version').value.trim() || undefined, evidenceDate: document.getElementById('ovda-date').value || undefined,
-          requirementIds: first,
+          requirementIds: first, linkSource: linkSource,
         });
-        for (const id of rest) await mutate('evidence.link', { auditId: auditId, targetType: 'requirement', targetId: id, evidenceIds: [r.evidence.id] });
+        for (const id of rest) await mutate('evidence.link', { auditId: auditId, targetType: 'requirement', targetId: id, evidenceIds: [r.evidence.id], linkSource: linkSource });
       }
       const statusChanges = Object.entries((_da && _da.st) || {}).filter(([id, v]) => v !== _docCurrentStatus(id) && (requirementIds.includes(id) || ((_da.doc && _da.doc.clauses) || []).some(c => c.requirementId === id && c.provided)));
       if (statusChanges.length) {
@@ -5225,10 +5250,19 @@
         <div style="font-weight:700;margin-bottom:10px">Config</div>
         <div style="font-size:12px;color:#4a5568">evidence_max_upload_mb: <input id="iso-cfg-upload-mb" type="number" min="1" max="25" class="form-input" style="width:80px;display:inline-block" value="${esc((config && config.evidence_max_upload_mb) || 10)}"/>
         <button class="btn btn-ghost btn-sm" onclick="ISO._saveUploadCap()">Save</button></div>
+        ${isAdmin ? `<div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:#4a5568"><span style="flex:1">Learning signals — what the app records about suggestions you accept or skip (no UI of its own yet).</span><button class="btn btn-ghost btn-sm" id="iso-export-signals" onclick="ISO._exportSignals()">Export signals</button></div>` : ''}
         ${usage ? `<div class="iso-storage-used" style="font-size:12px;color:#4a5568;margin-top:8px">Evidence storage used: <strong>${esc(_fmtBytes(usage.bytes))}</strong> in ${usage.files} file${usage.files === 1 ? '' : 's'} — links use none.</div>` : ''}
       </div>`;
     const importHost = document.getElementById('iso-admin-import');
     if (importHost && root.ISO && root.ISO.import) root.ISO.import.openImport ? root.ISO.import.openImport('library', importHost) : null;
+  }
+  // Release-1 B3.4: the captured learning signals as a JSON file (admin only; a download, never a tab).
+  async function _exportSignals() {
+    try {
+      const data = await api('signal.export', {});
+      _pdSaveFile(JSON.stringify(data, null, 2), `ISO_learning_signals_${new Date().toISOString().slice(0, 10)}.json`);
+      if (root.showToast) root.showToast(`Exported ${data.count} signal${data.count === 1 ? '' : 's'}.`);
+    } catch (e) { if (root.showToast) root.showToast('Could not export: ' + e.message, true); }
   }
   // Approving a library version has no undo, so it asks first (in the app's own modal) — and for a
   // drafted edition (4b.2) repeats the one check that matters: every row against the licensed standard.
@@ -5448,7 +5482,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

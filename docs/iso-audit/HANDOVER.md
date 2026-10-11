@@ -13,7 +13,9 @@ offline only, no SQL, never push/deploy without the user, CRLF in `index.html`, 
 | B0 build tooling | **Done and committed** (`b7299d8` on local branch `iso-release-1`, never pushed) |
 | B1 defensible conclusions | **Done and committed** (`eb5837f`) |
 | B2 findings and actions that close | **Done and committed** (see the 2026-10-11 Progress Log row) |
-| B3 → B7 | B3 next (B3.5 export, then STOP 2b for the user); B6 can run in parallel |
+| B3 history + Excel export | **Done and committed** — waiting on STOP 2b (the user opens the three workbooks in Excel) |
+| B6 go-live code | In progress (B6.1–B6.6); the user's own steps are in docs/iso-audit/go-live-checklist.md |
+| Pilot → B4 → B5 → B7 | After STOP 2b and B6 |
 
 Branch: `iso-release-1` (local only). Commits on this branch are allowed at batch close (D55);
 **pushing or deploying needs the user's explicit OK.**

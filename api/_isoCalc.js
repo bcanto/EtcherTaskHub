@@ -628,7 +628,12 @@ function computePortfolioMetrics(input) {
   };
 }
 
+// Release-1 B3.2: stamped on every board snapshot so a later reader knows which rules produced the
+// numbers. Bump it whenever a metric's definition changes.
+const CALC_VERSION = 'r1-b3';
+
 module.exports = {
+  CALC_VERSION,
   computeAuditMetrics, computePortfolioMetrics,
   computeRequirementMetrics, computeFindingMetrics, computeActionMetrics, computeEvidenceMetrics,
   computeProgressByGroup, computeProgressOverTime, buildDashboard, computeBaselineVsCurrent,

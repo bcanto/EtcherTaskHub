@@ -83,6 +83,47 @@ const DOCUMENT_CATALOG_BY_CLAUSE = (() => {
   return m;
 })();
 const DOCUMENT_CATALOG_BY_NAME = new Map(DOCUMENT_CATALOG.map(d => [d.name, d]));
+// ── Release-1 B3.1: the library frozen per board ────────────────────────────────────────────────
+// Every board stores library_release — the release current when it was created. Cross-standard links,
+// the document catalogue and cheat sheets resolve from that release, so a new release (v4) changes only
+// boards created after it. Each release has a manifest (iso/seed/releases/<release>/manifest.json:
+// editions, transition dates with source and last-verified date, technical reviewer, review date,
+// change notes). v3's data files stay at iso/seed/library/ (old paths keep working); its manifest names
+// them. Static require()s, so Vercel's file tracing ships every release.
+const LIBRARY_RELEASES = {
+  v3: { manifest: require('../iso/seed/releases/v3/manifest.json'), relationships: LIBRARY_RELATIONSHIPS, documents: DOCUMENT_CATALOG, librarySeeds: LIBRARY_SEEDS },
+};
+let _currentLibraryRelease = 'v3', _extraReleaseLoaded = false;
+// Offline dev / tests only (ISO_OFFLINE is set by serve.mjs --offline alone, never by a request):
+// ISO_EXTRA_LIBRARY_RELEASE names a JSON file {release, current, manifest, relationships, documents} —
+// how iso-history-test proves a new release reaches new boards only. Read lazily: serve.mjs sets
+// ISO_OFFLINE after its imports have loaded this module.
+function _loadExtraRelease() {
+  if (_extraReleaseLoaded) return;
+  _extraReleaseLoaded = true;
+  if (process.env.ISO_OFFLINE !== '1' || !process.env.ISO_EXTRA_LIBRARY_RELEASE) return;
+  const x = JSON.parse(require('fs').readFileSync(process.env.ISO_EXTRA_LIBRARY_RELEASE, 'utf8'));
+  if (!/^v\d{1,3}$/.test(String(x.release || '')) || LIBRARY_RELEASES[x.release]) return;
+  LIBRARY_RELEASES[x.release] = { manifest: x.manifest || { release: x.release }, relationships: x.relationships || [], documents: x.documents || [], librarySeeds: LIBRARY_SEEDS };
+  if (x.current) _currentLibraryRelease = x.release;
+}
+function currentLibraryRelease() { _loadExtraRelease(); return _currentLibraryRelease; }
+const _releaseIndex = new Map();
+// The release a board reads (a board from before B3.1 has none — it is v3, the only release then).
+function libraryRelease(audit) {
+  _loadExtraRelease();
+  const name = audit && audit.library_release && LIBRARY_RELEASES[audit.library_release] ? audit.library_release : 'v3';
+  if (!_releaseIndex.has(name)) {
+    const r = LIBRARY_RELEASES[name];
+    const key = c => c.standard + ' ' + c.clause;
+    const add = (m, k, v) => { if (!m.has(k)) m.set(k, new Set()); m.get(k).add(v); };
+    const relByClause = new Map(), docByClause = new Map();
+    for (const { a, b } of r.relationships) { add(relByClause, key(a), key(b)); add(relByClause, key(b), key(a)); }
+    for (const doc of r.documents) for (const c of doc.clauses) add(docByClause, key(c), doc.name);
+    _releaseIndex.set(name, { name, manifest: r.manifest, documents: r.documents, librarySeeds: r.librarySeeds, relByClause, docByClause });
+  }
+  return _releaseIndex.get(name);
+}
 // A seed's change entry with its source keys resolved to {title, url, checkedOn, how}.
 function resolveChange(seed, c) {
   return { clause: c.clause, kind: c.kind, summary: c.summary, sources: (c.sources || []).map(k => (seed.sources || []).find(s => s.key === k)).filter(Boolean).map(s => ({ title: s.title, url: s.url, checkedOn: s.checkedOn, how: s.how })) };
@@ -91,7 +132,7 @@ function resolveChange(seed, c) {
 // copied from the library has no `imported` snapshot of its own) plus any APPROVED clause- and
 // requirement-level guidance for its edition. A row whose workbook evidence cell was merged with the
 // row above (SheetJS only fills a merge's top cell) shows the merged-from row's examples.
-function buildGuidance({ requirements, libReqById, versionById, guidanceSeeds, librarySeeds }) {
+function buildGuidance({ requirements, libReqById, versionById, guidanceSeeds, librarySeeds, docByClause }) {
   const out = {};
   for (const r of requirements) {
     const lib = r.library_requirement_id ? libReqById[r.library_requirement_id] : null;
@@ -114,7 +155,7 @@ function buildGuidance({ requirements, libReqById, versionById, guidanceSeeds, l
     const cheatSheet = (seedItem && seedItem.imported.cheatSheet) || null;
     // R4 (D35, P5): Column P's suggested documents for this clause — same static catalog
     // relationship.library already uses for Column P's related clauses.
-    const documents = [...(DOCUMENT_CATALOG_BY_CLAUSE.get(r.standard_code + ' ' + r.clause) || [])];
+    const documents = [...((docByClause || DOCUMENT_CATALOG_BY_CLAUSE).get(r.standard_code + ' ' + r.clause) || [])];
     out[r.id] = {
       evidenceExamples: examples || null,
       cheatSheet: cheatSheet && (cheatSheet.lookFor.length || cheatSheet.confirm.length || cheatSheet.watchFor.length) ? cheatSheet : null,
@@ -409,6 +450,7 @@ defineOp('audit.create', {
       id: uid('iaud_'), client_id: payload.clientId, title: payload.title || `ISO ${payload.standards.join('/')}`,
       audit_type: 'gap_analysis', stage: 'planning', visibility: payload.visibility || 'all_internal',
       owner_uid: caller.uid, client_portal_enabled: false, default_visibility: 'internal',
+      library_release: currentLibraryRelease(), // B3.1
       created_by: caller.uid, updated_by: caller.uid,
     }, { audit_id: null, client_id: payload.clientId, entity_type: 'audit', action: 'created', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
     for (const v of versions) await ctx.db.insert('iso_audit_standards', { audit_id: audit.id, version_id: v.id });
@@ -468,17 +510,97 @@ defineOp('audit.update', {
       patch.completed_at = null;
     }
     if ('client_portal_enabled' in patch) requireReason(ctx.payload.reason, 'change client portal sharing');
+    const closing = patch.stage === 'closed' && ctx.audit.stage !== 'closed';
+    let updated;
     try {
-      return await ctx.db.update('iso_audits', ctx.audit.id, patch, ctx.payload.expectedVersion, {
+      updated = await ctx.db.update('iso_audits', ctx.audit.id, patch, ctx.payload.expectedVersion, {
         audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'audit', entity_id: ctx.audit.id,
         entity_ref: ctx.audit.ref, action: 'updated', reason: ctx.payload.reason || null, source: 'user',
         actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
       });
     } catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+    if (closing) await writeCloseSnapshot(ctx, updated); // B3.2
+    return updated;
   },
 });
 
 const AUDIT_STAGES = ['planning', 'fieldwork', 'reporting', 'capa', 'closed'];
+
+// ── Release-1 B3.2 / B3.3: the close snapshot ───────────────────────────────────────────────────
+// Closing a board writes one immutable iso_audit_snapshots row (kind 'close'): per clause its
+// conclusion (status, OFI, gap reason, basis, plan), baseline and whether it changed since, and its
+// approval; per linked document what was seen — title, revision, date, URL, who linked it and when,
+// its review state, and a SHA-256 for an uploaded file (a link can't be checksummed, only a file).
+// Plus the board's library release, the calculation version and the metrics. Both adapters refuse
+// any update to the table (migration 015's trigger does the same online). Reopening and closing
+// again writes a second snapshot; nothing overwrites the first. B5's reports read these.
+const SNAPSHOT_KINDS = ['close', 'report'];
+async function fileSha256(ctx, storagePath) {
+  if (!storagePath || typeof ctx.db.storageGet !== 'function') return null;
+  try {
+    const bytes = await ctx.db.storageGet(storagePath);
+    return bytes ? require('crypto').createHash('sha256').update(bytes).digest('hex') : null;
+  } catch (e) { return null; }
+}
+async function writeCloseSnapshot(ctx, audit) {
+  const reqs = (await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 5000 }))
+    .sort((a, b) => (a.sort_key || 0) - (b.sort_key || 0));
+  const links = (await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }] }))
+    .filter(l => !DEAD_LINK_STATUSES.includes(l.review_status));
+  const evidence = new Map(), sha = new Map();
+  for (const l of links) {
+    if (evidence.has(l.evidence_id)) continue;
+    const e = await ctx.db.get('iso_evidence', l.evidence_id);
+    evidence.set(l.evidence_id, e || null);
+    if (e && e.storage_path) sha.set(e.id, await fileSha256(ctx, e.storage_path));
+  }
+  const linksByReq = new Map();
+  for (const l of links) { if (!linksByReq.has(l.target_id)) linksByReq.set(l.target_id, []); linksByReq.get(l.target_id).push(l); }
+  const docOf = l => {
+    const e = evidence.get(l.evidence_id);
+    if (!e || e.archived_at) return null;
+    return { evidenceRef: e.ref || null, title: e.title, kind: e.kind || null, revision: e.version_label || null, date: e.evidence_date || null, url: e.url || null,
+      filename: e.original_filename || null, sha256: e.storage_path ? (sha.get(e.id) || null) : null,
+      linkedBy: l.created_by || null, linkedAt: l.created_at || null, review: l.review_status || null };
+  };
+  const clauses = reqs.map(r => ({
+    requirementId: r.id, standard: r.standard_code, clause: r.clause, clauseName: r.clause_name || '',
+    status: r.compliance_status || 'not_assessed', ofi: !!r.ofi, gapReason: r.gap_reason || null,
+    basis: r.current_system || null, plannedAction: r.recommended_action || null,
+    baseline: r.baseline_at ? { result: r.baseline_result || null, state: r.baseline_state || null, at: r.baseline_at } : null,
+    changedSinceBaseline: r.baseline_at ? (r.assessment_result || null) !== (r.baseline_result || null) : null,
+    approval: { state: r.approval_state || null, by: r.approved_by || null, at: r.approved_at || null },
+    documents: (linksByReq.get(r.id) || []).map(docOf).filter(Boolean),
+  }));
+  const metrics = isoCalc.computeAuditMetrics(await fetchAuditCalcInputs(ctx));
+  const release = libraryRelease(audit).name;
+  const snap = await ctx.db.insert('iso_audit_snapshots', {
+    id: uid('isnap_'), audit_id: audit.id, client_id: audit.client_id, kind: 'close',
+    library_release: release, calc_version: isoCalc.CALC_VERSION,
+    data: { auditRef: audit.ref, title: audit.title, auditType: audit.audit_type, closedAt: audit.completed_at || ctx.now.toISOString(), clauses, metrics },
+    created_by: ctx.caller.uid, created_at: ctx.now.toISOString(),
+  });
+  await ctx.db.log({ audit_id: audit.id, client_id: audit.client_id, entity_type: 'audit', entity_id: audit.id, entity_ref: audit.ref,
+    action: 'snapshot_written', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+    after: { snapshotId: snap.id, kind: 'close', clauses: clauses.length, libraryRelease: release, calcVersion: isoCalc.CALC_VERSION } });
+  return snap;
+}
+// Staff read the snapshots of a board (newest first). Nothing writes them except the close above.
+defineOp('snapshot.list', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) {
+    const rows = await ctx.db.list('iso_audit_snapshots', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] });
+    return rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  },
+});
+// The board's library release and its manifest (B3.1) — what the board reads its links, catalogue
+// and cheat sheets from.
+defineOp('library.release', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) { const r = libraryRelease(ctx.audit); return { release: r.name, current: currentLibraryRelease(), manifest: r.manifest }; },
+});
 async function boardToday(ctx) {
   const tz = await ctx.db.getConfig('timezone');
   return new Intl.DateTimeFormat('en-CA', { timeZone: (tz && tz.value) || 'Australia/Perth' }).format(ctx.now);
@@ -540,6 +662,7 @@ defineOp('audit.startMaintenance', {
       audit_type: 'internal', stage: 'planning', visibility: prev.visibility || 'all_internal',
       owner_uid: caller.uid, client_portal_enabled: false, default_visibility: prev.default_visibility || 'internal',
       scope_text: prev.scope_text || null, exclusions_text: prev.exclusions_text || null, previous_audit_id: prev.id,
+      library_release: currentLibraryRelease(), // B3.1: a new board takes the current release
       created_by: caller.uid, updated_by: caller.uid,
     }, { audit_id: null, client_id: prev.client_id, entity_type: 'audit', action: 'created', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
     for (const v of versions) await ctx.db.insert('iso_audit_standards', { audit_id: audit.id, version_id: v.id });
@@ -1351,7 +1474,8 @@ defineOp('guidance.list', {
       versionById[v.id] = v;
       for (const lr of await ctx.db.list('iso_library_requirements', { where: [{ field: 'version_id', op: 'eq', value: v.id }] })) libReqById[lr.id] = lr;
     }
-    return buildGuidance({ requirements, libReqById, versionById, guidanceSeeds: GUIDANCE_SEEDS, librarySeeds: LIBRARY_SEEDS });
+    const rel = libraryRelease(ctx.audit); // B3.1: the board's own release
+    return buildGuidance({ requirements, libReqById, versionById, guidanceSeeds: GUIDANCE_SEEDS, librarySeeds: rel.librarySeeds, docByClause: rel.docByClause });
   },
 });
 
@@ -1404,7 +1528,7 @@ defineOp('relationship.library', {
     const rejectedPairKeys = new Set(libraryRows.map(r => (r.from_id < r.to_id ? r.from_id + '|' + r.to_id : r.to_id + '|' + r.from_id)));
     const out = {};
     for (const r of reqs) {
-      const peers = LIBRARY_REL_BY_CLAUSE.get(r.standard_code + ' ' + r.clause);
+      const peers = libraryRelease(ctx.audit).relByClause.get(r.standard_code + ' ' + r.clause); // B3.1
       if (!peers) continue;
       const related = [];
       for (const peerKey of peers) {
@@ -2647,6 +2771,38 @@ const DEAD_LINK_STATUSES = ['rejected', 'superseded'];
 // review_status 'rejected' with this exact comment, logged as evidence_unlinked — so history keeps it
 // and re-ticking the clause revives the same link (evidence.link) instead of silently skipping it.
 const EVIDENCE_UNLINK_NOTE = 'Removed from this clause (Edit links)';
+// ── Release-1 B3.4: learning signals ────────────────────────────────────────────────────────────
+// No UI of their own — fixed-payload activity entries the later learning work reads:
+//   related_applied {offered, applied, unticked, documentsLinked}   (B1.5, relationship.applyToRelated)
+//   doc_linked {source, evidenceId, title, requirementIds}           (below — one per linking call)
+//   evidence_suggestion_confirmed / _rejected                        (8b.5, evidence.decideSuggestion)
+// source: register_suggestion (a catalogue document from the register), history_suggestion (an 8b.5
+// suggestion confirmed), search (an existing document picked by search), custom (a new document of
+// the board's own). A linking call without a valid linkSource writes no doc_linked signal.
+const LINK_SOURCES = ['register_suggestion', 'history_suggestion', 'search', 'custom'];
+const SIGNAL_ACTIONS = ['related_applied', 'doc_linked', 'evidence_suggestion_confirmed', 'evidence_suggestion_rejected'];
+async function logDocLinked(ctx, source, evidence, requirementIds) {
+  if (!LINK_SOURCES.includes(source) || !evidence) return;
+  await ctx.db.log({
+    audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'evidence', entity_id: evidence.id, entity_ref: evidence.ref || null,
+    action: 'doc_linked', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+    after: { source, evidenceId: evidence.id, title: evidence.title, requirementIds: [...requirementIds] },
+  });
+}
+function checkLinkSource(payload) {
+  if (payload.linkSource != null && !LINK_SOURCES.includes(payload.linkSource)) throw badRequest('Invalid link source.');
+}
+// Admin only: every learning signal captured so far, as JSON — to check what is being recorded.
+defineOp('signal.export', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && ctx.caller.role === 'admin'; },
+  async run(ctx) {
+    const rows = await ctx.db.list('iso_activity', { where: [{ field: 'action', op: 'in', value: SIGNAL_ACTIONS }], limit: 50000 });
+    const signals = rows.map(a => ({ at: a.at || a.created_at || null, auditId: a.audit_id || null, action: a.action, actor: a.actor_uid || null, entityType: a.entity_type || null, entityId: a.entity_id || null, payload: a.after || null }))
+      .sort((x, y) => String(x.at || '').localeCompare(String(y.at || '')));
+    return { generatedAt: ctx.now.toISOString(), actions: SIGNAL_ACTIONS, count: signals.length, signals };
+  },
+});
 async function logEvidenceLinked(ctx, evidence, link) {
   await ctx.db.log({
     audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: link.target_type, entity_id: link.target_id,
@@ -2674,6 +2830,7 @@ defineOp('evidence.addLink', {
     if (payload.role && !EVIDENCE_LINK_ROLES.includes(payload.role)) throw badRequest('Invalid evidence role.');
     if (payload.relevanceNote != null && String(payload.relevanceNote).length > 2000) throw badRequest('That note is too long.');
     samplePatch(payload);
+    checkLinkSource(payload);
   },
   async run(ctx) {
     const target = await evidenceTarget(ctx, ctx.payload.targetType, ctx.payload.targetId);
@@ -2705,6 +2862,7 @@ defineOp('evidence.addLink', {
       review_status: 'submitted', created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
     });
     await logEvidenceLinked(ctx, evidence, link);
+    if (link.target_type === 'requirement') await logDocLinked(ctx, ctx.payload.linkSource, evidence, [link.target_id]); // B3.4
     return { evidence, link };
   },
 });
@@ -2719,6 +2877,7 @@ defineOp('evidence.link', {
     if (!EVIDENCE_TARGET_TABLES[payload.targetType]) throw badRequest('Invalid evidence target type.');
     if (!isValidId(payload.targetId)) throw badRequest('Invalid evidence target.');
     if (!Array.isArray(payload.evidenceIds) || !payload.evidenceIds.length || payload.evidenceIds.length > 50 || !payload.evidenceIds.every(isValidId)) throw badRequest('Choose between 1 and 50 evidence records.');
+    checkLinkSource(payload);
     if (payload.roles != null && (typeof payload.roles !== 'object' || Array.isArray(payload.roles) || !Object.values(payload.roles).every(r => EVIDENCE_LINK_ROLES.includes(r)))) throw badRequest('Invalid evidence role.');
   },
   async run(ctx) {
@@ -2751,6 +2910,8 @@ defineOp('evidence.link', {
       already.add(e.id);
       linked.push(link);
     }
+    // B3.4: one doc_linked signal per document this call linked.
+    if (ctx.payload.targetType === 'requirement') for (const evId of new Set(linked.map(l => l.evidence_id))) await logDocLinked(ctx, ctx.payload.linkSource, await ctx.db.get('iso_evidence', evId), [target.id]);
     return { linked, skipped };
   },
 });
@@ -2770,6 +2931,7 @@ defineOp('evidence.addLinkBulk', {
     const hasUrl = typeof payload.url === 'string' && payload.url.trim() !== '';
     if (hasUrl && payload.url.length > 2000) throw badRequest('That link is too long.');
     if (!hasUrl && !EVIDENCE_NO_URL_KINDS.includes(payload.kind)) throw badRequest('A link is required (or choose a type that has none, such as a note).');
+    checkLinkSource(payload);
   },
   async run(ctx) {
     const rawUrl = typeof ctx.payload.url === 'string' ? ctx.payload.url.trim() : '';
@@ -2804,6 +2966,7 @@ defineOp('evidence.addLinkBulk', {
       await logEvidenceLinked(ctx, evidence, link);
       linked.push(link);
     }
+    if (linked.length) await logDocLinked(ctx, ctx.payload.linkSource, evidence, linked.map(l => l.target_id)); // B3.4
     return { evidence, linked, skipped };
   },
 });
@@ -2884,7 +3047,8 @@ defineOp('document.list', {
     const latestOf = t => { const e = latestByTitle.get(t); return e ? { evidenceId: e.id, title: e.title, versionLabel: e.version_label || null, evidenceDate: e.evidence_date || null } : null; };
     const reqById = new Map(reqs.map(r => [r.id, r]));
     const out = [];
-    for (const doc of DOCUMENT_CATALOG) {
+    const releaseDocs = libraryRelease(ctx.audit).documents; // B3.1: the board's own catalogue
+    for (const doc of releaseDocs) {
       const clauses = [];
       for (const c of doc.clauses) {
         const rows = byClauseKey.get(c.standard + ' ' + c.clause);
@@ -2899,7 +3063,7 @@ defineOp('document.list', {
     }
     // Redesign (wireframe "Add other document"): evidence whose title matches no catalog document is
     // a custom, audit-only document — listed with exactly the clauses it is linked to (all provided).
-    const catalogNames = new Set(DOCUMENT_CATALOG.map(d => d.name.toLowerCase()));
+    const catalogNames = new Set(releaseDocs.map(d => d.name.toLowerCase()));
     for (const [t, ids] of reqIdsByTitle) {
       if (!t || catalogNames.has(t)) continue;
       const clauses = [...ids].map(id => reqById.get(id)).filter(Boolean).map(r => ({ requirementId: r.id, standardCode: r.standard_code, clause: r.clause, clauseName: r.clause_name, provided: true }));
@@ -3125,6 +3289,7 @@ defineOp('evidence.decideSuggestion', {
       action: confirm ? 'evidence_suggestion_confirmed' : 'evidence_suggestion_rejected', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
       after: { evidenceId: s.evidenceId, linkId: link.id, sourceRequirementId: s.sourceRequirementId, relationshipId: s.relationshipId, role: link.role, comment },
     });
+    if (confirm) await logDocLinked(ctx, 'history_suggestion', await ctx.db.get('iso_evidence', s.evidenceId), [s.targetId]); // B3.4
     return link;
   },
 });
@@ -3846,7 +4011,7 @@ async function promptInputs(ctx, template, requirementId) {
   let guidance = null;
   if (req.library_requirement_id) {
     const lib = await ctx.db.get('iso_library_requirements', req.library_requirement_id);
-    if (lib) guidance = buildGuidance({ requirements: [req], libReqById: { [lib.id]: lib }, versionById, guidanceSeeds: GUIDANCE_SEEDS, librarySeeds: LIBRARY_SEEDS })[req.id];
+    if (lib) { const rel = libraryRelease(ctx.audit); guidance = buildGuidance({ requirements: [req], libReqById: { [lib.id]: lib }, versionById, guidanceSeeds: GUIDANCE_SEEDS, librarySeeds: rel.librarySeeds, docByClause: rel.docByClause })[req.id]; }
   }
   const profile = await ctx.db.getProfile(ctx.audit.client_id);
   return { requirement: byId[req.id] || { ...req, edition: editionByStd[req.standard_code] || null }, boardRequirements, related, guidance, fields: (profile && profile.fields) || {} };
@@ -3994,6 +4159,123 @@ defineOp('digest.items', {
 // output object (never a raw iso_actions row, never even for the internal version) so there is no
 // path for a CAPA field, an internal note, or a raw owner_uid to end up in a jsPDF cell by
 // accident — a field allowlist by construction, not a blocklist applied to someone else's object.
+// ── Release-1 B3.5 (plan 10.2, D36): the gap-analysis workbook, one per standard ───────────────
+// export.dataset builds the rows for one board + standard, projected through EXPORT_FIELDS — display
+// names, never uids; no record ids, stable_key or storage paths; no internal-only field (interview
+// notes, auditor observations, internal notes, internal comments) and no internal-visibility action
+// in Linked Actions — these workbooks may be sent to clients. export.gapAnalysis fills the template
+// (api/_isoExport.js, direct XML) and returns the file. Staff only.
+const isoExport = require('./_isoExport.js');
+const GAP_TEMPLATE_PATH = require('path').join(__dirname, '..', 'iso', 'templates', 'gap-analysis-template.xlsx');
+const EXPORT_FIELDS = ['clause', 'clauseName', 'requirement', 'currentSystem', 'plannedAction', 'complianceStatus', 'originalStatus', 'workStatus', 'priority', 'owner', 'dueDate', 'progress', 'linkedActions', 'sourceData'];
+const EXPORT_STATUS = { compliant: 'Fully conforming', partially_compliant: 'Partially conforming', non_compliant: 'Not conforming', not_assessed: 'To be updated', not_applicable: 'Not applicable', out_of_scope: '' };
+const EXPORT_BASELINE = { implemented_effective: 'Fully conforming', partially_implemented: 'Partially conforming', implemented_ineffective: 'Partially conforming', not_implemented: 'Not conforming', no_evidence_provided: 'Not conforming' };
+const EXPORT_GAP_LABEL = { not_implemented: 'Not implemented', ineffective: 'Implemented but ineffective', no_evidence: 'No evidence provided' };
+const EXPORT_PRIORITY = { crit: 'High', high: 'High', med: 'Medium', low: 'Low' };
+const EXPORT_PRIORITY_RANK = { High: 3, Medium: 2, Low: 1 };
+// Status onto the template's own list; the basis carries the gap reason and the OFI in front (D36/D44).
+function exportStatusAndBasis(r) {
+  const cs = r.compliance_status || 'not_assessed';
+  const status = cs in EXPORT_STATUS ? EXPORT_STATUS[cs] : EXPORT_STATUS.not_assessed;
+  const why = String(r.na_justification || '').trim();
+  if (cs === 'not_applicable') return { status, basis: 'Not applicable' + (why ? ' — ' + why : '') };
+  if (cs === 'out_of_scope') return { status, basis: "Outside this audit's scope" + (why ? ' — ' + why : '') };
+  const basis = String(r.current_system || '').trim();
+  const gap = r.gap_reason && EXPORT_GAP_LABEL[r.gap_reason] ? `Gap reason: ${EXPORT_GAP_LABEL[r.gap_reason]}. ` : '';
+  const ofi = r.ofi && (cs === 'compliant' || cs === 'partially_compliant') ? 'OFI: ' + (String(r.ofi_note || '').trim() ? String(r.ofi_note).trim() + ' — ' : '') : '';
+  return { status, basis: gap + ofi + basis };
+}
+// Plan §11 roll-ups over the clause's confirmed linked actions (direct, or through its findings).
+function workStatusOf(actions) {
+  if (!actions.length) return 'Not started';
+  if (actions.every(a => ['verified', 'closed'].includes(a.status))) return 'Complete';
+  if (actions.some(a => a.status === 'on_hold')) return 'On hold';
+  if (actions.some(a => ['in_progress', 'awaiting_evidence', 'submitted_for_review', 'more_info_required', 'ready_for_verification'].includes(a.status))) return 'In progress';
+  return 'Planned';
+}
+async function exportDataset(ctx, standard) {
+  const audit = ctx.audit;
+  const reqs = (await ctx.db.list('iso_requirements', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 5000 }))
+    .filter(r => r.standard_code === standard).sort((a, b) => (a.sort_key || 0) - (b.sort_key || 0));
+  const actions = (await ctx.db.list('iso_actions', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 2000 }));
+  const actionById = new Map(actions.map(a => [a.id, a]));
+  const links = actions.length ? await ctx.db.list('iso_action_links', { where: [{ field: 'action_id', op: 'in', value: actions.map(a => a.id) }, { field: 'link_state', op: 'eq', value: 'confirmed' }] }) : [];
+  const findings = await ctx.db.list('iso_findings', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }] });
+  const fReq = findings.length ? await ctx.db.list('iso_finding_requirements', { where: [{ field: 'finding_id', op: 'in', value: findings.map(f => f.id) }] }) : [];
+  const reqOfFinding = new Map(fReq.map(l => [l.finding_id, l.requirement_id]));
+  const actionsByReq = new Map(), reqsByAction = new Map();
+  for (const l of links) {
+    const rid = l.target_type === 'requirement' ? l.target_id : l.target_type === 'finding' ? reqOfFinding.get(l.target_id) : null;
+    if (!rid || !actionById.has(l.action_id)) continue;
+    if (!actionsByReq.has(rid)) actionsByReq.set(rid, new Set()); actionsByReq.get(rid).add(l.action_id);
+    if (!reqsByAction.has(l.action_id)) reqsByAction.set(l.action_id, new Set()); reqsByAction.get(l.action_id).add(rid);
+  }
+  const evLinks = (await ctx.db.list('iso_evidence_links', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'target_type', op: 'eq', value: 'requirement' }] })).filter(l => !DEAD_LINK_STATUSES.includes(l.review_status));
+  const comments = await ctx.db.list('iso_comments', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }] }).catch(() => []);
+  const subtasks = actions.length ? await ctx.db.list('iso_action_subtasks', { where: [{ field: 'action_id', op: 'in', value: actions.map(a => a.id) }, { field: 'archived_at', op: 'isnull' }] }) : [];
+  const names = new Map();
+  const nameOf = async uid => { if (!uid) return ''; if (!names.has(uid)) names.set(uid, (await ctx.getStaffName(uid)) || ''); return names.get(uid); };
+  const short = ref => (String(ref || '').match(/A\d+$/) || [String(ref || '')])[0];
+  const rows = [];
+  for (const r of reqs) {
+    const { status, basis } = exportStatusAndBasis(r);
+    const acts = [...(actionsByReq.get(r.id) || [])].map(id => actionById.get(id));
+    const open = acts.filter(a => !['verified', 'closed'].includes(a.status));
+    const priority = open.map(a => EXPORT_PRIORITY[a.priority]).filter(Boolean).sort((x, y) => EXPORT_PRIORITY_RANK[y] - EXPORT_PRIORITY_RANK[x])[0] || '';
+    const progress = acts.length ? acts.reduce((s, a) => s + (Number(a.progress) || 0), 0) / acts.length / 100 : 0;
+    const linkedActions = acts.filter(a => a.visibility && a.visibility !== 'internal').map(a => `${short(a.ref)} ${a.title}`).join('; ');
+    const owner = await nameOf(r.responsible_uid);
+    const original = audit.previous_audit_id ? (EXPORT_BASELINE[r.baseline_result] || '') : '';
+    const work = workStatusOf(acts);
+    const row = {
+      clause: r.clause, clauseName: r.clause_name || '', requirement: r.requirement_text || '', currentSystem: basis, plannedAction: r.recommended_action || '',
+      complianceStatus: status, originalStatus: original, workStatus: work, priority, owner, dueDate: r.target_date || null, progress, linkedActions,
+      sourceData: {
+        standard: `ISO ${standard}`, clause: r.clause, clauseName: r.clause_name || '', requirement: r.requirement_text || '', currentSystem: basis, plannedAction: r.recommended_action || '',
+        complianceStatus: status, originalComplianceStatus: original, workStatus: work, priority, owner, dueDate: r.target_date || '', progressPercent: Math.round(progress * 100),
+        evidenceCount: evLinks.filter(l => l.target_id === r.id).length, notesCount: comments.filter(c => c.entity_type === 'requirement' && c.entity_id === r.id).length,
+        subtaskCount: subtasks.filter(s => acts.some(a => a.id === s.action_id)).length, sharedActions: acts.filter(a => (reqsByAction.get(a.id) || new Set()).size > 1).length,
+        sourceSheet: (r.imported && r.imported.sheet) || '', sourceRow: (r.imported && r.imported.row != null) ? String(r.imported.row) : '',
+        sourceChanged: !!r.source_changed, missingFromSource: !!r.missing_from_source, manual: !(r.origin === 'library' || r.library_requirement_id), archived: false, updatedAt: r.updated_at || '',
+      },
+    };
+    rows.push(Object.fromEntries(EXPORT_FIELDS.map(k => [k, row[k]])));
+  }
+  return { standard, auditRef: audit.ref, dataAsAt: await boardToday(ctx), rows };
+}
+function checkExportStandard(payload, ctx) {
+  if (!/^\d{4,5}$/.test(String(payload.standard || ''))) throw badRequest('Pick a standard.');
+}
+async function boardStandardCodes(ctx) {
+  const as = await ctx.db.list('iso_audit_standards', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] });
+  const codes = [];
+  for (const x of as) { const v = await ctx.db.get('iso_standard_versions', x.version_id); if (v) codes.push(v.standard_code); }
+  return codes;
+}
+defineOp('export.dataset', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async validate(payload, ctx) { checkExportStandard(payload, ctx); },
+  async run(ctx) {
+    if (!(await boardStandardCodes(ctx)).includes(ctx.payload.standard)) throw badRequest('That standard is not on this board.');
+    return exportDataset(ctx, ctx.payload.standard);
+  },
+});
+defineOp('export.gapAnalysis', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async validate(payload, ctx) { checkExportStandard(payload, ctx); },
+  async run(ctx) {
+    if (!(await boardStandardCodes(ctx)).includes(ctx.payload.standard)) throw badRequest('That standard is not on this board.');
+    const ds = await exportDataset(ctx, ctx.payload.standard);
+    const filled = isoExport.fillGapAnalysis(require('fs').readFileSync(GAP_TEMPLATE_PATH), ds);
+    const filename = `${ctx.audit.ref}_ISO${ctx.payload.standard}_Gap_Analysis.xlsx`;
+    await ctx.db.log({ audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'audit', entity_id: ctx.audit.id, entity_ref: ctx.audit.ref,
+      action: 'exported', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind, after: { kind: 'gap_analysis', standard: ctx.payload.standard, rows: ds.rows.length, filename } });
+    return { filename, rows: ds.rows.length, base64: filled.buffer.toString('base64') };
+  },
+});
+
 defineOp('export.gantt', {
   scope: 'audit', clientProjection: null,
   allow(ctx) { return canOpenAudit(ctx.caller, ctx.audit, ctx.members); },

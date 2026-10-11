@@ -1,0 +1,28 @@
+// Can-fail mutations for release-1 batch B3 (node .agents/_canfail.cjs .agents/_mut-b3.cjs --green).
+const S = 'iso-history-test', X = 'iso-export-test';
+module.exports = [
+  { id: 'b3-live-links', suite: S, file: 'api/_iso.js', note: 'cross-standard links read the live release instead of the board\'s',
+    find: "      const peers = libraryRelease(ctx.audit).relByClause.get(r.standard_code + ' ' + r.clause); // B3.1", replace: "      const peers = LIBRARY_REL_BY_CLAUSE.get(r.standard_code + ' ' + r.clause);" },
+  { id: 'b3-live-docs', suite: S, file: 'api/_iso.js', note: 'the document catalogue reads the live release',
+    find: "    const releaseDocs = libraryRelease(ctx.audit).documents; // B3.1: the board's own catalogue", replace: '    const releaseDocs = DOCUMENT_CATALOG;' },
+  { id: 'b3-board-release', suite: S, file: 'api/_iso.js', note: 'a new board does not take the current release',
+    find: "      library_release: currentLibraryRelease(), // B3.1\n", replace: "      library_release: 'v3',\n" },
+  { id: 'b3-no-snapshot', suite: S, file: 'api/_iso.js', note: 'closing writes no snapshot',
+    find: '    if (closing) await writeCloseSnapshot(ctx, updated); // B3.2\n', replace: '' },
+  { id: 'b3-snapshot-update', suite: S, file: 'api/_isoDbOffline.js', note: 'a snapshot can be updated',
+    find: 'function refuseImmutable(table) { if (IMMUTABLE_TABLES.includes(table))', replace: 'function refuseImmutable(table) { if (false)' },
+  { id: 'b3-sha', suite: S, file: 'api/_iso.js', note: 'the snapshot records no checksum for an uploaded file',
+    find: "sha256: e.storage_path ? (sha.get(e.id) || null) : null,", replace: 'sha256: null,' },
+  { id: 'b3-skip-signal', suite: S, file: 'api/_iso.js', note: 'doc_linked is never written',
+    find: "  if (!LINK_SOURCES.includes(source) || !evidence) return;\n", replace: '  return;\n' },
+  { id: 'b35-ofi-prefix', suite: X, file: 'api/_iso.js', note: 'the OFI is not written before the basis',
+    find: "  const ofi = r.ofi && (cs === 'compliant' || cs === 'partially_compliant') ? 'OFI: '", replace: "  const ofi = false ? 'OFI: '" },
+  { id: 'b35-guard', suite: X, file: 'api/_isoExport.js', note: 'text starting with = is written as-is',
+    find: "return /^[=+\\-@\\t\\r]/.test(t) ? \"'\" + t : t;", replace: 'return t;' },
+  { id: 'b35-internal-action', suite: X, file: 'api/_iso.js', note: 'internal actions appear in Linked Actions',
+    find: "acts.filter(a => a.visibility && a.visibility !== 'internal').map(", replace: 'acts.map(' },
+  { id: 'b35-conformance', suite: X, file: 'api/_isoExport.js', note: 'overall conformance keeps N/A and out-of-scope in the denominator',
+    find: '  v.I7 = D7 - naAll === 0 ? 0 : v.E7 / (D7 - naAll);', replace: '  v.I7 = D7 === 0 ? 0 : v.E7 / D7;' },
+  { id: 'b35-sheet-name', suite: X, file: 'api/_isoExport.js', note: 'the Summary formulas keep pointing at the 9001 Register',
+    find: "  let sum = getPart(entries, 'xl/worksheets/sheet1.xml').split(TEMPLATE_SHEET).join(sheetName)", replace: "  let sum = getPart(entries, 'xl/worksheets/sheet1.xml')" },
+];
