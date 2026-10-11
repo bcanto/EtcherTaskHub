@@ -2,6 +2,8 @@
 -- Etcher Task Hub — ISO Audit core schema
 -- Migration: 009_iso_core.sql
 --
+-- WRITTEN, NEVER APPLIED (hard rule 1) — a draft amended in place through release-1; the user applies it.
+--
 -- Everything ISO lives in these new `iso_*` tables, reached only through the service role from
 -- api/iso.js — never from the browser directly, and never through the app_state blob (see
 -- docs/iso-audit-integration-plan.md D1). Every table: RLS enabled with NO policies, plus an

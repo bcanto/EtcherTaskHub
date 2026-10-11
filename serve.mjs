@@ -107,34 +107,15 @@ const CACHE_CONTROL = {
 // project via --envfile, the CSP (and the served index.html's meta tag, below) must point at
 // THAT project, not the hardcoded production one. Production is served by Vercel directly, not
 // by this file, so this never affects production.
-const PROD_SUPABASE_HOST = 'wowwiafaqzovlfwzyktj.supabase.co';
+// Release-1 B6.1: one source for these headers — security-headers.cjs, also written into vercel.json
+// by scripts/gen-vercel-headers.cjs (serve-security-test asserts the two agree).
+const _securityHeaders = createRequire(import.meta.url)('./security-headers.cjs');
+const PROD_SUPABASE_HOST = _securityHeaders.PROD_SUPABASE_HOST;
 function _hostOf(url) { try { return new URL(url).host; } catch (_) { return ''; } }
 const SUPABASE_HOST = (!OFFLINE && SUPABASE_URL) ? (_hostOf(SUPABASE_URL) || PROD_SUPABASE_HOST) : PROD_SUPABASE_HOST;
 
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https://placehold.co https://*.supabase.co",
-  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
-  "object-src 'none'",
-  // The PDF preview frames the file as a blob: URL; data: iframes are refused and
-  // without frame-src this falls back to default-src 'self' and blocks the preview.
-  "frame-src 'self' blob:",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
-
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options':  'nosniff',
-  'X-Frame-Options':         'DENY',
-  'Referrer-Policy':         'strict-origin-when-cross-origin',
-  'X-XSS-Protection':        '1; mode=block',
-  'Permissions-Policy':      'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy': CSP,
-};
+const CSP = _securityHeaders.buildCsp(SUPABASE_HOST);
+const SECURITY_HEADERS = _securityHeaders.securityHeaders(SUPABASE_HOST);
 
 const _ROOT = path.resolve(__dirname);
 
@@ -303,6 +284,8 @@ http.createServer(async (req, res) => {
       supabaseUrl:      SUPABASE_URL,
       supabaseAnonKey:  SUPABASE_ANON_KEY,
       isoEnabled:       OFFLINE || process.env.ISO_ENABLED === '1',
+      // Release-1 B6.3: the "Sign in with Microsoft" button (never offline — there is no Supabase).
+      microsoftSignIn:  !OFFLINE && process.env.MICROSOFT_SIGNIN === '1',
     });
     res.writeHead(200, {
       'Content-Type':  'application/json; charset=utf-8',

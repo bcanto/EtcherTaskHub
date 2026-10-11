@@ -84,6 +84,23 @@ function stopServer(proc) {
     const cfg = await fetch(`http://127.0.0.1:${PORT_A}/api/config`).then(r => r.json());
     ok(cfg.supabaseUrl === '', '--offline still reports no Supabase project at /api/config');
 
+    // Release-1 B6.1 / B6.2: the headers come from one source (security-headers.cjs) and vercel.json
+    // carries the same set; supabase-js is pinned to a vendored file with a matching integrity hash.
+    const { securityHeaders } = require(path.join(ROOT, 'security-headers.cjs'));
+    const want = securityHeaders();
+    const home = await fetch(`http://127.0.0.1:${PORT_A}/`);
+    const html = await home.text();
+    for (const [k, v] of Object.entries(want)) ok(home.headers.get(k) === v, `serve.mjs sends ${k} from security-headers.cjs`);
+    const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+    const vh = Object.fromEntries((((vercel.headers || []).find(h => h.source === '/(.*)')) || { headers: [] }).headers.map(h => [h.key, h.value]));
+    ok(JSON.stringify(vh) === JSON.stringify(want), 'vercel.json sends exactly the same security headers (regenerate: node scripts/gen-vercel-headers.cjs)');
+    const tag = /<script src="(vendor\/supabase-js-[\d.]+\.umd\.js)" integrity="(sha384-[^"]+)"><\/script>/.exec(html);
+    ok(!!tag && !/supabase-js@2\//.test(html), 'index.html loads supabase-js from a pinned, vendored file — not a floating CDN version');
+    const vend = tag ? fs.readFileSync(path.join(ROOT, tag[1])) : Buffer.alloc(0);
+    ok(!!tag && tag[2] === 'sha384-' + require('crypto').createHash('sha384').update(vend).digest('base64'), 'its integrity hash matches the vendored file');
+    ok(!!tag && (await statusOnly(`http://127.0.0.1:${PORT_A}/${tag[1]}`)) === 200, 'the vendored file is served');
+    ok(cfg.microsoftSignIn === false, '--offline never offers Microsoft sign-in');
+
     // 0.3b: /iso/* always revalidates, unlike the default 24h cache on .js/.css, so a STOP
     // review never looks at day-old ISO front-end code. iso/ doesn't exist until Phase 4+, so
     // this creates and removes its own probe file.

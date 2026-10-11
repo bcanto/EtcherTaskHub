@@ -34,7 +34,8 @@
 <link rel="stylesheet" href="/iso/iso.css"/>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<!-- Release-1 B6.2: supabase-js pinned (2.117.3, vendored) with an integrity hash — never a floating CDN version on the login page. -->
+<script src="vendor/supabase-js-2.117.3.umd.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R"></script>
 <!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
 <style>
 /* ── Design tokens ── */
@@ -1440,6 +1441,11 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       </form>
+      <!-- Release-1 B6.3: shown only when /api/config switches it on (Supabase Azure provider, Etcher tenant). -->
+      <button type="button" id="login-ms" class="login-btn login-btn-ms" style="display:none;margin-top:10px" onclick="signInWithMicrosoft()" aria-label="Sign in with Microsoft">
+        <svg width="14" height="14" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign in with Microsoft
+      </button>
       <p style="margin-top:16px;font-size:11px;color:#8da2b2;text-align:center;line-height:1.6">By accessing Etcher Task Hub, you agree to the <a href="/terms-of-use.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Terms of Use</a> and acknowledge the <a href="/privacy-policy.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Privacy Policy</a>.</p>
 
     </div>
@@ -4428,6 +4434,15 @@ function _showOfflineBanner(){
 document.addEventListener('DOMContentLoaded',()=>{
   Promise.resolve(window._supabaseReady).then(()=>{if(!window._supabase)_showOfflineBanner();});
 });
+// Release-1 B6.3: "Sign in with Microsoft" through the Supabase Azure provider (restricted to Etcher's
+// tenant in the provider's own settings). Shown only when /api/config switches it on and the client
+// loaded; the password form above stays as the emergency path.
+function _updateMicrosoftSignIn(){const b=document.getElementById('login-ms');if(b)b.style.display=(window._microsoftSignIn&&window._supabase)?'':'none';}
+window._updateMicrosoftSignIn=_updateMicrosoftSignIn;
+function signInWithMicrosoft(){
+  if(!window._supabase){showLoginError('Microsoft sign-in is not available right now.');return;}
+  window._supabase.auth.signInWithOAuth({provider:'azure',options:{scopes:'openid email profile',redirectTo:location.origin+'/'}}).then(r=>{if(r&&r.error)showLoginError(r.error.message);});
+}
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
@@ -15168,7 +15183,8 @@ function createShareLink(type,targetId,label){
   if(!DB.shareLinks)DB.shareLinks=[];
   const existing=DB.shareLinks.find(l=>l.type===type&&l.targetId===targetId&&!l.revoked);
   if(existing){_copyShareUrl(existing.token);return;}
-  const link={id:'sl'+uid(),token:_genToken(),type,targetId,label:label||'',createdBy:currentUser.id,createdAt:new Date().toISOString(),revoked:false};
+  // Release-1 B6.6: a link expires a year after it is made (the server refuses it after that).
+  const link={id:'sl'+uid(),token:_genToken(),type,targetId,label:label||'',createdBy:currentUser.id,createdAt:new Date().toISOString(),expiresAt:new Date(Date.now()+365*86400000).toISOString(),revoked:false};
   DB.shareLinks.push(link);
   saveDB(DB);
   _copyShareUrl(link.token);
@@ -15277,6 +15293,7 @@ function openShareLinkManager(type,targetId,label){
       <input value="${escHtml(url)}" readonly style="flex:1;font-size:12px;border:none;background:transparent;color:#1a2940;outline:none">
       <button onclick="navigator.clipboard.writeText('${escHtml(url)}');showToast('Copied','success',2000)" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Copy</button>
     </div>
+    ${(()=>{const l=links[0],end=l.expiresAt?new Date(l.expiresAt):l.createdAt?new Date(Date.parse(l.createdAt)+365*86400000):null;return end?`<p style="font-size:12px;color:#6b8399;margin:0 0 10px">Works until ${escHtml(end.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}))} — after that, generate a new link.</p>`:'';})()}
     <button onclick="revokeShareLink('${links[0].token}');closeGenericModal();showToast('Link revoked','info')" class="btn btn-ghost btn-sm" style="font-size:12px;color:#991b1b;border-color:#fecaca">Revoke link</button>`
     :`<p style="font-size:13px;color:#6b8399;margin-bottom:16px">Share a read-only progress view of this ${type} with anyone — no login required.</p>
     <button onclick="createShareLink('${type}','${targetId}','${(label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}');closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
@@ -26771,7 +26788,7 @@ document.addEventListener('keydown',e=>{
   // Validate the token against what came back — never populate DB for an invalid one. The
   // local-storage fallback is for offline/local dev only (no Supabase configured).
   const _shareLinks=(_shareData?.shareLinks)||(window._supabase?[]:(DB.shareLinks||[]));
-  const link=_shareLinks.find(l=>l.token===token&&!l.revoked);
+  const link=_shareLinks.find(l=>l.token===token&&!l.revoked&&!(l.expiresAt&&Date.parse(l.expiresAt)<Date.now()));
   if(!link){
     document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px">
       <div style="margin-bottom:16px;color:#94a3b8">${icon('lock',30)}</div>

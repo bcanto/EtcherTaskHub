@@ -1,0 +1,13 @@
+# Release-1 B6.6: dependency alerts. Weekly version-update PRs for npm (the test tooling in
+# package.json) and the GitHub Actions used by the repo; security alerts arrive regardless.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

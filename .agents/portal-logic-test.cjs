@@ -320,6 +320,15 @@ ok(run('deleteEverything', {}).r.error, 'unknown action rejected');
   ok(!JSON.stringify(ts).includes('Alpha subitem') && !JSON.stringify(ts).includes('"hourBudget"'), 'share(task): nothing beyond the one task');
   ok(P.sliceForShare(b, 'cccccccccccccccccccccccc') === null, 'share: revoked link refused');
   ok(P.sliceForShare(b, 'dddddddddddddddddddddddd') === null, 'share: unknown token refused');
+  // Release-1 B6.6: links expire a year after they were made (or at their own expiresAt).
+  const day = 86400000, now = new Date('2026-10-11T00:00:00Z');
+  b.shareLinks.push({ id: 'sl4', token: 'eeeeeeeeeeeeeeeeeeeeeeee', type: 'workboard', targetId: 'bA', revoked: false, createdAt: new Date(now - 400 * day).toISOString() },
+    { id: 'sl5', token: 'ffffffffffffffffffffffff', type: 'workboard', targetId: 'bA', revoked: false, createdAt: new Date(now - 30 * day).toISOString() },
+    { id: 'sl6', token: 'gggggggggggggggggggggggg', type: 'workboard', targetId: 'bA', revoked: false, createdAt: new Date(now - 30 * day).toISOString(), expiresAt: new Date(now - day).toISOString() });
+  ok(P.sliceForShare(b, 'eeeeeeeeeeeeeeeeeeeeeeee', now) === null, 'share: a link made over a year ago is refused (expired)');
+  ok(P.sliceForShare(b, 'ffffffffffffffffffffffff', now) !== null, 'share: a recent link still works');
+  ok(P.sliceForShare(b, 'gggggggggggggggggggggggg', now) === null, 'share: a link past its own expiresAt is refused');
+  ok(P.sliceForShare(b, 'aaaaaaaaaaaaaaaaaaaaaaaa', now) !== null, 'share: a link from before dates were recorded keeps working until revoked');
   ok(P.sliceForShare(b, "aaaa' OR 1=1") === null && P.sliceForShare(b, '') === null, 'share: malformed token refused');
 }
 

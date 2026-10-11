@@ -215,10 +215,18 @@ function sliceForClient(blob, clientId, userId) {
 // Exactly what renderSharePage() draws, and nothing else. A task link keeps showing that
 // task's description and owner's name, as it always has — that is what staff choose to share
 // when they create the link. A board link shows task names, statuses and due dates by group.
-function sliceForShare(blob, token) {
+// Release-1 B6.6: a share link stops working SHARE_LINK_DAYS after it was made, or at its own expiresAt;
+// revoked links are refused as before. A link from before dates were recorded (no createdAt) keeps
+// working until someone revokes it.
+const SHARE_LINK_DAYS = 365;
+function shareLinkExpired(link, now) {
+  const end = link.expiresAt ? Date.parse(link.expiresAt) : link.createdAt ? Date.parse(link.createdAt) + SHARE_LINK_DAYS * 86400000 : null;
+  return end != null && Number.isFinite(end) && now.getTime() > end;
+}
+function sliceForShare(blob, token, now = new Date()) {
   if (!/^[0-9a-z]{16,64}$/.test(String(token || ''))) return null;
   const link = arr(blob.shareLinks).find(l => l.token === token && !l.revoked);
-  if (!link) return null;
+  if (!link || shareLinkExpired(link, now)) return null;
   const base = { _portalSlice: true, _shareSlice: true,
     shareLinks: [pick(link, ['id', 'token', 'type', 'targetId', 'label'])],
     boards: [], workboards: [], groups: [], tasks: [], users: [], staff: [], clients: [],
@@ -620,7 +628,7 @@ function checkConfined(before, after, spec) {
 }
 
 module.exports = {
-  sliceForClient, sliceForShare, applyPortalAction, checkConfined,
+  sliceForClient, sliceForShare, shareLinkExpired, SHARE_LINK_DAYS, applyPortalAction, checkConfined,
   // exported for tests
   taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk, blockedFile, normaliseMime, DATA_URL_RE, recentActivity, fileVisibleTo,
 };

@@ -28,6 +28,7 @@ window._supabaseReady = (async function _initSupabase() {
     // configured — ISO must still be enabled/disabled correctly in that (very common, dev)
     // case (plan Phase 5.1b).
     window._isoEnabled = cfg.isoEnabled === true;
+    window._microsoftSignIn = cfg.microsoftSignIn === true; // release-1 B6.3
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
       window._supabaseInitError = 'no Supabase credentials are configured on the server.';
@@ -52,6 +53,8 @@ window._supabaseReady = (async function _initSupabase() {
         params: { eventsPerSecond: 10 },
       },
     });
+
+    if (typeof window._updateMicrosoftSignIn === 'function') window._updateMicrosoftSignIn(); // release-1 B6.3
 
     // Listen for auth state changes so the app reacts to token refresh / sign-out
     window._supabase.auth.onAuthStateChange(async (event, session) => {
