@@ -486,13 +486,15 @@ defineOp('audit.update', {
   async run(ctx) {
     const allowed = ['title', 'audit_type', 'custom_type_label', 'scope_text', 'exclusions_text', 'planned_start',
       'planned_end', 'report_due', 'certification_body', 'lead_auditor_uid', 'internal_notes', 'stage',
-      'client_portal_enabled', 'default_visibility', 'maintenance_due'];
+      'client_portal_enabled', 'default_visibility', 'maintenance_due', 'setup'];
     const patch = {};
     for (const k of Object.keys(ctx.payload.patch || {})) {
       if (!allowed.includes(k)) throw badRequest(`Field ${k} is not editable here.`);
       patch[k] = ctx.payload.patch[k];
     }
     if ('stage' in patch && !AUDIT_STAGES.includes(patch.stage)) throw badRequest('Invalid stage.');
+    if ('audit_type' in patch && !AUDIT_TYPE_VALUES.includes(patch.audit_type)) throw badRequest('Invalid audit type.');
+    if ('setup' in patch) patch.setup = cleanAuditSetup(patch.setup); // B4.1
     if ('maintenance_due' in patch && patch.maintenance_due != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(patch.maintenance_due))) throw badRequest('The maintenance audit date must be a date.');
     // D31: closing a board records when, and gives it a maintenance audit date — the one asked for,
     // or 12 months after today (the board's timezone) — editable later. Reopening clears completed_at.
@@ -525,6 +527,20 @@ defineOp('audit.update', {
 });
 
 const AUDIT_STAGES = ['planning', 'fieldwork', 'reporting', 'capa', 'closed'];
+// Release-1 B4: 'follow_up' joins the audit types (009's check constraint amended to match).
+const AUDIT_TYPE_VALUES = ['internal', 'gap_analysis', 'certification_prep', 'surveillance', 'recertification', 'supplier', 'custom', 'follow_up'];
+// B4.1: the audit setup card — objective, scope statement, criteria (free text beside the board's own
+// standards), sites (the board's units), limitations, opening and closing meetings. Saved on the board
+// (iso_audits.setup) and read by B5's reports. Unknown keys are dropped; text is bounded.
+function cleanAuditSetup(raw) {
+  if (raw == null) return null;
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw badRequest('Invalid audit setup.');
+  const text = (v, max = 4000) => { if (v == null || v === '') return null; if (typeof v !== 'string' || v.length > max) throw badRequest('An audit setup field is too long.'); return v.trim() || null; };
+  const date = v => { if (v == null || v === '') return null; if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v))) throw badRequest('A meeting date must be a date.'); return String(v); };
+  const meeting = m => (m && typeof m === 'object' ? { date: date(m.date), attendees: text(m.attendees, 1000), notes: text(m.notes) } : null);
+  const sites = Array.isArray(raw.sites) ? raw.sites.filter(isValidId).slice(0, 200) : [];
+  return { objective: text(raw.objective), scope: text(raw.scope), criteria: text(raw.criteria), sites, limitations: text(raw.limitations), opening: meeting(raw.opening), closing: meeting(raw.closing) };
+}
 
 // ── Release-1 B3.2 / B3.3: the close snapshot ───────────────────────────────────────────────────
 // Closing a board writes one immutable iso_audit_snapshots row (kind 'close'): per clause its
@@ -629,12 +645,24 @@ function occurrenceKeys(rows) {
   }
   return out;
 }
-defineOp('audit.startMaintenance', {
+// Release-1 B4.2 (Q9): audit.startFollowUp generalises this op — the same carry-forward, plus a type
+// ('maintenance' keeps everything in scope; 'follow_up' scopes to the chosen findings, actions and
+// clauses and sets every other clause Out of scope), a planned date and a Lead. startMaintenance stays
+// as an alias. Each carried finding / action records where it came from (carried_meta).
+const START_NEXT_OP = {
   scope: 'audit', clientProjection: null,
   // Release-1 B2.6: the Lead Auditor starts next year's board too (R2 left it manager-only).
   allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ['audit_manager', 'lead_auditor'].includes(ctx.membership.audit_role)); },
   async validate(payload) {
     if (payload.title != null && !isNonEmptyText(payload.title, 200)) throw badRequest('Invalid title.');
+    if (payload.type != null && !['maintenance', 'follow_up'].includes(payload.type)) throw badRequest('Invalid follow-up type.');
+    if (payload.scope != null) {
+      if (typeof payload.scope !== 'object' || Array.isArray(payload.scope)) throw badRequest('Invalid scope.');
+      for (const k of ['requirementIds', 'findingIds', 'actionIds']) if (payload.scope[k] != null && (!Array.isArray(payload.scope[k]) || payload.scope[k].length > 5000 || !payload.scope[k].every(isValidId))) throw badRequest('Invalid scope.');
+    }
+    if (payload.type === 'follow_up' && !(payload.scope && ['requirementIds', 'findingIds', 'actionIds'].some(k => (payload.scope[k] || []).length))) throw badRequest('Pick at least one finding, action or clause for the follow-up.');
+    if (payload.plannedStart != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.plannedStart))) throw badRequest('The planned date must be a date.');
+    if (payload.leadUid != null && !isValidId(payload.leadUid)) throw badRequest('Invalid Lead Auditor.');
     if (payload.editions != null) {
       if (typeof payload.editions !== 'object' || Array.isArray(payload.editions)) throw badRequest('Invalid editions.');
       for (const [code, ed] of Object.entries(payload.editions)) if (!isValidId(code) || !/^\d{4}(\+A\d{1,2}:\d{4})?$/.test(String(ed))) throw badRequest('Invalid edition.');
@@ -642,7 +670,9 @@ defineOp('audit.startMaintenance', {
   },
   async run(ctx) {
     const prev = ctx.audit;
-    if (prev.stage !== 'closed') throw badRequest('Close this board first — a maintenance audit follows a completed one.');
+    if (prev.stage !== 'closed') throw badRequest('Close this board first — a maintenance or follow-up audit follows a completed one.');
+    const followUp = ctx.payload.type === 'follow_up';
+    const scopeIn = ctx.payload.scope || {};
     const already = (await ctx.db.list('iso_audits', { where: [{ field: 'previous_audit_id', op: 'eq', value: prev.id }, { field: 'archived_at', op: 'isnull' }] }))[0];
     if (already) throw badRequest(`The maintenance audit for this board has already been started: ${already.ref}.`);
     const caller = ctx.caller, nowIso = ctx.now.toISOString();
@@ -658,8 +688,10 @@ defineOp('audit.startMaintenance', {
       versions.push(v);
     }
     const audit = await ctx.db.insertNumbered('iso_audits', 'audit', 'AUD-' + (await ctx.isoYear()), {
-      id: uid('iaud_'), client_id: prev.client_id, title: ctx.payload.title || `Maintenance audit of ${prev.ref}`,
-      audit_type: 'internal', stage: 'planning', visibility: prev.visibility || 'all_internal',
+      id: uid('iaud_'), client_id: prev.client_id, title: ctx.payload.title || `${followUp ? 'Follow-up' : 'Maintenance'} audit of ${prev.ref}`,
+      audit_type: followUp ? 'follow_up' : 'internal', stage: 'planning', visibility: prev.visibility || 'all_internal',
+      planned_start: ctx.payload.plannedStart || null,
+      follow_up_scope: followUp ? { requirementIds: scopeIn.requirementIds || [], findingIds: scopeIn.findingIds || [], actionIds: scopeIn.actionIds || [] } : null,
       owner_uid: caller.uid, client_portal_enabled: false, default_visibility: prev.default_visibility || 'internal',
       scope_text: prev.scope_text || null, exclusions_text: prev.exclusions_text || null, previous_audit_id: prev.id,
       library_release: currentLibraryRelease(), // B3.1: a new board takes the current release
@@ -719,12 +751,33 @@ defineOp('audit.startMaintenance', {
       carry(row, p);
       ops.push({ table: 'iso_requirements', id: row.id, patch: row });
     }
+    // B4.2: a follow-up keeps only the chosen clauses — those picked, those of the picked findings and
+    // those the picked actions cover; every other clause (and any clause new in this edition) is Out of scope.
+    let scopeFindings = null, scopeActions = null, outOfScope = 0;
+    if (followUp) {
+      scopeFindings = new Set(scopeIn.findingIds || []); scopeActions = new Set(scopeIn.actionIds || []);
+      const keep = new Set(scopeIn.requirementIds || []);
+      if (scopeFindings.size) for (const l of await ctx.db.list('iso_finding_requirements', { where: [{ field: 'finding_id', op: 'in', value: [...scopeFindings] }] })) keep.add(l.requirement_id);
+      if (scopeActions.size) {
+        const aLinks = await ctx.db.list('iso_action_links', { where: [{ field: 'action_id', op: 'in', value: [...scopeActions] }, { field: 'link_state', op: 'eq', value: 'confirmed' }] });
+        const viaFindings = aLinks.filter(l => l.target_type === 'finding').map(l => l.target_id);
+        for (const l of aLinks) if (l.target_type === 'requirement') keep.add(l.target_id);
+        if (viaFindings.length) for (const l of await ctx.db.list('iso_finding_requirements', { where: [{ field: 'finding_id', op: 'in', value: viaFindings }] })) keep.add(l.requirement_id);
+      }
+      const prevOf = new Map([...reqMap].map(([p, n]) => [n, p]));
+      for (const o of ops) {
+        const p = prevOf.get(o.patch.id);
+        if (p && keep.has(p)) continue;
+        Object.assign(o.patch, { compliance_status: 'out_of_scope', applicability: 'out_of_scope' });
+        outOfScope++;
+      }
+    }
     if (ops.length) await ctx.db.importApply(isoImport.uid('imaint_'), ops);
     // Open findings, tagged with their previous ref and linked to the matched requirement.
     const prevFindings = await ctx.db.list('iso_findings', { where: [{ field: 'audit_id', op: 'eq', value: prev.id }, { field: 'archived_at', op: 'isnull' }] });
     const prevFindingLinks = prevFindings.length ? await ctx.db.list('iso_finding_requirements', { where: [{ field: 'finding_id', op: 'in', value: prevFindings.map(f => f.id) }] }) : [];
     const findingMap = new Map(); let findingsSkipped = 0;
-    for (const f of prevFindings.filter(x => !FINDING_CLOSED_STATUSES.includes(x.status))) {
+    for (const f of prevFindings.filter(x => !FINDING_CLOSED_STATUSES.includes(x.status) && (!scopeFindings || scopeFindings.has(x.id)))) {
       const newReqIds = prevFindingLinks.filter(l => l.finding_id === f.id).map(l => reqMap.get(l.requirement_id)).filter(Boolean);
       if (!newReqIds.length) { findingsSkipped++; continue; }
       const nf = await ctx.db.insertNumbered('iso_findings', 'child', audit.id + ':F', {
@@ -732,13 +785,14 @@ defineOp('audit.startMaintenance', {
         statement: f.statement || null, criteria: f.criteria || null, evidence_basis: f.evidence_basis || null, status: f.status,
         visibility: f.visibility || 'internal', visible_to_uids: f.visible_to_uids || [], root_cause_required: !!f.root_cause_required,
         carried_from_ref: `${prev.ref} / ${f.ref}`, created_by: caller.uid, updated_by: caller.uid,
+        carried_meta: { auditRef: prev.ref, ref: f.ref, status: f.status, by: f.created_by || null, at: f.created_at || null }, // B4.2
       }, { audit_id: audit.id, client_id: prev.client_id, entity_type: 'finding', entity_id: null, action: 'carried_over', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
       for (const rid of newReqIds) await ctx.db.insert('iso_finding_requirements', { finding_id: nf.id, requirement_id: rid });
       findingMap.set(f.id, nf.id);
     }
     // Open actions (with their subtasks), links remapped to the new requirements and carried findings.
     const prevActions = await ctx.db.list('iso_actions', { where: [{ field: 'audit_id', op: 'eq', value: prev.id }, { field: 'archived_at', op: 'isnull' }] });
-    const openActions = prevActions.filter(a => !ACTION_CLOSED_STATUSES.includes(a.status));
+    const openActions = prevActions.filter(a => !ACTION_CLOSED_STATUSES.includes(a.status) && (!scopeActions || scopeActions.has(a.id)));
     const prevActionLinks = openActions.length ? await ctx.db.list('iso_action_links', { where: [{ field: 'action_id', op: 'in', value: openActions.map(a => a.id) }, { field: 'link_state', op: 'eq', value: 'confirmed' }] }) : [];
     const prevSubtasks = openActions.length ? await ctx.db.list('iso_action_subtasks', { where: [{ field: 'action_id', op: 'in', value: openActions.map(a => a.id) }, { field: 'archived_at', op: 'isnull' }] }) : [];
     const ACTION_CARRY_FIELDS = ['title', 'description', 'owner_kind', 'owner_uid', 'start_date', 'due_date', 'priority', 'risk_rating', 'progress', 'status',
@@ -747,7 +801,8 @@ defineOp('audit.startMaintenance', {
     let actionsCarried = 0;
     for (const a of openActions) {
       const links = prevActionLinks.filter(l => l.action_id === a.id).map(l => ({ type: l.target_type, id: l.target_type === 'requirement' ? reqMap.get(l.target_id) : findingMap.get(l.target_id) })).filter(l => l.id);
-      const row = { id: uid('iact_'), audit_id: audit.id, client_id: prev.client_id, verification_status: 'not_verified', reopened_count: 0, carried_from_ref: `${prev.ref} / ${a.ref}`, created_by: caller.uid, updated_by: caller.uid };
+      const row = { id: uid('iact_'), audit_id: audit.id, client_id: prev.client_id, verification_status: 'not_verified', reopened_count: 0, carried_from_ref: `${prev.ref} / ${a.ref}`, created_by: caller.uid, updated_by: caller.uid,
+        carried_meta: { auditRef: prev.ref, ref: a.ref, status: a.status, by: a.created_by || null, at: a.created_at || null } }; // B4.2
       for (const k of ACTION_CARRY_FIELDS) if (a[k] !== undefined) row[k] = a[k];
       if (row.progress == null) row.progress = 0;
       const na = await ctx.db.insertNumbered('iso_actions', 'child', audit.id + ':A', row, { audit_id: audit.id, client_id: prev.client_id, entity_type: 'action', entity_id: null, action: 'carried_over', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
@@ -771,9 +826,169 @@ defineOp('audit.startMaintenance', {
       await ctx.db.insertNumbered('iso_evidence', 'child', audit.id + ':E', row, { audit_id: audit.id, client_id: prev.client_id, entity_type: 'evidence', entity_id: null, action: 'carried_over', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind });
       evidenceCarried++;
     }
-    const summary = { requirements: ops.length, matched: reqMap.size, unmatched: ops.length - reqMap.size, findings: findingMap.size, findingsSkipped, actions: actionsCarried, evidence: evidenceCarried };
-    await ctx.db.log({ audit_id: audit.id, client_id: prev.client_id, entity_type: 'audit', entity_id: audit.id, entity_ref: audit.ref, action: 'maintenance_started', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind, after: { previous: prev.ref, ...summary } });
+    // B4.2: the Lead chosen in the dialog leads the new board.
+    if (ctx.payload.leadUid) {
+      const leadUid = ctx.payload.leadUid;
+      const now = await ctx.db.list('iso_audit_members', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }] });
+      if (now.some(m => m.user_uid === leadUid)) await ctx.db.updateMember(audit.id, leadUid, { audit_role: 'lead_auditor', ...defaultFlagsFor('lead_auditor') }, null);
+      else await ctx.db.insert('iso_audit_members', { audit_id: audit.id, user_uid: leadUid, member_kind: 'staff', audit_role: 'lead_auditor', ...defaultFlagsFor('lead_auditor'), added_by: caller.uid, added_at: nowIso });
+    }
+    const summary = { requirements: ops.length, matched: reqMap.size, unmatched: ops.length - reqMap.size, findings: findingMap.size, findingsSkipped, actions: actionsCarried, evidence: evidenceCarried, outOfScope, type: followUp ? 'follow_up' : 'maintenance' };
+    await ctx.db.log({ audit_id: audit.id, client_id: prev.client_id, entity_type: 'audit', entity_id: audit.id, entity_ref: audit.ref, action: followUp ? 'follow_up_started' : 'maintenance_started', source: 'user', actor_uid: caller.uid, actor_kind: caller.kind, after: { previous: prev.ref, ...summary } });
     return { audit, summary };
+  },
+};
+defineOp('audit.startMaintenance', START_NEXT_OP);
+defineOp('audit.startFollowUp', START_NEXT_OP);
+
+// ── Release-1 B4.5: client settings (Q8, Q10, Q13) ─────────────────────────────────────────────
+// One small record per client: next audit due, frequency, industry, notes. Reminders read these dates
+// (B5); recurrence never creates boards. Staff only.
+const CLIENT_FREQUENCIES = ['one_time', 'monthly', 'quarterly', 'six_monthly', 'annual', 'custom'];
+const CLIENT_INDUSTRIES = ['mining_resources', 'construction', 'manufacturing', 'transport_logistics', 'professional_services', 'government', 'other'];
+const CLIENT_SETTINGS_FIELDS = ['next_audit_due', 'frequency', 'custom_months', 'industry', 'notes'];
+function blankClientSettings(clientId) { return { id: clientId, client_id: clientId, next_audit_due: null, frequency: null, custom_months: null, industry: null, notes: null, row_version: 0 }; }
+defineOp('clientSettings.get', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async validate(payload) { if (!isValidId(payload.clientId)) throw badRequest('A client is required.'); },
+  async run(ctx) { return (await ctx.db.get('iso_client_settings', ctx.payload.clientId)) || blankClientSettings(ctx.payload.clientId); },
+});
+defineOp('clientSettings.update', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async validate(payload) {
+    if (!isValidId(payload.clientId)) throw badRequest('A client is required.');
+    if (payload.expectedVersion == null) throw badRequest('expectedVersion is required.');
+    const p = payload.patch || {};
+    for (const k of Object.keys(p)) if (!CLIENT_SETTINGS_FIELDS.includes(k)) throw badRequest(`Field ${k} is not editable here.`);
+    if (p.next_audit_due != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(p.next_audit_due))) throw badRequest('The next audit date must be a date.');
+    if (p.frequency != null && !CLIENT_FREQUENCIES.includes(p.frequency)) throw badRequest('Invalid frequency.');
+    if (p.custom_months != null && !(Number.isInteger(p.custom_months) && p.custom_months >= 1 && p.custom_months <= 60)) throw badRequest('Custom frequency is 1 to 60 months.');
+    if (p.industry != null && !CLIENT_INDUSTRIES.includes(p.industry)) throw badRequest('Invalid industry.');
+    if (p.notes != null && (typeof p.notes !== 'string' || p.notes.length > 4000)) throw badRequest('The notes are too long.');
+  },
+  async run(ctx) {
+    await ctx.checkClientExists(ctx.payload.clientId);
+    const patch = { ...ctx.payload.patch };
+    if (patch.frequency && patch.frequency !== 'custom') patch.custom_months = null;
+    const existing = await ctx.db.get('iso_client_settings', ctx.payload.clientId);
+    const activity = { audit_id: null, client_id: ctx.payload.clientId, entity_type: 'client_settings', entity_id: ctx.payload.clientId, action: 'client_settings_updated', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind };
+    if (!existing) {
+      if (Number(ctx.payload.expectedVersion) !== 0) throw conflict();
+      const row = { ...blankClientSettings(ctx.payload.clientId), ...patch, row_version: 1, created_by: ctx.caller.uid, updated_by: ctx.caller.uid, created_at: ctx.now.toISOString(), updated_at: ctx.now.toISOString() };
+      return ctx.db.insert('iso_client_settings', row, activity);
+    }
+    try { return await ctx.db.update('iso_client_settings', existing.id, patch, ctx.payload.expectedVersion, activity); }
+    catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+  },
+});
+
+// ── Release-1 B4.4: the client programme (Q8 — the client's chain of boards, no new record) ──────
+// Adds up existing tables only, and only over boards the caller can open. No single "health" figure.
+defineOp('programme.get', {
+  scope: 'none', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff'; },
+  async validate(payload) { if (!isValidId(payload.clientId)) throw badRequest('A client is required.'); },
+  async run(ctx) {
+    const clientId = ctx.payload.clientId;
+    const all = await ctx.db.list('iso_audits', { where: [{ field: 'client_id', op: 'eq', value: clientId }, { field: 'archived_at', op: 'isnull' }] });
+    const audits = [];
+    for (const a of all) {
+      const members = await ctx.db.list('iso_audit_members', { where: [{ field: 'audit_id', op: 'eq', value: a.id }] });
+      if (canOpenAudit(ctx.caller, a, members)) audits.push(a);
+    }
+    const ids = audits.map(a => a.id);
+    const today = await boardToday(ctx);
+    const plus = days => { const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
+    const within30 = plus(30), within60 = plus(60);
+    const byId = new Map(audits.map(a => [a.id, a]));
+    const item = (row, extra) => ({ auditId: row.audit_id, auditRef: (byId.get(row.audit_id) || {}).ref || null, id: row.id, ref: row.ref || null, title: row.title || row.description || '', ...extra });
+    const listIn = async table => ids.length ? (await ctx.db.list(table, { where: [{ field: 'audit_id', op: 'in', value: ids }, { field: 'archived_at', op: 'isnull' }], limit: 20000 })) : [];
+    const [findings, actions, evidence] = [await listIn('iso_findings'), await listIn('iso_actions'), await listIn('iso_evidence')];
+    const openF = findings.filter(f => !FINDING_CLOSED_STATUSES.includes(f.status));
+    const standards = new Set(), units = [];
+    for (const a of audits) {
+      for (const as of await ctx.db.list('iso_audit_standards', { where: [{ field: 'audit_id', op: 'eq', value: a.id }] })) { const v = await ctx.db.get('iso_standard_versions', as.version_id); if (v) standards.add(v.standard_code); }
+      for (const u of await ctx.db.list('iso_audit_units', { where: [{ field: 'audit_id', op: 'eq', value: a.id }, { field: 'archived_at', op: 'isnull' }] })) if (!units.includes(u.name)) units.push(u.name);
+    }
+    const successorOf = new Map(audits.filter(a => a.previous_audit_id).map(a => [a.previous_audit_id, a]));
+    const dueBoards = audits.filter(a => a.stage === 'closed' && !successorOf.has(a.id) && a.maintenance_due);
+    const settings = (await ctx.db.get('iso_client_settings', clientId)) || blankClientSettings(clientId);
+    const nextAuditDue = settings.next_audit_due || dueBoards.map(a => a.maintenance_due).sort()[0] || null;
+    const byClass = {};
+    for (const f of openF) (byClass[f.classification] = byClass[f.classification] || []).push(item(f, { classification: f.classification, status: f.status }));
+    const tiles = {
+      openFindingsByClass: byClass,
+      overdueActions: actions.filter(a => !ACTION_CLOSED_STATUSES.includes(a.status) && a.due_date && a.due_date < today).map(a => item(a, { due: a.due_date })),
+      effectivenessDue: actions.filter(a => a.effectiveness_review_date && a.effectiveness_review_date <= within30 && a.verification_status !== 'effective').map(a => item(a, { due: a.effectiveness_review_date })),
+      repeatFindings: openF.filter(f => f.repeat_of_ref).map(f => item(f, { repeatOf: f.repeat_of_ref })),
+      reopenedFindings: findings.filter(f => (f.reopened_count || 0) > 0).map(f => item(f, { reopened: f.reopened_count, status: f.status })),
+      documentsDue: evidence.filter(e => !e.superseded_by && e.review_or_expiry_date && e.review_or_expiry_date <= within30).map(e => item(e, { due: e.review_or_expiry_date })),
+      followUpsDue: dueBoards.filter(a => a.maintenance_due <= within60).map(a => ({ auditId: a.id, auditRef: a.ref, title: a.title, due: a.maintenance_due })),
+    };
+    const timeline = audits.slice().sort((x, y) => String(x.planned_start || x.created_at || '').localeCompare(String(y.planned_start || y.created_at || '')))
+      .map(a => ({ id: a.id, ref: a.ref, title: a.title, auditType: a.audit_type, stage: a.stage, plannedStart: a.planned_start || null, plannedEnd: a.planned_end || null,
+        completedAt: a.completed_at || null, maintenanceDue: a.maintenance_due || null, previousAuditId: a.previous_audit_id || null, hasSuccessor: successorOf.has(a.id), createdAt: a.created_at || null }));
+    return { client: { id: clientId, name: (await ctx.getClientName(clientId)) || clientId }, standards: [...standards].sort(), sites: units, settings, nextAuditDue, timeline, tiles, today };
+  },
+});
+
+// ── Release-1 B4.6: evidence requests (iso_evidence_requests, already in 010) ────────────────────
+// "Request from client" in the Documents tab: one row per document per clause it is asked for. The
+// letter itself is text the auditor copies or downloads; email and the portal come later.
+const EVIDENCE_REQUEST_STATUSES = ['open', 'submitted', 'closed'];
+defineOp('evidenceRequest.create', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canManageEvidence(ctx); },
+  async validate(payload) {
+    if (!Array.isArray(payload.items) || !payload.items.length || payload.items.length > 200) throw badRequest('Pick at least one document.');
+    for (const it of payload.items) {
+      if (!it || !isNonEmptyText(it.documentName, 300)) throw badRequest('Each request needs a document name.');
+      if (!Array.isArray(it.requirementIds) || !it.requirementIds.length || it.requirementIds.length > 200 || !it.requirementIds.every(isValidId)) throw badRequest('Each request needs its clauses.');
+      if (it.requestedFromUid != null && !isValidId(it.requestedFromUid)) throw badRequest('Invalid recipient.');
+      if (it.dueDate != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(it.dueDate))) throw badRequest('The due date must be a date.');
+    }
+  },
+  async run(ctx) {
+    const rows = [];
+    for (const it of ctx.payload.items) {
+      for (const rid of new Set(it.requirementIds)) {
+        const r = await ctx.db.get('iso_requirements', rid);
+        if (!r || r.audit_id !== ctx.audit.id || r.archived_at) throw badRequest('That clause is not on this audit.');
+        rows.push(await ctx.db.insert('iso_evidence_requests', {
+          id: uid('iereq_'), audit_id: ctx.audit.id, client_id: ctx.audit.client_id, target_type: 'requirement', target_id: rid,
+          description: it.documentName.trim(), requested_from_uid: it.requestedFromUid || null, due_date: it.dueDate || null, status: 'open',
+          row_version: 1, created_by: ctx.caller.uid, updated_by: ctx.caller.uid, created_at: ctx.now.toISOString(), updated_at: ctx.now.toISOString(),
+        }));
+      }
+    }
+    await ctx.db.log({ audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'audit', entity_id: ctx.audit.id, entity_ref: ctx.audit.ref,
+      action: 'evidence_requested', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind, after: { documents: ctx.payload.items.map(i => i.documentName), rows: rows.length } });
+    return { created: rows.length, rows };
+  },
+});
+defineOp('evidenceRequest.list', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) { return ctx.db.list('iso_evidence_requests', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] }); },
+});
+defineOp('evidenceRequest.update', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canManageEvidence(ctx); },
+  async validate(payload) {
+    if (!isValidId(payload.id) || payload.expectedVersion == null) throw badRequest('A request and expectedVersion are required.');
+    if (!EVIDENCE_REQUEST_STATUSES.includes(payload.status)) throw badRequest('Invalid status.');
+  },
+  async run(ctx) {
+    const row = await ctx.db.get('iso_evidence_requests', ctx.payload.id);
+    if (!row || row.audit_id !== ctx.audit.id) throw notFound();
+    try {
+      return await ctx.db.update('iso_evidence_requests', row.id, { status: ctx.payload.status }, ctx.payload.expectedVersion, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: row.target_id, action: 'evidence_request_' + ctx.payload.status,
+        field: 'status', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+    } catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
   },
 });
 
@@ -3070,6 +3285,13 @@ defineOp('document.list', {
       if (!clauses.length) continue;
       const latest = latestOf(t);
       out.push({ name: latest.title, custom: true, clauses, providedCount: clauses.length, totalCount: clauses.length, latest });
+    }
+    // B4.6: when each document was last asked for (an open request on any of its clauses).
+    const reqRows = (await ctx.db.list('iso_evidence_requests', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }, { field: 'archived_at', op: 'isnull' }] })).filter(x => x.status === 'open');
+    for (const d of out) {
+      const ids = new Set(d.clauses.map(c => c.requirementId));
+      const hit = reqRows.filter(x => ids.has(x.target_id) && String(x.description || '').toLowerCase() === d.name.toLowerCase()).map(x => x.created_at).sort().pop();
+      if (hit) d.requestedAt = hit;
     }
     out.sort((a, b) => b.totalCount - a.totalCount || a.name.localeCompare(b.name));
     return out;

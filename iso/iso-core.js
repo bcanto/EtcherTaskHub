@@ -293,7 +293,7 @@
     const body = !_land.audits.length
       ? `<div class="iso-empty"><strong>No ISO boards yet.</strong><span>Start one for a client — pick the standards and the clauses arrive ready to assess.</span><button type="button" class="btn btn-primary" onclick="ISO.openNewBoard()">+ New ISO board</button></div>`
       : !list.length ? '<div class="iso-empty"><strong>No boards match.</strong></div>'
-      : groups.map(([cid, rows]) => `<section class="iso-land-group"><h2 class="iso-land-gh">${esc(_landClientName(cid))} <span class="muted">${rows.length} board${rows.length === 1 ? '' : 's'}</span></h2>${rows.sort((x, y) => String(y.ref).localeCompare(String(x.ref))).map(landingRowHtml).join('')}</section>`).join('');
+      : groups.map(([cid, rows]) => `<section class="iso-land-group"><h2 class="iso-land-gh"><button type="button" class="iso-land-client" data-cid="${esc(cid)}" title="Open this client's programme" onclick="ISO.openProgramme(this.dataset.cid)">${esc(_landClientName(cid))}</button> <span class="muted">${rows.length} board${rows.length === 1 ? '' : 's'}</span></h2>${rows.sort((x, y) => String(y.ref).localeCompare(String(x.ref))).map(landingRowHtml).join('')}</section>`).join('');
     host.innerHTML = toolbar + body;
   }
   function _landSetFilter(f) {
@@ -463,6 +463,7 @@
       </div>
       ${isManager ? `<button class="btn btn-teal btn-sm" style="margin-top:14px" onclick="ISO.saveSettings('${esc(audit.id)}',${audit.row_version})">Save</button>` : ''}
     </div>
+    ${auditSetupCardHtml(audit, isManager)}
     ${maintenanceCardHtml(audit, isManager)}
     ${isManager || canAddCustom() ? `<div class="card" style="padding:20px;margin-top:16px;max-width:720px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       ${isManager ? `<button class="btn btn-ghost btn-sm iso-set-access" onclick="ISO.openAccessModal()">Access — who works on this board</button>` : ''}
@@ -584,7 +585,7 @@
       const today = new Date().toISOString().slice(0, 10), late = audit.maintenance_due && audit.maintenance_due < today;
       parts.push(`<div class="iso-maint-line">Completed${audit.completed_at ? ' ' + esc(fmtTs(audit.completed_at)) : ''}. Maintenance audit due <strong${late ? ' class="iso-maint-late"' : ''}>${audit.maintenance_due ? esc(fmtDate(audit.maintenance_due)) : 'not set'}</strong>${late ? ' — overdue' : ''}.</div>`);
       if (audit.successor) parts.push(`<div class="iso-maint-line">The maintenance audit has been started: <strong>${esc(audit.successor.ref)}</strong>. <button type="button" class="iso-tb-btn" data-id="${esc(audit.successor.id)}" onclick="ISO.openBoard(this.dataset.id)">Open ${esc(audit.successor.ref)}</button></div>`);
-      else if (isManager) parts.push(`<div class="iso-maint-line"><button type="button" class="btn btn-teal btn-sm iso-maint-start" data-id="${esc(audit.id)}" onclick="ISO._startMaintenance(this.dataset.id)">Start maintenance audit</button><span class="iso-maint-hint">A new board for next year: same scope, last year's results as its baseline, open findings and actions carried over, accepted evidence offered as suggestions.</span></div>`);
+      else if (isManager) parts.push(`<div class="iso-maint-line"><button type="button" class="btn btn-teal btn-sm iso-maint-start" data-id="${esc(audit.id)}" onclick="ISO._openStartNext(this.dataset.id)">Start follow-up / maintenance…</button><span class="iso-maint-hint">A follow-up checks only the findings, actions and clauses you pick; a maintenance audit is next year's full board with this year's results as its baseline. Open items carry over; accepted evidence is offered as suggestions.</span></div>`);
     }
     if (!parts.length) return '';
     return `<div class="card iso-maint-card" style="padding:16px 20px;margin-top:16px;max-width:720px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">Maintenance audit</div>${parts.join('')}</div>`;
@@ -847,6 +848,7 @@
 
   // ── Main render entry points ────────────────────────────────────────────────────────────────
   function render(vc) {
+    if (!route.auditId && route.programmeClientId) { setTimeout(fillProgramme, 0); return landingSkeleton(); } // B4.4
     if (!route.auditId) {
       setTimeout(fillLanding, 0);
       return landingSkeleton();
@@ -878,7 +880,7 @@
     if (route.tab === 'dashboard') { shell(`<div id="iso-dash-tab">${skeletonFor('dashboard')}</div>`); if (_dash.mode === 'full') fillDashboardTab(audit); else fillOverviewTab(audit); return; }
     if (route.tab === 'evidence') { shell(`<div id="iso-evd-tab">${skeletonFor('table')}</div>`); fillEvidenceTab(audit); return; }
     shell(route.tab === 'settings' ? settingsTabHtml(audit, members) : '');
-    if (route.tab === 'settings') fillClientProfile(audit);
+    if (route.tab === 'settings') { fillClientProfile(audit); _fillSetupSites(audit, _cu() && (_cu().role === 'admin' || ['lead_auditor', 'audit_manager'].includes((members.find(m => m.user_uid === _cu().id || m.user_uid === 'offline:' + _cu().id) || {}).audit_role))); }
   }
 
   // navigate()'s own topbar client-line logic (index.html) runs synchronously and reads
@@ -983,6 +985,8 @@
     { id: 'evidence_review', label: 'Evidence to review', where: [{ field: '_evdReview', op: 'in', value: [true] }] },
     { id: 'approval_awaiting', label: 'Awaiting approval', where: [{ field: 'approval_state', op: 'in', value: ['proposed'] }] },
     { id: 'returned', label: 'Returned', where: [{ field: 'approval_state', op: 'in', value: ['returned'] }] },
+    // B4.3: on a maintenance / follow-up board, clauses whose result moved since the last audit.
+    { id: 'changed_since', label: 'Changed since last audit', where: [{ field: '_changedSince', op: 'in', value: [true] }] },
   ];
 
   // ── D32 senior review ────────────────────────────────────────────────────────────────────────
@@ -1149,6 +1153,8 @@
     }
     const out = [];
     if (row.derived_from_id) out.push('<span class="iso-flag iso-derived-pill" title="Copied from a related clause — check it, then Confirm">Derived</span>');
+    const cl = carryLabel(row); // B4.3
+    if (cl) out.push(`<span class="iso-flag iso-carry iso-carry-${cl === 'Changed since last audit' ? 'changed' : cl === 'Reconfirmed' ? 'same' : 'other'}" title="Against the previous audit's result">${esc(cl)}</span>`);
     const bp = basisProblemLocal(row);
     if (bp && !row.derived_from_id) out.push(`<span class="iso-flag iso-basis-missing" title="${esc(bp)}">${/^Gap/.test(bp) ? 'Gap reason missing' : 'Basis missing'}</span>`);
     if (row._consistency && row._consistency.length) out.push(`<span class="iso-flag iso-consistency" title="${esc('Same documents as ' + row._consistency.join(', ') + ' but the opposite conclusion — check both')}">Check consistency</span>`);
@@ -1617,7 +1623,7 @@
 
   // The "Evidence to review" view filters on this flag, so it must be set BEFORE any filtering — it was
   // set at the end of buildRequirementSections, which left the view empty on a freshly loaded register.
-  function reqSetEvidenceFlags() { for (const r of _req.requirements) { const sum = (_req.evidenceSummary || {})[r.id]; r._evdReview = !!(sum && (sum.suggested || sum.toReview)); r._srAwaiting = srStatus(r) === 'pending' && srReady(r); r._needsAction = needsAction(r); r._needsBasis = !r.derived_from_id && !!basisProblemLocal(r); } }
+  function reqSetEvidenceFlags() { for (const r of _req.requirements) { const sum = (_req.evidenceSummary || {})[r.id]; r._evdReview = !!(sum && (sum.suggested || sum.toReview)); r._srAwaiting = srStatus(r) === 'pending' && srReady(r); r._needsAction = needsAction(r); r._needsBasis = !r.derived_from_id && !!basisProblemLocal(r); r._changedSince = carryLabel(r) === 'Changed since last audit'; } }
   // While filtered from the dashboard, _req.requirements IS already exactly the server-filtered set —
   // a stale _req.view (left over from before navigating away) on top could silently drop rows the
   // banner said were there, so only the view the dashboard itself asked for (dashView) applies.
@@ -1724,7 +1730,8 @@
     // just not as chips. "Approve all" shows only while the Lead is on Awaiting approval.
     const lead = canApproveRequirementLocally();
     const showBasis = reqQuickViewCount('needs_basis') > 0 || _req.view === 'needs_basis';
-    const chipIds = ['all', 'not_assessed', 'needs_action'].concat(showBasis ? ['needs_basis'] : []).concat(sole ? [] : ['approval_awaiting', 'returned']);
+    const showChanged = reqQuickViewCount('changed_since') > 0 || _req.view === 'changed_since'; // B4.3
+    const chipIds = ['all', 'not_assessed', 'needs_action'].concat(showBasis ? ['needs_basis'] : []).concat(sole ? [] : ['approval_awaiting', 'returned']).concat(showChanged ? ['changed_since'] : []);
     const chipLabel = { all: 'All', approval_awaiting: lead ? 'Awaiting your approval' : 'Awaiting approval' };
     const views = chipIds.map(id => QUICK_VIEWS.find(v => v.id === id)).filter(Boolean);
     const approveAllCount = lead && !sole && _req.view === 'approval_awaiting' ? reqVisibleRows().filter(r => r.approval_state === 'proposed').length : 0;
@@ -2471,7 +2478,7 @@
       <div class="card" style="padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         ${fndPill(FINDING_CLASSIFICATION_LABEL[row.classification] || row.classification, fndClassColor(row.classification))}
         ${fndPill(FINDING_STATUS_LABEL[row.status] || row.status, fndStatusColor(row.status))}${fndBadgesHtml(row)}
-        <div style="margin-left:auto">${fndTransitionButtons(row)}</div>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${fndTransitionButtons(row)}${_auditCache && _auditCache.stage === 'closed' && !_auditCache.successor && ['lead_auditor', 'audit_manager', 'admin'].includes(_myAuditRole()) && !['closed', 'withdrawn'].includes(row.status) ? `<button class="btn btn-ghost btn-sm" data-id="${esc(row.id)}" data-audit="${esc(auditId)}" onclick="ISO._openStartNext(this.dataset.audit,{type:'follow_up',findingIds:[this.dataset.id]})">Schedule follow-up</button>` : ''}</div>
       </div>
       <div class="card" style="padding:16px;margin-bottom:12px">
         <div class="iso-field-grid">
@@ -4181,7 +4188,7 @@
   // renders what the server decided with the filter the server attached.
   let _dash = { auditId: null, data: null, mode: 'overview' };
   let _dashSeq = 0; // only the newest request may render — a slower, older answer never overwrites it
-  const AUDIT_TYPE_LABEL = { internal: 'Internal audit', gap_analysis: 'Gap analysis', certification_prep: 'Certification preparation', surveillance: 'Surveillance audit', recertification: 'Recertification audit', supplier: 'Supplier audit', custom: 'Custom audit' };
+  const AUDIT_TYPE_LABEL = { internal: 'Internal audit', gap_analysis: 'Gap analysis', certification_prep: 'Certification preparation', surveillance: 'Surveillance audit', recertification: 'Recertification audit', supplier: 'Supplier audit', custom: 'Custom audit', follow_up: 'Follow-up audit' };
   const STAGE_LABEL = { planning: 'Planning', fieldwork: 'Fieldwork', reporting: 'Reporting', capa: 'Corrective actions', closed: 'Closed' };
 
   // Only what the board's top strip doesn't already show (it has ref · title, editions, Private).
@@ -4207,7 +4214,7 @@
   }
   // Release-1 B3.5: Overview (compact and full) offers the workbook per standard — staff only.
   function _exportRowHtml(audit) {
-    return audit && _cu() && _cu().role !== 'client' && (audit.standards || []).length ? `<div class="iso-dash-export"><span class="iso-dash-export-k">Export to Excel</span>${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}</div>` : '';
+    return audit && _cu() && _cu().role !== 'client' && (audit.standards || []).length ? `<div class="iso-dash-export"><span class="iso-dash-export-k">Export to Excel</span>${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}<button type="button" class="btn btn-ghost btn-sm iso-audit-pack" onclick="ISO._openAuditPack()">On-site audit pack (PDF)</button></div>` : '';
   }
   // Release-1 B3.5: the gap-analysis workbook for one standard, built server-side from the template.
   async function _exportGapAnalysis(std, btn) {
@@ -4860,7 +4867,7 @@
         <span class="iso-doc-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></span>
         <span class="iso-doc-dn">${esc(d.name)}${_docs.filter !== 'key' && keyNames.has(d.name) ? '<span class="iso-keyflag">Key</span>' : ''}${d.custom ? '<span class="iso-keyflag">Custom</span>' : ''}</span>
         <span class="iso-doc-sv"><b>${d.clauses.length} clause${d.clauses.length === 1 ? '' : 's'}</b>${_docServesHtml(d.clauses)}</span>
-        <span class="iso-doc-ds ${p ? 'is-ok' : 'is-miss'}">${p ? `<span aria-hidden="true">✓</span>${esc([p.versionLabel, p.evidenceDate ? fmtDate(p.evidenceDate) : null].filter(Boolean).join(' · ') || 'Provided')}` : 'Not provided'}</span>
+        <span class="iso-doc-ds ${p ? 'is-ok' : 'is-miss'}">${p ? `<span aria-hidden="true">✓</span>${esc([p.versionLabel, p.evidenceDate ? fmtDate(p.evidenceDate) : null].filter(Boolean).join(' · ') || 'Provided')}` : (d.requestedAt ? `Requested ${esc(fmtTs(d.requestedAt))}` : 'Not provided')}</span>
         <span class="iso-doc-btns">${tpl ? `<button type="button" class="iso-mini-btn iso-doc-gen" data-doc="${esc(d.name)}" title="Build a prompt from the Company Profile to draft it" onclick="ISO._docOpenGenerator(this)"><svg class="iso-svg" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5M19 8v3"/><path d="m16 15 1.5-3 1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5z"/></svg>Generator</button>` : ''}<button type="button" class="btn btn-sm ${p ? 'btn-ghost' : 'btn-primary iso-btn-dark'} iso-doc-add" data-doc="${esc(d.name)}" onclick="ISO._docOpenAdd(this)">${p ? 'Edit links' : '+ Add'}</button></span>
       </div>`;
     };
@@ -4870,6 +4877,7 @@
         <label class="iso-search"><span class="sr-only">Search documents</span><input type="search" id="iso-doc-q" value="${esc(_docs.q)}" placeholder="Search documents" oninput="ISO._docSetQuery(this.value)"/></label>
         <div class="iso-fchips">${chips.map(([f, l, n]) => `<button type="button" class="iso-fchip${_docs.filter === f ? ' is-on' : ''}" aria-pressed="${_docs.filter === f}" data-f="${f}" onclick="ISO._docSetFilter(this.dataset.f)">${esc(l)} <b>${n}</b></button>`).join('')}</div>
         <span class="iso-tb-spacer"></span>
+        <button type="button" class="btn btn-ghost iso-doc-request" onclick="ISO._docOpenRequest()">Request from client</button>
         <button type="button" class="btn btn-ghost iso-doc-new" onclick="ISO._docOpenChooser(null)"><span aria-hidden="true">+</span> Add other document</button>
       </div>
       <div class="iso-doc-list-wrap">${list.length ? list.map(row).join('') : '<div class="iso-empty"><strong>No documents match.</strong></div>'}</div>`;
@@ -5111,6 +5119,312 @@
       } catch (e) { if (root.showToast) root.showToast('Could not open the finding: ' + e.message, true); return; }
     }
     openFindingDrawer(auditId, id);
+  }
+
+  // ── Release-1 B4.3: carry-forward labels (worked out, no new state) ──────────────────────────
+  // On a maintenance / follow-up board a clause with a baseline says how it stands against last time.
+  // Previous conclusions never count as current — statuses reset on the new board; this only labels.
+  function carryLabel(r) {
+    if (!r || !r.baseline_at || !(_auditCache && _auditCache.previous_audit_id)) return null;
+    const cs = r.compliance_status || 'not_assessed';
+    if (cs === 'out_of_scope') return 'Out of scope';
+    if (cs === 'not_applicable') return r.baseline_result ? 'No longer applicable' : null;
+    if (!r.assessment_result) return 'Carried, not yet verified';
+    return (r.baseline_result || null) === (r.assessment_result || null) ? 'Reconfirmed' : 'Changed since last audit';
+  }
+
+  // ── Release-1 B4.1: audit setup card (Settings) ──────────────────────────────────────────────
+  function auditSetupCardHtml(audit, isManager) {
+    const s = audit.setup || {};
+    const dis = isManager ? '' : 'disabled';
+    const meet = (k, label) => { const m = s[k] || {}; return `<fieldset class="iso-setup-meet"><legend>${label}</legend>
+        <label>Date<input type="date" class="form-input" id="iso-su-${k}-date" value="${esc(m.date || '')}" ${dis}/></label>
+        <label>Attendees<input class="form-input" id="iso-su-${k}-att" value="${esc(m.attendees || '')}" ${dis}/></label>
+        <label class="iso-setup-wide">Notes<textarea class="form-input" id="iso-su-${k}-notes" rows="2" ${dis}>${esc(m.notes || '')}</textarea></label></fieldset>`; };
+    return `<div class="card iso-setup-card" style="padding:20px;margin-top:16px;max-width:720px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">Audit setup</div>
+      <div class="muted" style="font-size:12px;margin-bottom:12px">Feeds the reports. Standards, editions and the team come from the board itself.</div>
+      <div class="iso-field-grid">
+        <label class="iso-setup-wide">Objective<textarea class="form-input" id="iso-su-objective" rows="2" ${dis}>${esc(s.objective || '')}</textarea></label>
+        <label class="iso-setup-wide">Scope statement<textarea class="form-input" id="iso-su-scope" rows="2" ${dis}>${esc(s.scope || '')}</textarea></label>
+        <label class="iso-setup-wide">Criteria <span class="muted">(besides ${esc((audit.standards || []).map(c => 'ISO ' + c).join(', ') || 'the board\'s standards')})</span><textarea class="form-input" id="iso-su-criteria" rows="2" ${dis}>${esc(s.criteria || '')}</textarea></label>
+        <div class="iso-setup-wide"><div class="iso-setup-k">Sites</div><div id="iso-su-sites" class="iso-setup-sites muted">Loading sites…</div></div>
+        <label class="iso-setup-wide">Limitations<textarea class="form-input" id="iso-su-limitations" rows="2" ${dis}>${esc(s.limitations || '')}</textarea></label>
+      </div>
+      <div class="iso-setup-meets">${meet('opening', 'Opening meeting')}${meet('closing', 'Closing meeting')}</div>
+      ${isManager ? `<button type="button" class="btn btn-teal btn-sm" style="margin-top:14px" data-id="${esc(audit.id)}" onclick="ISO._saveAuditSetup(this.dataset.id)">Save setup</button>` : ''}
+    </div>`;
+  }
+  async function _fillSetupSites(audit, isManager) {
+    const host = document.getElementById('iso-su-sites');
+    if (!host) return;
+    let units = [];
+    try { units = (await api('unit.list', { auditId: audit.id })) || []; } catch (e) {}
+    const on = new Set((audit.setup && audit.setup.sites) || []);
+    host.classList.toggle('muted', !units.length);
+    host.innerHTML = units.length ? units.map(u => `<label class="iso-setup-site"><input type="checkbox" class="iso-su-site" value="${esc(u.id)}"${on.has(u.id) ? ' checked' : ''}${isManager ? '' : ' disabled'}/> ${esc(u.name)}</label>`).join('')
+      : 'No sites on this board yet — add them under Access.';
+  }
+  async function _saveAuditSetup(auditId) {
+    const v = id => (document.getElementById(id) || {}).value || '';
+    const meet = k => ({ date: v(`iso-su-${k}-date`) || null, attendees: v(`iso-su-${k}-att`), notes: v(`iso-su-${k}-notes`) });
+    const setup = { objective: v('iso-su-objective'), scope: v('iso-su-scope'), criteria: v('iso-su-criteria'), limitations: v('iso-su-limitations'),
+      sites: [...document.querySelectorAll('.iso-su-site')].filter(c => c.checked).map(c => c.value), opening: meet('opening'), closing: meet('closing') };
+    try {
+      const a = await api('audit.get', { auditId: auditId });
+      await mutate('audit.update', { auditId: auditId, patch: { setup: setup }, expectedVersion: (a.audit || a).row_version });
+      if (root.showToast) root.showToast('Audit setup saved.');
+      root.renderView('iso');
+    } catch (e) { if (root.showToast) root.showToast('Could not save the setup: ' + e.message, true); }
+  }
+
+  // ── Release-1 B4.2: one dialog to start a follow-up or the maintenance audit (Q9) ─────────────
+  let _sn = null;
+  async function _openStartNext(auditId, preset) {
+    preset = preset || {};
+    let reqs = [], findings = [], actions = [];
+    try { [reqs, findings, actions] = await Promise.all([api('requirement.list', { auditId: auditId }), api('finding.list', { auditId: auditId }), api('action.list', { auditId: auditId })]); }
+    catch (e) { if (root.showToast) root.showToast('Could not load the board: ' + e.message, true); return; }
+    const openF = findings.filter(f => !['closed', 'withdrawn'].includes(f.status));
+    const openA = actions.filter(a => !['verified', 'closed'].includes(a.status));
+    const gaps = reqs.filter(r => ['partially_compliant', 'non_compliant'].includes(r.compliance_status)).sort(reqClauseCompare);
+    const others = reqs.filter(r => !gaps.includes(r)).sort(reqClauseCompare);
+    const pre = (list, ids) => ids ? new Set(ids) : new Set(list.map(x => x.id));
+    const preF = pre(openF, preset.findingIds), preA = pre(openA, preset.findingIds ? [] : null), preR = pre(gaps, preset.findingIds ? [] : null);
+    _sn = { auditId: auditId };
+    const staff = (_DB().users || []).filter(u => u.role !== 'client');
+    const me = _cu() ? _cu().id : '';
+    const box = (cls, x, on, label) => `<label class="iso-sn-item"><input type="checkbox" class="${cls}" value="${esc(x.id)}"${on ? ' checked' : ''}/> ${label}</label>`;
+    const reqLabel = r => `<span class="iso-tag" style="--std:${STANDARD_COLOR[r.standard_code] || '#97bcbd'}">${esc(STANDARD_BADGE[r.standard_code] || '•')}</span><b>${esc(r.clause)}</b> <span class="muted">${esc(r.clause_name || '')} · ${esc(statusText(r))}</span>`;
+    const type = preset.type || 'follow_up';
+    root.openGenericModal('Start a follow-up or maintenance audit', `<div class="iso-sn">
+      <div class="iso-sn-types" role="radiogroup" aria-label="Audit type">
+        <label class="iso-sn-type"><input type="radio" name="iso-sn-type" value="follow_up"${type === 'follow_up' ? ' checked' : ''} onchange="ISO._snType(this.value)"/> <b>Follow-up</b> <span class="muted">— only the findings, actions and clauses you pick; every other clause is Out of scope</span></label>
+        <label class="iso-sn-type"><input type="radio" name="iso-sn-type" value="maintenance"${type === 'maintenance' ? ' checked' : ''} onchange="ISO._snType(this.value)"/> <b>Maintenance</b> <span class="muted">— every clause again, last results as the baseline</span></label>
+      </div>
+      <div id="iso-sn-scope"${type === 'maintenance' ? ' hidden' : ''}>
+        <fieldset class="iso-sn-group"><legend>Open findings <span class="muted">${openF.length}</span></legend>${openF.map(f => box('iso-sn-f', f, preF.has(f.id), `<b>${esc(f.ref)}</b> ${esc(f.title)}`)).join('') || '<span class="muted">None open.</span>'}</fieldset>
+        <fieldset class="iso-sn-group"><legend>Open actions <span class="muted">${openA.length}</span></legend>${openA.map(a => box('iso-sn-a', a, preA.has(a.id), `<b>${esc(a.ref)}</b> ${esc(a.title)}`)).join('') || '<span class="muted">None open.</span>'}</fieldset>
+        <fieldset class="iso-sn-group"><legend>Partial / Non-Compliant clauses <span class="muted">${gaps.length}</span></legend>${gaps.map(r => box('iso-sn-r', r, preR.has(r.id), reqLabel(r))).join('') || '<span class="muted">None.</span>'}</fieldset>
+        <details class="iso-sn-more"><summary>Other clauses (${others.length})</summary>${others.map(r => box('iso-sn-r', r, false, reqLabel(r))).join('')}</details>
+      </div>
+      <div class="iso-field-grid">
+        <label>Planned date<input type="date" class="form-input" id="iso-sn-date"/></label>
+        <label>Lead Auditor<select class="form-input" id="iso-sn-lead"><option value="">Keep the current team</option>${staff.map(u => `<option value="${esc(_uidFor(u))}"${u.id === me ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+      </div>
+      <p class="muted iso-sn-note">The team comes across from this board. Each carried finding and action says where it came from; accepted evidence is offered as suggestions.</p>
+      <div class="iso-track-btns"><button type="button" class="btn btn-teal btn-sm" id="iso-sn-go" onclick="ISO._snApply()">Start</button></div>
+    </div>`, '640px');
+  }
+  // The uid a staff user has on ISO boards (the offline dev server prefixes "offline:").
+  function _uidFor(u) { const sample = (_membersCache || []).find(m => m.member_kind === 'staff'); return sample && /^offline:/.test(sample.user_uid) && !/^offline:/.test(u.id) ? 'offline:' + u.id : u.id; }
+  function _snType(v) { const s = document.getElementById('iso-sn-scope'); if (s) s.hidden = v !== 'follow_up'; }
+  async function _snApply() {
+    if (!_sn) return;
+    const type = (document.querySelector('input[name="iso-sn-type"]:checked') || {}).value || 'follow_up';
+    const ids = cls => [...document.querySelectorAll('.' + cls)].filter(c => c.checked).map(c => c.value);
+    const payload = { auditId: _sn.auditId, type: type, plannedStart: (document.getElementById('iso-sn-date') || {}).value || null, leadUid: (document.getElementById('iso-sn-lead') || {}).value || null };
+    if (type === 'follow_up') {
+      payload.scope = { findingIds: ids('iso-sn-f'), actionIds: ids('iso-sn-a'), requirementIds: ids('iso-sn-r') };
+      if (!payload.scope.findingIds.length && !payload.scope.actionIds.length && !payload.scope.requirementIds.length) { if (root.showToast) root.showToast('Pick at least one finding, action or clause.', true); return; }
+    }
+    const btn = document.getElementById('iso-sn-go'); if (btn) btn.disabled = true;
+    try {
+      const r = await mutate('audit.startFollowUp', payload);
+      document.getElementById('generic-modal').classList.add('hidden');
+      const su = r.summary || {};
+      if (root.showToast) root.showToast(`${r.audit.ref} started — ${su.findings || 0} findings and ${su.actions || 0} actions carried over${type === 'follow_up' ? `, ${su.outOfScope || 0} clauses out of scope` : ''}.`);
+      openBoard(r.audit.id);
+    } catch (e) { if (btn) btn.disabled = false; if (root.showToast) root.showToast('Could not start: ' + e.message, true); }
+  }
+
+  // ── Release-1 B4.4 / B4.5: the client programme page (Q8) ──────────────────────────────────────
+  // The client's chain of boards — timeline, next audit due, what needs attention — and the client
+  // settings (next due, frequency, industry, notes). Reached from the landing's client heading.
+  const PROG_FREQ = { one_time: 'One-time', monthly: 'Monthly', quarterly: 'Quarterly', six_monthly: 'Every 6 months', annual: 'Annual', custom: 'Custom' };
+  const PROG_INDUSTRY = { mining_resources: 'Mining & resources', construction: 'Construction', manufacturing: 'Manufacturing', transport_logistics: 'Transport & logistics', professional_services: 'Professional services', government: 'Government', other: 'Other' };
+  let _prog = null;
+  function openProgramme(clientId) { route = { auditId: null, tab: 'dashboard', programmeClientId: clientId }; saveRoute(); root.navigate('iso'); }
+  async function fillProgramme() {
+    const vc = document.getElementById('view-container');
+    if (!vc) return;
+    let data;
+    try { data = await api('programme.get', { clientId: route.programmeClientId }); }
+    catch (e) { vc.innerHTML = `<div class="card" style="padding:20px;color:#b91c1c">Could not load the programme: ${esc(e.message)}</div>`; return; }
+    _prog = { data: data, tile: _prog && _prog.data && _prog.data.client.id === data.client.id ? _prog.tile : null };
+    renderProgramme();
+  }
+  function renderProgramme() {
+    const vc = document.getElementById('view-container');
+    if (!vc || !_prog) return;
+    const d = _prog.data, s = d.settings || {};
+    const t = d.tiles || {};
+    const classCount = Object.values(t.openFindingsByClass || {}).reduce((n, l) => n + l.length, 0);
+    const tiles = [
+      ['findings', 'Open findings', classCount, Object.entries(t.openFindingsByClass || {}).map(([k, l]) => `${FINDING_CLASSIFICATION_LABEL[k] || k} ${l.length}`).join(' · ') || 'none'],
+      ['overdueActions', 'Overdue actions', (t.overdueActions || []).length, ''],
+      ['effectivenessDue', 'Effectiveness reviews due', (t.effectivenessDue || []).length, 'next 30 days'],
+      ['repeatFindings', 'Repeat findings', (t.repeatFindings || []).length, 'open'],
+      ['reopenedFindings', 'Reopened findings', (t.reopenedFindings || []).length, ''],
+      ['documentsDue', 'Documents due for review', (t.documentsDue || []).length, 'next 30 days'],
+      ['followUpsDue', 'Follow-ups / maintenance due', (t.followUpsDue || []).length, 'next 60 days'],
+    ];
+    const tileItems = key => key === 'findings' ? [].concat(...Object.values(t.openFindingsByClass || {})) : (t[key] || []);
+    const shown = _prog.tile ? tileItems(_prog.tile) : null;
+    const latestClosed = d.timeline.filter(a => a.stage === 'closed' && !a.hasSuccessor).slice(-1)[0];
+    const latest = d.timeline.slice(-1)[0];
+    vc.innerHTML = `<div class="iso-prog">
+      <div class="iso-prog-head">
+        <button type="button" class="iso-tb-btn" onclick="ISO.openLanding()">‹ ISO</button>
+        <h2 class="iso-prog-title">${esc(d.client.name)}</h2>
+        <div class="muted iso-prog-sub">${esc(d.standards.map(c => 'ISO ' + c).join(' · ') || 'No standards yet')}${d.sites.length ? ' · Sites: ' + esc(d.sites.join(', ')) : ''}</div>
+        <div class="iso-prog-actions">
+          ${latestClosed ? `<button type="button" class="btn btn-teal btn-sm" data-id="${esc(latestClosed.id)}" onclick="ISO._openStartNext(this.dataset.id)">Start follow-up / maintenance</button>` : ''}
+          ${latest ? `<button type="button" class="btn btn-ghost btn-sm" data-id="${esc(latest.id)}" onclick="ISO.openBoard(this.dataset.id)">Open ${esc(latest.ref)}</button>` : ''}
+        </div>
+      </div>
+      <section class="card iso-prog-card" aria-labelledby="iso-prog-tl-h"><h3 id="iso-prog-tl-h" class="iso-dash-section-h">Timeline</h3>
+        <ol class="iso-prog-tl">${d.timeline.map(a => `<li class="iso-prog-tl-item${a.stage === 'closed' ? ' is-closed' : ''}"><button type="button" class="iso-prog-tl-btn" data-id="${esc(a.id)}" onclick="ISO.openBoard(this.dataset.id)"><b>${esc(a.ref)}</b> ${esc(AUDIT_TYPE_LABEL[a.auditType] || a.auditType || '')}</button>
+          <span class="muted">${esc(STAGE_LABEL[a.stage] || a.stage)}${a.plannedStart ? ' · ' + esc(fmtDate(a.plannedStart)) : ''}${a.completedAt ? ' · completed ' + esc(fmtTs(a.completedAt)) : ''}${a.maintenanceDue && !a.hasSuccessor ? ' · next due ' + esc(fmtDate(a.maintenanceDue)) : ''}</span></li>`).join('') || '<li class="muted">No boards yet.</li>'}</ol>
+      </section>
+      <section class="card iso-prog-card" aria-labelledby="iso-prog-next-h"><h3 id="iso-prog-next-h" class="iso-dash-section-h">Next audit</h3>
+        <div class="iso-prog-next"><span class="iso-prog-big">${d.nextAuditDue ? esc(fmtDate(d.nextAuditDue)) : 'Not set'}</span><span class="muted">${s.frequency ? esc(PROG_FREQ[s.frequency] + (s.frequency === 'custom' && s.custom_months ? ` (${s.custom_months} months)` : '')) : 'No frequency set'}${s.industry ? ' · ' + esc(PROG_INDUSTRY[s.industry]) : ''}</span></div>
+        <div class="iso-field-grid iso-prog-settings">
+          <label>Next audit due<input type="date" class="form-input" id="iso-cs-next" value="${esc(s.next_audit_due || '')}"/></label>
+          <label>Frequency<select class="form-input" id="iso-cs-freq"><option value="">—</option>${Object.entries(PROG_FREQ).map(([k, l]) => `<option value="${k}"${s.frequency === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+          <label>Custom months<input type="number" min="1" max="60" class="form-input" id="iso-cs-months" value="${esc(s.custom_months || '')}"/></label>
+          <label>Industry<select class="form-input" id="iso-cs-ind"><option value="">—</option>${Object.entries(PROG_INDUSTRY).map(([k, l]) => `<option value="${k}"${s.industry === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+          <label class="iso-setup-wide">Notes<textarea class="form-input" id="iso-cs-notes" rows="2">${esc(s.notes || '')}</textarea></label>
+        </div>
+        <p class="muted" style="font-size:12px;margin:6px 0 0">Reminders come from these dates. A frequency never creates boards on its own.</p>
+        <button type="button" class="btn btn-teal btn-sm" style="margin-top:10px" onclick="ISO._progSaveSettings()">Save</button>
+      </section>
+      <section aria-labelledby="iso-prog-tiles-h"><h3 id="iso-prog-tiles-h" class="iso-dash-section-h">Needs attention</h3>
+        <div class="iso-prog-tiles">${tiles.map(([k, l, n, sub]) => `<button type="button" class="iso-prog-tile${_prog.tile === k ? ' is-on' : ''}" aria-pressed="${_prog.tile === k}" data-k="${k}" onclick="ISO._progTile(this.dataset.k)"><span class="iso-prog-n">${n}</span><span class="iso-prog-l">${esc(l)}</span>${sub ? `<span class="muted iso-prog-s">${esc(sub)}</span>` : ''}</button>`).join('')}</div>
+        ${shown ? `<div class="card iso-prog-list">${shown.length ? shown.map(x => `<button type="button" class="iso-prog-row" data-id="${esc(x.auditId)}" onclick="ISO.openBoard(this.dataset.id)"><b>${esc(x.auditRef || '')}</b> ${esc(x.ref ? x.ref + ' — ' : '')}${esc(x.title || '')}${x.due ? ` <span class="muted">· due ${esc(fmtDate(x.due))}</span>` : ''}${x.repeatOf ? ` <span class="iso-fnd-badge is-repeat">Repeat</span>` : ''}</button>`).join('') : '<div class="muted" style="padding:10px">Nothing here.</div>'}</div>` : ''}
+      </section>
+    </div>`;
+  }
+  function _progTile(k) { if (!_prog) return; _prog.tile = _prog.tile === k ? null : k; renderProgramme(); }
+  async function _progSaveSettings() {
+    if (!_prog) return;
+    const v = id => (document.getElementById(id) || {}).value || '';
+    const s = _prog.data.settings || {};
+    const patch = { next_audit_due: v('iso-cs-next') || null, frequency: v('iso-cs-freq') || null, industry: v('iso-cs-ind') || null, notes: v('iso-cs-notes') || null,
+      custom_months: v('iso-cs-freq') === 'custom' && v('iso-cs-months') ? Number(v('iso-cs-months')) : null };
+    try {
+      await mutate('clientSettings.update', { clientId: _prog.data.client.id, patch: patch, expectedVersion: s.row_version || 0 });
+      if (root.showToast) root.showToast('Client settings saved.');
+      fillProgramme();
+    } catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
+  }
+
+  // ── Release-1 B4.6: Request from client (Documents tab) ────────────────────────────────────────
+  // The documents not yet provided (key ones pre-ticked), grouped by owner; creates request rows and
+  // gives a letter to copy or download. Email and the portal come later.
+  let _er = null;
+  function _docOpenRequest() {
+    const std = boardStd();
+    const reqs = _docs.reqs.filter(r => !std || r.standard_code === std);
+    const scoped = _docs.docs.map(d => Object.assign({}, d, { clauses: d.clauses.filter(c => !std || c.standardCode === std) })).filter(d => d.clauses.length);
+    const missing = scoped.filter(d => !d.clauses.some(c => c.provided));
+    if (!missing.length) { if (root.showToast) root.showToast('Every document is provided already.'); return; }
+    const keyNames = new Set(docKeySet(scoped, reqs.map(r => r.id)).map(d => d.name));
+    const byId = new Map(reqs.map(r => [r.id, r]));
+    const ownerOf = d => { const r = d.clauses.map(c => byId.get(c.requirementId)).find(x => x && x.responsible_uid); return r ? r.responsible_uid : ''; };
+    const groups = new Map();
+    for (const d of missing.sort((a, b) => b.clauses.length - a.clauses.length || a.name.localeCompare(b.name))) { const o = ownerOf(d); if (!groups.has(o)) groups.set(o, []); groups.get(o).push(d); }
+    _er = { auditId: _docs.auditId, docs: missing };
+    root.openGenericModal('Request documents from the client', `<div class="iso-er">
+      ${[...groups].map(([o, list]) => `<fieldset class="iso-sn-group"><legend>${esc(o ? (_uidName(o) || 'Owner') : 'No owner yet')}</legend>
+        ${list.map(d => `<label class="iso-sn-item"><input type="checkbox" class="iso-er-doc" value="${esc(d.name)}" data-owner="${esc(o)}"${keyNames.has(d.name) ? ' checked' : ''}/> ${esc(d.name)} <span class="muted">· ${d.clauses.length} clause${d.clauses.length === 1 ? '' : 's'}${d.requestedAt ? ' · requested ' + esc(fmtTs(d.requestedAt)) : ''}</span>${keyNames.has(d.name) ? '<span class="iso-keyflag">Key</span>' : ''}</label>`).join('')}</fieldset>`).join('')}
+      <label class="iso-clause-field">Due by<input type="date" class="form-input" id="iso-er-due"/></label>
+      <div class="iso-track-btns"><button type="button" class="btn btn-teal btn-sm" id="iso-er-go" onclick="ISO._docRequestApply()">Create request</button></div>
+    </div>`, '600px');
+  }
+  async function _docRequestApply() {
+    if (!_er) return;
+    const picked = [...document.querySelectorAll('.iso-er-doc')].filter(c => c.checked);
+    if (!picked.length) { if (root.showToast) root.showToast('Tick at least one document.', true); return; }
+    const due = (document.getElementById('iso-er-due') || {}).value || null;
+    const items = picked.map(c => { const d = _er.docs.find(x => x.name === c.value); return { documentName: d.name, requirementIds: d.clauses.map(x => x.requirementId), requestedFromUid: c.dataset.owner || null, dueDate: due }; });
+    try {
+      await mutate('evidenceRequest.create', { auditId: _er.auditId, items: items });
+      const audit = _auditCache || {};
+      const byId = new Map(_docs.reqs.map(r => [r.id, r]));
+      const lines = items.map(it => `• ${it.documentName} — for ${it.requirementIds.map(id => byId.get(id)).filter(Boolean).map(r => 'ISO ' + r.standard_code + ' ' + r.clause).join(', ')}`);
+      const text = `Hello,\n\nFor ${audit.title || 'the audit'} (${audit.ref || ''}), please send us the documents below${due ? ' by ' + fmtDate(due) : ''}. A current version of each is enough; tell us if one doesn't exist yet.\n\n${lines.join('\n')}\n\nThank you,\nEtcher Solutions`;
+      _er.text = text;
+      root.openGenericModal('Request created', `<div class="iso-er"><p class="muted" style="margin:0 0 8px">Copy this into an email, or download it.</p>
+        <textarea class="form-input iso-er-text" id="iso-er-text" rows="12" readonly aria-label="Request letter">${esc(text)}</textarea>
+        <div class="iso-track-btns" style="gap:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="ISO._docRequestCopy()">Copy</button><button type="button" class="btn btn-teal btn-sm" onclick="ISO._docRequestDownload()">Download</button></div></div>`, '600px');
+      fillDocumentsTab(audit);
+    } catch (e) { if (root.showToast) root.showToast('Could not create the request: ' + e.message, true); }
+  }
+  function _docRequestCopy() { if (!_er || !_er.text) return; (navigator.clipboard ? navigator.clipboard.writeText(_er.text) : Promise.reject()).then(() => { if (root.showToast) root.showToast('Copied.'); }).catch(() => { const t = document.getElementById('iso-er-text'); if (t) { t.select(); } }); }
+  function _docRequestDownload() { if (!_er || !_er.text) return; _pdSaveFile(_er.text, `${(_auditCache && _auditCache.ref) || 'ISO'}_Document_Request.txt`); }
+
+  // ── Release-1 B4.7: on-site audit pack (PDF, no AI) ────────────────────────────────────────────
+  // A checklist of the chosen clauses, grouped by clause family or by site: Look for / Confirm /
+  // Watch for, the expected documents, and blank lines for notes. Downloads with a file name.
+  function _openAuditPack() {
+    const audit = _auditCache; if (!audit) return;
+    root.openGenericModal('On-site audit pack', `<div class="iso-er">
+      <fieldset class="iso-sn-group"><legend>Clauses</legend>
+        <label class="iso-sn-item"><input type="radio" name="iso-ap-which" value="open" checked/> Not yet concluded</label>
+        <label class="iso-sn-item"><input type="radio" name="iso-ap-which" value="all"/> Every clause</label></fieldset>
+      <fieldset class="iso-sn-group"><legend>Group by</legend>
+        <label class="iso-sn-item"><input type="radio" name="iso-ap-group" value="family" checked/> Clause family</label>
+        <label class="iso-sn-item"><input type="radio" name="iso-ap-group" value="site"/> Site</label></fieldset>
+      <div class="iso-track-btns"><button type="button" class="btn btn-teal btn-sm" id="iso-ap-go" onclick="ISO._auditPackApply()">Download PDF</button></div>
+    </div>`, '460px');
+  }
+  async function _auditPackApply() {
+    const audit = _auditCache; if (!audit) return;
+    const which = (document.querySelector('input[name="iso-ap-which"]:checked') || {}).value || 'open';
+    const group = (document.querySelector('input[name="iso-ap-group"]:checked') || {}).value || 'family';
+    const btn = document.getElementById('iso-ap-go'); if (btn) btn.disabled = true;
+    let reqs, guidance, units = [];
+    try { [reqs, guidance, units] = await Promise.all([api('requirement.list', { auditId: audit.id }), api('guidance.list', { auditId: audit.id }), api('unit.list', { auditId: audit.id }).catch(() => [])]); }
+    catch (e) { if (btn) btn.disabled = false; if (root.showToast) root.showToast('Could not build the pack: ' + e.message, true); return; }
+    let rows = reqs.filter(r => !['not_applicable', 'out_of_scope'].includes(r.compliance_status));
+    if (which === 'open') rows = rows.filter(r => !r.compliance_status || r.compliance_status === 'not_assessed');
+    rows.sort(reqClauseCompare);
+    const unitName = new Map((units || []).map(u => [u.id, u.name]));
+    const groups = new Map();
+    for (const r of rows) {
+      const keys = group === 'site' ? ((r.unit_ids || []).map(id => unitName.get(id)).filter(Boolean).length ? (r.unit_ids || []).map(id => unitName.get(id)).filter(Boolean) : ['All sites']) : [`Clause ${String(r.clause).split('.')[0]}`];
+      for (const k of keys) { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); }
+    }
+    const build = () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 40;
+      let y = M;
+      const need = h => { if (y + h > H - M) { doc.addPage(); y = M; } };
+      const text = (s, size, opts) => { doc.setFontSize(size); doc.setFont('helvetica', (opts && opts.bold) ? 'bold' : 'normal'); const lines = doc.splitTextToSize(String(s || ''), W - 2 * M - ((opts && opts.indent) || 0)); need(lines.length * size * 1.25); doc.text(lines, M + ((opts && opts.indent) || 0), y + size); y += lines.length * size * 1.25 + ((opts && opts.after) || 2); };
+      text(`${audit.ref} — On-site audit pack`, 16, { bold: true, after: 4 });
+      text(`${audit.title || ''} · ${(audit.standards || []).map(c => 'ISO ' + c).join(', ')} · ${rows.length} clauses · printed ${new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`, 9, { after: 12 });
+      for (const [g, list] of groups) {
+        need(30); text(g, 13, { bold: true, after: 6 });
+        for (const r of list) {
+          const gd = (guidance || {})[r.id] || {};
+          const cs = gd.cheatSheet || {};
+          need(60);
+          text(`ISO ${r.standard_code} ${r.clause}  ${r.clause_name || ''}`, 11, { bold: true, after: 2 });
+          if (r.requirement_text) text(r.requirement_text, 9, { after: 4 });
+          for (const [label, items] of [['Look for', cs.lookFor], ['Confirm', cs.confirm], ['Watch for', cs.watchFor]]) if (items && items.length) text(`${label}: ${items.join('; ')}`, 9, { indent: 10 });
+          if ((gd.documents || []).length) text(`Expected documents: ${gd.documents.join('; ')}`, 9, { indent: 10, after: 4 });
+          need(54); doc.setDrawColor(190); for (let i = 0; i < 3; i++) { doc.line(M, y + 14, W - M, y + 14); y += 16; } y += 8;
+        }
+      }
+      doc.save(`${audit.ref}_Onsite_Audit_Pack.pdf`);
+      document.getElementById('generic-modal').classList.add('hidden');
+      if (root.showToast) root.showToast(`Audit pack downloaded (${rows.length} clauses).`);
+    };
+    const fail = () => { if (btn) btn.disabled = false; if (root.showToast) root.showToast('Could not load the PDF tools — check the connection.', true); };
+    try { if (root._ensureJsPdf) root._ensureJsPdf(() => { try { build(); } catch (e) { fail(); } }, fail); else if (window.jspdf) build(); else fail(); }
+    catch (e) { fail(); }
   }
 
   // A clause chip anywhere (Actions) opens Clauses with that clause expanded and in view.
@@ -5482,7 +5796,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, carryLabel: carryLabel, _saveAuditSetup: _saveAuditSetup, _openStartNext: _openStartNext, _snType: _snType, _snApply: _snApply, openProgramme: openProgramme, _progTile: _progTile, _progSaveSettings: _progSaveSettings, _docOpenRequest: _docOpenRequest, _docRequestApply: _docRequestApply, _docRequestCopy: _docRequestCopy, _docRequestDownload: _docRequestDownload, _openAuditPack: _openAuditPack, _auditPackApply: _auditPackApply, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

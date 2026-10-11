@@ -100,7 +100,7 @@ create table if not exists iso_audits (
   client_id              text not null,
   title                  text not null,
   audit_type             text not null default 'gap_analysis' check (audit_type in
-                           ('internal','gap_analysis','certification_prep','surveillance','recertification','supplier','custom')),
+                           ('internal','gap_analysis','certification_prep','surveillance','recertification','supplier','custom','follow_up')),
   custom_type_label      text,
   stage                  text not null default 'planning' check (stage in ('planning','fieldwork','reporting','capa','closed')),
   scope_text             text,
@@ -124,6 +124,10 @@ create table if not exists iso_audits (
   completed_at           timestamptz,
   maintenance_due        date,
   previous_audit_id      text references iso_audits(id),
+  -- Release-1 B4: the audit setup card (objective, scope, criteria, sites, limitations, meetings) and a
+  -- follow-up's chosen scope {requirementIds, findingIds, actionIds} (null for a maintenance board).
+  setup                  jsonb,
+  follow_up_scope        jsonb,
   row_version            int not null default 1,
   archived_at            timestamptz,
   created_at             timestamptz not null default now(),
@@ -412,6 +416,8 @@ create table if not exists iso_findings (
   reopened_count     int not null default 0,
   -- Phase 9b (D31): carried over from the previous board's open record — "<audit ref> / <ref>".
   carried_from_ref       text,
+  -- Release-1 B4.2: where a carried finding came from {auditRef, ref, status, by, at}.
+  carried_meta           jsonb,
   -- Release-1 B2: the last reopen's reason (reopened_count above counts them); repeat_of_ref is
   -- "<earlier board ref> / <finding ref | ISO std clause>" when the clause had a finding or a
   -- Non-Compliant status on an earlier board in the client's chain.
@@ -489,6 +495,8 @@ create table if not exists iso_actions (
   import_source_row       int,
   -- Phase 9b (D31): carried over from the previous board's open record — "<audit ref> / <ref>".
   carried_from_ref       text,
+  -- Release-1 B4.2: where a carried action came from {auditRef, ref, status, by, at}.
+  carried_meta            jsonb,
   row_version             int not null default 1,
   archived_at             timestamptz,
   created_at              timestamptz not null default now(),
@@ -807,7 +815,7 @@ begin
     when 'iso_audits' then array['title','audit_type','custom_type_label','scope_text','exclusions_text',
       'planned_start','planned_end','report_due','certification_body','lead_auditor_uid','internal_notes',
       'stage','client_portal_enabled','default_visibility','visibility','archived_at',
-      'completed_at','maintenance_due']
+      'completed_at','maintenance_due','setup']
     -- visibility/visible_to_uids included here for both tables (plan §14 A37): the plan's own
     -- prose above says these change "only through the dedicated transition functions", but
     -- Phase 6 already shipped requirement.update patching them through this generic path (no
@@ -842,6 +850,9 @@ begin
       'root_cause_method','five_whys','fishbone','cause_tree','contributing_factors','cause_categories',
       'root_cause_summary','corrective_action','preventive_action','effectiveness_check','effectiveness_review_date',
       'visibility','visible_to_uids']
+    -- Release-1 B4: client settings and evidence-request status.
+    when 'iso_client_settings' then array['next_audit_due','frequency','custom_months','industry','notes']
+    when 'iso_evidence_requests' then array['status']
     when 'iso_action_subtasks' then array['title','owner_uid','due_date','done','sort_key','archived_at']
     when 'iso_audit_units' then array['name']
     when 'iso_templates' then array['name','description','config']
