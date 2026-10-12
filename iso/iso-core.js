@@ -1740,6 +1740,7 @@
       <div class="iso-qv-track">${_req.dashFilter ? '' : views.map(v => `<button type="button" class="iso-fchip${_req.view === v.id ? ' is-on' : ''}" aria-pressed="${_req.view === v.id}" onclick="ISO._reqSetView('${v.id}')">${esc(chipLabel[v.id] || v.label)} <b>${reqQuickViewCount(v.id)}</b></button>`).join('')}</div>
       ${approveAllCount ? `<span class="iso-tb-spacer"></span><button type="button" class="btn btn-teal btn-sm" onclick="ISO._reqApproveAll()">✓ Approve all ${approveAllCount}</button>` : '<span class="iso-tb-spacer"></span>'}
       <button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportClausesCsv()">Export CSV<span class="sr"> — clauses</span></button>
+      <button type="button" class="btn btn-ghost btn-sm iso-xlsx" title="Download a branded Excel copy — presentable to send to a client" onclick="ISO._exportClausesXlsx()">Export Excel<span class="sr"> — clauses</span></button>
     </div>`;
   }
   function _reqSetQuery(q) { _req.q = q; renderRequirementsTable(_req.auditId); }
@@ -4879,6 +4880,7 @@
         <div class="iso-fchips">${chips.map(([f, l, n]) => `<button type="button" class="iso-fchip${_docs.filter === f ? ' is-on' : ''}" aria-pressed="${_docs.filter === f}" data-f="${f}" onclick="ISO._docSetFilter(this.dataset.f)">${esc(l)} <b>${n}</b></button>`).join('')}</div>
         <span class="iso-tb-spacer"></span>
         <button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportDocumentsCsv()">Export CSV<span class="sr"> — documents</span></button>
+        <button type="button" class="btn btn-ghost btn-sm iso-xlsx" title="Download a branded Excel copy — presentable to send to a client" onclick="ISO._exportDocumentsXlsx()">Export Excel<span class="sr"> — documents</span></button>
         <button type="button" class="btn btn-ghost iso-doc-request" onclick="ISO._docOpenRequest()">Request from client</button>
         <button type="button" class="btn btn-ghost iso-doc-new" onclick="ISO._docOpenChooser(null)"><span aria-hidden="true">+</span> Add other document</button>
       </div>
@@ -5013,7 +5015,7 @@
     const tb = `<div class="iso-toolbar iso-wl-toolbar"><div class="iso-fchips">
         <button type="button" class="iso-fchip${_wl.mode === 'list' ? ' is-on' : ''}" aria-pressed="${_wl.mode === 'list'}" data-m="list" onclick="ISO._wlSetMode(this.dataset.m)">List</button>
         <button type="button" class="iso-fchip${_wl.mode === 'timeline' ? ' is-on' : ''}" aria-pressed="${_wl.mode === 'timeline'}" data-m="timeline" onclick="ISO._wlSetMode(this.dataset.m)">Timeline</button></div>
-        <span class="muted iso-wl-count">${items.length} action${items.length === 1 ? '' : 's'} · ${shared} shared across clauses</span><span class="iso-tb-spacer"></span><button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportActionsCsv()">Export CSV<span class="sr"> — actions</span></button></div>`;
+        <span class="muted iso-wl-count">${items.length} action${items.length === 1 ? '' : 's'} · ${shared} shared across clauses</span><span class="iso-tb-spacer"></span><button type="button" class="btn btn-ghost btn-sm iso-csv" title="Download this view as CSV" onclick="ISO._exportActionsCsv()">Export CSV<span class="sr"> — actions</span></button><button type="button" class="btn btn-ghost btn-sm iso-xlsx" title="Download a branded Excel copy — presentable to send to a client" onclick="ISO._exportActionsXlsx()">Export Excel<span class="sr"> — actions</span></button></div>`;
     if (!items.length) { host.innerHTML = tb + '<div class="iso-empty"><strong>No actions.</strong><span>Mark a clause Partial, Non-Compliant or OFI and write a planned action.</span></div>'; return; }
     const titleHtml = x => x.kind === 'action' ? `<button type="button" class="iso-wl-plan is-link" data-id="${esc(x.id)}" onclick="ISO._wlOpenAction(this.dataset.id)">${esc(x.title)}</button>` : `<span class="iso-wl-plan">${esc(x.title)}</span>`;
     if (_wl.mode === 'timeline') {
@@ -5517,27 +5519,61 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function _csvName(what) { return `${(_auditCache && _auditCache.ref) || 'ISO'}_${what}_${new Date().toISOString().slice(0, 10)}.csv`; }
-  function _exportClausesCsv() {
+  // Shared between the three views below — the same row data as their CSV siblings, each kept in
+  // its own function so a tab's own export never needs to know the other two exist.
+  function _clausesExportRows() {
     const ids = [...document.querySelectorAll('#iso-req-tab [data-ireq]')].map(x => x.dataset.ireq);
     const byId = new Map((_req.requirements || []).map(r => [r.id, r]));
     const rows = (ids.length ? ids.map(id => byId.get(id)).filter(Boolean) : _req.requirements || []);
-    _csvDownload(_csvName('Clauses'), ['Standard', 'Clause', 'Clause name', 'Status', 'OFI', 'Gap reason', 'Basis', 'Planned action', 'Owner', 'Due', 'Approval'],
-      rows.map(r => [`ISO ${r.standard_code}`, r.clause, r.clause_name || '', statusText(r), r.ofi ? 'Yes' : '', GAP_REASON_LABEL[r.gap_reason] || '', r.current_system || '', r.recommended_action || '', _uidName(r.responsible_uid) || '', r.target_date || '', r.approval_state || '']));
+    return rows.map(r => [`ISO ${r.standard_code}`, r.clause, r.clause_name || '', statusText(r), r.ofi ? 'Yes' : '', GAP_REASON_LABEL[r.gap_reason] || '', r.current_system || '', r.recommended_action || '', _uidName(r.responsible_uid) || '', r.target_date || '', r.approval_state || '']);
   }
-  function _exportActionsCsv() {
+  function _actionsExportRows() {
     const std = boardStd();
     const reqs = _wl.reqs.filter(r => !std || r.standard_code === std);
     const byId = new Map(_wl.reqs.map(r => [r.id, r]));
     const items = worklistItemsFrom(reqs, _wl.actions);
-    _csvDownload(_csvName('Actions'), ['Priority', 'Action', 'Reference', 'State', 'Clauses', 'Owner', 'Due'],
-      items.map(x => [WL_PRIO[x.p], x.title, x.ref || '', x.kind === 'action' ? actionStateText(x.status, x.verification) : 'Not tracked yet', x.reqIds.map(id => byId.get(id)).filter(Boolean).map(r => `ISO ${r.standard_code} ${r.clause}`).join('; '), (x.owner && _uidName(x.owner)) || '', x.due || '']));
+    return items.map(x => [WL_PRIO[x.p], x.title, x.ref || '', x.kind === 'action' ? actionStateText(x.status, x.verification) : 'Not tracked yet', x.reqIds.map(id => byId.get(id)).filter(Boolean).map(r => `ISO ${r.standard_code} ${r.clause}`).join('; '), (x.owner && _uidName(x.owner)) || '', x.due || '']);
   }
-  function _exportDocumentsCsv() {
+  function _documentsExportRows() {
     const std = boardStd();
     const docs = _docs.docs.map(d => Object.assign({}, d, { clauses: d.clauses.filter(c => !std || c.standardCode === std) })).filter(d => d.clauses.length);
-    _csvDownload(_csvName('Documents'), ['Document', 'Clauses', 'Provided', 'Revision', 'Date', 'Requested'],
-      docs.map(d => [d.name, d.clauses.map(c => `ISO ${c.standardCode} ${c.clause}`).join('; '), d.clauses.some(c => c.provided) ? 'Yes' : 'No', (d.latest && d.latest.versionLabel) || '', (d.latest && d.latest.evidenceDate) || '', d.requestedAt ? d.requestedAt.slice(0, 10) : '']));
+    return docs.map(d => [d.name, d.clauses.map(c => `ISO ${c.standardCode} ${c.clause}`).join('; '), d.clauses.some(c => c.provided) ? 'Yes' : 'No', (d.latest && d.latest.versionLabel) || '', (d.latest && d.latest.evidenceDate) || '', d.requestedAt ? d.requestedAt.slice(0, 10) : '']);
   }
+  const EXPORT_HEADERS = {
+    Clauses: ['Standard', 'Clause', 'Clause name', 'Status', 'OFI', 'Gap reason', 'Basis', 'Planned action', 'Owner', 'Due', 'Approval'],
+    Actions: ['Priority', 'Action', 'Reference', 'State', 'Clauses', 'Owner', 'Due'],
+    Documents: ['Document', 'Clauses', 'Provided', 'Revision', 'Date', 'Requested'],
+  };
+  function _exportClausesCsv() { _csvDownload(_csvName('Clauses'), EXPORT_HEADERS.Clauses, _clausesExportRows()); }
+  function _exportActionsCsv() { _csvDownload(_csvName('Actions'), EXPORT_HEADERS.Actions, _actionsExportRows()); }
+  function _exportDocumentsCsv() { _csvDownload(_csvName('Documents'), EXPORT_HEADERS.Documents, _documentsExportRows()); }
+
+  // ── Branded Excel export (same views, same rows — presentable enough to forward to a client) ──
+  // Reuses index.html's own ExcelJS helpers (_ensureExcelJs/_xlWrite), the same ones the ISO Audits
+  // report export already uses for its navy header row — same look, nothing new invented.
+  function _xlsxName(what) { return `${(_auditCache && _auditCache.ref) || 'ISO'}_${what}_${new Date().toISOString().slice(0, 10)}.xlsx`; }
+  function _xlsxDownload(filename, sheetName, header, rows) {
+    if (!root._ensureExcelJs) { if (root.showToast) root.showToast('The spreadsheet writer is not available here.', true); return; }
+    root._ensureExcelJs(() => {
+      try {
+        const wbk = new root.ExcelJS.Workbook();
+        wbk.creator = 'Etcher Task Hub'; wbk.created = new Date();
+        const ws = wbk.addWorksheet(sheetName, { views: [{ showGridLines: false, state: 'frozen', ySplit: 1 }] });
+        root._xlWrite(ws, 1, 1, header.map(h => ({ v: h, bold: true, bg: '0d1c33', fg: 'ffffff' })));
+        rows.forEach((r, i) => root._xlWrite(ws, i + 2, 1, r.map(v => ({ v: v == null ? '' : v, wrap: typeof v === 'string' && v.length > 60 }))));
+        ws.columns.forEach((c, i) => { c.width = Math.max(14, Math.min(44, header[i].length + 6)); });
+        wbk.xlsx.writeBuffer().then(buf => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+          a.download = filename; a.style.display = 'none';
+          document.body.appendChild(a); a.click(); a.remove();
+        });
+      } catch (e) { if (root.showToast) root.showToast('Could not build the Excel file: ' + e.message, true); }
+    }, () => { if (root.showToast) root.showToast('The spreadsheet writer could not be loaded — check the connection.', true); });
+  }
+  function _exportClausesXlsx() { _xlsxDownload(_xlsxName('Clauses'), 'Clauses', EXPORT_HEADERS.Clauses, _clausesExportRows()); }
+  function _exportActionsXlsx() { _xlsxDownload(_xlsxName('Actions'), 'Actions', EXPORT_HEADERS.Actions, _actionsExportRows()); }
+  function _exportDocumentsXlsx() { _xlsxDownload(_xlsxName('Documents'), 'Documents', EXPORT_HEADERS.Documents, _documentsExportRows()); }
 
   // ── Release-1 B5.2: formal report (Overview → Report) ──────────────────────────────────────────
   const REPORT_SECTION_LABEL = { executiveSummary: 'Executive summary', method: 'Method', objectivesAchieved: 'Objectives achieved', goodPractice: 'Good practice', conclusion: 'Conclusion' };
@@ -6026,7 +6062,7 @@
     _evdToggleUpload: _evdToggleUpload, _evdFileChosen: _evdFileChosen, _evdPreview: _evdPreview, _evdDownload: _evdDownload, _evdSetDocStatus: _evdSetDocStatus,
     fillDashboardTab: fillDashboardTab, _dashOpenFiltered: _dashOpenFiltered, _dashSetStandard: _dashSetStandard, _boardSetStandard: _boardSetStandard,
     fillOverviewTab: fillOverviewTab, _ovShowFull: _ovShowFull, _ovShowOverview: _ovShowOverview, _ovOpenDocAdd: _ovOpenDocAdd, _ovDocAddApply: _ovDocAddApply,
-    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, notifItems: notifItems, notifUnread: notifUnread, onNotifClick: onNotifClick, notifDismiss: notifDismiss, notifMarkAllRead: notifMarkAllRead, notifClearAll: notifClearAll, openRecord: openRecord, refreshNotifs: refreshNotifs, _csvCell: _csvCell, _exportClausesCsv: _exportClausesCsv, _exportActionsCsv: _exportActionsCsv, _exportDocumentsCsv: _exportDocumentsCsv, _openReport: _openReport, _repSave: _repSave, _repIssue: _repIssue, _repDownload: _repDownload, _repAckForm: _repAckForm, _repAck: _repAck, carryLabel: carryLabel, _saveAuditSetup: _saveAuditSetup, _openStartNext: _openStartNext, _snType: _snType, _snApply: _snApply, openProgramme: openProgramme, _progTile: _progTile, _progSaveSettings: _progSaveSettings, _docOpenRequest: _docOpenRequest, _docRequestApply: _docRequestApply, _docRequestCopy: _docRequestCopy, _docRequestDownload: _docRequestDownload, _openAuditPack: _openAuditPack, _auditPackApply: _auditPackApply, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
+    _docOpenAdd: _docOpenAdd, _reqDocAdd: _reqDocAdd, _docPickStatus: _docPickStatus, notifItems: notifItems, notifUnread: notifUnread, onNotifClick: onNotifClick, notifDismiss: notifDismiss, notifMarkAllRead: notifMarkAllRead, notifClearAll: notifClearAll, openRecord: openRecord, refreshNotifs: refreshNotifs, _csvCell: _csvCell, _exportClausesCsv: _exportClausesCsv, _exportActionsCsv: _exportActionsCsv, _exportDocumentsCsv: _exportDocumentsCsv, _exportClausesXlsx: _exportClausesXlsx, _exportActionsXlsx: _exportActionsXlsx, _exportDocumentsXlsx: _exportDocumentsXlsx,_openReport: _openReport, _repSave: _repSave, _repIssue: _repIssue, _repDownload: _repDownload, _repAckForm: _repAckForm, _repAck: _repAck, carryLabel: carryLabel, _saveAuditSetup: _saveAuditSetup, _openStartNext: _openStartNext, _snType: _snType, _snApply: _snApply, openProgramme: openProgramme, _progTile: _progTile, _progSaveSettings: _progSaveSettings, _docOpenRequest: _docOpenRequest, _docRequestApply: _docRequestApply, _docRequestCopy: _docRequestCopy, _docRequestDownload: _docRequestDownload, _openAuditPack: _openAuditPack, _auditPackApply: _auditPackApply, _exportGapAnalysis: _exportGapAnalysis, _exportSignals: _exportSignals, _trackOpen: _trackOpen, _trackApply: _trackApply, _reqOpenTracked: _reqOpenTracked, _actOpenFinding: _actOpenFinding, _fndOpenReopen: _fndOpenReopen, _fndReopenApply: _fndReopenApply, trackedActionFor: trackedActionFor, _reqSetGap: _reqSetGap, _reqToggleOfi: _reqToggleOfi, _reqOpenScopeMenu: _reqOpenScopeMenu, _reqConfirmDerived: _reqConfirmDerived, _reqOpenSuffMenu: _reqOpenSuffMenu, _reqSetSufficiency: _reqSetSufficiency, _reqQuickNote: _reqQuickNote, _reqQuickNoteSave: _reqQuickNoteSave, _docRemovals: _docRemovals, _reqDocGenerator: _reqDocGenerator, _docTickAll: _docTickAll, _docUpdateSum: _docUpdateSum, _docAddClauseSearch: _docAddClauseSearch, _docAddClause: _docAddClause,
     fillDocumentsTab: fillDocumentsTab, renderDocumentsTab: renderDocumentsTab, _docSetFilter: _docSetFilter, _docSetQuery: _docSetQuery,
     _docOpenGenerator: _docOpenGenerator, _docOpenChooser: _docOpenChooser, _docChooserSearch: _docChooserSearch, _docPick: _docPick, docKeySet: docKeySet,
     fillWorklistTab: fillWorklistTab, renderWorklistTab: renderWorklistTab, worklistItemsFrom: worklistItemsFrom, _wlSetMode: _wlSetMode, _wlAuditId: _wlAuditId, _wlOpenAction: _wlOpenAction, _reqJumpTo: _reqJumpTo,

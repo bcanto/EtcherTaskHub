@@ -132,8 +132,39 @@ H.run('iso-report-test', 3173, async (t, srv) => {
     return blob ? await blob.text() : '';
   });
   t.ok(/Standard,Clause,Clause name,Status/.test(csv) && /ISO 9001,4\.1/.test(csv), 'Export CSV on Clauses downloads the rows shown');
+  const exportShots = await ui.shot('b5-clauses-export-buttons');
+  t.ok(exportShots.desktop <= 0 && exportShots.phone <= 0, `the Clauses toolbar (now with two export buttons) fits at desktop and 390px (overflow ${JSON.stringify(exportShots)})`);
+
+  // Branded Excel export (same views, same rows) — reuses index.html's own ExcelJS helpers (the
+  // ISO Audits report export's own navy-header pattern), so a staff member has something
+  // presentable to forward to a client instead of plain CSV.
+  const xlsxBytes = await ui.eval(() => new Promise((resolve, reject) => {
+    const orig = URL.createObjectURL;
+    const timeout = setTimeout(() => { URL.createObjectURL = orig; reject(new Error('timed out waiting for the Excel file')); }, 20000);
+    URL.createObjectURL = blob => {
+      URL.createObjectURL = orig; clearTimeout(timeout);
+      blob.arrayBuffer().then(buf => resolve(Array.from(new Uint8Array(buf))));
+      return orig.call(URL, blob);
+    };
+    document.querySelector('.iso-clause-toolbar .iso-xlsx').click();
+  })).catch(e => { throw new Error('Export Excel on Clauses: ' + e.message); });
+  const { readZip, getPart } = require(path.join(H.ROOT, 'api', '_isoZip.js'));
+  const xlsxBuf = Buffer.from(xlsxBytes);
+  t.ok(xlsxBuf.length > 1000 && xlsxBuf.slice(0, 2).toString('latin1') === 'PK', `Export Excel on Clauses downloads a real .xlsx file (got ${xlsxBuf.length} bytes, signature ${JSON.stringify(xlsxBuf.slice(0, 2).toString('latin1'))})`);
+  const xz = readZip(xlsxBuf);
+  const ct = getPart(xz, '[Content_Types].xml').toString();
+  t.ok(/spreadsheetml/.test(ct), 'it is a real spreadsheet package, not a renamed something-else');
+  const sheet1 = getPart(xz, 'xl/worksheets/sheet1.xml').toString();
+  const sharedStrings = (() => { try { return getPart(xz, 'xl/sharedStrings.xml').toString(); } catch (e) { return ''; } })();
+  const sheetText = sheet1 + sharedStrings;
+  t.ok(/Clause name/.test(sheetText) && /4\.1/.test(sheetText), `the sheet carries the same header and data as the CSV (got header present: ${/Clause name/.test(sheetText)}, row present: ${/4\.1/.test(sheetText)})`);
+  const styles = getPart(xz, 'xl/styles.xml').toString();
+  t.ok(/0D1C33/i.test(styles), `the header row is filled Etcher navy (0d1c33), not a plain white cell (got no navy fill in styles.xml)`);
+  t.ok(/bold val="1"|<b\/>/.test(styles), 'the header row is bold');
+
   await ui.tab('worklist');
   t.ok(await ui.eval(() => !!document.querySelector('.iso-wl-toolbar .iso-csv')), 'the Actions tab offers Export CSV');
+  t.ok(await ui.eval(() => !!document.querySelector('.iso-wl-toolbar .iso-xlsx')), 'the Actions tab offers Export Excel too');
   // B5.1 bell: the admin has an ISO notification (finding reopened).
   await ui.eval(() => ISO.refreshNotifs()); await t.sleep(1500);
   await ui.eval(() => navigate('notifications')); await t.sleep(1200);
@@ -161,4 +192,8 @@ H.run('iso-report-test', 3173, async (t, srv) => {
   const ul = await srv.must(A, { op: 'report.list', auditId: ub.id });
   t.ok(ul.length === 1 && ul[0].content.sections.executiveSummary === 'From the panel.', 'Issue from the panel saves the draft and issues version 1');
   t.ok(await ui.eval(() => /Version 1/.test(document.querySelector('.iso-rep-versions')?.textContent || '')), 'the panel lists the issued version');
+  await ui.eval(() => document.getElementById('generic-modal').classList.add('hidden'));
+  await ui.tab('documents');
+  t.ok(await ui.eval(() => !!document.querySelector('.iso-doc-toolbar .iso-xlsx') && !!document.querySelector('.iso-doc-toolbar .iso-csv')), 'the Documents tab offers both Export CSV and Export Excel');
+  await ui.shot('b5-export-buttons');
 });

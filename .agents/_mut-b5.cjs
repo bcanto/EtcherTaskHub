@@ -24,4 +24,14 @@ module.exports = [
     find: "    if (/^[=+\\-@\\t\\r]/.test(s)) s = \"'\" + s; // formula-injection guard\n", replace: '' },
   { id: 'b5-bell-merge', suite: S, file: 'index.html', note: 'the bell leaves ISO items out',
     find: "  const isoRows=(window._isoEnabled&&window.ISO&&ISO.notifItems)?ISO.notifItems():[];", replace: '  const isoRows=[];' },
+  // Branded Excel export (added post-commit, same batch, B5.3) — the user wanted a presentable
+  // copy for client sharing; plain CSV can't be branded, so this reuses index.html's own ExcelJS
+  // header-styling convention instead of inventing a new one.
+  { id: 'b5-xlsx-no-navy', suite: S, file: 'iso/iso-core.js', note: 'the Excel header loses its Etcher navy fill — looks like an unbranded default sheet',
+    find: "header.map(h => ({ v: h, bold: true, bg: '0d1c33', fg: 'ffffff' }))", replace: "header.map(h => ({ v: h, bold: true }))" },
+  { id: 'b5-xlsx-no-button', suite: S, file: 'iso/iso-core.js', note: 'the Clauses tab loses its Export Excel button',
+    find: '<button type="button" class="btn btn-ghost btn-sm iso-xlsx" title="Download a branded Excel copy — presentable to send to a client" onclick="ISO._exportClausesXlsx()">Export Excel<span class="sr"> — clauses</span></button>', replace: '' },
+  { id: 'b5-xlsx-wrong-rows', suite: S, file: 'iso/iso-core.js', note: 'Export Excel on Clauses sends the Actions rows instead of its own',
+    find: 'function _exportClausesXlsx() { _xlsxDownload(_xlsxName(\'Clauses\'), \'Clauses\', EXPORT_HEADERS.Clauses, _clausesExportRows()); }',
+    replace: 'function _exportClausesXlsx() { _xlsxDownload(_xlsxName(\'Clauses\'), \'Clauses\', EXPORT_HEADERS.Actions, _actionsExportRows()); }' },
 ];
