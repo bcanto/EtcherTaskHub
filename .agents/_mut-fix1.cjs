@@ -15,4 +15,6 @@ module.exports = [
     find: "'carry_target_ids','sample_population','sample_size','sample_exceptions'];", replace: "'carry_target_ids'];" },
   { id: 'fix1-created-by-leak', suite: S, file: 'api/_isoDbSupabase.js', note: 'created_by/updated_by leak into p_extra, duplicating p_actor_uid',
     find: "if (!core.includes(k) && k !== 'created_by' && k !== 'updated_by' && row[k] !== undefined) extra[k] = row[k];", replace: 'if (!core.includes(k) && row[k] !== undefined) extra[k] = row[k];' },
+  { id: 'fix1-reports-allowlist', suite: S, file: 'supabase/migrations/009_iso_core.sql', note: 'iso_update_row forgets iso_reports can write current_version — a re-issue would silently keep the old version number',
+    find: "when 'iso_reports' then array['title','config','status','current_version']", replace: "when 'iso_reports' then array['title','config','status']" },
 ];

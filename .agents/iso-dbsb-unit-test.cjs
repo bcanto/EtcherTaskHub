@@ -269,8 +269,13 @@ const db = require('../api/_isoDbSupabase.js');
       ['iso_actions', jsList('ACTION_WRITABLE_FIELDS') || []],
       ['iso_action_subtasks', jsList('SUBTASK_WRITABLE_FIELDS') || []],
       ['iso_audits', [...(auditAllowed || []), 'completed_at', 'visibility', 'archived_at']],
+      // Release-1 additions (B4.5, B5.2, B4.6) — no dedicated *_WRITABLE_FIELDS const for the latter
+      // two (their ops write a small, fixed inline patch), so those two are named here by hand.
+      ['iso_client_settings', jsList('CLIENT_SETTINGS_FIELDS') || []],
+      ['iso_reports', ['title', 'config', 'status', 'current_version']],
+      ['iso_evidence_requests', ['status']],
     ];
-    ok(jsList('REQUIREMENT_WRITABLE_FIELDS') && jsList('ACTION_WRITABLE_FIELDS') && auditAllowed, 'the static guard found every writable-field list it checks');
+    ok(jsList('REQUIREMENT_WRITABLE_FIELDS') && jsList('ACTION_WRITABLE_FIELDS') && jsList('CLIENT_SETTINGS_FIELDS') && auditAllowed, 'the static guard found every writable-field list it checks');
     for (const [table, fields] of checks) {
       const al = allow(table) || [];
       const missing = fields.filter(f => !al.includes(f));
