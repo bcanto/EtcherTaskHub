@@ -274,8 +274,23 @@ const db = require('../api/_isoDbSupabase.js');
       ['iso_client_settings', jsList('CLIENT_SETTINGS_FIELDS') || []],
       ['iso_reports', ['title', 'config', 'status', 'current_version']],
       ['iso_evidence_requests', ['status']],
+      // Pre-release-1 (Phase 7.4/8b.4-6) — present in ctx.db.update() calls across api/_iso.js (found
+      // by grepping every distinct table name passed to ctx.db.update, not just the ones already
+      // known to this guard) but never checked here before this widening. evidence.supersede and
+      // evidence.setDocumentStatus are the only two iso_evidence writers; the other fields in 009's
+      // own (wider) allowlist are provisioned, unwritten capacity, so this checks a subset, same as
+      // the iso_audits row above does against its own SQL list.
+      ['iso_evidence', ['superseded_by', 'document_status', 'approver_uid', 'effective_date']],
+      ['iso_evidence_links', ['review_status', 'review_comment', 'reviewed_by', 'reviewed_at', 'reviewed_version_label', 'role']],
     ];
     ok(jsList('REQUIREMENT_WRITABLE_FIELDS') && jsList('ACTION_WRITABLE_FIELDS') && jsList('CLIENT_SETTINGS_FIELDS') && auditAllowed, 'the static guard found every writable-field list it checks');
+    // Meta-coverage: every table api/_iso.js ever calls ctx.db.update() on must be one of the rows
+    // above — so a future table added here without a matching `checks` row fails loudly (right here,
+    // with its name), instead of quietly having zero regression coverage the way iso_client_settings/
+    // iso_reports/iso_evidence_requests/iso_evidence/iso_evidence_links all did until this widening.
+    const updatedTables = [...new Set((src.match(/ctx\.db\.update\('([a-z_]+)'/g) || []).map(m => /'([a-z_]+)'/.exec(m)[1]))];
+    const uncovered = updatedTables.filter(t => !checks.some(([table]) => table === t));
+    ok(updatedTables.length >= 10 && uncovered.length === 0, `every table ctx.db.update() ever targets has a static-guard row (found ${updatedTables.length} tables; uncovered: ${uncovered.join(', ') || 'none'})`);
     for (const [table, fields] of checks) {
       const al = allow(table) || [];
       const missing = fields.filter(f => !al.includes(f));
