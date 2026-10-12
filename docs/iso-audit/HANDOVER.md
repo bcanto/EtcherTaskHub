@@ -1,4 +1,4 @@
-# Handover — ISO release-1 build (updated 2026-10-11)
+# Handover — ISO release-1 build (updated 2026-10-12)
 
 **For:** the next Claude Code session (any account). Read this first, then
 `docs/iso-audit/release-1-completion-plan.md` (the approved plan, D44–D56) and the `⏸ RESUME HERE`
@@ -32,9 +32,10 @@ gate per batch.
 4. Say "commit and push" when ready — the branch is local only.
 
 ## Open items recorded in the plan
-- The Supabase adapter's `insertNumbered` passes only each create RPC's fixed columns (statement /
-  criteria / refs on findings, owner / due / priority on actions are not written on Supabase) — fix before
-  the first Supabase apply.
+- ~~The Supabase adapter's `insertNumbered` passes only each create RPC's fixed columns~~ — **fixed
+  2026-10-12** (not a batch; found by audit, see that Progress Log row). `insertNumbered` now sends
+  every row field beyond the fixed params as a validated `p_extra` jsonb; `iso-dbsb-unit-test` 61/0,
+  can-fail `_mut-fix1.cjs` 6/6.
 - "Attach a copy" of a SharePoint document (B3.3, optional) not built.
 - Report PDFs are downloaded, not uploaded to storage (release-1 simplification of §5.5).
 

@@ -104,19 +104,33 @@ async function insertNumbered(table, kind, scope, row, activity) {
   const fnMap = { iso_audits: 'iso_create_audit', iso_findings: 'iso_create_finding', iso_actions: 'iso_create_action', iso_evidence: 'iso_create_evidence' };
   const fn = fnMap[table];
   if (!fn) throw new Error(`insertNumbered: no create function for ${table}`);
-  let body;
+  let body, core;
   if (table === 'iso_audits') {
+    core = ['id', 'client_id', 'title', 'audit_type', 'owner_uid', 'visibility'];
     body = { p_id: row.id, p_client_id: row.client_id, p_title: row.title, p_audit_type: row.audit_type, p_owner_uid: row.owner_uid, p_visibility: row.visibility, p_actor_uid: activity && activity.actor_uid };
   } else if (table === 'iso_findings') {
+    core = ['id', 'audit_id', 'client_id', 'classification', 'title'];
     body = { p_id: row.id, p_audit_id: row.audit_id, p_client_id: row.client_id, p_classification: row.classification, p_title: row.title, p_actor_uid: activity && activity.actor_uid };
   } else if (table === 'iso_actions') {
+    core = ['id', 'audit_id', 'client_id', 'title', 'owner_kind'];
     body = { p_id: row.id, p_audit_id: row.audit_id, p_client_id: row.client_id, p_title: row.title, p_owner_kind: row.owner_kind, p_actor_uid: activity && activity.actor_uid };
   } else {
+    core = ['id', 'audit_id', 'client_id', 'kind', 'title', 'description', 'url', 'version_label', 'evidence_date', 'owner_uid', 'confidentiality', 'visibility', 'uploaded_by', 'uploaded_via', 'suggest_related', 'storage_path', 'original_filename', 'mime', 'size_bytes', 'document_status', 'approver_uid', 'effective_date'];
     body = { p_id: row.id, p_audit_id: row.audit_id, p_client_id: row.client_id, p_kind: row.kind, p_title: row.title, p_description: row.description, p_url: row.url, p_version_label: row.version_label, p_evidence_date: row.evidence_date, p_owner_uid: row.owner_uid, p_confidentiality: row.confidentiality, p_visibility: row.visibility, p_uploaded_by: row.uploaded_by, p_uploaded_via: row.uploaded_via, p_actor_uid: activity && activity.actor_uid, p_suggest_related: row.suggest_related !== false,
       // Plan 8.2: an uploaded file's columns, and (8c.5, D22) its document fields — null for a link.
       p_storage_path: row.storage_path || null, p_original_filename: row.original_filename || null, p_mime: row.mime || null, p_size_bytes: row.size_bytes == null ? null : row.size_bytes,
       p_document_status: row.document_status || null, p_approver_uid: row.approver_uid || null, p_effective_date: row.effective_date || null };
   }
+  // Fix (2026-10-12): every other field in `row` rides along as p_extra — each create function
+  // (009/010) validates its own keys against its own allowlist (same discipline as iso_update_row),
+  // so a field a future batch adds to a call site's row object reaches Supabase instead of being
+  // silently dropped. This had already happened three times before this fix: B1's statement/
+  // criteria/evidence_basis, B2/B4's carried_from_ref/carried_meta/repeat_of_ref, and the original
+  // audit.startMaintenance's previous_audit_id/scope_text/library_release — none offline, since
+  // _isoDbOffline.js's insertNumbered just writes the whole row object as given.
+  const extra = {};
+  for (const k of Object.keys(row)) if (!core.includes(k) && k !== 'created_by' && k !== 'updated_by' && row[k] !== undefined) extra[k] = row[k];
+  body.p_extra = extra;
   const r = await fetch(`${_rpcBase()}/${fn}`, { method: 'POST', headers: _headers(), body: JSON.stringify(body) });
   return _asJson(r, fn);
 }

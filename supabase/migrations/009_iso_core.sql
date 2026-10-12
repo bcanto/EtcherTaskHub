@@ -707,6 +707,24 @@ language sql stable security invoker set search_path = public as $$
   select coalesce((select value #>> '{}' from iso_config where key = 'timezone'), 'Australia/Perth');
 $$;
 
+-- Fix (2026-10-12), found by audit while reviewing release-1 before the first Supabase apply: every
+-- insertNumbered() call site in api/_iso.js builds a JS row object with whatever extra fields that
+-- batch needs — B1 added statement/criteria/evidence_basis; B2/B4 added carried_from_ref/
+-- carried_meta/repeat_of_ref; the original audit.startMaintenance always needed previous_audit_id,
+-- scope_text, library_release and more — but the numbered-create functions below only ever had a
+-- FIXED, positional parameter list, so every one of those fields was silently dropped on Supabase
+-- (never offline — _isoDbOffline.js's insertNumbered just writes the whole row object). Never caught
+-- by a test because every ISO suite runs offline only (hard rule 1); found by reading every
+-- insertNumbered call site against what each create function below actually accepted. Fixed with one
+-- small jsonb "extra" parameter per create function (iso_create_audit/finding/action/evidence),
+-- checked against an explicit allowlist with the same discipline as iso_update_row's own per-table
+-- allowlist — an unexpected key raises loudly instead of being dropped silently, and a future field
+-- only needs that allowlist widened, not a new positional parameter threaded through everywhere.
+create or replace function iso_extra_keys_ok(p_extra jsonb, p_allowed text[]) returns boolean
+language sql stable security invoker set search_path = public as $$
+  select not exists (select 1 from jsonb_object_keys(coalesce(p_extra, '{}'::jsonb)) k where k <> all(p_allowed));
+$$;
+
 -- ── 6. Atomic create/update/transition functions (plan §4.4) ───────────────────
 -- Every create/update/transition writes the row AND its iso_activity entry in one transaction.
 
@@ -725,16 +743,30 @@ $$;
 
 create or replace function iso_create_audit(
   p_id text, p_client_id text, p_title text, p_audit_type text, p_owner_uid text,
-  p_visibility text, p_actor_uid text
+  p_visibility text, p_actor_uid text, p_extra jsonb default '{}'::jsonb
 ) returns iso_audits
 language plpgsql security invoker set search_path = public as $$
-declare v_ref text; v_year text; v_row iso_audits;
+declare v_ref text; v_year text; v_row iso_audits; v_allowed text[];
 begin
+  v_allowed := array['stage','scope_text','exclusions_text','planned_start','planned_end','report_due',
+    'certification_body','lead_auditor_uid','internal_notes','template_id','client_portal_enabled',
+    'default_visibility','previous_audit_id','completed_at','maintenance_due','library_release',
+    'follow_up_scope','setup','custom_type_label'];
+  if not iso_extra_keys_ok(p_extra, v_allowed) then raise exception 'iso_create_audit: p_extra has a disallowed key'; end if;
   v_year := to_char((now() at time zone iso_config_timezone()), 'YYYY');
   v_ref := 'AUD-' || v_year || '-' || iso_pad_number(iso_next_number('AUD-' || v_year));
-  insert into iso_audits(id, ref, client_id, title, audit_type, owner_uid, visibility, created_by, updated_by)
+  insert into iso_audits(id, ref, client_id, title, audit_type, owner_uid, visibility, created_by, updated_by,
+    stage, scope_text, exclusions_text, planned_start, planned_end, report_due, certification_body,
+    lead_auditor_uid, internal_notes, template_id, client_portal_enabled, default_visibility,
+    previous_audit_id, completed_at, maintenance_due, library_release, follow_up_scope, setup, custom_type_label)
   values (p_id, v_ref, p_client_id, p_title, coalesce(p_audit_type, 'gap_analysis'), p_owner_uid,
-    coalesce(p_visibility, 'all_internal'), p_actor_uid, p_actor_uid)
+    coalesce(p_visibility, 'all_internal'), p_actor_uid, p_actor_uid,
+    coalesce(p_extra->>'stage', 'planning'), p_extra->>'scope_text', p_extra->>'exclusions_text',
+    (p_extra->>'planned_start')::date, (p_extra->>'planned_end')::date, (p_extra->>'report_due')::date,
+    p_extra->>'certification_body', p_extra->>'lead_auditor_uid', p_extra->>'internal_notes', p_extra->>'template_id',
+    coalesce((p_extra->>'client_portal_enabled')::boolean, false), coalesce(p_extra->>'default_visibility', 'internal'),
+    p_extra->>'previous_audit_id', (p_extra->>'completed_at')::timestamptz, (p_extra->>'maintenance_due')::date,
+    coalesce(p_extra->>'library_release', 'v3'), p_extra->'follow_up_scope', p_extra->'setup', p_extra->>'custom_type_label')
   returning * into v_row;
   perform iso_log(v_row.id, v_row.client_id, 'audit', v_row.id, v_row.ref, 'created', null, null,
     to_jsonb(v_row), null, 'user', p_actor_uid, 'staff');
@@ -743,16 +775,28 @@ end;
 $$;
 
 create or replace function iso_create_finding(
-  p_id text, p_audit_id text, p_client_id text, p_classification text, p_title text, p_actor_uid text
+  p_id text, p_audit_id text, p_client_id text, p_classification text, p_title text, p_actor_uid text,
+  p_extra jsonb default '{}'::jsonb
 ) returns iso_findings
 language plpgsql security invoker set search_path = public as $$
-declare v_ref text; v_audit_ref text; v_row iso_findings;
+declare v_ref text; v_audit_ref text; v_row iso_findings; v_allowed text[];
 begin
+  v_allowed := array['statement','criteria','evidence_basis','status','visibility','visible_to_uids',
+    'root_cause_required','carried_from_ref','carried_meta','repeat_of_ref'];
+  if not iso_extra_keys_ok(p_extra, v_allowed) then raise exception 'iso_create_finding: p_extra has a disallowed key'; end if;
   select ref into v_audit_ref from iso_audits where id = p_audit_id;
   if v_audit_ref is null then raise exception 'unknown audit %', p_audit_id; end if;
   v_ref := v_audit_ref || '-F' || iso_pad_number(iso_next_number(p_audit_id || ':F'));
-  insert into iso_findings(id, ref, audit_id, client_id, classification, title, root_cause_required, created_by, updated_by)
-  values (p_id, v_ref, p_audit_id, p_client_id, p_classification, p_title, p_classification = 'major_nc', p_actor_uid, p_actor_uid)
+  insert into iso_findings(id, ref, audit_id, client_id, classification, title, root_cause_required,
+    created_by, updated_by, statement, criteria, evidence_basis, status, visibility, visible_to_uids,
+    carried_from_ref, carried_meta, repeat_of_ref)
+  values (p_id, v_ref, p_audit_id, p_client_id, p_classification, p_title,
+    coalesce((p_extra->>'root_cause_required')::boolean, p_classification = 'major_nc'),
+    p_actor_uid, p_actor_uid,
+    p_extra->>'statement', p_extra->>'criteria', p_extra->>'evidence_basis',
+    coalesce(p_extra->>'status', 'draft'), coalesce(p_extra->>'visibility', 'internal'),
+    coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_extra->'visible_to_uids', '[]'::jsonb)) x), '{}'),
+    p_extra->>'carried_from_ref', p_extra->'carried_meta', p_extra->>'repeat_of_ref')
   returning * into v_row;
   perform iso_log(p_audit_id, p_client_id, 'finding', v_row.id, v_row.ref, 'created', null, null,
     to_jsonb(v_row), null, 'user', p_actor_uid, 'staff');
@@ -761,16 +805,40 @@ end;
 $$;
 
 create or replace function iso_create_action(
-  p_id text, p_audit_id text, p_client_id text, p_title text, p_owner_kind text, p_actor_uid text
+  p_id text, p_audit_id text, p_client_id text, p_title text, p_owner_kind text, p_actor_uid text,
+  p_extra jsonb default '{}'::jsonb
 ) returns iso_actions
 language plpgsql security invoker set search_path = public as $$
-declare v_ref text; v_audit_ref text; v_row iso_actions;
+declare v_ref text; v_audit_ref text; v_row iso_actions; v_allowed text[];
 begin
+  v_allowed := array['description','owner_uid','start_date','due_date','priority','risk_rating','progress',
+    'status','verification_status','verification_requirements','correction','containment','root_cause_method',
+    'five_whys','fishbone','cause_tree','contributing_factors','cause_categories','root_cause_summary',
+    'corrective_action','preventive_action','effectiveness_check','effectiveness_review_date','visibility',
+    'visible_to_uids','reopened_count','carried_from_ref','carried_meta'];
+  if not iso_extra_keys_ok(p_extra, v_allowed) then raise exception 'iso_create_action: p_extra has a disallowed key'; end if;
   select ref into v_audit_ref from iso_audits where id = p_audit_id;
   if v_audit_ref is null then raise exception 'unknown audit %', p_audit_id; end if;
   v_ref := v_audit_ref || '-A' || iso_pad_number(iso_next_number(p_audit_id || ':A'));
-  insert into iso_actions(id, ref, audit_id, client_id, title, owner_kind, created_by, updated_by)
-  values (p_id, v_ref, p_audit_id, p_client_id, p_title, coalesce(p_owner_kind, 'etcher'), p_actor_uid, p_actor_uid)
+  insert into iso_actions(id, ref, audit_id, client_id, title, owner_kind, created_by, updated_by,
+    description, owner_uid, start_date, due_date, priority, risk_rating, progress, status, verification_status,
+    verification_requirements, correction, containment, root_cause_method, five_whys, fishbone, cause_tree,
+    contributing_factors, cause_categories, root_cause_summary, corrective_action, preventive_action,
+    effectiveness_check, effectiveness_review_date, visibility, visible_to_uids, reopened_count,
+    carried_from_ref, carried_meta)
+  values (p_id, v_ref, p_audit_id, p_client_id, p_title, coalesce(p_owner_kind, 'etcher'), p_actor_uid, p_actor_uid,
+    p_extra->>'description', p_extra->>'owner_uid', (p_extra->>'start_date')::date, (p_extra->>'due_date')::date,
+    p_extra->>'priority', p_extra->>'risk_rating', coalesce((p_extra->>'progress')::int, 0),
+    coalesce(p_extra->>'status', 'draft'), coalesce(p_extra->>'verification_status', 'not_verified'),
+    p_extra->>'verification_requirements', p_extra->>'correction', p_extra->>'containment',
+    coalesce(p_extra->>'root_cause_method', 'none'), p_extra->'five_whys', p_extra->'fishbone', p_extra->'cause_tree',
+    p_extra->'contributing_factors',
+    coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_extra->'cause_categories', '[]'::jsonb)) x), '{}'),
+    p_extra->>'root_cause_summary', p_extra->>'corrective_action', p_extra->>'preventive_action',
+    p_extra->>'effectiveness_check', (p_extra->>'effectiveness_review_date')::date,
+    coalesce(p_extra->>'visibility', 'internal'),
+    coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_extra->'visible_to_uids', '[]'::jsonb)) x), '{}'),
+    coalesce((p_extra->>'reopened_count')::int, 0), p_extra->>'carried_from_ref', p_extra->'carried_meta')
   returning * into v_row;
   perform iso_log(p_audit_id, p_client_id, 'action', v_row.id, v_row.ref, 'created', null, null,
     to_jsonb(v_row), null, 'user', p_actor_uid, 'staff');
@@ -1178,11 +1246,11 @@ declare sig text;
 begin
   for sig in select unnest(array[
     'iso_activity_append_only()', 'iso_no_hard_delete()', 'iso_library_requirements_immutable()',
-    'iso_next_number(text)', 'iso_pad_number(int,int)', 'iso_config_timezone()',
+    'iso_next_number(text)', 'iso_pad_number(int,int)', 'iso_config_timezone()', 'iso_extra_keys_ok(jsonb,text[])',
     'iso_log(text,text,text,text,text,text,text,jsonb,jsonb,text,text,text,text)',
-    'iso_create_audit(text,text,text,text,text,text,text)',
-    'iso_create_finding(text,text,text,text,text,text)',
-    'iso_create_action(text,text,text,text,text,text)',
+    'iso_create_audit(text,text,text,text,text,text,text,jsonb)',
+    'iso_create_finding(text,text,text,text,text,text,jsonb)',
+    'iso_create_action(text,text,text,text,text,text,jsonb)',
     'iso_update_row(text,text,jsonb,int,text,text,text,text,text,text,text,text,text)',
     'iso_import_apply(text,jsonb,text)',
     'iso_transition_action(text,text,int,text,text,text)',
@@ -1253,6 +1321,6 @@ on conflict (key) do nothing;
 --     iso_standard_versions, iso_standards cascade;
 --   drop function if exists iso_release_finding, iso_reopen_finding, iso_reopen_action, iso_verify_action,
 --     iso_transition_action, iso_import_apply, iso_update_row, iso_create_action,
---     iso_create_finding, iso_create_audit, iso_log, iso_config_timezone, iso_pad_number,
+--     iso_create_finding, iso_create_audit, iso_extra_keys_ok, iso_log, iso_config_timezone, iso_pad_number,
 --     iso_next_number, iso_library_requirements_immutable, iso_no_hard_delete,
 --     iso_activity_append_only cascade;

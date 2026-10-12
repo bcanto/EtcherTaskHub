@@ -62,6 +62,71 @@ const db = require('../api/_isoDbSupabase.js');
   calls = []; stubFetch({ id: 'ifnd_1', ref: 'AUD-2026-001-F001' });
   await db.insertNumbered('iso_findings', 'child', 'iaud_1:F', { id: 'ifnd_1', audit_id: 'iaud_1', client_id: 'c1', title: 'F', classification: 'minor_nc' }, { actor_uid: 'u1' });
   ok(calls[0].url.endsWith('/rpc/iso_create_finding'), `insertNumbered(finding) calls iso_create_finding (got ${calls[0].url})`);
+  ok(JSON.parse(calls[0].opts.body).p_extra && Object.keys(JSON.parse(calls[0].opts.body).p_extra).length === 0, 'insertNumbered() sends an empty p_extra when the row has nothing beyond the fixed params');
+
+  // ── Fix (2026-10-12): every insertNumbered() row field beyond the fixed/core params rides along
+  // as p_extra, so a field a batch adds to a call site's row object reaches Supabase — three real
+  // gaps were found this way (B1's statement/criteria/evidence_basis, B2/B4's carried_from_ref/
+  // carried_meta/repeat_of_ref, and the original audit.startMaintenance's previous_audit_id/
+  // scope_text/library_release/follow_up_scope, none caught before because every ISO suite runs
+  // offline only). Each block below shapes `row` exactly like a real api/_iso.js call site, checks
+  // insertNumbered() sends every extra field, AND that the matching SQL create function's own
+  // v_allowed array (009/010) accepts every one of those same keys — so the two sides can't drift
+  // apart silently again.
+  {
+    const fs = require('fs'), path = require('path');
+    const sql009 = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '009_iso_core.sql'), 'utf8');
+    const sql010 = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '010_iso_evidence.sql'), 'utf8');
+    const fnBody = (text, name) => { const s = text.indexOf('create or replace function ' + name + '('); if (s < 0) return null; const e = text.indexOf('\n$$;', s); return e < 0 ? null : text.slice(s, e); };
+    const allowedOf = (text, name) => { const b = fnBody(text, name); const m = b && /v_allowed := array\[([\s\S]*?)\];/.exec(b); return m ? (m[1].match(/'([a-z_]+)'/g) || []).map(x => x.slice(1, -1)) : null; };
+    const check = async (table, fn, row, expectExtraKeys) => {
+      calls = []; stubFetch({ id: row.id });
+      await db.insertNumbered(table, 'child', 'scope', row, { actor_uid: 'u1' });
+      const body = JSON.parse(calls[0].opts.body);
+      const got = Object.keys(body.p_extra || {}).sort();
+      const want = expectExtraKeys.slice().sort();
+      ok(JSON.stringify(got) === JSON.stringify(want), `insertNumbered(${table}) sends exactly the expected p_extra keys for this row shape (got ${JSON.stringify(got)}, expected ${JSON.stringify(want)})`);
+      ok(!('created_by' in body.p_extra) && !('updated_by' in body.p_extra), `insertNumbered(${table}) never duplicates created_by/updated_by into p_extra (they ride on p_actor_uid)`);
+      const allowed = allowedOf(table === 'iso_evidence' ? sql010 : sql009, fn);
+      const missing = expectExtraKeys.filter(k => !(allowed || []).includes(k));
+      ok(allowed && allowed.length > 0 && missing.length === 0, `every key insertNumbered(${table}) can send is in ${fn}'s own v_allowed array${missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''}`);
+    };
+    // Shaped like audit.startMaintenance / audit.startFollowUp's row (api/_iso.js).
+    await check('iso_audits', 'iso_create_audit', {
+      id: 'iaud_2', client_id: 'c1', title: 'Maintenance audit of AUD-2026-001', audit_type: 'internal', stage: 'planning',
+      visibility: 'all_internal', planned_start: '2027-01-15', follow_up_scope: null, owner_uid: 'u1',
+      client_portal_enabled: false, default_visibility: 'internal', scope_text: 'Head office', exclusions_text: null,
+      previous_audit_id: 'iaud_1', library_release: 'v3', created_by: 'u1', updated_by: 'u1',
+    }, ['stage', 'planned_start', 'follow_up_scope', 'client_portal_enabled', 'default_visibility', 'scope_text', 'exclusions_text', 'previous_audit_id', 'library_release']);
+    // Shaped like the maintenance carry-forward's finding row (carried_from_ref/carried_meta).
+    await check('iso_findings', 'iso_create_finding', {
+      id: 'ifnd_2', audit_id: 'iaud_2', client_id: 'c1', classification: 'minor_nc', title: 'Not conforming',
+      statement: 'Seen the register.', criteria: 'ISO 9001 4.1', evidence_basis: 'Records register', status: 'draft',
+      visibility: 'internal', visible_to_uids: [], root_cause_required: false,
+      carried_from_ref: 'AUD-2026-001 / AUD-2026-001-F001', carried_meta: { auditRef: 'AUD-2026-001', ref: 'AUD-2026-001-F001', status: 'draft', by: 'u1', at: '2026-10-01T00:00:00Z' },
+      repeat_of_ref: null, created_by: 'u1', updated_by: 'u1',
+    }, ['statement', 'criteria', 'evidence_basis', 'status', 'visibility', 'visible_to_uids', 'root_cause_required', 'carried_from_ref', 'carried_meta', 'repeat_of_ref']);
+    // Shaped like the maintenance carry-forward's action row (the full CAPA field set).
+    await check('iso_actions', 'iso_create_action', {
+      id: 'iact_2', audit_id: 'iaud_2', client_id: 'c1', title: 'Fix it', owner_kind: 'etcher',
+      verification_status: 'not_verified', reopened_count: 0, carried_from_ref: 'AUD-2026-001 / AUD-2026-001-A001',
+      carried_meta: { auditRef: 'AUD-2026-001', ref: 'AUD-2026-001-A001', status: 'in_progress', by: 'u1', at: '2026-10-01T00:00:00Z' },
+      description: 'Retrain the team', owner_uid: 'u1', start_date: '2026-11-01', due_date: '2027-01-15', priority: 'high',
+      risk_rating: 'medium', progress: 40, status: 'in_progress', verification_requirements: 'Re-sample next audit',
+      correction: 'Retrained', containment: 'Procedure reissued', root_cause_method: 'five_whys',
+      five_whys: [{ why: 'Why?', answer: 'Because.' }], fishbone: { People: ['Training gap'] }, cause_tree: [{ id: '1', parentId: null, text: 'Root' }],
+      contributing_factors: [{ text: 'Turnover', category: 'People' }], cause_categories: ['people'], root_cause_summary: 'Staff turnover meant the procedure was never trained.',
+      corrective_action: 'Retrain', preventive_action: 'Add to induction', effectiveness_check: 'Resample in 90 days',
+      effectiveness_review_date: '2027-02-01', visibility: 'internal', visible_to_uids: [], created_by: 'u1', updated_by: 'u1',
+    }, ['verification_status', 'reopened_count', 'carried_from_ref', 'carried_meta', 'description', 'owner_uid', 'start_date', 'due_date', 'priority', 'risk_rating', 'progress', 'status', 'verification_requirements', 'correction', 'containment', 'root_cause_method', 'five_whys', 'fishbone', 'cause_tree', 'contributing_factors', 'cause_categories', 'root_cause_summary', 'corrective_action', 'preventive_action', 'effectiveness_check', 'effectiveness_review_date', 'visibility', 'visible_to_uids']);
+    // Shaped like the maintenance carry-forward's evidence row, plus a 'sample' kind's columns.
+    await check('iso_evidence', 'iso_create_evidence', {
+      id: 'ievi_2', audit_id: 'iaud_2', client_id: 'c1', kind: 'sample', title: 'Competency files',
+      suggest_related: true, uploaded_by: 'u1', uploaded_via: 'staff', carried_from_ref: 'AUD-2026-001 / AUD-2026-001-E001',
+      carry_target_ids: ['ireq_1'], document_id: 'idoc_1', visible_to_uids: [], review_or_expiry_date: '2027-06-01',
+      sample_population: 42, sample_size: 5, sample_exceptions: '2 lacked authorisation', created_by: 'u1', updated_by: 'u1',
+    }, ['carried_from_ref', 'carry_target_ids', 'document_id', 'visible_to_uids', 'review_or_expiry_date', 'sample_population', 'sample_size', 'sample_exceptions']);
+  }
 
   // ── transition() dispatches to the ONE dedicated RPC each (table,column,to) maps to — never
   // the generic iso_update_row (plan §4.4, Phase 7.2) ─────────────────────────────────────────

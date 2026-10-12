@@ -203,28 +203,44 @@ end $$;
 -- so a link keeps the short call. Dropped first so an older signature can never sit beside this
 -- one as an ambiguous overload (same as A80's iso_update_row).
 drop function if exists iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean);
+drop function if exists iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean,text,text,text,bigint,text,text,date);
+-- Fix (2026-10-12, same gap as 009's iso_create_finding/iso_create_action — see the comment there):
+-- p_extra carries whatever else a call site's row needs (document_id, visible_to_uids,
+-- review_or_expiry_date, carried_from_ref/carry_target_ids from the maintenance carry-forward, the
+-- sample_* columns from evidence.addLink's 'sample' kind) — all silently dropped before this fix.
 create or replace function iso_create_evidence(
   p_id text, p_audit_id text, p_client_id text, p_kind text, p_title text, p_description text,
   p_url text, p_version_label text, p_evidence_date date, p_owner_uid text, p_confidentiality text,
   p_visibility text, p_uploaded_by text, p_uploaded_via text, p_actor_uid text,
   p_suggest_related boolean default true,
   p_storage_path text default null, p_original_filename text default null, p_mime text default null, p_size_bytes bigint default null,
-  p_document_status text default null, p_approver_uid text default null, p_effective_date date default null
+  p_document_status text default null, p_approver_uid text default null, p_effective_date date default null,
+  p_extra jsonb default '{}'::jsonb
 ) returns iso_evidence
 language plpgsql security invoker set search_path = public as $$
-declare v_ref text; v_audit_ref text; v_row iso_evidence;
+declare v_ref text; v_audit_ref text; v_row iso_evidence; v_allowed text[];
 begin
+  v_allowed := array['document_id','visible_to_uids','review_or_expiry_date','carried_from_ref',
+    'carry_target_ids','sample_population','sample_size','sample_exceptions'];
+  if not iso_extra_keys_ok(p_extra, v_allowed) then raise exception 'iso_create_evidence: p_extra has a disallowed key'; end if;
   select ref into v_audit_ref from iso_audits where id = p_audit_id;
   if v_audit_ref is null then raise exception 'unknown audit %', p_audit_id; end if;
   v_ref := v_audit_ref || '-E' || iso_pad_number(iso_next_number(p_audit_id || ':E'));
   insert into iso_evidence(id, ref, audit_id, client_id, kind, title, description, url, version_label,
     evidence_date, owner_uid, confidentiality, visibility, uploaded_by, uploaded_via, suggest_related,
-    storage_path, original_filename, mime, size_bytes, document_status, approver_uid, effective_date, created_by, updated_by)
+    storage_path, original_filename, mime, size_bytes, document_status, approver_uid, effective_date, created_by, updated_by,
+    document_id, visible_to_uids, review_or_expiry_date, carried_from_ref, carry_target_ids,
+    sample_population, sample_size, sample_exceptions)
   values (p_id, v_ref, p_audit_id, p_client_id, p_kind, p_title, p_description, p_url, p_version_label,
     p_evidence_date, p_owner_uid, coalesce(p_confidentiality, 'normal'), coalesce(p_visibility, 'internal'),
     coalesce(p_uploaded_by, p_actor_uid), coalesce(p_uploaded_via, 'staff'), coalesce(p_suggest_related, true),
     p_storage_path, p_original_filename, p_mime, p_size_bytes, coalesce(p_document_status, 'draft'), p_approver_uid, p_effective_date,
-    p_actor_uid, p_actor_uid)
+    p_actor_uid, p_actor_uid,
+    p_extra->>'document_id',
+    coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_extra->'visible_to_uids', '[]'::jsonb)) x), '{}'),
+    (p_extra->>'review_or_expiry_date')::date, p_extra->>'carried_from_ref',
+    coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_extra->'carry_target_ids', '[]'::jsonb)) x), '{}'),
+    (p_extra->>'sample_population')::int, (p_extra->>'sample_size')::int, p_extra->>'sample_exceptions')
   returning * into v_row;
   perform iso_log(p_audit_id, p_client_id, 'evidence', v_row.id, v_row.ref, 'created', null, null,
     to_jsonb(v_row), null, 'user', p_actor_uid, 'staff');
@@ -233,8 +249,8 @@ end;
 $$;
 
 -- ── 6. Function lockdown (same as 009's: service role only) ─────────────────────────────────
-revoke execute on function iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean,text,text,text,bigint,text,text,date) from public, anon, authenticated;
-grant execute on function iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean,text,text,text,bigint,text,text,date) to service_role;
+revoke execute on function iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean,text,text,text,bigint,text,text,date,jsonb) from public, anon, authenticated;
+grant execute on function iso_create_evidence(text,text,text,text,text,text,text,text,date,text,text,text,text,text,text,boolean,text,text,text,bigint,text,text,date,jsonb) to service_role;
 
 -- ── 7. Storage bucket (plan §5.4, 8.2) — notes, run by hand in the same change window ────────
 -- Private bucket, 25 MB hard limit (the app enforces iso_config.evidence_max_upload_mb, default
