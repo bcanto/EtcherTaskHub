@@ -14,7 +14,7 @@ gate per batch.
 | B0 build tooling | Done | `b7299d8` |
 | B1 defensible conclusions | Done | `eb5837f` |
 | B2 findings and actions that close | Done | `e57bb83` |
-| B3 history + gap-analysis Excel export | Done — **STOP 2b waiting on the user** | `3a291c1` |
+| B3 history + gap-analysis Excel export | Done — STOP 2b signed off by the user 2026-10-13 ("export is fine") | `3a291c1` |
 | B6 go-live code | Done — **the user's steps in `docs/iso-audit/go-live-checklist.md`** | `e538690` |
 | B4 follow-ups and programme | Done (built ahead of the pilot) | `3c924e5` |
 | B5 notifications and reports | Done (built ahead of the pilot) | `6657839` |
@@ -22,17 +22,17 @@ gate per batch.
 | Fix follow-on: widen the update-allowlist guard | Done | `8e57471` |
 | Fix follow-on 2: guard made self-checking | Done | `985d997` |
 | B5.3 extension: branded Excel export | Done (live user request — CSV wasn't presentable to clients) | `6955a58` |
-| Pilot | Waiting on STOP 2b + the checklist | — |
+| Pilot | Waiting on the go-live checklist | — |
 | B7 client portal ISO tab | Not started — **after the pilot by plan** | — |
 
 ## What the user has to do next
-1. **STOP 2b:** open the three exported workbooks in Excel and compare with the template —
-   regenerate them with `node .agents/iso-export-test.cjs`; they land in `.agents/shots/`
-   (`<REF>_ISO9001|14001|45001_Gap_Analysis.xlsx`).
+1. ~~**STOP 2b**~~ — signed off 2026-10-13 ("export is fine").
 2. Fill in the v3 manifest's transition dates and technical reviewer (`iso/seed/releases/v3/manifest.json`)
    — left null on purpose, nothing invented.
-3. The go-live checklist (Supabase dev project + migrations 009/010/014/015/011, Microsoft Entra app,
-   operations, go-live order).
+3. The go-live checklist — Supabase dev project first: `supabase/dev/000_dev_bootstrap.sql` then the
+   five ISO drafts 009 → 010 → 014 → 015 → 011, or the same six in one paste via
+   `supabase/dev/combined-dev-setup.sql` (regenerate with `node .agents/_build-dev-setup.cjs`;
+   `iso-migrations-test` fails while it is stale). Then Microsoft Entra, operations, go-live order.
 4. Say "commit and push" when ready — the branch is local only.
 
 ## Open items recorded in the plan

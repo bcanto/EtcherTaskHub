@@ -39,6 +39,24 @@ for (const f of files) {
 ok(/iso_audit_snapshots/.test(sqlOnly) && /iso_snapshot_immutable/.test(sqlOnly), 'the snapshot table and its immutability trigger are in the drafts (B3.2)');
 ok(/'reopened'/.test(sqlOnly) && /iso_reopen_finding/.test(sqlOnly), 'the finding reopen status and function are in the drafts (B2.4)');
 
+// supabase/dev/combined-dev-setup.sql is a one-paste copy of the dev bootstrap + the ISO drafts. A stale
+// copy would set up a dev project that doesn't match the files, so: every draft must be in it, each
+// listed source's hash must match the file today, and each source must appear verbatim in order.
+const COMBINED = path.join(__dirname, '..', 'supabase', 'dev', 'combined-dev-setup.sql');
+const lf = p => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n'); // autocrlf may check out CRLF
+const combined = lf(COMBINED);
+const listed = [...combined.matchAll(/^--\s+(supabase\/\S+\.sql)\s+([0-9a-f]{16})\s*$/gm)].map(m => ({ f: m[1], h: m[2] }));
+const sha16 = f => require('crypto').createHash('sha256').update(lf(path.join(__dirname, '..', f))).digest('hex').slice(0, 16);
+const notListed = files.filter(f => !listed.some(x => x.f === 'supabase/migrations/' + f));
+ok(listed[0] && listed[0].f === 'supabase/dev/000_dev_bootstrap.sql' && notListed.length === 0,
+  `the combined dev setup starts with the bootstrap and includes every ISO draft (missing: ${notListed.join(', ') || 'none'})`);
+const stale = listed.filter(x => sha16(x.f) !== x.h).map(x => x.f);
+ok(stale.length === 0, `the combined dev setup is current with its sources — regenerate with node .agents/_build-dev-setup.cjs (stale: ${stale.join(', ') || 'none'})`);
+let at = -1, order = true;
+for (const x of listed) { const i = combined.indexOf(lf(path.join(__dirname, '..', x.f))); if (i <= at) order = false; at = i; }
+ok(order, 'each source appears verbatim in the combined file, in the listed order');
+ok(listed.findIndex(x => /015_/.test(x.f)) < listed.findIndex(x => /011_/.test(x.f)), '011 (reports) runs after 015 (snapshots) — it references iso_audit_snapshots');
+
 console.log('\nPASS (' + pass.length + '):'); pass.forEach(m => console.log('  + ' + m));
 console.log('FAIL (' + fail.length + '):'); fail.forEach(m => console.log('  - ' + m));
 process.exit(fail.length ? 1 : 0);

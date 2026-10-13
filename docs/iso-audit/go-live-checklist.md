@@ -6,20 +6,31 @@ without your say-so. Do them in order; each one says how you know it worked.
 ## 1. Supabase dev project (B6.7 — the plan's STOP 3)
 
 1. In Supabase, create a new project called **taskhub-dev** (same region as production, Sydney).
-2. Open **SQL editor** and run these files from `supabase/migrations/`, one at a time, **in this exact
-   order** (011 depends on 015's `iso_audit_snapshots` table, so it has to run after it, not before,
-   despite the lower number):
+2. Open **SQL editor** and run **`supabase/dev/000_dev_bootstrap.sql`** first — this is a dev-project-only
+   file (never run it against production): it sets up `auth.users` → `profiles` wiring, three helper
+   functions, and makes a brand-new sign-up start with no access until promoted. Without this, a real
+   Supabase sign-in gets no profile row and nothing works. Its own check queries are in a comment at
+   the bottom (3 checks: the `role` default, 4 RLS policies on `profiles`, the 3 helper functions exist).
+3. Then run these files from `supabase/migrations/`, one at a time, **in this exact order** (011 depends
+   on 015's `iso_audit_snapshots` table, so it has to run after it, not before, despite the lower number):
    `009_iso_core.sql`, `010_iso_evidence.sql`, `014_iso_doc_prompts.sql`, `015_iso_history.sql`,
    `011_iso_reports.sql`.
    Each one is safe to run twice.
-3. Run the verification queries at the end of `009_iso_core.sql` (section "Verification"). Every query
-   should return the empty result its comment describes.
-4. Create a storage bucket named **iso-evidence**, private, 25 MB file limit.
-5. Put the dev project's URL, anon key and service-role key in a file `dev.env` (never commit it), then
-   start the local server against it: `node serve.mjs --envfile dev.env`. Sign in as a staff user and as
-   a client user — the client must not see ISO until a board is shared with them.
 
-**Done when:** the four migrations ran without errors and the verification queries are empty.
+   *(Prefer one paste instead of six? `supabase/dev/combined-dev-setup.sql` has all six files
+   concatenated in this exact order, generated from the real files above by
+   `node .agents/_build-dev-setup.cjs`. If one of those six files changes later, rerun that command —
+   never hand-edit the combined copy; the test suite fails while it is out of date.)*
+4. Run the check queries in the `── Check (read-only) ──` comment near the end of `009_iso_core.sql`.
+   Every query should return the empty/expected result its own comment describes.
+5. Create a storage bucket named **iso-evidence**, private, 25 MB file limit.
+6. Put the dev project's URL, anon key and service-role key in a file `dev.env` (never commit it), then
+   start the local server against it: `node serve.mjs --envfile dev.env`. Sign in as a staff user and as
+   a client user — the client must not see ISO until a board is shared with them. (A brand-new sign-up
+   starts as role `client` with no access by design — promote your own test accounts to `admin`/`staff`
+   via the Supabase table editor on `profiles` before testing staff features.)
+
+**Done when:** all six files ran without errors and every check query returned what its comment says.
 
 ## 2. Sign in with Microsoft (B6.8)
 
@@ -56,8 +67,10 @@ without your say-so. Do them in order; each one says how you know it worked.
 1. **Commit** — tell Claude "commit and push" when you are happy (the `iso-release-1` branch is local
    only until then).
 2. **Deploy dark** — deploy with `ISO_ENABLED` not set. Nothing ISO is visible.
-3. **Apply the migrations to production** — the same five files, in the same order, in production's SQL
-   editor (you, not Claude). Create the **iso-evidence** bucket there too.
+3. **Apply the migrations to production** — the same five `supabase/migrations/` files from step 1.3,
+   same order, in production's SQL editor (you, not Claude). **Not** `000_dev_bootstrap.sql` — that one
+   is dev-only (its own header says so) and production already has the real `profiles`/auth wiring from
+   the numbered production migrations. Create the **iso-evidence** bucket there too.
 4. **Turn ISO on for staff** — set `ISO_ENABLED=1` in Vercel and redeploy.
 5. **Pilot board** — one real gap analysis for one client, staff only, delivered with the Excel workbook.
 
