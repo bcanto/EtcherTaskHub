@@ -58,8 +58,10 @@
       const pctWidth = Math.round((s.value / max) * 100);
       const color = colorFor(opts.palette || {}, s.key);
       const clickable = opts.onClickOp && s.filter;
-      const attrs = clickable ? ` class="iso-chart-bar-row" style="cursor:pointer" tabindex="0" role="button" data-filter="${esc(JSON.stringify(s.filter))}" onclick="${opts.onClickOp}(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${opts.onClickOp}(this);}"` : '';
-      return `<div${attrs} style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px">
+      // One style attribute only: a second one on the same element is ignored by the browser, which
+      // used to drop this row's flex layout whenever the bar was clickable.
+      const attrs = clickable ? ` class="iso-chart-bar-row" tabindex="0" role="button" data-filter="${esc(JSON.stringify(s.filter))}" onclick="${opts.onClickOp}(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${opts.onClickOp}(this);}"` : '';
+      return `<div${attrs} style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px${clickable ? ';cursor:pointer' : ''}">
         <div style="width:120px;flex-shrink:0;color:#4a5568;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.label || labelFor(s.key))}</div>
         <div style="flex:1;background:#f4f6fa;border-radius:3px;height:16px;position:relative;min-width:40px">
           <div style="width:${pctWidth}%;background:${color};height:100%;border-radius:3px"></div>

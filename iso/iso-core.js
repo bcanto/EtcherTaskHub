@@ -4200,8 +4200,11 @@
     const type = audit.audit_type === 'custom' && audit.custom_type_label ? audit.custom_type_label : (AUDIT_TYPE_LABEL[audit.audit_type] || audit.audit_type || '—');
     const dates = audit.planned_start || audit.planned_end ? `${fmtDate(audit.planned_start)} – ${fmtDate(audit.planned_end)}` : 'Not set';
     const item = (label, value) => `<div class="iso-dash-hdr-item"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
+    // The board header right above already shows client, ref and title, so the heading stays for
+    // screen readers only; what shows is the way back to the compact Overview.
     return `<section class="iso-dash-header" aria-labelledby="iso-dash-h">
-      <h2 id="iso-dash-h" class="iso-dash-title">${esc(clientName)}<span class="iso-dash-title-sub">${esc(audit.ref)} · ${esc(audit.title)}</span></h2>
+      <h2 id="iso-dash-h" class="iso-dash-title iso-visually-hidden">${esc(clientName)}<span class="iso-dash-title-sub">${esc(audit.ref)} · ${esc(audit.title)}</span></h2>
+      <button type="button" class="iso-back iso-dash-back" onclick="ISO._ovShowOverview()"><span aria-hidden="true">‹</span> Overview</button>
       <dl class="iso-dash-hdr">
         ${item('Audit type', type)}
         ${item('Stage', STAGE_LABEL[audit.stage] || audit.stage || '—')}
@@ -4252,7 +4255,7 @@
   // name is label + number + detail; the formula is its description, kept outside the button so a
   // screen reader doesn't read the whole sentence as the button's name.
   function _dashKpiHtml(k, stdText) {
-    return `<button type="button" class="iso-dash-kpi" data-key="${esc(k.key)}" data-filter="${esc(JSON.stringify(k.filter))}"${k.view ? ` data-view="${esc(k.view)}"` : ''} data-label="${esc(k.label + (stdText ? ' · ' + stdText : ''))}" aria-describedby="iso-dash-kpi-d-${esc(k.key)}" title="${esc(k.formula)}" onclick="ISO._dashOpenFiltered(this)">
+    return `<button type="button" class="iso-dash-kpi${k.value === 0 ? ' is-zero' : ''}" data-key="${esc(k.key)}" data-filter="${esc(JSON.stringify(k.filter))}"${k.view ? ` data-view="${esc(k.view)}"` : ''} data-label="${esc(k.label + (stdText ? ' · ' + stdText : ''))}" aria-describedby="iso-dash-kpi-d-${esc(k.key)}" title="${esc(k.formula)}" onclick="ISO._dashOpenFiltered(this)">
       <span class="iso-dash-kpi-label">${esc(k.label)}</span>
       <span class="iso-dash-kpi-value">${esc(k.value == null ? '—' : k.display)}</span>
       ${k.detail ? `<span class="iso-dash-kpi-detail">${esc(k.detail)}</span>` : ''}

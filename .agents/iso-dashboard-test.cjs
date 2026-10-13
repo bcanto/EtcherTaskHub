@@ -271,6 +271,29 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       ok(header.title.length > 3 && !/Client not found/.test(header.title) && header.title.includes(board.ref), `the header names the client and the audit (got ${JSON.stringify(header.title)})`);
       ok(JSON.stringify(header.items) === JSON.stringify(['Audit type', 'Stage', 'Planned dates', 'Report due', 'Last update']), `the header lists type, stage, dates, report due and last update (got ${header.items.join(', ')})`);
 
+      // Overview polish (2026-10-13): Full dashboard sits inside the card's padding like the compact
+      // Overview, doesn't repeat the board header's title on screen, has a way back, and its
+      // clickable chart bars keep their row layout.
+      const polish = await page.evaluate(() => {
+        const tab = document.getElementById('iso-dash-tab'), hdr = document.querySelector('.iso-dash-header');
+        const kpi = document.querySelector('.iso-dash-kpi');
+        const row = document.querySelector('.iso-chart-bar-row');
+        const title = document.querySelector('.iso-dash-title');
+        return {
+          inset: hdr && tab ? Math.round(hdr.getBoundingClientRect().left - tab.getBoundingClientRect().left) : -1,
+          kpiInset: kpi && tab ? Math.round(tab.getBoundingClientRect().right - kpi.closest('.iso-dash-kpis').getBoundingClientRect().right) : -1,
+          titleShown: title ? title.getBoundingClientRect().width > 2 : true,
+          back: !!document.querySelector('.iso-dash-header .iso-dash-back'),
+          rowFlex: row ? getComputedStyle(row).display : 'no clickable bar',
+        };
+      });
+      ok(polish.inset >= 12 && polish.kpiInset >= 12, `Full dashboard content is inset from the card's edges, like the compact Overview (got left ${polish.inset}px, right ${polish.kpiInset}px)`);
+      ok(!polish.titleShown && polish.back, `Full dashboard doesn't repeat the board's title on screen and offers "‹ Overview" (got ${JSON.stringify({ titleShown: polish.titleShown, back: polish.back })})`);
+      ok(polish.rowFlex === 'flex', `a clickable chart bar keeps its label · bar · value row (got display ${polish.rowFlex})`);
+      await page.evaluate(() => document.querySelector('.iso-dash-back').click()); await sleep(1500);
+      ok(await page.evaluate(() => !!document.querySelector('#iso-dash-tab .iso-ov-fulldash') && !document.querySelector('#iso-dash-tab .iso-dash-header')), '"‹ Overview" returns to the compact Overview');
+      await page.evaluate(() => ISO._ovShowFull()); await sleep(1200);
+
       // The KPI row: real buttons, in two groups, the formula as a description outside the name.
       const kpiMeta = await page.evaluate(() => [...document.querySelectorAll('.iso-dash-kpi')].map(b => ({ tag: b.tagName, key: b.dataset.key, name: b.innerText, desc: document.getElementById(b.getAttribute('aria-describedby'))?.textContent || '', group: b.closest('.iso-dash-kpi-group')?.getAttribute('aria-label') })));
       ok(kpiMeta.length === 9 && kpiMeta.every(k => k.tag === 'BUTTON'), `nine KPI tiles, each a real <button> (got ${kpiMeta.length}: ${[...new Set(kpiMeta.map(k => k.tag))]})`);

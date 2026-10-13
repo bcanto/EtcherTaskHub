@@ -865,6 +865,29 @@ button.iso-icon-btn:focus-visible { outline: 2px solid var(--teal-deep); outline
 .iso-app .iso-ov-li-s { font-size: 12.5px; color: var(--ink-3); }
 .iso-app .iso-ov-li-go { font-size: 20px; letter-spacing: -0.02em; color: var(--ink); }
 .iso-app .iso-ov-fulldash { margin-top: 28px; border-color: var(--line-2); color: var(--ink-2); }
+
+/* Full dashboard inside the card: the same padding and section rhythm as the compact Overview. */
+.iso-app #iso-dash-tab:has(> .iso-dash-header) { padding: 20px 16px 28px; }
+.iso-app #iso-dash-tab > .iso-dash-header { margin-top: 0; }
+.iso-app .iso-dash-back { margin-bottom: 8px; }
+.iso-app .iso-dash-hdr { margin-top: 0; }
+.iso-app .iso-dash-section { margin-top: 28px; }
+.iso-app .iso-dash-section-h { margin-bottom: 10px; font-size: 16px; }
+.iso-app .iso-dash-kpi-group + .iso-dash-kpi-group { margin-top: 16px; }
+/* Export row: the three workbooks read as one group under their label; the PDF and the report sit
+   apart, after a hairline. */
+.iso-app .iso-dash-export { gap: 8px; margin-top: 16px; }
+.iso-app .iso-dash-export-k { font: 700 10.5px 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); margin-right: 2px; }
+.iso-app .iso-dash-export .iso-audit-pack { margin-left: 17px; position: relative; }
+.iso-app .iso-dash-export .iso-audit-pack::before { content: ''; position: absolute; left: -13px; top: 4px; bottom: 4px; width: 1px; background: var(--line-2); pointer-events: none; }
+/* Clickable chart bars (iso-charts.js) open their records: give them the same states as other links here. */
+.iso-chart-bar-row { border-radius: 4px; transition: transform 160ms cubic-bezier(.34,1.56,.64,1); }
+.iso-chart-bar-row:hover { background: #f5f9fa; }
+.iso-chart-bar-row:active { transform: scale(0.99); }
+.iso-chart-bar-row:focus-visible { outline: 2px solid #1d6fb8; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .iso-chart-bar-row { transition: none; } }
+/* Zero reads as quiet but stays legible (3.5:1, large bold text) — was 1.9:1. */
+.iso-app .is-zero .iso-panel-tile-v, .iso-app .iso-dash-kpi.is-zero .iso-dash-kpi-value { color: #7b8ba0; }
 .iso-ov-serve .iso-tag, .iso-doc-sv .iso-tag, .iso-cv .iso-tag, .iso-da .iso-tag { width: 18px; height: 18px; font-size: 10.5px; border-radius: 5px; }
 
 /* Documents */
