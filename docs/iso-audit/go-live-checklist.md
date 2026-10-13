@@ -24,13 +24,20 @@ without your say-so. Do them in order; each one says how you know it worked.
 4. Run the check queries in the `── Check (read-only) ──` comment near the end of `009_iso_core.sql`.
    Every query should return the empty/expected result its own comment describes.
 5. Create a storage bucket named **iso-evidence**, private, 25 MB file limit.
-6. Put the dev project's URL, anon key and service-role key in a file `dev.env` (never commit it), then
-   start the local server against it: `node serve.mjs --envfile dev.env`. Sign in as a staff user and as
-   a client user — the client must not see ISO until a board is shared with them. (A brand-new sign-up
-   starts as role `client` with no access by design — promote your own test accounts to `admin`/`staff`
-   via the Supabase table editor on `profiles` before testing staff features.)
+6. Put the dev project's `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` in a file
+   named exactly **`.env.dev`** in the project folder. That name is gitignored (`git check-ignore .env.dev`
+   prints a rule); `dev.env` is **not**, so don't use it. Never paste these values into a chat.
+7. Run the database verifier yourself: `node .agents/iso-db-verify.cjs`. It reads `.env.dev` only,
+   refuses to run against production, and checks the real database the way the offline tests check
+   the offline store (numbering, append-only and no-delete triggers, RLS refusing anon and client
+   keys, every ISO function refused from the browser). Expect `FAIL (0)`.
+8. Start the local server against the dev project: `node serve.mjs --envfile .env.dev`. Sign in as a
+   staff user and as a client user — the client must not see ISO until a board is shared with them.
+   (A brand-new sign-up starts as role `client` with no access by design — promote your own test
+   accounts to `admin`/`staff` via the Supabase table editor on `profiles` before testing staff features.)
 
-**Done when:** all six files ran without errors and every check query returned what its comment says.
+**Done when:** all six files ran without errors, every check query returned what its comment says, and
+`iso-db-verify` shows `FAIL (0)`.
 
 ## 2. Sign in with Microsoft (B6.8)
 
@@ -43,7 +50,7 @@ without your say-so. Do them in order; each one says how you know it worked.
 4. **Supabase → Authentication → Providers → Azure:** turn it on, paste the client ID and secret, and set
    **Azure Tenant URL** to `https://login.microsoftonline.com/<Directory (tenant) ID>` — this is what
    restricts sign-in to Etcher accounts.
-5. In Vercel (and in `dev.env` for testing), set `MICROSOFT_SIGNIN=1`. The **Sign in with Microsoft**
+5. In Vercel (and in `.env.dev` for testing), set `MICROSOFT_SIGNIN=1`. The **Sign in with Microsoft**
    button appears on the login screen only when this is set. The email + password login stays as the
    emergency way in — keep at least one admin with a password.
 6. **Microsoft 365 → Security → Conditional Access:** require multi-factor sign-in for every admin.
