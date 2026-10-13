@@ -6,8 +6,11 @@ without your say-so. Do them in order; each one says how you know it worked.
 ## 1. Supabase dev project (B6.7 — the plan's STOP 3)
 
 1. In Supabase, create a new project called **taskhub-dev** (same region as production, Sydney).
-2. Open **SQL editor** and run these files from `supabase/migrations/`, one at a time, in this order:
-   `009_iso_core.sql`, `010_iso_evidence.sql`, `014_iso_doc_prompts.sql`, `015_iso_history.sql`.
+2. Open **SQL editor** and run these files from `supabase/migrations/`, one at a time, **in this exact
+   order** (011 depends on 015's `iso_audit_snapshots` table, so it has to run after it, not before,
+   despite the lower number):
+   `009_iso_core.sql`, `010_iso_evidence.sql`, `014_iso_doc_prompts.sql`, `015_iso_history.sql`,
+   `011_iso_reports.sql`.
    Each one is safe to run twice.
 3. Run the verification queries at the end of `009_iso_core.sql` (section "Verification"). Every query
    should return the empty result its comment describes.
@@ -53,7 +56,7 @@ without your say-so. Do them in order; each one says how you know it worked.
 1. **Commit** — tell Claude "commit and push" when you are happy (the `iso-release-1` branch is local
    only until then).
 2. **Deploy dark** — deploy with `ISO_ENABLED` not set. Nothing ISO is visible.
-3. **Apply the migrations to production** — the same four files, in the same order, in production's SQL
+3. **Apply the migrations to production** — the same five files, in the same order, in production's SQL
    editor (you, not Claude). Create the **iso-evidence** bucket there too.
 4. **Turn ISO on for staff** — set `ISO_ENABLED=1` in Vercel and redeploy.
 5. **Pilot board** — one real gap analysis for one client, staff only, delivered with the Excel workbook.
