@@ -39,6 +39,16 @@ const LIBRARY_SEEDS = [
   require('../iso/seed/library/14001-2026.json'),
   require('../iso/seed/library/45001-2018-a1.json'),
 ];
+// 2026-10-14: each clause's cheat-sheet CONFIRM points are tick boxes under Assessment. Ticking
+// writes "Confirmed that …" at the top of the basis (iso/iso-checks.js, shared with the browser);
+// basisProblem() uses this to tell those ticks apart from what the auditor actually saw.
+const IsoChecks = require('../iso/iso-checks.js');
+const CONFIRM_BY_KEY = new Map();
+for (const s of LIBRARY_SEEDS) for (const i of s.items || []) {
+  const c = i.imported && i.imported.cheatSheet && i.imported.cheatSheet.confirm;
+  if (c && c.length && i.source && i.source.matchKey) CONFIRM_BY_KEY.set(s.standardCode + '|' + i.source.matchKey, c);
+}
+const confirmItemsFor = r => CONFIRM_BY_KEY.get(r.standard_code + '|' + r.stable_key) || [];
 // Plan 8b.3 (R11, D25): reviewed internal guidance, one file per edition, kept apart from the
 // requirement text and from library rows (immutable once approved). Static require()s, same reason.
 //
@@ -1212,6 +1222,8 @@ function basisProblem(r) {
   if (cs === 'not_assessed' || cs === 'out_of_scope') return null;
   if (r.derived_from_id) return 'Derived from a related clause — confirm it first.';
   if (cs !== 'not_applicable' && !String(r.current_system || '').trim()) return 'Basis missing — write the current system (what you saw) first.';
+  // Ticked checks alone aren't a basis: they say what was checked, not what was seen.
+  if (cs !== 'not_applicable' && !IsoChecks.hasOwnText(r.current_system, confirmItemsFor(r))) return 'Basis missing — the ticked checks are in; add what you saw.';
   if (GAP_STATUSES.includes(cs) && !r.gap_reason) return 'Gap reason missing — pick why it falls short.';
   return null;
 }

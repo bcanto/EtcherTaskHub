@@ -1030,6 +1030,16 @@ button.iso-pick.is-new .iso-pick-n { color: #31585a; }
 .iso-titleblock { flex: 1 1 180px; }
 .iso-app .iso-board-title { letter-spacing: -0.02em; line-height: 1.2; }
 button.iso-back { font: 400 13px 'Lato', sans-serif; gap: 2px; padding-right: 6px; }
+/* CONFIRM tick boxes under the basis (iso-checks.js). Same checkbox treatment as Apply to related. */
+.iso-checks { margin: 10px 0 0; padding: 0; border: 0; min-width: 0; }
+.iso-checks-h { padding: 0; margin: 0 0 4px; font: 700 10.5px 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.07em; color: #5c6b80; }
+.iso-checks-h .muted { font: 400 12px 'Lato', sans-serif; text-transform: none; letter-spacing: 0; }
+.iso-check { display: flex; align-items: flex-start; gap: 9px; min-height: 32px; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; font-size: 13px; line-height: 1.45; color: #0d1c33; cursor: pointer; }
+.iso-check:hover { background: #f5f9fa; }
+.iso-check input { flex: none; width: 16px; height: 16px; margin: 1px 0 0; accent-color: #31585a; cursor: pointer; }
+.iso-check input:focus-visible { outline: 2px solid #1d6fb8; outline-offset: 2px; }
+.iso-check input:active { transform: scale(0.92); }
+.iso-check:has(input:checked) span { color: #435369; }
 .iso-da .iso-apply-item { color: #0d1c33; font-size: 13px; min-height: 32px; }
 .iso-da .iso-apply-item input { accent-color: #31585a; width: 16px; height: 16px; }
 .iso-da .iso-clause-col-label { font-size: 12px; font-weight: 700; color: #435369; text-transform: none; letter-spacing: .02em; }

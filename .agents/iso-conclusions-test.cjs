@@ -58,6 +58,24 @@ H.run('iso-conclusions-test', 3165, async (t, srv) => {
   t.ok(r.approval_state === 'proposed', 'an auditor\'s status arrives proposed');
   let res = await srv.call(A, { op: 'requirement.approve', auditId: b.id, id: r.id, expectedVersion: r.row_version });
   t.ok(res.status === 400 && /basis/i.test(JSON.stringify(res.body)), `approving without a basis is refused, naming the basis (got ${res.status} ${JSON.stringify(res.body).slice(0, 120)})`);
+
+  // ── 2026-10-14 CONFIRM tick boxes: the ticked sentence alone is not a basis ─────────────────────
+  const Checks = require('../iso/iso-checks.js');
+  const seed9001 = require('../iso/seed/library/9001-2026.json');
+  let ck = await row('9001 8.1');
+  const ckItems = seed9001.items.find(i => i.source.matchKey === ck.stable_key).imported.cheatSheet.confirm;
+  const ticksOnly = Checks.toggle('', ckItems, ckItems[0], true);
+  t.ok(/^Confirmed that [a-z]/.test(ticksOnly) && ticksOnly.endsWith('.\n'), `a tick writes one "Confirmed that …" sentence (got ${JSON.stringify(ticksOnly)})`);
+  await srv.set(b, '9001 8.1', { compliance_status: 'compliant', current_system: ticksOnly }, AUD);
+  ck = await row('9001 8.1');
+  res = await srv.call(A, { op: 'requirement.approve', auditId: b.id, id: ck.id, expectedVersion: ck.row_version });
+  t.ok(res.status === 400 && /add what you saw/.test(JSON.stringify(res.body)), `approving with only ticked checks is refused, asking for what was seen (got ${res.status} ${JSON.stringify(res.body).slice(0, 120)})`);
+  await srv.set(b, '9001 8.1', { current_system: ticksOnly + 'Seen: operational plan rev 4 and two job packs.' }, AUD);
+  ck = await row('9001 8.1');
+  res = await srv.call(A, { op: 'requirement.approve', auditId: b.id, id: ck.id, expectedVersion: ck.row_version });
+  t.eq(res.status, 200, 'ticked checks plus a line of what was seen approves');
+  const own = 'Confirmed that the plan was signed by the operations manager.';
+  t.ok(Checks.split(own, ckItems).ticked.length === 0 && Checks.hasOwnText(own, ckItems), 'an auditor\'s own "Confirmed that …" wording counts as their own basis, not as ticks');
   await srv.set(b, '9001 5.1.1', { current_system: basis }, AUD);
   r = await row('9001 5.1.1');
   res = await srv.call(A, { op: 'requirement.approve', auditId: b.id, id: r.id, expectedVersion: r.row_version });
@@ -206,4 +224,21 @@ H.run('iso-conclusions-test', 3165, async (t, srv) => {
   t.ok(rb.compliance_status === fbBefore, 'clauses with no status chosen keep their own status');
   const linkedA = await srv.must(H.ADMIN, { op: 'evidence.list', auditId: b.id, targetType: 'requirement', targetId: fa });
   t.ok(linkedA.some(e => e.title === docName), '…and the document is linked as usual');
+
+  // CONFIRM tick boxes in the UI: a tick writes the sentence above what's typed, both survive the
+  // save, and unticking removes only the sentence.
+  await ui.tab('requirements');
+  await ui.eval(() => ISO._reqSetView('all')); await t.sleep(400);
+  const tickId = (await row('9001 9.1.1')).id;
+  await ui.eval(id => document.querySelector(`[data-ireq="${id}"] .iso-clause-head`)?.click(), tickId); await t.sleep(1500);
+  const boxes = await ui.eval(id => document.querySelectorAll(`[data-ireq="${id}"] .iso-check input`).length, tickId);
+  t.ok(boxes >= 1, `an open clause lists its CONFIRM points as tick boxes under Assessment (got ${boxes})`);
+  await ui.eval(id => { const ta = document.querySelector(`textarea[data-field="current_system"][data-id="${id}"]`); ta.value = 'Seen: KPI pack for Q3.'; }, tickId);
+  await ui.eval(id => document.querySelector(`[data-ireq="${id}"] .iso-check input`).click(), tickId); await t.sleep(2000);
+  let saved = (await row('9001 9.1.1')).current_system || '';
+  const ui1 = await ui.eval(id => ({ checked: document.querySelector(`[data-ireq="${id}"] .iso-check input`)?.checked, text: document.querySelector(`textarea[data-field="current_system"][data-id="${id}"]`)?.value }), tickId);
+  t.ok(/^Confirmed that .+\.\nSeen: KPI pack for Q3\.$/.test(saved) && ui1.checked && ui1.text === saved, `ticking puts the sentence above the typed text, saves both, and the box stays ticked (got ${JSON.stringify({ saved, ui1 })})`);
+  await ui.eval(id => document.querySelector(`[data-ireq="${id}"] .iso-check input`).click(), tickId); await t.sleep(2000);
+  saved = (await row('9001 9.1.1')).current_system || '';
+  t.ok(saved === 'Seen: KPI pack for Q3.', `unticking removes only the sentence (got ${JSON.stringify(saved)})`);
 });

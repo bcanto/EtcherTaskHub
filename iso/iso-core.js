@@ -953,8 +953,14 @@
     if (cs === 'not_assessed' || cs === 'out_of_scope') return null;
     if (r.derived_from_id) return 'Derived from a related clause — confirm it first.';
     if (cs !== 'not_applicable' && !String(r.current_system || '').trim()) return 'Basis missing — write the current system (what you saw) first.';
+    if (cs !== 'not_applicable' && root.IsoChecks && !root.IsoChecks.hasOwnText(r.current_system, confirmItemsLocal(r.id))) return 'Basis missing — the ticked checks are in; add what you saw.';
     if (isGapStatus(cs) && !r.gap_reason) return 'Gap reason missing — pick why it falls short.';
     return null;
+  }
+  // The clause's cheat-sheet CONFIRM points (requirement.guidance), the tick boxes under Assessment.
+  function confirmItemsLocal(id) {
+    const g = (_req.guidance || {})[id];
+    return (g && g.cheatSheet && g.cheatSheet.confirm) || [];
   }
   // A clause needs an action when it falls short, or carries an OFI (D44).
   function needsAction(r) { return isGapStatus(r.compliance_status) || (r.compliance_status === 'compliant' && !!r.ofi); }
@@ -1393,11 +1399,41 @@
     } catch (e) { root.showToast ? root.showToast('Could not update the status: ' + e.message, true) : alert(e.message); }
   }
   function _looseEq(a, b) { return (a || '') === (b || ''); }
-  async function _reqSaveFieldGeneric(id, field, value) {
+  // One save at a time per clause: ticking a check blurs the basis box, so its own save and the
+  // tick's save would otherwise race on the same row version.
+  const _reqSaveChain = {};
+  function _reqSaveFieldGeneric(id, field, value) {
+    const run = async () => {
+      const row = _req.requirements.find(r => r.id === id);
+      if (!row || _looseEq(row[field], value)) return;
+      try { const updated = await saveRequirementField(_req.auditId, id, field, value); Object.assign(row, updated); renderRequirementsTable(_req.auditId); }
+      catch (e) { root.showToast ? root.showToast('Could not save: ' + e.message, true) : alert(e.message); }
+    };
+    return (_reqSaveChain[id] = (_reqSaveChain[id] || Promise.resolve()).then(run, run));
+  }
+  // Ticking a CONFIRM point rewrites only the "Confirmed that …" sentence at the top of the basis
+  // (iso-checks.js); whatever the auditor typed underneath, saved or not yet, is kept.
+  function _reqToggleCheck(el) {
+    const id = el.dataset.id, items = confirmItemsLocal(id), item = items[Number(el.dataset.i)];
     const row = _req.requirements.find(r => r.id === id);
-    if (!row || _looseEq(row[field], value)) return;
-    try { const updated = await saveRequirementField(_req.auditId, id, field, value); Object.assign(row, updated); renderRequirementsTable(_req.auditId); }
-    catch (e) { root.showToast ? root.showToast('Could not save: ' + e.message, true) : alert(e.message); }
+    if (!row || !item || !root.IsoChecks) return;
+    const ta = document.querySelector(`textarea[data-field="current_system"][data-id="${CSS.escape(id)}"]`);
+    const next = root.IsoChecks.toggle(ta ? ta.value : row.current_system, items, item, el.checked);
+    if (ta) ta.value = next;
+    _reqSaveFieldGeneric(id, 'current_system', next);
+  }
+  // Tall enough for what's there plus a free line to add to (the ticked sentence alone can fill 3 rows).
+  function basisRows(text) {
+    const lines = String(text || '').split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 72)), 0);
+    return Math.min(12, Math.max(3, lines + 1));
+  }
+  function reqChecksHtml(row) {
+    const items = confirmItemsLocal(row.id);
+    if (!items.length || !root.IsoChecks || ['not_applicable', 'out_of_scope'].includes(row.compliance_status)) return '';
+    const ticked = new Set(root.IsoChecks.split(row.current_system, items).ticked);
+    return `<fieldset class="iso-checks"><legend class="iso-checks-h">Confirm <span class="muted">— each tick adds a line to the basis; add what you saw underneath</span></legend>
+      ${items.map((it, i) => `<label class="iso-check"><input type="checkbox" data-id="${esc(row.id)}" data-i="${i}"${ticked.has(String(it).trim().replace(/\.+$/, '')) ? ' checked' : ''} onchange="ISO._reqToggleCheck(this)"><span>${esc(it)}</span></label>`).join('')}
+    </fieldset>`;
   }
   function _reqSaveField(el) { _reqSaveFieldGeneric(el.dataset.id, el.dataset.field, el.value); }
   function _reqSaveFieldSelect(el) { _reqSaveFieldGeneric(el.dataset.id, el.dataset.field, el.value || null); }
@@ -1412,11 +1448,12 @@
   function reqAssessmentColHtml(row) {
     const cs = row.compliance_status;
     const showPlan = needsAction(row);
-    const basisMissing = !!basisProblemLocal(row) && !row.derived_from_id && !String(row.current_system || '').trim();
+    const basisMissing = !row.derived_from_id && /^Basis missing/.test(basisProblemLocal(row) || '');
     const staffOptions = (_DB().users || []).filter(u => u.role !== 'client');
     return `<div class="iso-clause-col">
       <div class="iso-clause-col-label">Assessment</div>
-      <label class="iso-clause-field iso-clause-field-bare"><span class="sr">Basis — current system</span><textarea class="form-input${basisMissing ? ' is-missing' : ''}" rows="3" placeholder="Basis — the current system: what you saw and checked (needed before approval)" data-id="${esc(row.id)}" data-field="current_system" onblur="ISO._reqSaveField(this)">${esc(row.current_system || '')}</textarea></label>
+      <label class="iso-clause-field iso-clause-field-bare"><span class="sr">Basis — current system</span><textarea class="form-input${basisMissing ? ' is-missing' : ''}" rows="${basisRows(row.current_system)}" placeholder="Basis — the current system: what you saw and checked (needed before approval)" data-id="${esc(row.id)}" data-field="current_system" onblur="ISO._reqSaveField(this)">${esc(row.current_system || '')}</textarea></label>
+      ${reqChecksHtml(row)}
       ${cs === 'not_applicable' ? `<label class="iso-clause-field">Why not applicable<textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="na_justification" onblur="ISO._reqSaveField(this)">${esc(row.na_justification || '')}</textarea></label>` : ''}
       ${cs === 'out_of_scope' ? `<label class="iso-clause-field">Why outside this audit's scope <span class="muted">(optional)</span><textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="na_justification" onblur="ISO._reqSaveField(this)">${esc(row.na_justification || '')}</textarea></label>` : ''}
       ${showPlan ? `<label class="iso-clause-field">Planned action<textarea class="form-input" rows="2" data-id="${esc(row.id)}" data-field="recommended_action" onblur="ISO._reqSaveField(this)">${esc(row.recommended_action || '')}</textarea></label>
@@ -6041,7 +6078,7 @@
     _reqBulkPick: _reqBulkPick, _reqBulkClear: _reqBulkClear,
     _openAddRequirement: _openAddRequirement, _addRequirementApply: _addRequirementApply,
     openRequirementDrawer: openRequirementDrawer, _reqSeniorPick: _reqSeniorPick, _reqApprove: _reqApprove, _reqReturn: _reqReturn, _reqBulkApprove: _reqBulkApprove, _reqApproveIds: _reqApproveIds, _reqApproveAll: _reqApproveAll, _setStageChanged: _setStageChanged, _startMaintenance: _startMaintenance, _actLinkClause: _actLinkClause, _actLinkApply: _actLinkApply, _actUnlink: _actUnlink, _wizSetVerify: _wizSetVerify, _reqBulkSeniorPick: _reqBulkSeniorPick, _reqDrawerSetTab: _reqDrawerSetTab, _reqDrawerTabKey: _reqDrawerTabKey, _reqDraftCapture: _reqDraftCapture, _relationshipDecide: _relationshipDecide, _openAddRelationship: _openAddRelationship, _relAddApply: _relAddApply,
-    _reqToggleExpand: _reqToggleExpand, _reqSetStatus: _reqSetStatus, _reqSaveField: _reqSaveField, _reqSaveFieldSelect: _reqSaveFieldSelect,
+    _reqToggleExpand: _reqToggleExpand, _reqSetStatus: _reqSetStatus, _reqSaveField: _reqSaveField, _reqToggleCheck: _reqToggleCheck,_reqSaveFieldSelect: _reqSaveFieldSelect,
     _reqToggleCheat: _reqToggleCheat, _reqToggleRelEdit: _reqToggleRelEdit, _reqOpenApplyPanel: _reqOpenApplyPanel, _reqCloseApplyPanel: _reqCloseApplyPanel,
     _reqApplyToRelated: _reqApplyToRelated, _reqRejectRelated: _reqRejectRelated, _reqUnrejectRelated: _reqUnrejectRelated, _reqOpenMore: _reqOpenMore, _reqOpenEvidence: _reqOpenEvidence,
     _reqSetQuery: _reqSetQuery, _reqAddDocument: _reqAddDocument,
