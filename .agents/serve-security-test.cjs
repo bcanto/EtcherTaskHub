@@ -29,8 +29,11 @@ function waitForServer(port, tries = 40) {
   });
 }
 
+// Every server here gets its own throwaway ISO store: the real .iso-offline/ is the user's own work.
+const TEMP_ISO_DIR = fs.mkdtempSync(path.join(require('os').tmpdir(), 'serve-sec-iso-'));
+process.on('exit', () => { try { fs.rmSync(TEMP_ISO_DIR, { recursive: true, force: true }); } catch (e) {} });
 function startServer(args, port) {
-  const proc = spawn(process.execPath, ['serve.mjs', ...args], { cwd: ROOT, stdio: 'pipe' });
+  const proc = spawn(process.execPath, ['serve.mjs', ...args], { cwd: ROOT, stdio: 'pipe', env: { ...process.env, ISO_OFFLINE_DIR: TEMP_ISO_DIR } });
   let out = '';
   proc.stdout.on('data', d => out += d);
   proc.stderr.on('data', d => out += d);
@@ -52,12 +55,17 @@ function stopServer(proc) {
   try {
     await iso.ready;
 
-    // Synthetic file inside .iso-offline/ so the exact path from the plan's acceptance text is
-    // exercised against a file that actually exists (otherwise a 404 would prove nothing — a
-    // missing file 404s with or without the fix).
+    // The path from the plan's acceptance text must be tried against a file that actually exists
+    // (otherwise a 404 would prove nothing — a missing file 404s with or without the fix). When the
+    // user's real store is there it is that file, and it is never written, replaced or deleted —
+    // this test used to overwrite it with a probe and then delete the whole folder on every gate
+    // run, wiping the user's ISO boards (found 2026-10-14). A probe is made only when there is no
+    // store, and only the probe is removed.
     const isoOfflineDir = path.join(ROOT, '.iso-offline');
-    fs.mkdirSync(isoOfflineDir, { recursive: true });
-    fs.writeFileSync(path.join(isoOfflineDir, 'store.json'), '{"probe":true}');
+    const realStore = path.join(isoOfflineDir, 'store.json');
+    const dirExisted = fs.existsSync(isoOfflineDir), storeExisted = fs.existsSync(realStore);
+    const storeBefore = storeExisted ? require('crypto').createHash('sha256').update(fs.readFileSync(realStore)).digest('hex') : null;
+    if (!storeExisted) { fs.mkdirSync(isoOfflineDir, { recursive: true }); fs.writeFileSync(realStore, '{"probe":true}'); }
 
     const blocked = [
       '/.env',                                   // live service-role key
@@ -119,7 +127,14 @@ function stopServer(proc) {
       if (!isoDirExisted) fs.rmSync(isoDir, { recursive: true, force: true });
     }
 
-    fs.rmSync(isoOfflineDir, { recursive: true, force: true });
+    if (!storeExisted) { fs.rmSync(realStore, { force: true }); if (!dirExisted) fs.rmSync(isoOfflineDir, { recursive: true, force: true }); }
+    else {
+      // The user may be working in the app while the gate runs, so "unchanged" means not replaced
+      // by a probe and not deleted — and byte-identical unless their own server wrote to it.
+      const now = fs.existsSync(realStore) ? fs.readFileSync(realStore, 'utf8') : null;
+      ok(now !== null && !/^\{"probe":true\}$/.test(now), 'the user\'s real ISO store is left in place — never replaced by a probe or deleted');
+      ok(now === null || require('crypto').createHash('sha256').update(now).digest('hex') === storeBefore || now.length > 100, 'the real store still holds the user\'s data');
+    }
   } finally {
     await stopServer(iso.proc);
   }
