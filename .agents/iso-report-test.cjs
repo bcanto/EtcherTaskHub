@@ -192,6 +192,25 @@ H.run('iso-report-test', 3173, async (t, srv) => {
   const ul = await srv.must(A, { op: 'report.list', auditId: ub.id });
   t.ok(ul.length === 1 && ul[0].content.sections.executiveSummary === 'From the panel.', 'Issue from the panel saves the draft and issues version 1');
   t.ok(await ui.eval(() => /Version 1/.test(document.querySelector('.iso-rep-versions')?.textContent || '')), 'the panel lists the issued version');
+  // Offline the team are 'offline:u1'-style uids; the frozen report must carry their names.
+  t.ok(ul[0].content.signedBy === 'Bruna Canto' && ul[0].content.team.every(m => !/^offline:/.test(m.name)), `the issued report names the Lead Auditor and team, not their ids (got ${JSON.stringify({ signedBy: ul[0].content.signedBy, team: ul[0].content.team })})`);
+  // 2026-10-14: the branded PDF — navy cover with the logo, then logo'd pages with the sections.
+  const pdf = await ui.eval(async v => {
+    await new Promise((res, rej) => window._ensureJsPdf(res, rej));
+    const [w, n] = await Promise.all([ISO._repLogo('Etcher White Logo.png', true), ISO._repLogo('Etcher_Logo_2026.png')]);
+    const doc = ISO._repPdfBuild(v, w, n);
+    const raw = doc.output();
+    const text = [];
+    for (let p = 1; p <= doc.internal.getNumberOfPages(); p++) text.push(doc.internal.pages[p].join('\n'));
+    return { pages: doc.internal.getNumberOfPages(), images: (raw.match(/\/Subtype \/Image/g) || []).length, logoUses: (text.join('\n').match(/ Do\b/g) || []).length, bytes: raw.length, logos: [!!w, !!n],
+      text: text.join('\n').replace(/\\\(/g, '(').replace(/\\\)/g, ')') };
+  }, ul[0]);
+  const has = s => pdf.text.includes(s);
+  t.ok(pdf.logos[0] && pdf.logos[1] && pdf.images === 4 && pdf.logoUses === pdf.pages, `the PDF stores the two Etcher logos once each (image + transparency mask) and shows one on every page (got ${JSON.stringify({ images: pdf.images, uses: pdf.logoUses, pages: pdf.pages })})`);
+  const pdfWants = ['At a glance', 'Executive summary', 'Audit details', 'Non-conformities and gaps', 'Evidence index', 'Sign-off', 'CLIENT ACKNOWLEDGEMENT', 'Bruna Canto'];
+  t.ok(pdf.pages >= 3 && pdfWants.every(has) && has('Page 1 of ' + (pdf.pages - 1)),
+    `the PDF has the cover, numbered sections, sign-off and page numbers (missing: ${pdfWants.filter(s => !has(s)).join(', ') || 'none'})`);
+  t.ok(pdf.bytes < 600000, `the PDF stays small enough to email (got ${Math.round(pdf.bytes / 1024)} KB)`);
   await ui.eval(() => document.getElementById('generic-modal').classList.add('hidden'));
   await ui.tab('documents');
   t.ok(await ui.eval(() => !!document.querySelector('.iso-doc-toolbar .iso-xlsx') && !!document.querySelector('.iso-doc-toolbar .iso-csv')), 'the Documents tab offers both Export CSV and Export Excel');

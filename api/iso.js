@@ -47,7 +47,8 @@ async function getClientName(clientId) {
 }
 async function getStaffName(uid) {
   if (!uid) return null;
-  if (isoOfflineMode()) return OFFLINE_STAFF_NAMES[uid] || null;
+  // Offline member uids are stored as 'offline:u2' (the X-ISO-Offline-User identity); the fixture is keyed 'u2'.
+  if (isoOfflineMode()) return OFFLINE_STAFF_NAMES[String(uid).replace(/^offline:/, '')] || null;
   const { data } = await readBlob();
   const u = (data.users || data.staff || []).find(x => x.id === uid);
   return u ? u.name : null;

@@ -251,6 +251,12 @@
     return true;
   }
   function _landClientName(id) { const c = (_DB().clients || []).find(x => x.id === id); return c ? (root.clientDisplayTitle ? root.clientDisplayTitle(c) : c.name) : 'Client not found'; }
+  // The client's own logo (set in Client Manager), small, beside its name. Image data or http(s) only.
+  function clientLogoHtml(id) {
+    const c = (_DB().clients || []).find(x => x.id === id);
+    const src = c && typeof c.logo === 'string' && /^(data:image\/|https?:\/\/)/i.test(c.logo) ? c.logo : '';
+    return src ? `<img class="iso-client-logo" src="${esc(src)}" alt="" aria-hidden="true">` : '';
+  }
   function landingRowHtml(a) {
     const { today } = _landDates();
     const codes = (a.standards || []).slice().sort((x, y) => STANDARD_ORDER.indexOf(x) - STANDARD_ORDER.indexOf(y));
@@ -293,7 +299,7 @@
     const body = !_land.audits.length
       ? `<div class="iso-empty"><strong>No ISO boards yet.</strong><span>Start one for a client — pick the standards and the clauses arrive ready to assess.</span><button type="button" class="btn btn-primary" onclick="ISO.openNewBoard()">+ New ISO board</button></div>`
       : !list.length ? '<div class="iso-empty"><strong>No boards match.</strong></div>'
-      : groups.map(([cid, rows]) => `<section class="iso-land-group"><h2 class="iso-land-gh"><button type="button" class="iso-land-client" data-cid="${esc(cid)}" title="Open this client's programme" onclick="ISO.openProgramme(this.dataset.cid)">${esc(_landClientName(cid))}</button> <span class="muted">${rows.length} board${rows.length === 1 ? '' : 's'}</span></h2>${rows.sort((x, y) => String(y.ref).localeCompare(String(x.ref))).map(landingRowHtml).join('')}</section>`).join('');
+      : groups.map(([cid, rows]) => `<section class="iso-land-group"><h2 class="iso-land-gh">${clientLogoHtml(cid)}<button type="button" class="iso-land-client" data-cid="${esc(cid)}" title="Open this client's programme" onclick="ISO.openProgramme(this.dataset.cid)">${esc(_landClientName(cid))}</button> <span class="muted">${rows.length} board${rows.length === 1 ? '' : 's'}</span></h2>${rows.sort((x, y) => String(y.ref).localeCompare(String(x.ref))).map(landingRowHtml).join('')}</section>`).join('');
     host.innerHTML = toolbar + body;
   }
   function _landSetFilter(f) {
@@ -4570,8 +4576,34 @@
     host.innerHTML = ovSignoffHtml(reqs)
       + ovProgressHtml(dash.cards, reqs.length, reqs)
       + `<div class="iso-ov-two">${ovAttentionHtml(reqs, dash)}${ovCollectHtml(docs)}</div>`
-      + `<button type="button" class="iso-ov-fulldash" onclick="ISO._ovShowFull()"><span><b>Full dashboard</b> — KPIs, charts, clause matrix and activity</span><span aria-hidden="true">›</span></button>`
-      + _exportRowHtml(_auditCache);
+      + ovDeliverHtml(_auditCache)
+      + `<button type="button" class="iso-ov-fulldash" onclick="ISO._ovShowFull()"><span><b>Full dashboard</b> — KPIs, charts, clause matrix and activity</span><span aria-hidden="true">›</span></button>`;
+  }
+  // What goes to the client, as three tiles with a line on what each is (2026-10-14) — replaces the
+  // loose button row that sat under the Full dashboard link. Staff only, like the row it replaces.
+  function ovDeliverHtml(audit) {
+    if (!audit || !_cu() || _cu().role === 'client' || !(audit.standards || []).length) return '';
+    const ic = d => `<span class="iso-ov-dv-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg></span>`;
+    const DOC = '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>';
+    const GRID = '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/>';
+    const CLIP = '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10l1.5 1.5L13 9M9 15h6"/>';
+    return `<section class="iso-ov-section iso-ov-deliver" aria-labelledby="iso-ov-deliver-h">
+      <h2 class="iso-ov-h2" id="iso-ov-deliver-h">Reports and exports <span class="muted">what goes to the client</span></h2>
+      <div class="iso-ov-dv-grid">
+        <div class="iso-ov-dv">
+          <div class="iso-ov-dv-top">${ic(DOC)}<div><div class="iso-ov-dv-t">Audit report</div><div class="iso-ov-dv-s">Etcher-branded PDF — issue, reissue and record the client's acknowledgement.</div></div></div>
+          <div class="iso-ov-dv-acts"><button type="button" class="btn btn-teal btn-sm iso-report-open" onclick="ISO._openReport()">Open report</button></div>
+        </div>
+        <div class="iso-ov-dv">
+          <div class="iso-ov-dv-top">${ic(GRID)}<div><div class="iso-ov-dv-t">Gap-analysis workbook</div><div class="iso-ov-dv-s">Excel on the Etcher template, one per standard.</div></div></div>
+          <div class="iso-ov-dv-acts iso-dash-export">${(audit.standards || []).map(code => `<button type="button" class="btn btn-ghost btn-sm iso-export-xlsx" data-std="${esc(code)}" title="Gap-analysis workbook for ISO ${esc(code)}" onclick="ISO._exportGapAnalysis(this.dataset.std, this)">ISO ${esc(code)}</button>`).join('')}</div>
+        </div>
+        <div class="iso-ov-dv">
+          <div class="iso-ov-dv-top">${ic(CLIP)}<div><div class="iso-ov-dv-t">On-site audit pack</div><div class="iso-ov-dv-s">Printable PDF to take on site for interviews and sampling.</div></div></div>
+          <div class="iso-ov-dv-acts"><button type="button" class="btn btn-ghost btn-sm iso-audit-pack" onclick="ISO._openAuditPack()">Download PDF</button></div>
+        </div>
+      </div>
+    </section>`;
   }
   function _ovFilterBtn(cls, filter, view, label, inner) {
     return `<button type="button" class="${cls}" data-filter="${esc(JSON.stringify(filter))}"${view ? ` data-view="${esc(view)}"` : ''} data-label="${esc(label)}" onclick="ISO._dashOpenFiltered(this)">${inner}</button>`;
@@ -5689,48 +5721,270 @@
       _openReport();
     } catch (e) { if (root.showToast) root.showToast('Could not record it: ' + e.message, true); }
   }
-  // The PDF, drawn only from the frozen version (never from live data).
-  function _repPdf(v) {
-    const go = () => {
-      const { jsPDF } = window.jspdf;
-      const c = v.content || {}, snap = c.snapshot || {}, a = c.audit || {}, s = c.sections || {}, setup = c.setup || {};
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-      const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
-      let y = M;
-      const need = h => { if (y + h > H - M) { doc.addPage(); y = M; } };
-      const text = (str, size, o) => { o = o || {}; doc.setFontSize(size); doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); const lines = doc.splitTextToSize(String(str == null ? '' : str), W - 2 * M - (o.indent || 0)); for (const ln of lines) { need(size * 1.3); doc.text(ln, M + (o.indent || 0), y + size); y += size * 1.3; } y += o.after != null ? o.after : 3; };
-      const h = t => { need(36); y += 8; text(t, 13, { bold: true, after: 4 }); };
-      const clauses = snap.clauses || [];
-      const count = st => clauses.filter(x => x.status === st).length;
-      text(v.title || 'Audit report', 20, { bold: true, after: 2 });
-      text(`${a.clientName || ''} · ${a.ref || ''} · version ${v.version_no}`, 11, { after: 2 });
-      text(`Issued ${new Date(v.issued_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })} by ${c.signedBy || ''}`, 9, { after: 10 });
-      h('Executive summary'); text(s.executiveSummary || '—', 10);
-      h('Scope and criteria'); text(setup.scope || a.title || '—', 10); text(`Standards: ${(c.standards || []).map(x => 'ISO ' + x.code + (x.edition ? ':' + x.edition : '')).join(', ')}${setup.criteria ? '. Also: ' + setup.criteria : ''}`, 10);
-      h('Dates and team'); text(`Planned ${a.plannedStart || '—'} to ${a.plannedEnd || '—'}${a.completedAt ? '; completed ' + a.completedAt.slice(0, 10) : ''}.`, 10); text((c.team || []).map(m => `${m.name} (${String(m.role || '').replace(/_/g, ' ')})`).join(', ') || '—', 10);
-      if (setup.objective) { h('Objective'); text(setup.objective, 10); }
-      h('Method'); text(s.method || 'Document review, interviews and observation against the clauses in scope.', 10);
-      h('Limitations'); text(setup.limitations || 'None recorded.', 10);
-      h('Objectives achieved'); text(s.objectivesAchieved || '—', 10);
-      h('Coverage'); text(`${clauses.length} clauses: ${count('compliant')} compliant, ${count('partially_compliant')} partially compliant, ${count('non_compliant')} non-compliant, ${count('not_assessed')} not assessed, ${count('not_applicable')} not applicable, ${count('out_of_scope')} outside this audit's scope.`, 10);
-      const findings = c.findings || [];
-      h('Findings'); if (!findings.length) text('No findings raised.', 10); for (const f of findings) { text(`${f.ref} · ${String(f.classification || '').replace(/_/g, ' ').toUpperCase()} · ${f.status}${f.repeatOf ? ' · repeat of ' + f.repeatOf : ''}`, 10, { bold: true, after: 1 }); text(f.title, 10, { after: 1 }); if (f.statement) text(f.statement, 9, { indent: 10 }); if (f.criteria) text('Criterion: ' + f.criteria, 9, { indent: 10, after: 5 }); }
-      const nc = clauses.filter(x => x.status === 'non_compliant');
-      h('Non-conformities'); text(nc.length ? nc.map(x => `ISO ${x.standard} ${x.clause} ${x.clauseName}${x.basis ? ' — ' + x.basis : ''}`).join('\n') : 'None.', 10);
-      const ofi = clauses.filter(x => x.ofi);
-      h('Opportunities for improvement and good practice'); text(ofi.length ? ofi.map(x => `ISO ${x.standard} ${x.clause} ${x.clauseName}`).join('\n') : 'No OFIs recorded.', 10); if (s.goodPractice) text(s.goodPractice, 10);
-      const carried = (c.findings || []).filter(f => f.carriedFrom && f.status !== 'closed').map(f => `${f.ref} (from ${f.carriedFrom})`).concat((c.actions || []).filter(x => x.carriedFrom && !['verified', 'closed'].includes(x.status)).map(x => `${x.ref} (from ${x.carriedFrom})`));
-      h('Carried forward, not yet verified'); text(carried.length ? carried.join('\n') : 'None.', 10);
-      h('Evidence index'); const docs = []; for (const x of clauses) for (const d of (x.documents || [])) docs.push(`${d.title}${d.revision ? ', ' + d.revision : ''}${d.date ? ' · ' + d.date : ''}${d.sha256 ? ' · SHA-256 ' + d.sha256.slice(0, 12) + '…' : ''} — ISO ${x.standard} ${x.clause}`); text(docs.length ? [...new Set(docs)].join('\n') : 'No documents linked.', 9);
-      if (s.conclusion) { h('Conclusion'); text(s.conclusion, 10); }
-      h('Library release'); text(`${c.libraryRelease || 'v3'} (calculation ${c.calcVersion || ''})`, 9);
-      h('Sign-off'); text(`Lead Auditor: ${c.signedBy || ''}    Date: ${new Date(v.issued_at).toISOString().slice(0, 10)}`, 10);
-      h('Client acknowledgement'); text(`${c.ackWording || 'Received and discussed'} by: ____________________   Role: ____________________   Date: ____________`, 10);
-      need(40); y += 10; text(c.disclaimer || '', 8);
-      doc.save(`${a.ref || 'ISO'}_${String(v.title || 'Report').replace(/\s+/g, '_')}_v${v.version_no}.pdf`);
+  // The PDF, drawn only from the frozen version (never from live data). Etcher-branded and ready to
+  // send to the client (2026-10-14): a navy cover with the white logo, then pages with the navy logo
+  // in a running header, numbered sections, tables for the gaps, actions and evidence, and the
+  // sign-off and acknowledgement blocks. Logos are scaled down once per visit so the file stays small.
+  const _repLogoCache = {};
+  function _repLogo(file, toWhite) {
+    const key = file + (toWhite ? '|white' : '');
+    if (_repLogoCache[key] !== undefined) return Promise.resolve(_repLogoCache[key]);
+    return new Promise(resolve => {
+      const done = v => { _repLogoCache[key] = v; resolve(v); };
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const w = 600, h = Math.round(img.naturalHeight * w / img.naturalWidth);
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+          const g = cv.getContext('2d');
+          g.drawImage(img, 0, 0, w, h);
+          // The white logo file is only ~88% opaque, which reads as grey on the navy cover: make it
+          // pure white and scale its opacity so the letters are solid (edges stay smooth).
+          if (toWhite) { const px = g.getImageData(0, 0, w, h), d = px.data; for (let i = 0; i < d.length; i += 4) { d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = Math.min(255, Math.round(d[i + 3] * 255 / 220)); } g.putImageData(px, 0, 0); }
+          done({ data: cv.toDataURL('image/png'), ratio: h / w, alias: key });
+        } catch (e) { done(null); }
+      };
+      img.onerror = () => done(null);
+      img.src = '/' + encodeURIComponent(file);
+    });
+  }
+  const REP_GAP_REASON = { not_implemented: 'Not implemented', ineffective: 'Not effective', no_evidence: 'No evidence' };
+  const REP_STATUS = { compliant: 'Compliant', partially_compliant: 'Partially compliant', non_compliant: 'Non-compliant', not_assessed: 'Not assessed', not_applicable: 'Not applicable', out_of_scope: 'Outside scope' };
+  function _repPdfBuild(v, logoWhite, logoNavy) {
+    const { jsPDF } = window.jspdf;
+    const c = v.content || {}, snap = c.snapshot || {}, a = c.audit || {}, s = c.sections || {}, setup = c.setup || {};
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 50, CW = W - 2 * M;
+    const NAVY = [13, 28, 51], TEAL = [151, 188, 189], TEAL_D = [49, 88, 90], INK = [13, 28, 51], INK2 = [67, 83, 105], INK3 = [92, 107, 128], LINE = [226, 231, 234], PAPER = [243, 246, 247], WHITE = [255, 255, 255];
+    const hex = h => [1, 3, 5].map(i => parseInt(String(h).slice(i, i + 2), 16));
+    const stColor = k => hex(COMPLIANCE_STATUS_COLOR[k] || '#7a8799');
+    const font = (style, size, color) => { doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...(color || INK)); };
+    const fmtD = d => d ? new Date(String(d).length === 10 ? d + 'T00:00:00' : d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not set';
+    const clauses = snap.clauses || [];
+    const count = st => clauses.filter(x => x.status === st).length;
+    const inScope = clauses.filter(x => x.status !== 'out_of_scope');
+    const assessed = inScope.filter(x => x.status !== 'not_assessed');
+    const client = a.clientName || 'Client';
+    const title = v.title || 'Audit report';
+    const stdList = (c.standards || []).map(x => 'ISO ' + x.code + (x.edition ? ':' + x.edition : ''));
+    const lead = c.signedBy || '';
+    const roleText = r => { const t = String(r || '').replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
+
+    // ── Cover ───────────────────────────────────────────────────────────────────────────────────
+    const coverH = Math.round(H * 0.58);
+    doc.setFillColor(...NAVY); doc.rect(0, 0, W, coverH, 'F');
+    doc.setFillColor(...TEAL); doc.rect(0, coverH, W, 5, 'F');
+    if (logoWhite) doc.addImage(logoWhite.data, 'PNG', M - 6, 46, 160, 160 * logoWhite.ratio, logoWhite.alias, 'FAST');
+    else { font('bold', 24, WHITE); doc.text('ETCHER', M, 84); font('normal', 8, TEAL); doc.text('SOLUTIONS', M, 98, { charSpace: 3 }); }
+    font('bold', 7.5, TEAL); doc.text('ISO AUDIT REPORT', W - M, 66, { align: 'right', charSpace: 1.4 });
+    let y = coverH - 136;
+    font('bold', 34, WHITE); doc.text(title, M, y);
+    y += 32; font('normal', 19, TEAL);
+    const clientLines = doc.splitTextToSize(client, CW); doc.text(clientLines, M, y); y += 22 * clientLines.length;
+    font('normal', 10.5, [190, 205, 218]); doc.text(`${a.ref || ''}   ·   Version ${v.version_no}   ·   Issued ${fmtD(v.issued_at)}`, M, y + 4);
+    const meta = [
+      ['Prepared for', client], ['Prepared by', 'Etcher Solutions' + (lead ? '\nLead Auditor: ' + lead : '')],
+      ['Audit dates', a.plannedStart || a.plannedEnd ? `${fmtD(a.plannedStart)} to ${fmtD(a.plannedEnd)}` : 'Not set'], ['Audit type', AUDIT_TYPE_LABEL[a.auditType] || roleText(a.auditType) || 'Audit'],
+      ['Standards', stdList.join('\n') || '—'], ['Report version', `Version ${v.version_no}${v.supersede_reason ? ' (reissued: ' + v.supersede_reason + ')' : ''}`],
+    ];
+    const colW = (CW - 24) / 2;
+    let my = coverH + 52;
+    for (let i = 0; i < meta.length; i += 2) {
+      let rowH = 0;
+      for (let j = 0; j < 2 && i + j < meta.length; j++) {
+        const [k, val] = meta[i + j], x = M + j * (colW + 24);
+        font('bold', 7, TEAL_D); doc.text(k.toUpperCase(), x, my, { charSpace: 0.9 });
+        font('normal', 10.5, INK); const lines = doc.splitTextToSize(val, colW); doc.text(lines, x, my + 15);
+        rowH = Math.max(rowH, 15 + lines.length * 13);
+      }
+      my += rowH + 18;
+    }
+    font('normal', 7.5, INK3);
+    doc.text(doc.splitTextToSize(`Confidential. Prepared by Etcher Solutions for ${client}.`, CW), M, H - 44);
+
+    // ── Body pages ──────────────────────────────────────────────────────────────────────────────
+    const TOP = 88, BOTTOM = H - 58;
+    const newPage = () => { doc.addPage(); y = TOP; };
+    newPage();
+    const need = h => { if (y + h > BOTTOM) newPage(); };
+    let secNo = 0;
+    // `room` keeps a heading with the start of what follows (a table needs its head and a row or two).
+    const section = (t, room) => {
+      need(room || 64); if (y > TOP + 1) y += 16;
+      secNo++;
+      font('bold', 15, TEAL_D); doc.text(String(secNo), M, y + 14);
+      font('bold', 15, NAVY); doc.text(t, M + 22, y + 14);
+      y += 24; doc.setDrawColor(...LINE); doc.setLineWidth(0.8); doc.line(M, y, W - M, y); y += 14;
     };
-    const fail = () => { if (root.showToast) root.showToast('Could not load the PDF tools — check the connection.', true); };
-    try { if (root._ensureJsPdf) root._ensureJsPdf(() => { try { go(); } catch (e) { fail(); } }, fail); else if (window.jspdf) go(); else fail(); } catch (e) { fail(); }
+    const para = (str, o) => {
+      o = o || {}; const size = o.size || 10, lh = size * 1.55;
+      font(o.bold ? 'bold' : 'normal', size, o.color || INK2);
+      for (const block of String(str == null || str === '' ? '—' : str).split('\n')) {
+        for (const ln of doc.splitTextToSize(block || ' ', CW - (o.indent || 0))) { need(lh); doc.text(ln, M + (o.indent || 0), y + size); y += lh; }
+      }
+      y += o.after != null ? o.after : 6;
+    };
+    const sub = t => { need(34); font('bold', 10.5, NAVY); doc.text(t, M, y + 10); y += 20; };
+    const table = (head, body, opts) => {
+      doc.autoTable(Object.assign({
+        head: [head], body, startY: y, theme: 'grid', margin: { left: M, right: M, top: TOP, bottom: H - BOTTOM },
+        styles: { font: 'helvetica', fontSize: 8.5, cellPadding: { top: 5, right: 6, bottom: 5, left: 6 }, textColor: INK2, lineColor: LINE, lineWidth: 0.5, valign: 'top', overflow: 'linebreak' },
+        headStyles: { fillColor: NAVY, textColor: WHITE, fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [248, 250, 251] },
+      }, opts || {}));
+      y = doc.lastAutoTable.finalY + 18;
+    };
+    // A status cell takes its colour from the board's own status palette.
+    const statusCell = col => ({ didParseCell: d => { if (d.section === 'body' && d.column.index === col && d.cell.raw && d.cell.raw._st) { d.cell.styles.textColor = stColor(d.cell.raw._st); d.cell.styles.fontStyle = 'bold'; } } });
+    const stCell = (st, extra) => ({ content: REP_STATUS[st] + (extra ? '\n' + extra : ''), _st: st });
+
+    // 1 At a glance
+    section('At a glance');
+    const tiles = [['In scope', inScope.length, NAVY], ['Assessed', assessed.length, NAVY], ['Compliant', count('compliant'), stColor('compliant')],
+      ['Partially compliant', count('partially_compliant'), stColor('partially_compliant')], ['Non-compliant', count('non_compliant'), stColor('non_compliant')], ['OFIs', clauses.filter(x => x.ofi).length, stColor('ofi')]];
+    const tw = (CW - 5 * 8) / 6;
+    need(70);
+    tiles.forEach(([label, n, col], i) => {
+      const x = M + i * (tw + 8);
+      doc.setFillColor(...PAPER); doc.roundedRect(x, y, tw, 58, 5, 5, 'F');
+      font('bold', 21, col); doc.text(String(n), x + 10, y + 28);
+      font('bold', 6.5, INK3); doc.text(doc.splitTextToSize(label.toUpperCase(), tw - 16), x + 10, y + 42, { charSpace: 0.4 });
+    });
+    y += 74;
+    const segs = ['compliant', 'partially_compliant', 'non_compliant', 'not_applicable', 'not_assessed'].map(k => ({ k, n: count(k) })).filter(x => x.n);
+    const total = segs.reduce((t, x) => t + x.n, 0);
+    if (total) {
+      need(46);
+      let bx = M;
+      segs.forEach(sg => { const w = CW * sg.n / total; doc.setFillColor(...stColor(sg.k)); doc.rect(bx, y, w, 10, 'F'); bx += w; });
+      y += 24; let lx = M;
+      segs.forEach(sg => {
+        const label = `${REP_STATUS[sg.k]} ${sg.n}`;
+        font('normal', 8.5, INK2);
+        const w = doc.getTextWidth(label) + 22;
+        if (lx + w > W - M) { lx = M; y += 14; }
+        doc.setFillColor(...stColor(sg.k)); doc.rect(lx, y - 7, 8, 8, 'F'); doc.text(label, lx + 12, y); lx += w;
+      });
+      y += 22;
+    }
+    const byStd = (c.standards || []).map(sd => {
+      const xs = clauses.filter(x => x.standard === sd.code), n = st => xs.filter(x => x.status === st).length;
+      return ['ISO ' + sd.code + (sd.edition ? ':' + sd.edition : ''), xs.length, n('compliant'), n('partially_compliant'), n('non_compliant'), n('not_applicable'), n('not_assessed')];
+    });
+    if (byStd.length) table(['Standard', 'Clauses', 'Compliant', 'Partially', 'Non-compliant', 'N/A', 'Not assessed'], byStd, { columnStyles: { 0: { fontStyle: 'bold', textColor: INK, cellWidth: 150 } } });
+
+    // 2 Executive summary
+    section('Executive summary');
+    para(s.executiveSummary);
+
+    // 3 Audit details
+    section('Audit details', 130);
+    const team = (c.team || []).map(m => `${m.name} (${roleText(m.role)})`).join('\n');
+    const details = [
+      ['Objective', setup.objective], ['Scope', setup.scope || a.title], ['Criteria', stdList.join(', ') + (setup.criteria ? '\n' + setup.criteria : '')],
+      ['Dates', `${fmtD(a.plannedStart)} to ${fmtD(a.plannedEnd)}${a.completedAt ? '; completed ' + fmtD(a.completedAt) : ''}`], ['Audit team', team || '—'],
+      ['Method', s.method || 'Document review, interviews and observation against the clauses in scope.'], ['Limitations', setup.limitations || 'None recorded.'],
+      ['Objectives achieved', s.objectivesAchieved], ['Coverage', `${clauses.length} clauses: ${count('compliant')} compliant, ${count('partially_compliant')} partially compliant, ${count('non_compliant')} non-compliant, ${count('not_assessed')} not assessed, ${count('not_applicable')} not applicable${count('out_of_scope') ? ', ' + count('out_of_scope') + ' outside this audit\'s scope' : ''}.`],
+    ].filter(r => r[1]);
+    table(['', ''], details, { showHead: false, columnStyles: { 0: { cellWidth: 118, fontStyle: 'bold', textColor: INK, fillColor: PAPER } }, alternateRowStyles: {} });
+
+    // 4 Findings (formal audits raise them; a gap analysis usually doesn't)
+    const findings = c.findings || [];
+    if (findings.length) {
+      section('Findings', 130);
+      const CLASS = { major_nc: 'Major non-conformity', minor_nc: 'Minor non-conformity', observation: 'Observation', ofi: 'Opportunity for improvement' };
+      table(['Ref', 'Classification', 'Finding', 'Status'], findings.map(f => [f.ref, CLASS[f.classification] || roleText(f.classification), [f.title, f.statement, f.criteria ? 'Criteria: ' + f.criteria : null, f.repeatOf ? 'Repeat of ' + f.repeatOf : null].filter(Boolean).join('\n'), roleText(f.status)]),
+        { columnStyles: { 0: { cellWidth: 70, fontStyle: 'bold', textColor: INK }, 1: { cellWidth: 100 }, 3: { cellWidth: 64 } } });
+    }
+
+    // 5 Non-conformities and gaps
+    section('Non-conformities and gaps', 130);
+    const gaps = clauses.filter(x => x.status === 'non_compliant' || x.status === 'partially_compliant').sort((p, q) => (p.status === 'non_compliant' ? 0 : 1) - (q.status === 'non_compliant' ? 0 : 1));
+    if (gaps.length) table(['Clause', 'Requirement', 'Status', 'What we found', 'Planned action'],
+      gaps.map(x => [`${x.standard} ${x.clause}`, x.clauseName, stCell(x.status, REP_GAP_REASON[x.gapReason]), x.basis || '—', x.plannedAction || '—']),
+      Object.assign({ columnStyles: { 0: { cellWidth: 52, fontStyle: 'bold', textColor: INK }, 1: { cellWidth: 86 }, 2: { cellWidth: 82 }, 4: { cellWidth: 100 } } }, statusCell(2)));
+    else para('No non-conformities or gaps recorded.');
+
+    // 6 OFIs and good practice
+    section('Opportunities for improvement and good practice', 130);
+    const ofi = clauses.filter(x => x.ofi);
+    if (ofi.length) table(['Clause', 'Requirement', 'Observation'], ofi.map(x => [`${x.standard} ${x.clause}`, x.clauseName, x.basis || '—']), { columnStyles: { 0: { cellWidth: 52, fontStyle: 'bold', textColor: INK }, 1: { cellWidth: 130 } } });
+    else para('No opportunities for improvement recorded.');
+    if (s.goodPractice) { sub('Good practice'); para(s.goodPractice); }
+
+    // 7 Actions
+    const actions = c.actions || [];
+    if (actions.length) {
+      section('Agreed actions', 130);
+      table(['Ref', 'Action', 'Due', 'Status'], actions.map(x => [x.ref || '', x.title, x.due ? fmtD(x.due) : '—', ACTION_STATUS_LABEL[x.status] || roleText(x.status)]),
+        { columnStyles: { 0: { cellWidth: 82, fontStyle: 'bold', textColor: INK }, 2: { cellWidth: 92 }, 3: { cellWidth: 92 } } });
+    }
+
+    // 8 Carried forward
+    const carried = findings.filter(f => f.carriedFrom && f.status !== 'closed').map(f => [f.ref, f.title, f.carriedFrom])
+      .concat(actions.filter(x => x.carriedFrom && !['verified', 'closed'].includes(x.status)).map(x => [x.ref, x.title, x.carriedFrom]));
+    if (carried.length) { section('Carried forward, not yet verified', 130); table(['Ref', 'Item', 'From'], carried, { columnStyles: { 0: { cellWidth: 82, fontStyle: 'bold' }, 2: { cellWidth: 90 } } }); }
+
+    // 9 Evidence index — one row per document, with every clause it supports
+    section('Evidence index', 130);
+    const docs = new Map();
+    for (const x of clauses) for (const d of (x.documents || [])) {
+      const k = [d.title, d.revision || '', d.date || ''].join('|');
+      if (!docs.has(k)) docs.set(k, { d, refs: [] });
+      docs.get(k).refs.push(`${x.standard} ${x.clause}`);
+    }
+    if (docs.size) table(['Document', 'Revision', 'Date', 'Supports'], [...docs.values()].sort((p, q) => q.refs.length - p.refs.length).map(({ d, refs }) => [d.title + (d.sha256 ? '\nSHA-256 ' + d.sha256.slice(0, 16) + '…' : ''), d.revision || '—', d.date ? fmtD(d.date) : '—', refs.join(', ')]),
+      { columnStyles: { 0: { cellWidth: 150, fontStyle: 'bold', textColor: INK }, 1: { cellWidth: 52 }, 2: { cellWidth: 78 } } });
+    else para('No documents linked.');
+
+    // 10 Conclusion
+    if (s.conclusion) { section('Conclusion'); para(s.conclusion); }
+
+    // 11 Sign-off and acknowledgement
+    section('Sign-off', 210);
+    const bw = (CW - 16) / 2, bh = 160;
+    const box = (x, head, rows) => {
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.8); doc.setFillColor(...WHITE); doc.roundedRect(x, y, bw, bh, 6, 6, 'FD');
+      font('bold', 7, TEAL_D); doc.text(head.toUpperCase(), x + 14, y + 20, { charSpace: 0.9 });
+      let ry = y + 44;
+      rows.forEach(([k, val]) => {
+        font('normal', 8, INK3); doc.text(k, x + 14, ry);
+        if (val) { font('bold', 9.5, INK); doc.text(val, x + 84, ry); }
+        else { doc.setDrawColor(...[176, 188, 198]); doc.setLineWidth(0.6); doc.line(x + 84, ry + 2, x + bw - 14, ry + 2); }
+        ry += 22;
+      });
+    };
+    box(M, 'Lead Auditor — Etcher Solutions', [['Name', lead], ['Signature', null], ['Date', fmtD(v.issued_at)]]);
+    box(M + bw + 16, 'Client acknowledgement', [['Recorded as', c.ackWording || 'Received and discussed'], ['Name', null], ['Role', null], ['Signature', null], ['Date', null]]);
+    y += bh + 14;
+    para(`Acknowledgement records that this report was received and discussed; it is not agreement with every conclusion.`, { size: 8, color: INK3, after: 14 });
+    para(`Library release ${c.libraryRelease || 'v3'} · calculation ${c.calcVersion || ''}`, { size: 7.5, color: INK3, after: 2 });
+    para(c.disclaimer || '', { size: 7.5, color: INK3 });
+
+    // Running header and footer on every page after the cover.
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 2; p <= pages; p++) {
+      doc.setPage(p);
+      // One alias, so the logo is stored once in the file, not once per page.
+      if (logoNavy) doc.addImage(logoNavy.data, 'PNG', M - 4, 18, 76, 76 * logoNavy.ratio, logoNavy.alias, 'FAST');
+      else { font('bold', 12, NAVY); doc.text('ETCHER', M, 44); }
+      font('normal', 8, INK3); doc.text(`${title}  ·  ${client}  ·  ${a.ref || ''}`, W - M, 46, { align: 'right' });
+      doc.setDrawColor(...TEAL); doc.setLineWidth(1.4); doc.line(M, 62, W - M, 62);
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.6); doc.line(M, H - 42, W - M, H - 42);
+      font('normal', 7.5, INK3); doc.text(`Etcher Solutions  ·  Confidential — prepared for ${client}`, M, H - 28);
+      doc.text(`Page ${p - 1} of ${pages - 1}`, W - M, H - 28, { align: 'right' });
+    }
+    return doc;
+  }
+  function _repPdf(v) {
+    const fail = msg => { if (root.showToast) root.showToast(msg || 'Could not load the PDF tools — check the connection.', true); };
+    const start = () => Promise.all([_repLogo('Etcher White Logo.png', true), _repLogo('Etcher_Logo_2026.png')]).then(([w, n]) => {
+      let doc;
+      try { doc = _repPdfBuild(v, w, n); } catch (e) { console.error(e); fail('Could not build the PDF: ' + e.message); return; }
+      const a = (v.content && v.content.audit) || {};
+      doc.save(`${a.ref || 'ISO'}_${String(v.title || 'Report').replace(/\s+/g, '_')}_v${v.version_no}.pdf`);
+    });
+    try { if (root._ensureJsPdf) root._ensureJsPdf(start, () => fail()); else if (window.jspdf) start(); else fail(); } catch (e) { fail(); }
   }
 
   // A clause chip anywhere (Actions) opens Clauses with that clause expanded and in view.
@@ -6078,7 +6332,7 @@
     _reqBulkPick: _reqBulkPick, _reqBulkClear: _reqBulkClear,
     _openAddRequirement: _openAddRequirement, _addRequirementApply: _addRequirementApply,
     openRequirementDrawer: openRequirementDrawer, _reqSeniorPick: _reqSeniorPick, _reqApprove: _reqApprove, _reqReturn: _reqReturn, _reqBulkApprove: _reqBulkApprove, _reqApproveIds: _reqApproveIds, _reqApproveAll: _reqApproveAll, _setStageChanged: _setStageChanged, _startMaintenance: _startMaintenance, _actLinkClause: _actLinkClause, _actLinkApply: _actLinkApply, _actUnlink: _actUnlink, _wizSetVerify: _wizSetVerify, _reqBulkSeniorPick: _reqBulkSeniorPick, _reqDrawerSetTab: _reqDrawerSetTab, _reqDrawerTabKey: _reqDrawerTabKey, _reqDraftCapture: _reqDraftCapture, _relationshipDecide: _relationshipDecide, _openAddRelationship: _openAddRelationship, _relAddApply: _relAddApply,
-    _reqToggleExpand: _reqToggleExpand, _reqSetStatus: _reqSetStatus, _reqSaveField: _reqSaveField, _reqToggleCheck: _reqToggleCheck,_reqSaveFieldSelect: _reqSaveFieldSelect,
+    _reqToggleExpand: _reqToggleExpand, _reqSetStatus: _reqSetStatus, _reqSaveField: _reqSaveField, _reqToggleCheck: _reqToggleCheck, _repPdfBuild: _repPdfBuild, _repLogo: _repLogo, _reqSaveFieldSelect: _reqSaveFieldSelect,
     _reqToggleCheat: _reqToggleCheat, _reqToggleRelEdit: _reqToggleRelEdit, _reqOpenApplyPanel: _reqOpenApplyPanel, _reqCloseApplyPanel: _reqCloseApplyPanel,
     _reqApplyToRelated: _reqApplyToRelated, _reqRejectRelated: _reqRejectRelated, _reqUnrejectRelated: _reqUnrejectRelated, _reqOpenMore: _reqOpenMore, _reqOpenEvidence: _reqOpenEvidence,
     _reqSetQuery: _reqSetQuery, _reqAddDocument: _reqAddDocument,

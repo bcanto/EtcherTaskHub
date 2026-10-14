@@ -864,7 +864,17 @@ button.iso-icon-btn:focus-visible { outline: 2px solid var(--teal-deep); outline
 .iso-app .iso-ov-li-t { font-size: 14px; }
 .iso-app .iso-ov-li-s { font-size: 12.5px; color: var(--ink-3); }
 .iso-app .iso-ov-li-go { font-size: 20px; letter-spacing: -0.02em; color: var(--ink); }
-.iso-app .iso-ov-fulldash { margin-top: 28px; border-color: var(--line-2); color: var(--ink-2); }
+.iso-app .iso-ov-fulldash { margin-top: 16px; border-style: solid; border-color: var(--line); color: var(--ink-2); }
+
+/* Reports and exports: three tiles, one per thing that goes to the client. */
+.iso-ov-dv-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
+.iso-ov-dv { display: flex; flex-direction: column; justify-content: space-between; gap: 14px; padding: 16px; background: #fff; border: 1px solid var(--line, #e2e7ea); border-radius: 12px; }
+.iso-ov-dv-top { display: flex; gap: 12px; align-items: flex-start; }
+.iso-ov-dv-ic { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; background: rgba(151, 188, 189, 0.18); color: #31585a; }
+.iso-ov-dv-t { font: 600 14.5px 'Jost', sans-serif; color: #0d1c33; letter-spacing: -0.01em; }
+.iso-ov-dv-s { margin-top: 2px; font-size: 12.5px; line-height: 1.5; color: var(--ink-3, #5c6b80); }
+.iso-ov-dv-acts { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 46px; }
+@media (max-width: 540px) { .iso-ov-dv-acts { padding-left: 0; } }
 
 /* Full dashboard inside the card: the same padding and section rhythm as the compact Overview. */
 .iso-app #iso-dash-tab:has(> .iso-dash-header) { padding: 20px 16px 28px; }
@@ -1152,3 +1162,9 @@ button.iso-da-st-btn.is-active { background: var(--c); border-color: var(--c); c
 button.iso-da-st-btn:active { transform: scale(.96); }
 button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { button.iso-da-st-btn { transition: none; } }
+
+.iso-ov-dv-acts.iso-dash-export { margin-top: 0; }
+
+/* Client logo beside the client's name on the ISO audits page. */
+.iso-land-gh:has(.iso-client-logo) { align-items: center; }
+.iso-client-logo { flex: none; height: 22px; width: auto; max-width: 72px; object-fit: contain; border-radius: 4px; }

@@ -263,6 +263,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       // behind "Full dashboard" instead of the tab's own default) — switch once; it stays in Full
       // mode across every same-board setTab('dashboard')/openBoard(board.id) call below (R5's own
       // design: the mode only resets to Overview when a genuinely different board opens).
+      // 2026-10-14: the compact Overview ends with "Reports and exports" — three tiles (report,
+      // workbook per standard, audit pack) — then the Full dashboard link; no loose button row.
+      const deliver = await page.evaluate(() => {
+        const sec = document.querySelector('#iso-dash-tab .iso-ov-deliver');
+        return { tiles: sec ? sec.querySelectorAll('.iso-ov-dv').length : 0, report: !!(sec && sec.querySelector('.iso-report-open')), xlsx: sec ? sec.querySelectorAll('.iso-export-xlsx').length : 0, pack: !!(sec && sec.querySelector('.iso-audit-pack')),
+          loose: !!document.querySelector('#iso-dash-tab > .iso-dash-export'), fullAfter: !!(sec && sec.nextElementSibling && sec.nextElementSibling.classList.contains('iso-ov-fulldash')) };
+      });
+      ok(deliver.tiles === 3 && deliver.report && deliver.xlsx >= 1 && deliver.pack && !deliver.loose && deliver.fullAfter, `the Overview ends with three "Reports and exports" tiles, then Full dashboard (got ${JSON.stringify(deliver)})`);
       await page.evaluate(() => ISO._ovShowFull());
       await sleep(1200);
 

@@ -105,6 +105,21 @@ const iso = d => d.toISOString().slice(0, 10);
     await page.evaluate(() => ISO._landSetQuery('zzz-nothing')); await sleep(200);
     ok(await page.evaluate(() => /No boards match/.test(document.getElementById('iso-portfolio-table').textContent)), 'a search with no hits says so');
     await page.evaluate(() => ISO._landSetQuery('')); await sleep(200);
+    // 2026-10-14: the client's logo (Client Manager stores it as a data URL) sits beside its name;
+    // anything that is not image data or an http(s) link is never put into the page.
+    const logo = await page.evaluate(async () => {
+      const db = window._isoDB(), ids = [...new Set([...document.querySelectorAll('.iso-land-client')].map(b => b.dataset.cid))];
+      const [good, bad] = ids.map(id => db.clients.find(c => c.id === id));
+      good.logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      if (bad) bad.logo = 'javascript:alert(1)';
+      ISO.openLanding(); await new Promise(r => setTimeout(r, 1800));
+      const head = cid => document.querySelector(`.iso-land-client[data-cid="${cid}"]`).closest('.iso-land-gh');
+      const out = { good: !!head(good.id).querySelector('img.iso-client-logo'), bad: bad ? !!head(bad.id).querySelector('img') : false };
+      delete good.logo; if (bad) delete bad.logo;
+      return out;
+    });
+    ok(logo.good && !logo.bad, `a client's logo shows beside its name, and a non-image logo value is never rendered (got ${JSON.stringify(logo)})`);
+    await page.evaluate(() => ISO.openLanding()); await sleep(1500);
 
     await page.evaluate(id => document.querySelector(`.iso-land-row[data-audit="${id}"]`).click(), b1.id); await sleep(2200);
     ok(await page.evaluate(() => !!document.querySelector('.iso-app-h .iso-tabs')), 'a row opens its board');
