@@ -1,10 +1,16 @@
 const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/node_modules/puppeteer');
+const H=require('./_iso-harness.cjs');
+let srv=null;
 (async()=>{
+  // Its own offline server and temp ISO store. clearAllNotifs() also clears the user's ISO notifications
+  // server-side (ISO 7.6), so on the shared :3001 server every gate run dismissed the real ones in
+  // .iso-offline (caught by the store fingerprint, 2026-10-15).
+  srv=await H.startOffline(3176);
   const b=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:'new',args:['--no-sandbox'],defaultViewport:{width:1500,height:950}});
   const p=await b.newPage();
   const errs=[];p.on('pageerror',e=>errs.push('PAGEERROR: '+e.message));
   p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE: '+m.text().slice(0,150));});
-  await p.goto('http://localhost:3001/',{waitUntil:'networkidle2'});
+  await p.goto(`http://127.0.0.1:${srv.port}/`,{waitUntil:'networkidle2'});
   await new Promise(r=>setTimeout(r,1200));
   if(await p.$('#login-email')){
     await p.type('#login-email','b.canto@etchersolutions.com');
@@ -207,6 +213,6 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   console.log('\nPASS ('+pass.length+'):');pass.forEach(m=>console.log('  + '+m));
   console.log('FAIL ('+fail.length+'):');fail.forEach(m=>console.log('  - '+m));
   console.log('ERRORS:',errs.length?errs.slice(0,5):'none');
-  await b.close();
+  await b.close();srv.stop();
   process.exit(fail.length||errs.length?1:0);
-})().catch(e=>{console.error('FAIL',e.message);process.exit(1)});
+})().catch(e=>{console.error('FAIL',e.message);if(srv)srv.stop();process.exit(1)});

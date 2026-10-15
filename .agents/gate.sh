@@ -15,6 +15,10 @@ if ! printf '%s' "$_cfg" | grep -q '"supabaseUrl":""'; then
   echo "Restart it offline first:  node serve.mjs --offline"
   exit 1
 fi
+# The user's real ISO store must come out of a gate run byte-identical: suites never touch .iso-offline.
+# (notif-test dismissed the user's ISO notifications through :3001 on every run until 2026-10-15.)
+_isofp(){ if [ -d .iso-offline ]; then find .iso-offline -type f -exec sha256sum {} + 2>/dev/null | sort -k2 | sha256sum | cut -c1-16; else echo none; fi; }
+ISOFP_BEFORE=$(_isofp)
 SUITES="mt-phase1-test mt-phase2-test mt-phase3-test mt-phase4-test mt-phase5-test
 mt-colresize-test mt-complete-hours-test subitem-rollup-test timeline-range-test board-client-test
 tp-tab-sticky-test tp-regress md-paste-test notes-test notes-align-test notes-access
@@ -41,6 +45,11 @@ for s in $SUITES; do
     printf '%s' "$out" | sed -n '/^FAIL (/,/^ERRORS/p' | head -8
   fi
 done
+ISOFP_AFTER=$(_isofp)
+if [ "$ISOFP_BEFORE" != "$ISOFP_AFTER" ]; then
+  echo "ISO STORE CHANGED during the gate ($ISOFP_BEFORE to $ISOFP_AFTER): a suite wrote to the real .iso-offline, or the app was used while it ran. Counted as a failure."
+  TF=$((TF+1))
+fi
 echo "TOTAL: $TP  FAILURES: $TF"
 [ -n "$BAD" ] && echo "SUITES THAT DID NOT REPORT:$BAD"
 exit 0
