@@ -25,7 +25,7 @@ async function _asJson(r, what) {
 // Per-entity allowlist for filter/sort columns (plan §4.2 "filter and sort columns come only from
 // a per-entity allowlist" — never built from the raw request).
 const FILTERABLE = {
-  iso_audits: ['id', 'client_id', 'archived_at', 'visibility', 'stage', 'owner_uid', 'report_due'],
+  iso_audits: ['id', 'client_id', 'archived_at', 'bin_removed_at', 'visibility', 'stage', 'owner_uid', 'report_due'],
   iso_audit_members: ['audit_id', 'user_uid', 'audit_role'],
   iso_audit_units: ['audit_id', 'archived_at'],
   iso_requirements: ['audit_id', 'client_id', 'archived_at', 'assessment_state', 'applicability', 'standard_code'],

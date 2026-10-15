@@ -584,7 +584,7 @@
     if (root.openConfirm) root.openConfirm('Archive this ISO board?', ref + ' moves to Archive & Bin and leaves the ISO list. An admin can restore it from there.', 'Archive', go, false);
   }
   // Archive & Bin's ISO card (index.html renders the placeholder for admins, then calls this).
-  // Restore only: ISO records are never hard-deleted, so the card has no Delete.
+  // Restore, or Remove from bin (hidden for good, record kept). ISO records are never hard-deleted.
   async function fillArchiveCard() {
     const el = document.getElementById('iso-archive-card'); if (!el) return;
     let rows;
@@ -595,9 +595,17 @@
     const when = s => s ? new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
       <div class="iso-bin-h"><div class="iso-bin-t">ISO boards <span class="iso-bin-n">${rows.length}</span></div></div>
-      ${rows.length ? rows.map(a => { const c = clients.find(x => x.id === a.client_id); return `<div class="iso-bin-row"><div class="iso-bin-main"><b>${esc(a.title || a.ref)}</b><span>${c ? `<i>${esc(c.name)}</i>` : ''}<i>${esc(a.ref)}</i></span></div><span class="iso-bin-when">${when(a.archived_at)}</span><button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" data-iso-restore="${esc(a.id)}" onclick="ISO._restoreBoard(this.dataset.isoRestore)">↩ Restore</button></div>`; }).join('') : '<div class="iso-bin-empty">No archived ISO boards</div>'}
-      <div class="iso-bin-note">ISO audit records are never deleted, so the audit trail stays complete. Restore puts a board back in the ISO list.</div>
+      ${rows.length ? rows.map(a => { const c = clients.find(x => x.id === a.client_id); return `<div class="iso-bin-row"><div class="iso-bin-main"><b>${esc(a.title || a.ref)}</b><span>${c ? `<i>${esc(c.name)}</i>` : ''}<i>${esc(a.ref)}</i></span></div><span class="iso-bin-when">${when(a.archived_at)}</span><button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" data-iso-restore="${esc(a.id)}" onclick="ISO._restoreBoard(this.dataset.isoRestore)">↩ Restore</button><button type="button" class="btn btn-danger btn-sm" style="font-size:11px" data-iso-remove="${esc(a.id)}" data-iso-ref="${esc(a.ref)}" onclick="ISO._removeFromBin(this.dataset.isoRemove, this.dataset.isoRef)">Remove</button></div>`; }).join('') : '<div class="iso-bin-empty">No archived ISO boards</div>'}
+      <div class="iso-bin-note">ISO audit records are never deleted, so the audit trail stays complete. Restore puts a board back in the ISO list. Remove takes it out of here for good and keeps the record.</div>
     </div>`;
+  }
+  function _removeFromBin(auditId, ref) {
+    const go = async () => {
+      if (root.closeConfirm) root.closeConfirm();
+      try { await mutate('audit.removeFromBin', { auditId: auditId }); if (root.showToast) root.showToast('Removed from Archive & Bin. The audit record is kept.'); await fillArchiveCard(); }
+      catch (e) { if (root.showToast) root.showToast('Could not remove: ' + e.message, true); }
+    };
+    if (root.openConfirm) root.openConfirm('Remove from Archive & Bin?', (ref || 'This board') + ' disappears from Task Hub for good. Its audit record stays in the database for the audit trail, and only a database admin can bring it back.', 'Remove', go);
   }
   async function _restoreBoard(auditId) {
     try { await mutate('audit.restore', { auditId: auditId }); if (root.showToast) root.showToast('ISO board restored.'); await fillArchiveCard(); if (root._isoEnabled) renderSidebar(); }
@@ -6350,7 +6358,7 @@
     _wizToggleStandard: _wizToggleStandard, _wizAllStandards: _wizAllStandards, _wizSetEdition: _wizSetEdition,
     _wizSetVis: _wizSetVis, _wizAddMember: _wizAddMember, _wizSetRole: _wizSetRole, _wizRemoveMember: _wizRemoveMember,
     openAccessModal: openAccessModal, _saveAccess: _saveAccess,
-    saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, fillArchiveCard: fillArchiveCard, _restoreBoard: _restoreBoard, _profAddItem: _profAddItem, _profSave: _profSave,
+    saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, fillArchiveCard: fillArchiveCard, _restoreBoard: _restoreBoard, _removeFromBin: _removeFromBin, _profAddItem: _profAddItem, _profSave: _profSave,
     openImport: openImportFromMenu, _approveVersion: _approveVersion, _approveVersionConfirmed: _approveVersionConfirmed,
     _retireVersion: _retireVersion, _retireVersionConfirmed: _retireVersionConfirmed, _loadLibrarySeed: _loadLibrarySeed, _saveUploadCap: _saveUploadCap,
     fillReportsTab: fillReportsTab, _rptSetRange: _isoRptSetRange, _rptExportCsv: _isoRptExportCsv, _rptExportXlsx: _isoRptExportXlsx,

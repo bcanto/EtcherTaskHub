@@ -1,7 +1,7 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- Etcher Task Hub — combined dev-project setup (one paste instead of six)
 --
--- GENERATED 2026-10-13 by concatenating the six files below, in the order a fresh Supabase dev
+-- GENERATED 2026-10-15 by concatenating the six files below, in the order a fresh Supabase dev
 -- project needs them. This file is NOT a new migration and is NOT the source of truth — the
 -- individual files under supabase/dev/ and supabase/migrations/ are. If any of those six files
 -- changes later, regenerate this one with `node .agents/_build-dev-setup.cjs` rather than
@@ -17,7 +17,7 @@
 --
 -- Source files (sha256 of the LF-normalised text, first 16 hex chars, so you can tell if this has gone stale):
 --   supabase/dev/000_dev_bootstrap.sql         dbe000cc4b62edf8
---   supabase/migrations/009_iso_core.sql       5a85d64b4d5cc7ca
+--   supabase/migrations/009_iso_core.sql       1d1316228875df9e
 --   supabase/migrations/010_iso_evidence.sql   d02847f2cc9f5b34
 --   supabase/migrations/014_iso_doc_prompts.sql f33faf1884d26bb9
 --   supabase/migrations/015_iso_history.sql    28a7bbb16b1df693
@@ -333,6 +333,9 @@ create table if not exists iso_audits (
   updated_by             text
 );
 create index if not exists iso_audits_previous_ix on iso_audits(previous_audit_id) where previous_audit_id is not null;
+-- 2026-10-15, "Remove from bin": an archived board an admin removes from Archive & Bin is hidden for
+-- good but never deleted (no hard deletes, §4). Bringing one back takes a database admin.
+alter table iso_audits add column if not exists bin_removed_at timestamptz;
 
 -- No client_id column (plan D17/§22): a template is reusable across clients and must never carry
 -- one client's data. config is built only from an explicit whitelist in application code.
@@ -1079,7 +1082,7 @@ begin
     -- by inspection while adding iso_action_subtasks' case below, not by any test failing.
     when 'iso_audits' then array['title','audit_type','custom_type_label','scope_text','exclusions_text',
       'planned_start','planned_end','report_due','certification_body','lead_auditor_uid','internal_notes',
-      'stage','client_portal_enabled','default_visibility','visibility','archived_at',
+      'stage','client_portal_enabled','default_visibility','visibility','archived_at','bin_removed_at',
       'completed_at','maintenance_due','setup']
     -- visibility/visible_to_uids included here for both tables (plan §14 A37): the plan's own
     -- prose above says these change "only through the dedicated transition functions", but

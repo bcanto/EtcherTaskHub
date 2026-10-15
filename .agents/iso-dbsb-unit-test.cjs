@@ -268,7 +268,7 @@ const db = require('../api/_isoDbSupabase.js');
       ['iso_findings', jsList('FINDING_WRITABLE_FIELDS') || []],
       ['iso_actions', jsList('ACTION_WRITABLE_FIELDS') || []],
       ['iso_action_subtasks', jsList('SUBTASK_WRITABLE_FIELDS') || []],
-      ['iso_audits', [...(auditAllowed || []), 'completed_at', 'visibility', 'archived_at']],
+      ['iso_audits', [...(auditAllowed || []), 'completed_at', 'visibility', 'archived_at', 'bin_removed_at']],
       // Release-1 additions (B4.5, B5.2, B4.6) — no dedicated *_WRITABLE_FIELDS const for the latter
       // two (their ops write a small, fixed inline patch), so those two are named here by hand.
       ['iso_client_settings', jsList('CLIENT_SETTINGS_FIELDS') || []],

@@ -1035,16 +1035,17 @@ defineOp('audit.archive', {
   },
 });
 
-// Archive & Bin (an admin-only view in index.html): archived boards, newest first, and Restore.
-// There is deliberately no hard delete: every iso_* table refuses DELETE (plan §4, "No hard deletes"),
-// so the audit trail stays whole. Both ops are scope 'none' because an audit-scoped op refuses an
+// Archive & Bin (an admin-only view in index.html): archived boards, newest first, Restore, and
+// Remove from bin. There is deliberately no hard delete: every iso_* table refuses DELETE (plan §4,
+// "No hard deletes"), so the audit trail stays whole. Removing sets bin_removed_at: the board leaves
+// Archive & Bin for good and the record stays. Both ops are scope 'none' because an audit-scoped op refuses an
 // archived board before it runs ("Audit not found.").
 const isIsoAdmin = ctx => ctx.caller.kind !== 'client' && ctx.caller.role === 'admin';
 defineOp('audit.listArchived', {
   scope: 'none',
   allow: isIsoAdmin,
   async run(ctx) {
-    const rows = await ctx.db.list('iso_audits', { where: [{ field: 'archived_at', op: 'notnull' }], limit: 500 });
+    const rows = await ctx.db.list('iso_audits', { where: [{ field: 'archived_at', op: 'notnull' }, { field: 'bin_removed_at', op: 'isnull' }], limit: 500 });
     return rows.sort((a, b) => String(b.archived_at).localeCompare(String(a.archived_at)))
       .map(a => ({ id: a.id, ref: a.ref, title: a.title, client_id: a.client_id, audit_type: a.audit_type, stage: a.stage, archived_at: a.archived_at }));
   },
@@ -1055,10 +1056,23 @@ defineOp('audit.restore', {
   allow: isIsoAdmin,
   async run(ctx) {
     const a = await ctx.db.get('iso_audits', ctx.payload.auditId);
-    if (!a || !a.archived_at) throw notFound('Archived board not found.');
+    if (!a || !a.archived_at || a.bin_removed_at) throw notFound('Archived board not found.');
     return ctx.db.update('iso_audits', a.id, { archived_at: null }, a.row_version, {
       audit_id: a.id, client_id: a.client_id, entity_type: 'audit', entity_id: a.id,
       entity_ref: a.ref, action: 'restored', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+    });
+  },
+});
+defineOp('audit.removeFromBin', {
+  scope: 'none',
+  validate(payload) { if (!isValidId(payload.auditId)) throw badRequest('A valid auditId is required.'); },
+  allow: isIsoAdmin,
+  async run(ctx) {
+    const a = await ctx.db.get('iso_audits', ctx.payload.auditId);
+    if (!a || !a.archived_at || a.bin_removed_at) throw notFound('Archived board not found.');
+    return ctx.db.update('iso_audits', a.id, { bin_removed_at: ctx.now.toISOString() }, a.row_version, {
+      audit_id: a.id, client_id: a.client_id, entity_type: 'audit', entity_id: a.id,
+      entity_ref: a.ref, action: 'removed_from_bin', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
     });
   },
 });
