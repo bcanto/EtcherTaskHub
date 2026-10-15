@@ -310,7 +310,7 @@ const CLIENT_FIELDS = {
     'client_response', 'verification_requirements', 'visibility', 'row_version'],
   // B7: the portal.* ops build their client payloads field by field (portalBoardRow, portalActions …);
   // these are the only top-level keys they may return.
-  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version', 'responses', 'upload', 'history', 'more'],
+  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version', 'responses', 'upload', 'history', 'more', 'notifications'],
 };
 // Fields never sent to a client caller for ANY entity, even one whose CLIENT_FIELDS is generous —
 // a second layer so a future typo in one allowlist can't leak these (plan §6.3).
@@ -2364,6 +2364,27 @@ defineOp('portal.history', {
       .filter(Boolean).sort((a, b) => String(b.at).localeCompare(String(a.at)));
     const offset = ctx.payload.offset || 0;
     return { history: rows.slice(offset, offset + PORTAL_HISTORY_PAGE), more: rows.length > offset + PORTAL_HISTORY_PAGE };
+  },
+});
+
+// ── Release-1 B7e: the client's own ISO notifications (plan 13.7, in-app) ───────────────────────
+defineOp('portal.notifications', {
+  scope: 'none', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client' && !!ctx.caller.clientId; },
+  async run(ctx) {
+    const boards = new Set((await portalBoardsOf(ctx)).map(x => x.audit.id));
+    const rows = (await ctx.db.list('iso_notifications', { where: [{ field: 'recipient_uid', op: 'eq', value: ctx.caller.uid }, { field: 'dismissed_at', op: 'isnull' }], limit: 500 }))
+      .filter(n => boards.has(n.audit_id)).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))).slice(0, 50);
+    return { notifications: rows.map(n => ({ id: n.id, message: n.message, at: n.created_at, read: !!n.read_at, auditId: n.audit_id })) };
+  },
+});
+defineOp('portal.notificationsRead', {
+  scope: 'none', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client' && !!ctx.caller.clientId; },
+  async run(ctx) {
+    const nowIso = ctx.now.toISOString();
+    for (const n of await ownNotifications(ctx)) if (!n.read_at) await ctx.db.patchRow('iso_notifications', n.id, { read_at: nowIso });
+    return { notifications: [] };
   },
 });
 
@@ -5519,6 +5540,28 @@ afterOp('finding.reopen', null, async (ctx, out) => {
 const notifyAssigned = async (ctx, a, prevOwner) => {
   if (a && a.owner_uid && a.owner_uid !== prevOwner) await notifyUids(ctx, [a.owner_uid], { entity_type: 'action', entity_id: a.id, type: 'action_assigned', message: `${a.ref} was assigned to you${a.due_date ? ', due ' + a.due_date : ''} (${ctx.audit.ref}).` });
 };
+// ── Release-1 B7e: what the client is told (only while the board's portal is on, only named logins) ──
+function clientUidsOf(ctx, row) {
+  if (!ctx.audit || !ctx.audit.client_portal_enabled) return [];
+  return (ctx.members || []).filter(m => m.member_kind === 'client').map(m => m.user_uid).filter(uid => !row || portalSees(row, { uid }));
+}
+afterOp('report.issue', null, ctx => notifyUids(ctx, clientUidsOf(ctx), { entity_type: 'report', entity_id: ctx.audit.id, type: 'client_report', message: `${ctx.audit.ref}: the audit report is ready for you to check.` }));
+afterOp('response.decide', null, (ctx, out) => notifyUids(ctx, out && clientUidsOf(ctx).includes(out.respondent_uid) ? [out.respondent_uid] : [], { entity_type: 'report', entity_id: ctx.audit.id, type: 'client_reply', message: `${ctx.audit.ref}: Etcher replied to your answer on the audit report.` }));
+afterOp('evidenceRequest.create', null, (ctx, out) => {
+  const named = clientUidsOf(ctx), to = new Set();
+  for (const r of (out && out.rows) || []) { if (!r.requested_from_uid) named.forEach(u => to.add(u)); else if (named.includes(r.requested_from_uid)) to.add(r.requested_from_uid); }
+  return notifyUids(ctx, [...to], { entity_type: 'audit', entity_id: ctx.audit.id, type: 'client_request', message: `${ctx.audit.ref}: Etcher asked you for a document.` });
+});
+afterOp('action.updateStatus', null, (ctx, out) => {
+  if (!out || out.owner_kind !== 'client') return;
+  const msg = out.status === 'assigned' ? `${out.ref}: this action is yours to do.` : out.status === 'closed' ? `${out.ref}: Etcher closed this action.` : null;
+  if (msg) return notifyUids(ctx, clientUidsOf(ctx, out), { entity_type: 'action', entity_id: out.id, type: 'client_action', message: msg });
+});
+afterOp('action.decideReview', null, async (ctx, out) => {
+  if (!out || out.decision === 'accepted') return;
+  const a = await ctx.db.get('iso_actions', out.action_id);
+  if (a && a.owner_kind === 'client') await notifyUids(ctx, clientUidsOf(ctx, a), { entity_type: 'action', entity_id: a.id, type: 'client_action', message: `${a.ref}: Etcher needs more from you on this action.` });
+});
 afterOp('action.create', null, (ctx, out) => notifyAssigned(ctx, out, null));
 afterOp('action.trackPlan', null, (ctx, out) => notifyAssigned(ctx, out && out.action, null));
 afterOp('action.update', ctx => ctx.db.get('iso_actions', ctx.payload.id), (ctx, out, before) => notifyAssigned(ctx, out, before ? before.owner_uid : null));

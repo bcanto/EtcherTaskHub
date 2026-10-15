@@ -1314,3 +1314,5 @@ button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset:
 .cpi-hist small { display: block; font-size: 12px; color: #5c6b80; }
 .cpi-hist-w { font: 500 12px Jost, sans-serif; color: #5c6b80; font-variant-numeric: tabular-nums; }
 .cpi-more { margin: 8px 0 0; }
+/* B7e: ISO rows in the portal Notifications tab */
+.cpi-notif-i { width: 30px; height: 30px; border-radius: 50%; background: #e0f2f1; color: #0f766e; display: flex; align-items: center; justify-content: center; font: 700 9.5px Jost, sans-serif; letter-spacing: .04em; flex-shrink: 0; }

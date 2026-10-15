@@ -15,6 +15,7 @@
   const today = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
 
   let summary = null; // portal.boards: { boards, needs }
+  let notes = [];     // portal.notifications: this login's ISO notifications
   let sel = null;     // the chosen board
   let current = null; // portal.board for the chosen board
   let seq = 0;
@@ -23,6 +24,8 @@
   async function load() {
     if (!enabled()) { summary = { boards: [], needs: [] }; return summary; }
     try { summary = await root.ISO.api('portal.boards', {}); } catch (e) { summary = summary || { boards: [], needs: [] }; }
+    try { notes = (await root.ISO.api('portal.notifications', {})).notifications || []; } catch (e) { notes = notes || []; }
+    if (root.updateCpNotifBadge) root.updateCpNotifBadge();
     return summary;
   }
   const boards = () => (summary && summary.boards) || [];
@@ -226,6 +229,21 @@
     } catch (e) { toast('Could not send the file: ' + e.message, true); btns.forEach(b => { b.disabled = false; }); }
   }
 
+  // The portal's bell and Notifications tab merge these with the task notifications.
+  function notifUnread() { return notes.filter(n => !n.read).length; }
+  function notifItems() {
+    return notes.map(n => ({ at: n.at, html: `<div class="cp-notif link" role="button" tabindex="0" data-id="${esc(n.auditId)}" onclick="ISO.portal.open(this.dataset.id)" onkeypress="if(event.key==='Enter')ISO.portal.open(this.dataset.id)">
+        <div class="cpi-notif-i" aria-hidden="true">ISO</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13px;color:#0d1c33;line-height:1.5">${esc(n.message)}</div><div style="font-size:11px;color:#5c6b80;margin-top:4px">${esc(new Date(n.at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}</div></div>
+        ${n.read ? '' : '<span class="cp-notif-new">New</span>'}</div>` }));
+  }
+  function notifMarkRead() {
+    const ids = notes.filter(n => !n.read).map(n => n.id);
+    if (!ids.length) return;
+    notes.forEach(n => { n.read = true; });
+    root.ISO.api('portal.notificationsRead', { ids: ids }).catch(() => {});
+  }
+
   // Overview pieces: the client's ISO asks inside "Waiting on you", and one quiet engagement row.
   function needRowsHtml() {
     return needs().map(n => {
@@ -245,5 +263,5 @@
   }
 
   root.ISO = root.ISO || {};
-  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, respond: respond, _rv: _rv, doneOpen: doneOpen, doneCancel: doneCancel, done: done, sent: sent, upload: upload, _fileChosen: _fileChosen, history: history, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; } };
+  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, respond: respond, _rv: _rv, doneOpen: doneOpen, doneCancel: doneCancel, done: done, sent: sent, upload: upload, _fileChosen: _fileChosen, history: history, notifUnread: notifUnread, notifItems: notifItems, notifMarkRead: notifMarkRead, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; notes = []; } };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -26,6 +26,9 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   await srv.must(LEAD, { op: 'requirement.approve', auditId: b.id, id: r1.id, expectedVersion: r1.row_version });
   await srv.must(AUD, { op: 'report.saveDraft', auditId: b.id, sections: { executiveSummary: 'Mostly in place.' } });
   const v1 = await srv.must(LEAD, { op: 'report.issue', auditId: b.id });
+  const inboxOf = async u => ((await srv.call(u, { op: 'portal.notifications' })).data || { notifications: [] }).notifications.map(n => n.message);
+  t.ok((await inboxOf(CU)).includes(b.ref + ': the audit report is ready for you to check.'), 'the client is told the report is ready');
+  t.eq((await inboxOf(CU2)).length, 0, 'a login not named on the board is told nothing');
   const board = async (u = CU) => (await srv.call(u, { op: 'portal.board', auditId: b.id })).data;
   const needs = async () => (await srv.call(CU, { op: 'portal.boards' })).data.needs.map(n => n.kind).sort();
 
@@ -49,6 +52,8 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   t.eq((await srv.call(CU, { op: 'response.decide', auditId: b.id, id: list[0].id, decision: 'accepted', note: 'ok' })).status, 403, 'the client cannot decide');
   t.eq((await srv.call(LEAD, { op: 'response.decide', auditId: b.id, id: list[0].id, decision: 'rejected' })).status, 400, 'a decision needs a note');
   await srv.must(LEAD, { op: 'response.decide', auditId: b.id, id: list[0].id, decision: 'rejected', note: 'The August certificates cover different serial numbers.' });
+  const told = await inboxOf(CU);
+  t.ok(told.includes(b.ref + ': Etcher replied to your answer on the audit report.') && !told.some(m => /serial numbers/.test(m)), 'the client is told Etcher replied, without the note in the message');
   t.eq((await srv.call(LEAD, { op: 'response.decide', auditId: b.id, id: list[0].id, decision: 'accepted', note: 'again' })).status, 400, 'decided once only');
   d = await board();
   t.ok(d.responses[0].status === 'rejected' && /different serial numbers/.test(d.responses[0].decisionNote), 'the client reads Etcher\'s note');

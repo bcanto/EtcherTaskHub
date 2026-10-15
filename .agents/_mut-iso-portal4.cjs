@@ -1,0 +1,23 @@
+// Can-fail mutations for B7e, the client's ISO notifications (node .agents/_canfail.cjs .agents/_mut-iso-portal4.cjs --green).
+module.exports = [
+  { id: 'ie-report-silent', suite: 'iso-portal2-test', file: 'api/_iso.js', note: 'no word when the report is issued',
+    find: "afterOp('report.issue', null, ctx => notifyUids(ctx, clientUidsOf(ctx),", replace: "afterOp('report.issue', null, ctx => notifyUids(ctx, []," },
+  { id: 'ie-reply-note', suite: 'iso-portal2-test', file: 'api/_iso.js', note: 'the reply message carries Etcher\'s note',
+    find: "message: `${ctx.audit.ref}: Etcher replied to your answer on the audit report.` }));", replace: "message: `${ctx.audit.ref}: Etcher replied: ${ctx.payload.note}` }));" },
+  { id: 'ie-portal-off', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'clients are told even with the portal off',
+    find: "  if (!ctx.audit || !ctx.audit.client_portal_enabled) return [];", replace: "  if (!ctx.audit) return [];" },
+  { id: 'ie-request-silent', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'no word about a document asked for',
+    find: "  for (const r of (out && out.rows) || []) { if (!r.requested_from_uid) named.forEach(u => to.add(u));", replace: "  for (const r of []) { if (!r.requested_from_uid) named.forEach(u => to.add(u));" },
+  { id: 'ie-action-silent', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'no word when an action is given to the client',
+    find: "  const msg = out.status === 'assigned' ? `${out.ref}: this action is yours to do.`", replace: "  const msg = false ? `${out.ref}: this action is yours to do.`" },
+  { id: 'ie-more-silent', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'no word when Etcher needs more',
+    find: "  if (!out || out.decision === 'accepted') return;\n  const a = await ctx.db.get('iso_actions', out.action_id);", replace: "  return;\n  const a = await ctx.db.get('iso_actions', out.action_id);" },
+  { id: 'ie-unscoped', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'notifications of boards the client cannot open are listed',
+    find: "      .filter(n => boards.has(n.audit_id)).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))).slice(0, 50);", replace: "      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))).slice(0, 50);" },
+  { id: 'ie-never-read', suite: 'iso-portal3-test', file: 'api/_iso.js', note: 'marking read does nothing',
+    find: "    for (const n of await ownNotifications(ctx)) if (!n.read_at) await ctx.db.patchRow('iso_notifications', n.id, { read_at: nowIso });\n    return { notifications: [] };", replace: "    return { notifications: [] };" },
+  { id: 'ie-ui-badge', suite: 'iso-portal3-test', file: 'index.html', note: 'the bell ignores ISO notifications',
+    find: "+(window.ISO&&ISO.portal&&ISO.portal.notifUnread?ISO.portal.notifUnread():0);", replace: ";" },
+  { id: 'ie-ui-list', suite: 'iso-portal3-test', file: 'index.html', note: 'the Notifications tab leaves ISO out',
+    find: "  const _iso=window.ISO&&ISO.portal&&ISO.portal.notifItems?ISO.portal.notifItems():[];", replace: "  const _iso=[];" },
+];
