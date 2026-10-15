@@ -62,6 +62,7 @@ async function listClientUsers(clientId) {
     return [
       { uid: 'offline:cu1', name: 'Offline Client User 1 (fixture)', clientId },
       { uid: 'offline:cu2', name: 'Offline Client User 2 (fixture)', clientId },
+      { uid: 'offline:' + clientId, name: 'Portal login (local preview)', clientId },
     ];
   }
   const r = await fetch(

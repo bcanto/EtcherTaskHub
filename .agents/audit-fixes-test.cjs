@@ -256,7 +256,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
     DB.taskFiles.push({id:'cf-srv',taskId:id,name:'srv.png',type:'image/png',stored:true,uploadedByClientId:clientId});
     _portalServerMode=()=>true;
     const PNG=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0));
-    window.fetch=async(u,o)=>{asked.push(String(u));if(String(u).startsWith('/api/'))return new Response(JSON.stringify({url:'https://example.supabase.co/signed/x'}),{status:200,headers:{'Content-Type':'application/json'}});return new Response(new Blob([PNG],{type:'image/png'}),{status:200});};
+    window.fetch=async(u,o)=>{if(String(u)==='/api/iso')return realFetch(u,o);/* the ISO tab loads in the background since B7 */asked.push(String(u));if(String(u).startsWith('/api/'))return new Response(JSON.stringify({url:'https://example.supabase.co/signed/x'}),{status:200,headers:{'Content-Type':'application/json'}});return new Response(new Blob([PNG],{type:'image/png'}),{status:200});};
     window.open=()=>{opened={opener:1,location:{href:''},close(){}};return opened;};
     await cpOpenFile('cf-srv',false);
     r.viewAsked=asked[0];r.viewFetchedSigned=asked[1];r.newWindow=!!opened;

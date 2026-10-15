@@ -17,7 +17,7 @@
 --
 -- Source files (sha256 of the LF-normalised text, first 16 hex chars, so you can tell if this has gone stale):
 --   supabase/dev/000_dev_bootstrap.sql         dbe000cc4b62edf8
---   supabase/migrations/009_iso_core.sql       1d1316228875df9e
+--   supabase/migrations/009_iso_core.sql       802af00c2a0a595d
 --   supabase/migrations/010_iso_evidence.sql   d02847f2cc9f5b34
 --   supabase/migrations/014_iso_doc_prompts.sql f33faf1884d26bb9
 --   supabase/migrations/015_iso_history.sql    28a7bbb16b1df693
@@ -1113,7 +1113,7 @@ begin
     when 'iso_findings' then array['title','statement','criteria','evidence_basis','classification','visibility','visible_to_uids']
     -- auditor_review_note, visibility and visible_to_uids added 2026-10-03: action.update writes all
     -- three (ACTION_WRITABLE_FIELDS) and they were missing, the same gap as iso_requirements above.
-    when 'iso_actions' then array['title','description','owner_uid','start_date','due_date','priority',
+    when 'iso_actions' then array['title','description','owner_uid','owner_kind','start_date','due_date','priority',
       'risk_rating','progress','verification_requirements','client_response','auditor_review_note','correction','containment',
       'root_cause_method','five_whys','fishbone','cause_tree','contributing_factors','cause_categories',
       'root_cause_summary','corrective_action','preventive_action','effectiveness_check','effectiveness_review_date',

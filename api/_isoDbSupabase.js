@@ -25,14 +25,14 @@ async function _asJson(r, what) {
 // Per-entity allowlist for filter/sort columns (plan §4.2 "filter and sort columns come only from
 // a per-entity allowlist" — never built from the raw request).
 const FILTERABLE = {
-  iso_audits: ['id', 'client_id', 'archived_at', 'bin_removed_at', 'visibility', 'stage', 'owner_uid', 'report_due'],
+  iso_audits: ['id', 'client_id', 'archived_at', 'bin_removed_at', 'visibility', 'stage', 'owner_uid', 'report_due', 'previous_audit_id', 'client_portal_enabled'],
   iso_audit_members: ['audit_id', 'user_uid', 'audit_role'],
   iso_audit_units: ['audit_id', 'archived_at'],
-  iso_requirements: ['audit_id', 'client_id', 'archived_at', 'assessment_state', 'applicability', 'standard_code'],
+  iso_requirements: ['audit_id', 'client_id', 'archived_at', 'assessment_state', 'applicability', 'standard_code', 'clause'],
   iso_findings: ['audit_id', 'client_id', 'archived_at', 'status', 'classification'],
   iso_actions: ['audit_id', 'client_id', 'archived_at', 'status', 'owner_uid', 'owner_kind', 'due_date'],
   iso_comments: ['audit_id', 'entity_type', 'entity_id', 'archived_at'],
-  iso_activity: ['audit_id', 'entity_type', 'entity_id'],
+  iso_activity: ['audit_id', 'entity_type', 'entity_id', 'action'],
   iso_saved_views: ['audit_id', 'owner_uid'],
   iso_templates: ['archived_at'],
   iso_config: [],
@@ -57,7 +57,7 @@ const FILTERABLE = {
   // must list before a query ever needs it (A54's lesson), not found as a gap after the fact.
   iso_evidence: ['audit_id', 'client_id', 'archived_at', 'visibility', 'kind'],
   iso_evidence_links: ['evidence_id', 'audit_id', 'target_type', 'target_id', 'review_status'],
-  iso_evidence_requests: ['audit_id', 'target_type', 'target_id', 'status'],
+  iso_evidence_requests: ['audit_id', 'target_type', 'target_id', 'status', 'archived_at'],
   iso_evidence_uploads: ['evidence_id', 'audit_id', 'reserved_by', 'closed_at'],
   // Plan 8c (migration 014).
   iso_company_profiles: ['client_id'],
@@ -372,4 +372,5 @@ module.exports = {
   get, list, insertNumbered, insert, update, transition, log, counterNext, importApply,
   updateMember, removeMember, getConfig, upsertConfig, patchRow, verifyAction, reopenAction, reopenFinding, getProfile, upsertProfile, getPromptAnswers, savePromptAnswers,
   storageSignedUpload, storageSignedDownload, storageHead, storagePut, storageGet, storageRemove,
+  _test: { FILTERABLE },
 };

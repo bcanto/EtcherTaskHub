@@ -1873,6 +1873,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <nav class="cp-nav" style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
     <div class="cp-nav-tab" data-section="retained" id="cp-tab-retained" onclick="cpNavigate('retained')" style="display:none">Retained Services</div>
+    <div class="cp-nav-tab" data-section="iso" id="cp-tab-iso" onclick="cpNavigate('iso')" style="display:none">ISO Audits</div>
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <!-- Named 'workboard', not 'board' — 'board' is already an internal renderView route name
          and sits in the client role's _acBlockedViews set; reusing it here would be one string
@@ -3414,7 +3415,8 @@ function _startPortalRefresh(){
       const busy=!document.getElementById('cp-task-modal')?.classList.contains('hidden')
         ||!document.getElementById('generic-modal')?.classList.contains('hidden')
         ||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
-      if(!busy&&!['requests','notifications'].includes(cpSection))cpNavigate(cpSection);
+      _cpIsoRefresh();
+      if(!busy&&!['requests','notifications','iso'].includes(cpSection))cpNavigate(cpSection);
     }).catch(e=>console.warn('[portal refresh]',e.message));
   };
   _portalRefreshTimer=setInterval(tick,60000);
@@ -4818,6 +4820,16 @@ function launchClientView(){
   const body=document.getElementById('cp-body');
   if(body)body.innerHTML=renderCpOverview(currentUser.clientId,tasks,boards,client);
   updateCpNotifBadge();
+  if(window.ISO&&ISO.portal&&ISO.portal._reset)ISO.portal._reset();
+  _cpIsoRefresh();
+}
+// B7: the ISO Audits tab shows only when a board is shared with this client login; its asks join the
+// Overview. ISO loads after the page (deferred scripts, /api/config), so wait for that first.
+function _cpIsoRefresh(){
+  (window._supabaseReady||Promise.resolve()).catch(()=>{}).then(()=>{
+    if(!(window._isoEnabled&&window.ISO&&ISO.portal)||currentUser?.role!=='client')return;
+    return ISO.portal.load().then(()=>{ISO.portal.syncTab();if(cpSection==='overview')_cpRefreshCurrentSection();if(cpSection==='iso'&&!ISO.portal.boardCount())cpNavigate('overview');});
+  }).catch(()=>{});
 }
 function doLogout(){
   _clearSession();
@@ -26075,6 +26087,7 @@ function cpNavigate(section){
   else if(section==='tasks')        body.innerHTML=bar+renderCpTasks(clientId,ft,fb,boardIdx);
   else if(section==='workboard')    body.innerHTML=bar+renderCpBoard(clientId,ft,fb,boardIdx);
   else if(section==='retained')     body.innerHTML=renderCpRetained(clientId,tasks,rtBoard);
+  else if(section==='iso'&&window.ISO&&ISO.portal)ISO.portal.render(body);
   else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
   else if(section==='notifications')body.innerHTML=renderCpNotifications();
   else                              body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
@@ -26104,6 +26117,8 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   const todayStr=toDateStr(new Date());
   const activeTasks=tasks;
   const awaitingTasks=activeTasks.filter(t=>t.awaitingClient);
+  const _iso=window.ISO&&ISO.portal?ISO.portal:null,isoNeedN=_iso?_iso.needCount():0;
+  const waitingN=awaitingTasks.length+isoNeedN;
   const _isDone=t=>t.status==='done'||t.status==='completed'||t.status==='completed-approved';
   const doneTasks=activeTasks.filter(_isDone);
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
@@ -26124,14 +26139,14 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     <div class="cp-band">
       <div class="cp-band-cell lead"><div class="cp-band-num">${overallPct}<span class="cp-band-unit">%</span></div><div class="cp-band-label">Overall progress</div></div>
       <div class="cp-band-cell"><div class="cp-band-num">${doneTasks.length}<span class="cp-band-of"> / ${activeTasks.length}</span></div><div class="cp-band-label">Tasks complete</div></div>
-      <${awaitingTasks.length?'button type="button" onclick="document.getElementById(\'cp-attn\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})"':'div'} class="cp-band-cell${awaitingTasks.length?' warn':''}"><div class="cp-band-num">${awaitingTasks.length}</div><div class="cp-band-label">Waiting on you</div></${awaitingTasks.length?'button':'div'}>
+      <${waitingN?'button type="button" onclick="document.getElementById(\'cp-attn\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})"':'div'} class="cp-band-cell${waitingN?' warn':''}"><div class="cp-band-num">${waitingN}</div><div class="cp-band-label">Waiting on you</div></${awaitingTasks.length?'button':'div'}>
       <div class="cp-band-cell"><div class="cp-band-num">${dueWeek}</div><div class="cp-band-label">Due in the next 7 days</div></div>
     </div>
   </section>`;
 
   // ── Waiting on you: answer straight from the list ──
   let awaitingSection='';
-  if(awaitingTasks.length){
+  if(waitingN){
     const rows=awaitingTasks.map(t=>{
       const hasApproved=t.clientApproval?.status==='approved';
       const overdue=t.endDate&&t.endDate<todayStr;
@@ -26147,8 +26162,8 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
       </div>`;
     }).join('');
     awaitingSection=`<section id="cp-attn" class="cp-sec">
-      <div class="cp-sec-head"><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${awaitingTasks.length}</span></div>
-      <div class="cp-list">${rows}</div>
+      <div class="cp-sec-head"><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${waitingN}</span></div>
+      <div class="cp-list">${rows}${_iso?_iso.needRowsHtml():''}</div>
     </section>`;
   }
 
@@ -26178,9 +26193,10 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
       <span class="cp-eng-bar"><i style="width:${pct}%;background:${b.color}"></i></span>
     </button>`;
   }).join('');
-  const engSection=boards.length?`<section class="cp-sec">
-    <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length}</span></div>
-    <div class="cp-list">${engRows}</div>
+  const isoEng=_iso?_iso.engRowHtml():'';
+  const engSection=boards.length||isoEng?`<section class="cp-sec">
+    <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length+(isoEng?1:0)}</span></div>
+    <div class="cp-list">${engRows}${isoEng}</div>
   </section>`:'';
 
   // ── Recent activity: the client's own notifications ──
@@ -27643,6 +27659,7 @@ document.addEventListener('keydown',e=>{
 <script src="/iso/iso-charts.js" defer></script>
 <script src="/iso/iso-checks.js" defer></script>
 <script src="/iso/iso-core.js" defer></script>
+<script src="/iso/iso-portal.js" defer></script>
 
 <!-- TOAST NOTIFICATIONS ROOT -->
 <div id="app-toast-root"></div>

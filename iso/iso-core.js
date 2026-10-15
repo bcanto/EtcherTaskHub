@@ -379,6 +379,7 @@
           <span class="iso-board-meta">${clientName ? esc(clientName) + ' · ' : ''}${esc(audit.ref)}${audit.visibility === 'private' ? ' · Private' : ''}${audit.previous ? ' · Maintenance audit of ' + esc(audit.previous.ref) : ''}</span>
         </div>
         ${boardStandardsHtml(audit, activeTab)}
+        ${canArchiveLocally() ? `<button type="button" class="btn btn-ghost btn-sm iso-portal-btn${audit.client_portal_enabled ? ' is-on' : ''}" title="Choose whether the client sees this board in their portal" onclick="ISO.openClientPortal()">Client portal ${audit.client_portal_enabled ? 'on' : 'off'}</button>` : ''}
         ${canArchiveLocally() ? `<button type="button" class="btn btn-ghost btn-sm iso-archive-btn" title="Move this board to Archive & Bin" onclick="ISO._archiveBoard('${esc(audit.id)}')">Archive</button>` : ''}
         <button type="button" class="iso-icon-btn${activeTab === 'settings' ? ' is-on' : ''}" aria-label="Board settings" title="Settings — details, access, maintenance" onclick="ISO.setTab('settings')"><span aria-hidden="true">⚙</span></button>
       </div>
@@ -574,6 +575,51 @@
   // Archive sits in the board header (managers only) and asks first, with the app's own confirm and
   // never a native dialog (A49). The board then waits in Archive & Bin, where an admin can restore it.
   function canArchiveLocally() { const r = _myAuditRole(); return r === 'admin' || r === 'lead_auditor' || r === 'audit_manager'; }
+  // ── Release-1 B7: share a board with the client portal ─────────────────────────────────────────
+  // One switch and the client's portal logins: a client sees a board only while its portal is on AND
+  // they are named on it (api/_iso.js resolveMembership). Changing the switch needs a reason (§6.3a).
+  let _cps = null;
+  async function openClientPortal() {
+    const audit = _auditCache; if (!audit) return;
+    let members, users;
+    try { [members, users] = await Promise.all([api('member.list', { auditId: audit.id }), api('clientUser.list', { clientId: audit.client_id })]); }
+    catch (e) { if (root.showToast) root.showToast('Could not load the client logins: ' + e.message, true); return; }
+    const named = new Set(members.filter(m => m.member_kind === 'client').map(m => m.user_uid));
+    // Nobody named yet: start with every login ticked (the usual case is "the client").
+    _cps = { auditId: audit.id, was: !!audit.client_portal_enabled, named: named, pick: new Set(named.size ? [...named] : users.map(u => u.uid)), users: users };
+    const client = currentClient(), cname = client ? (root.clientDisplayTitle ? root.clientDisplayTitle(client) : client.name) : 'the client';
+    root.openGenericModal('Client portal', '', '560px');
+    document.getElementById('generic-modal-body').innerHTML = `<div class="iso-cps">
+      <label class="iso-cps-switch"><input type="checkbox" id="iso-cps-on"${_cps.was ? ' checked' : ''} onchange="ISO._cpsSet(this.checked)"><span><b>Show this board in ${esc(cname)}'s client portal</b>
+        <small>They see the audit, its results and report once issued, and the actions and evidence requests you share with them. Never internal notes, drafts or unreleased findings.</small></span></label>
+      <fieldset class="iso-cps-who" id="iso-cps-who"${_cps.was ? '' : ' disabled'}><legend>Who can see it</legend>
+        ${users.length ? users.map(u => `<label><input type="checkbox" class="iso-cps-u" value="${esc(u.uid)}"${_cps.pick.has(u.uid) ? ' checked' : ''}>${esc(u.name)}</label>`).join('') : `<p class="muted" style="margin:0">${esc(cname)} has no portal logins yet. Add one in Client Manager first.</p>`}
+      </fieldset>
+      <label class="iso-cps-why">Reason<input class="form-input" id="iso-cps-why" maxlength="500" placeholder="For example: report issued, sharing it with the client"></label>
+      <div class="iso-cps-foot"><button type="button" class="btn btn-ghost btn-sm" onclick="closeGenericModal()">Cancel</button><button type="button" class="btn btn-teal btn-sm" id="iso-cps-save" onclick="ISO._cpsSave()">Save</button></div>
+    </div>`;
+  }
+  function _cpsSet(on) { const f = document.getElementById('iso-cps-who'); if (f) f.disabled = !on; }
+  async function _cpsSave() {
+    const s = _cps; if (!s) return;
+    const on = !!(document.getElementById('iso-cps-on') || {}).checked;
+    const pick = new Set([...document.querySelectorAll('.iso-cps-u')].filter(c => c.checked).map(c => c.value));
+    const reason = String((document.getElementById('iso-cps-why') || {}).value || '').trim();
+    const toast = (m, bad) => { if (root.showToast) root.showToast(m, bad); };
+    if (on !== s.was && !reason) { toast('Give a reason for changing client portal sharing.', true); const w = document.getElementById('iso-cps-why'); if (w) w.focus(); return; }
+    if (on && !pick.size) { toast('Tick at least one client login, or switch the portal off.', true); return; }
+    try {
+      if (on) {
+        for (const uid of pick) if (!s.named.has(uid)) await mutate('member.add', { auditId: s.auditId, uid: uid, auditRole: 'client_contributor', memberKind: 'client' });
+        for (const uid of s.named) if (!pick.has(uid)) await mutate('member.remove', { auditId: s.auditId, uid: uid });
+      }
+      if (on !== s.was) await mutate('audit.update', { auditId: s.auditId, patch: { client_portal_enabled: on }, reason: reason, expectedVersion: _auditCache.row_version });
+      _cps = null;
+      if (root.closeGenericModal) root.closeGenericModal();
+      toast(on ? 'The client can see this board in their portal.' : 'This board is no longer in the client portal.');
+      openBoard(s.auditId, route.tab);
+    } catch (e) { toast('Could not save: ' + e.message, true); }
+  }
   function _archiveBoard(auditId) {
     const ref = _auditCache && _auditCache.id === auditId ? _auditCache.ref : 'This board';
     const go = async () => {
@@ -3389,7 +3435,7 @@
         <div class="iso-field-grid">
           <label style="grid-column:1/-1">Title<input class="form-input" id="ad-title" value="${esc(row.title)}" ${isManager ? '' : 'disabled'}/></label>
           <label style="grid-column:1/-1">Description<textarea class="form-input" id="ad-desc" ${isManager ? '' : 'disabled'}>${esc(row.description || '')}</textarea></label>
-          <label>Owner<select class="form-input" id="ad-owner" ${isManager ? '' : 'disabled'}><option value="">Unassigned</option>${(_DB().users || []).filter(u => u.role !== 'client').map(u => `<option value="${u.id}"${row.owner_uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
+          <label>Owner<select class="form-input" id="ad-owner" ${isManager ? '' : 'disabled'}><option value="">Unassigned</option><option value="__client"${row.owner_kind === 'client' ? ' selected' : ''}>The client</option>${(_DB().users || []).filter(u => u.role !== 'client').map(u => `<option value="${u.id}"${row.owner_kind !== 'client' && row.owner_uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>
           <label>Priority<select class="form-input" id="ad-priority" ${isManager ? '' : 'disabled'}><option value="">—</option>${Object.keys(ACTION_PRIORITY_LABEL).map(k => `<option value="${k}"${row.priority === k ? ' selected' : ''}>${esc(ACTION_PRIORITY_LABEL[k])}</option>`).join('')}</select></label>
           <label>Risk<select class="form-input" id="ad-risk" ${isManager ? '' : 'disabled'}><option value="">—</option>${Object.keys(ACTION_RISK_LABEL).map(k => `<option value="${k}"${row.risk_rating === k ? ' selected' : ''}>${esc(ACTION_RISK_LABEL[k])}</option>`).join('')}</select></label>
           <label>Start date<input type="date" class="form-input" id="ad-start" value="${esc(row.start_date || '')}" ${isManager ? '' : 'disabled'}/></label>
@@ -3448,7 +3494,9 @@
     const patch = {
       title: document.getElementById('ad-title').value.trim(),
       description: document.getElementById('ad-desc').value.trim() || null,
-      owner_uid: document.getElementById('ad-owner').value || null,
+      // B7: "The client" makes it the client's action (it shows as theirs in the portal).
+      owner_uid: document.getElementById('ad-owner').value === '__client' ? null : (document.getElementById('ad-owner').value || null),
+      owner_kind: document.getElementById('ad-owner').value === '__client' ? 'client' : 'etcher',
       priority: document.getElementById('ad-priority').value || null,
       risk_rating: document.getElementById('ad-risk').value || null,
       start_date: document.getElementById('ad-start').value || null,
@@ -6358,6 +6406,7 @@
     _wizToggleStandard: _wizToggleStandard, _wizAllStandards: _wizAllStandards, _wizSetEdition: _wizSetEdition,
     _wizSetVis: _wizSetVis, _wizAddMember: _wizAddMember, _wizSetRole: _wizSetRole, _wizRemoveMember: _wizRemoveMember,
     openAccessModal: openAccessModal, _saveAccess: _saveAccess,
+    openClientPortal: openClientPortal, _cpsSet: _cpsSet, _cpsSave: _cpsSave, _repPdf: _repPdf,
     saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, fillArchiveCard: fillArchiveCard, _restoreBoard: _restoreBoard, _removeFromBin: _removeFromBin, _profAddItem: _profAddItem, _profSave: _profSave,
     openImport: openImportFromMenu, _approveVersion: _approveVersion, _approveVersionConfirmed: _approveVersionConfirmed,
     _retireVersion: _retireVersion, _retireVersionConfirmed: _retireVersionConfirmed, _loadLibrarySeed: _loadLibrarySeed, _saveUploadCap: _saveUploadCap,

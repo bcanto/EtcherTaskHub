@@ -916,7 +916,7 @@ begin
     when 'iso_findings' then array['title','statement','criteria','evidence_basis','classification','visibility','visible_to_uids']
     -- auditor_review_note, visibility and visible_to_uids added 2026-10-03: action.update writes all
     -- three (ACTION_WRITABLE_FIELDS) and they were missing, the same gap as iso_requirements above.
-    when 'iso_actions' then array['title','description','owner_uid','start_date','due_date','priority',
+    when 'iso_actions' then array['title','description','owner_uid','owner_kind','start_date','due_date','priority',
       'risk_rating','progress','verification_requirements','client_response','auditor_review_note','correction','containment',
       'root_cause_method','five_whys','fishbone','cause_tree','contributing_factors','cause_categories',
       'root_cause_summary','corrective_action','preventive_action','effectiveness_check','effectiveness_review_date',

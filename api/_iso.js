@@ -308,6 +308,9 @@ const CLIENT_FIELDS = {
   // this action span" — the same date a client could already ask about via client_response.
   action: ['id', 'audit_id', 'ref', 'title', 'description', 'status', 'priority', 'start_date', 'due_date',
     'client_response', 'verification_requirements', 'visibility', 'row_version'],
+  // B7: the portal.* ops build their client payloads field by field (portalBoardRow, portalActions …);
+  // these are the only top-level keys they may return.
+  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version'],
 };
 // Fields never sent to a client caller for ANY entity, even one whose CLIENT_FIELDS is generous —
 // a second layer so a future typo in one allowlist can't leak these (plan §6.3).
@@ -1962,6 +1965,176 @@ defineOp('clientUser.list', {
   async run(ctx) { return ctx.listClientUsers(ctx.payload.clientId); },
 });
 
+// ── Release-1 B7: the client portal ISO tab ─────────────────────────────────────────────────────
+// A client sees a board only while its client portal is on and they are a named member of it
+// (resolveMembership). Everything below is built field by field for the client, never a staff row
+// passed through, and the results come from the latest issued report: D26, a client's numbers are
+// computed from records already shared with them, never from live staff work in progress.
+const PORTAL_RESULT_KEYS = ['compliant', 'partially_compliant', 'non_compliant', 'ofi', 'not_applicable'];
+const PORTAL_OPEN_ACTION = ['assigned', 'in_progress', 'awaiting_evidence', 'more_info_required'];
+function portalSees(row, caller) {
+  return row.visibility === 'client_all' || (row.visibility === 'client_selected' && (row.visible_to_uids || []).includes(caller.uid));
+}
+async function portalBoardsOf(ctx) {
+  const audits = await ctx.db.list('iso_audits', { where: [{ field: 'client_id', op: 'eq', value: ctx.caller.clientId }, { field: 'archived_at', op: 'isnull' }], limit: 500 });
+  const out = [];
+  for (const a of audits) {
+    if (!a.client_portal_enabled) continue;
+    const members = await ctx.db.list('iso_audit_members', { where: [{ field: 'audit_id', op: 'eq', value: a.id }] });
+    const m = resolveMembership(ctx.caller, a, members);
+    if (m && ['client_admin', 'client_contributor'].includes(m.audit_role)) out.push({ audit: a, members });
+  }
+  return out;
+}
+async function portalStandards(ctx, auditId) {
+  const out = [];
+  for (const as of await ctx.db.list('iso_audit_standards', { where: [{ field: 'audit_id', op: 'eq', value: auditId }] })) {
+    const v = await ctx.db.get('iso_standard_versions', as.version_id);
+    if (v) out.push(v.edition ? `ISO ${v.standard_code}:${String(v.edition).slice(0, 4)}` : `ISO ${v.standard_code}`);
+  }
+  return out.sort();
+}
+function portalBoardRow(a, standards) {
+  return { id: a.id, ref: a.ref, title: a.title, auditType: a.audit_type, customType: a.custom_type_label || null, stage: a.stage, standards,
+    plannedStart: a.planned_start || null, plannedEnd: a.planned_end || null, completedAt: a.completed_at || null, maintenanceDue: a.maintenance_due || null };
+}
+async function portalVersions(ctx, auditId) {
+  const versions = (await ctx.db.list('iso_report_versions', { where: [{ field: 'audit_id', op: 'eq', value: auditId }] })).sort((x, y) => x.version_no - y.version_no);
+  const acks = versions.length ? await ctx.db.list('iso_report_acknowledgements', { where: [{ field: 'audit_id', op: 'eq', value: auditId }] }) : [];
+  return { versions, acks };
+}
+function portalResults(version) {
+  if (!version) return null;
+  const clauses = ((version.content || {}).snapshot || {}).clauses || [];
+  const counts = {};
+  for (const k of PORTAL_RESULT_KEYS) counts[k] = k === 'ofi' ? clauses.filter(c => c.ofi || c.status === 'ofi').length : clauses.filter(c => c.status === k).length;
+  return { versionNo: version.version_no, issuedAt: version.issued_at, counts };
+}
+async function portalActions(ctx, audit) {
+  const actions = (await ctx.db.list('iso_actions', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }], limit: 2000 }))
+    .filter(a => portalSees(a, ctx.caller));
+  if (!actions.length) return [];
+  const links = await ctx.db.list('iso_action_links', { where: [{ field: 'action_id', op: 'in', value: actions.map(a => a.id) }, { field: 'link_state', op: 'eq', value: 'confirmed' }] });
+  const findings = new Map(), reqs = new Map();
+  const finding = async id => { if (!findings.has(id)) findings.set(id, await ctx.db.get('iso_findings', id)); return findings.get(id); };
+  const req = async id => { if (!reqs.has(id)) reqs.set(id, await ctx.db.get('iso_requirements', id)); return reqs.get(id); };
+  const out = [];
+  for (const a of actions) {
+    let found = null, clause = null;
+    for (const l of links.filter(x => x.action_id === a.id)) {
+      if (l.target_type === 'finding' && !found) {
+        const f = await finding(l.target_id);
+        // Only a finding the client can already see is named: released, or shared outright.
+        if (f && f.audit_id === audit.id && !f.archived_at && (portalSees(f, ctx.caller) || (f.visibility === 'after_approval' && f.released_at))) {
+          found = { ref: f.ref, classification: f.classification };
+          // The finding's own clause (one source requirement per finding, finding.create).
+          const fr = (await ctx.db.list('iso_finding_requirements', { where: [{ field: 'finding_id', op: 'eq', value: f.id }] }))[0];
+          const r = fr && !clause ? await req(fr.requirement_id) : null;
+          if (r && r.audit_id === audit.id) clause = `${r.clause} ${r.clause_name || ''}`.trim();
+        }
+      }
+      if (l.target_type === 'requirement' && !clause) {
+        const r = await req(l.target_id);
+        if (r && r.audit_id === audit.id) clause = `${r.clause} ${r.clause_name || ''}`.trim();
+      }
+    }
+    out.push({ id: a.id, ref: a.ref, title: a.title, status: a.status, dueDate: a.due_date || null, mine: a.owner_kind === 'client',
+      clientResponse: a.client_response || null, finding: found, clause, rowVersion: a.row_version });
+  }
+  return out.sort((x, y) => String(x.ref).localeCompare(String(y.ref)));
+}
+async function portalRequests(ctx, audit) {
+  const rows = (await ctx.db.list('iso_evidence_requests', { where: [{ field: 'audit_id', op: 'eq', value: audit.id }, { field: 'archived_at', op: 'isnull' }] }))
+    .filter(r => !r.requested_from_uid || r.requested_from_uid === ctx.caller.uid);
+  const out = [];
+  for (const r of rows) {
+    const q = r.target_type === 'requirement' ? await ctx.db.get('iso_requirements', r.target_id) : null;
+    out.push({ id: r.id, description: r.description, dueDate: r.due_date || null, status: r.status, clause: q && q.audit_id === audit.id ? `${q.clause} ${q.clause_name || ''}`.trim() : null, rowVersion: r.row_version });
+  }
+  return out;
+}
+// The client's "Needs you" items for one board: an issued report nobody has acknowledged, their own
+// open actions, and open evidence requests addressed to them (or to nobody in particular).
+async function portalNeeds(ctx, audit) {
+  const needs = [];
+  const { versions, acks } = await portalVersions(ctx, audit.id);
+  const last = versions[versions.length - 1];
+  if (last && !acks.some(k => k.version_id === last.id)) needs.push({ kind: 'report', auditId: audit.id, ref: audit.ref, title: `Review the ${audit.ref} audit report`, date: last.issued_at });
+  for (const a of await portalActions(ctx, audit)) if (a.mine && PORTAL_OPEN_ACTION.includes(a.status)) needs.push({ kind: 'action', auditId: audit.id, ref: a.ref, title: a.title, date: a.dueDate });
+  for (const r of await portalRequests(ctx, audit)) if (r.status === 'open') needs.push({ kind: 'request', auditId: audit.id, ref: audit.ref, title: r.description, date: r.dueDate });
+  return needs;
+}
+
+defineOp('portal.boards', {
+  scope: 'none', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client' && !!ctx.caller.clientId; },
+  async run(ctx) {
+    const mine = await portalBoardsOf(ctx);
+    const ids = new Set(mine.map(x => x.audit.id));
+    const boards = [], needs = [];
+    for (const { audit } of mine) {
+      const row = portalBoardRow(audit, await portalStandards(ctx, audit.id));
+      row.previousId = audit.previous_audit_id && ids.has(audit.previous_audit_id) ? audit.previous_audit_id : null;
+      boards.push(row);
+      needs.push(...await portalNeeds(ctx, audit));
+    }
+    boards.sort((x, y) => String(y.plannedStart || y.ref).localeCompare(String(x.plannedStart || x.ref)));
+    return { boards, needs };
+  },
+});
+defineOp('portal.board', {
+  scope: 'audit', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client'; },
+  async run(ctx) {
+    const a = ctx.audit;
+    const board = portalBoardRow(a, await portalStandards(ctx, a.id));
+    const leadM = ctx.members.find(m => m.member_kind === 'staff' && m.audit_role === 'lead_auditor') || ctx.members.find(m => m.member_kind === 'staff' && m.audit_role === 'audit_manager');
+    const lead = leadM ? ((await ctx.getStaffName(leadM.user_uid)) || null) : null;
+    // The board before and after this one, named only when this client may open it too.
+    const shared = new Map((await portalBoardsOf(ctx)).map(x => [x.audit.id, x.audit]));
+    const prevA = a.previous_audit_id ? shared.get(a.previous_audit_id) : null;
+    const nextA = [...shared.values()].find(x => x.previous_audit_id === a.id) || null;
+    const { versions, acks } = await portalVersions(ctx, a.id);
+    const last = versions[versions.length - 1] || null;
+    let previousResults = null;
+    if (prevA) { const pv = (await portalVersions(ctx, prevA.id)).versions; previousResults = portalResults(pv[pv.length - 1]); if (previousResults) previousResults.ref = prevA.ref; }
+    return {
+      board, lead,
+      previous: prevA ? { id: prevA.id, ref: prevA.ref, completedAt: prevA.completed_at || null } : null,
+      next: nextA ? { id: nextA.id, ref: nextA.ref } : null,
+      results: portalResults(last), previousResults,
+      reports: versions.map(v => { const k = acks.filter(x => x.version_id === v.id).sort((x, y) => String(y.acknowledged_on).localeCompare(String(x.acknowledged_on)))[0];
+        return { id: v.id, versionNo: v.version_no, title: v.title, issuedAt: v.issued_at, acknowledgement: k ? { name: k.name, on: k.acknowledged_on } : null }; }),
+      actions: await portalActions(ctx, a),
+      requests: await portalRequests(ctx, a),
+    };
+  },
+});
+// portal.report — one issued version, for the client's own PDF download. The PDF is the document
+// Etcher issues to the client, so its content is shared already; the per-document link details
+// (who linked it, file hashes) and approval stamps are internal and are dropped here.
+defineOp('portal.report', {
+  scope: 'audit', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client'; },
+  async validate(payload) { if (!isValidId(payload.versionId)) throw badRequest('Pick a report.'); },
+  async run(ctx) {
+    const v = await ctx.db.get('iso_report_versions', ctx.payload.versionId);
+    if (!v || v.audit_id !== ctx.audit.id) throw notFound();
+    const c = v.content || {}, snap = c.snapshot || {};
+    const pick = (o, keys) => { const r = {}; for (const k of keys) if (o && k in o) r[k] = o[k]; return r; };
+    const clauses = (snap.clauses || []).map(x => ({ ...pick(x, ['standard', 'clause', 'clauseName', 'status', 'ofi', 'gapReason', 'basis', 'plannedAction']),
+      documents: (x.documents || []).map(d => pick(d, ['evidenceRef', 'title', 'kind', 'revision', 'date'])) }));
+    // Findings and actions the client may see today only (client-visible vs staff-only is a hard line).
+    const live = async table => ctx.db.list(table, { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }], limit: 2000 });
+    const okF = new Set((await live('iso_findings')).filter(f => portalSees(f, ctx.caller) || (f.visibility === 'after_approval' && f.released_at)).map(f => f.ref));
+    const okA = new Set((await live('iso_actions')).filter(a => portalSees(a, ctx.caller)).map(a => a.ref));
+    return { version: { id: v.id, version_no: v.version_no, title: v.title, issued_at: v.issued_at, content: {
+      ...pick(c, ['sections', 'setup', 'audit', 'standards', 'team', 'disclaimer', 'signedBy', 'ackWording', 'libraryRelease', 'calcVersion']),
+      findings: (c.findings || []).filter(f => okF.has(f.ref)), actions: (c.actions || []).filter(a => okA.has(a.ref)),
+      snapshot: { clauses } } } };
+  },
+});
+
 // ── activity.list — visibility-filtered on read (plan §6.3) ────────────────────────────────────
 defineOp('activity.list', {
   scope: 'audit', clientProjection: 'activity',
@@ -2255,7 +2428,7 @@ function canVerifyAction(ctx) {
   return ctx.caller.role === 'admin' || ['lead_auditor', 'audit_manager'].includes(ctx.membership.audit_role) || (ctx.membership.audit_role === 'auditor' && !!ctx.membership.can_verify);
 }
 const ACTION_WRITABLE_FIELDS = [
-  'title', 'description', 'owner_uid', 'start_date', 'due_date', 'priority', 'risk_rating',
+  'title', 'description', 'owner_uid', 'owner_kind', 'start_date', 'due_date', 'priority', 'risk_rating',
   'progress', 'verification_requirements', 'client_response', 'auditor_review_note', 'correction', 'containment',
   'root_cause_method', 'five_whys', 'fishbone', 'cause_tree', 'contributing_factors', 'cause_categories',
   'root_cause_summary', 'corrective_action', 'preventive_action', 'effectiveness_check', 'effectiveness_review_date',
@@ -2509,6 +2682,7 @@ defineOp('action.update', {
     
     if ('progress' in patch && (typeof patch.progress !== 'number' || patch.progress < 0 || patch.progress > 100)) throw badRequest('Progress must be between 0 and 100.');
     if ('client_response' in patch && typeof patch.client_response !== 'string') throw badRequest('client_response must be text.');
+    if ('owner_kind' in patch && !['etcher', 'client'].includes(patch.owner_kind)) throw badRequest('Invalid owner.');
   },
   async run(ctx) {
     const existing = await ctx.db.get('iso_actions', ctx.payload.id);
