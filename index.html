@@ -888,6 +888,36 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .ws-grp-pct{width:38px;flex-shrink:0;text-align:right;font-size:10px;color:#8da2b2}
 /* Retained Services (.agents/PLAN-retained-services.md) */
 .ws-grp-meter{flex-shrink:0;margin-left:12px;font-size:11px;color:#6b8399;white-space:nowrap}
+.nav-add-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;flex-shrink:0;padding:0;transition:background .15s,color .15s}
+.nav-add-btn:hover{background:rgba(151,188,189,0.2);color:#97bcbd}
+.nav-add-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.nav-add-btn:active{transform:scale(.94)}
+.rs-su2{display:grid;gap:14px}
+.rs-su2-intro{margin:0;font-size:13px;color:#6b8399;line-height:1.55}
+.rs-su2-terms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:14px;border-radius:10px;background:#f6f8fb}
+.rs-cfg{display:grid;gap:5px;min-width:0;font-size:13px;color:#1a2940}
+.rs-cfg>span:first-child{font-size:10.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.05em}
+.rs-su2-h{font-family:Jost,sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b8399;margin-bottom:-4px}
+.rs-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rs-card{border:1.5px solid #e2eaf2;border-radius:10px;background:#fff;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.rs-card.on{border-color:var(--rs-c);box-shadow:0 1px 3px rgba(13,28,51,.05),0 6px 16px rgba(13,28,51,.06)}
+.rs-card-top{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer}
+.rs-card.on .rs-card-top{background:color-mix(in srgb,var(--rs-c) 7%,#fff)}
+.rs-check{width:16px;height:16px;margin-top:2px;accent-color:var(--rs-c);flex-shrink:0;cursor:pointer}
+.rs-card-name{display:grid;gap:1px}.rs-card-name b{font-family:Jost,sans-serif;font-size:13.5px;color:#0d1c33}.rs-card-name small{font-size:11.5px;color:#8da2b2}
+.rs-card-off{padding:0 14px 12px 40px;font-size:12px;color:#8da2b2}
+.rs-card-cfg{display:grid;gap:10px;padding:12px 14px 14px;border-top:1px solid #eef2f6}
+.rs-cfg-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.rs-num{display:flex;align-items:center;gap:8px;min-width:0}.rs-num input{width:60px;height:34px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 8px;font-weight:700;color:#0d1c33;flex-shrink:0}
+.rs-num input:focus{outline:0;border-color:#31585a}.rs-num em{font-style:normal;font-size:12px;color:#6b8399;line-height:1.3}
+.rs-mts{display:flex;flex-wrap:wrap;gap:6px}
+.rs-mt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;border:1px solid #e2eaf2;font-size:12px;color:#6b8399;cursor:pointer}
+.rs-mt.on{border-color:#97bcbd;background:#f2f7f7;color:#1a2940}.rs-mt input{accent-color:#31585a;margin:0}
+.rs-mt:focus-within{box-shadow:0 0 0 2px #31585a}
+.rs-su2-foot{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid #eef2f6}
+.rs-su2-sum{flex:1;margin:0;font-size:12.5px;color:#6b8399}.rs-su2-sum b{color:#0d1c33}
+@media (max-width:760px){.rs-su2-terms{grid-template-columns:repeat(2,minmax(0,1fr))}.rs-cards{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:440px){.rs-su2-terms,.rs-cfg-row{grid-template-columns:minmax(0,1fr)}.rs-su2-foot{flex-wrap:wrap}.rs-su2-sum{flex-basis:100%}}
 .ws-grp-meter.full{color:#b45309;font-weight:700}
 .sb-ret-add{width:18px;height:18px;border:1px solid #3e5c75;border-radius:5px;background:none;color:#97bcbd;font-size:12px;line-height:1;padding:0;cursor:pointer;flex-shrink:0}
 .sb-ret-add:hover{border-color:#97bcbd;color:#fff;background:rgba(151,188,189,.12)}
@@ -1609,6 +1639,15 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       </div>
       <div class="nav-sec-body" id="nav-section-workboards">
         <div id="sidebar-wb-list"></div>
+      </div>
+
+      <!-- Retained Services (.agents/PLAN-retained-services.md): a section of its own, styled like WorkBoards -->
+      <div id="nav-retained-header" style="display:none;align-items:center;padding:12px 19px 5px;justify-content:space-between">
+        <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('retained')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('retained')}">Retained Services<span class="nav-sec-chevron" id="nav-chev-retained">&#9662;</span></span>
+        <button id="retained-add-btn" class="nav-add-btn" onclick="openRetainerSetup()" title="New retained board" aria-label="New retained board">+</button>
+      </div>
+      <div class="nav-sec-body" id="nav-section-retained">
+        <div id="sidebar-retained-list"></div>
       </div>
 
       <!-- ISO (plan Phase 5.1) -->
@@ -4485,6 +4524,9 @@ function renderAdvancedFilterPanel(view){
 // ═══════════════════════════════════════════════════════════
 // Offline/localStorage auth is a local-development affordance, not a production fallback.
 // Allowed only on a local origin, or where a build has explicitly opted in.
+// Local client preview (doLogin): this machine only, offline only. Never true on a deployed origin.
+const _LOCAL_CLIENT_PASSWORD='ClientPreview1';
+function _localClientPreviewAllowed(){const h=location.hostname;return!window._supabase&&(h==='localhost'||h==='127.0.0.1'||h==='::1');}
 function _localAuthAllowed(){
   const h=location.hostname;
   if(h==='localhost'||h==='127.0.0.1'||h==='::1'||h==='')return true;
@@ -4574,8 +4616,19 @@ async function doLogin(){
       initials:user.initials||getInitials(user.name)};
     _saveSession();launchApp();return;
   }
-  // The legacy client portal login that compared c.loginPassword in plaintext is gone.
-  // Client portal auth is Supabase-only; this fallback branch is staff/local-dev only.
+  // The legacy client portal login that compared c.loginPassword in plaintext is gone, and on any
+  // deployed origin client auth is Supabase-only. On this machine with no Supabase (local preview),
+  // a client signs in with their login or contact email and the local preview password, so staff
+  // can check a client's portal. Hostname-only gate: the etcher_local_auth flag does not open it.
+  if(_localClientPreviewAllowed()&&pass===_LOCAL_CLIENT_PASSWORD){
+    const c=(DB.clients||[]).find(x=>!x.archived&&[x.loginEmail,x.contactEmail].some(e=>(e||'').trim().toLowerCase()===email));
+    if(c){
+      if(!c.portalEnabled){showLoginError(`The client portal is off for ${c.name}. Turn it on in Client Manager first.`);return;}
+      sessionStorage.removeItem('_lk');
+      currentUser={id:c.id,name:c.name,role:'client',type:'client',clientId:c.id,initials:c.shortCode||'CL',color:c.color||'#64748b'};
+      _saveSession();launchClientView();return;
+    }
+  }
   // Record failed attempt
   const attempts=(_lk.count||0)+1;
   if(attempts>=5){sessionStorage.setItem('_lk',JSON.stringify({count:attempts,until:Date.now()+900000}));}
@@ -4788,6 +4841,11 @@ function applyRolePermissions(){
   // ISO (plan Phase 5.1): the section header is admin/staff/restricted only, and only when the
   // server has the feature enabled (offline always; live only with ISO_ENABLED=1) — window._isoEnabled
   // is set by supabase-client.js/serve.mjs's own offline branch (Phase 5.1b) before this ever runs.
+  // Retained Services: staff and admins see the section; only admins get + (plan R8).
+  const navRetHeaderEl=document.getElementById('nav-retained-header');
+  if(navRetHeaderEl)navRetHeaderEl.style.display=(isAdmin||isMedium)?'flex':'none';
+  const retAddBtnEl=document.getElementById('retained-add-btn');
+  if(retAddBtnEl)retAddBtnEl.style.display=isAdmin?'':'none';
   const navIsoHeaderEl=document.getElementById('nav-iso-header');
   if(navIsoHeaderEl)navIsoHeaderEl.style.display=(window._isoEnabled&&(isAdmin||isMedium||isRestricted))?'flex':'none';
   // Restricted staff can be ISO board members (as reviewer) but cannot create boards (A13).
@@ -4800,7 +4858,7 @@ function applyRolePermissions(){
 // ═══════════════════════════════════════════════════════════
 // SIDEBAR NAV: COLLAPSIBLE SECTIONS + PINNED ITEMS
 // ═══════════════════════════════════════════════════════════
-const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',iso:'nav-iso-header',clients:'nav-clients-section',admin:'nav-admin-section'};
+const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',retained:'nav-retained-header',iso:'nav-iso-header',clients:'nav-clients-section',admin:'nav-admin-section'};
 const _NAV_PIN_SVG='<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/></svg>';
 function _navCollapseState(){
   try{const s=JSON.parse(localStorage.getItem('navCollapse'));return(s&&typeof s==='object')?s:{};}catch(e){return{};}
@@ -6394,20 +6452,11 @@ function renderSidebarWorkboards(){
     </div>`;
   });
 
-  // ── Retained Services: a permanent section, built from the boards' retainer object rather than a
-  // wbFolders record, so it cannot be renamed, deleted or lost in sync. Admins add a board with +.
-  const rsAdmin=currentUser?.role==='admin';
-  if(isStaffOrAdmin&&(retainedWbs.length||rsAdmin)){
-    const rc=_retainedSectionCollapsed();
-    html+=`<div class="sb-retained">
-      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;gap:5px;cursor:pointer;user-select:none;border-radius:6px" onclick="toggleRetainedSection()">
-        <span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Retained Services</span>
-        ${rsAdmin?`<button type="button" class="sb-ret-add" onclick="event.stopPropagation();openRetainerSetup()" title="New retained board" aria-label="New retained board">+</button>`:''}
-        <span style="font-size:9px;color:#5a8a8c;display:inline-block;flex-shrink:0">${rc?'▶':'▾'}</span>
-      </div>
-      <div style="${rc?'display:none':''}">${retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join(''):`<div style="padding:5px 10px 6px 14px;font-size:11px;color:#3a5570;font-style:italic">No retained boards yet</div>`}</div>
-    </div>`;
-  }
+  // Retained Services: its own section (#nav-retained-header), built from the boards' retainer object,
+  // not a wbFolders record, so it cannot be renamed, deleted or lost in sync. Same rows as workboards.
+  const retList=document.getElementById('sidebar-retained-list');
+  if(retList)retList.innerHTML=retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join('')
+    :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?', click +':''}</div>`;
 
   container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
 }
@@ -6667,27 +6716,31 @@ function _rsSetupRender(){
   const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
   const staffOpts=v=>_rsStaff().map(u=>`<option value="${u.id}"${u.id===v?' selected':''}>${escHtml(u.name)}</option>`).join('');
-  const row=s=>{const v=m.svc[s.key];return`<div class="rs-su-s${v.on?' on':''}" style="--rs-c:${s.color}">
-      <label class="rs-su-pick"><input type="checkbox" data-rs-svc="${s.key}"${v.on?' checked':''} onchange="_rsSet('on','${s.key}',this.checked)"><b>${escHtml(s.name)}</b><small>${s.kind==='core'?'Core service':'Add-on'}</small></label>
-      ${v.on?`<div class="rs-su-cfg">
-        <label class="rs-su-f"><span>Monthly allowance</span><span class="rs-su-alw"><input type="number" min="1" max="999" value="${v.allowance}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"> ${escHtml(s.unit)}</span></label>
-        <label class="rs-su-f"><span>Owner</span><select class="form-input" onchange="_rsSet('owner','${s.key}',this.value)">${staffOpts(v.ownerId)}</select></label>
-        <div class="rs-su-f"><span>Monthly tasks</span>${s.monthly.map((t,i)=>`<label class="rs-su-mt"><input type="checkbox"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"> ${escHtml(t)}</label>`).join('')}</div>
-      </div>`:''}</div>`;};
-  const body=`<div class="rs-su">
-    <p class="rs-su-intro">Creates the client's board under Retained Services, with one group per service and the monthly tasks you keep ticked. The client then sees a Retained Services tab in their portal.</p>
-    <div class="rs-su-top">
-      <label class="rs-su-f"><span>Client</span><select class="form-input" id="rs-su-client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
-      <label class="rs-su-f"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
-      <label class="rs-su-f"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
-      <label class="rs-su-f"><span>Priority</span><select class="form-input" onchange="_rsSet('priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===m.priority?' selected':''}>${p}</option>`).join('')}</select></label>
+  const card=s=>{const v=m.svc[s.key];return`<div class="rs-card${v.on?' on':''}" style="--rs-c:${s.color}">
+      <label class="rs-card-top"><input type="checkbox" class="rs-check" data-rs-svc="${s.key}"${v.on?' checked':''} onchange="_rsSet('on','${s.key}',this.checked)">
+        <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${s.kind==='core'?'Core service':'Add-on'}</small></span></label>
+      ${v.on?`<div class="rs-card-cfg">
+        <div class="rs-cfg-row">
+          <label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>
+          <label class="rs-cfg"><span>Owner</span><select class="form-input" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
+        </div>
+        <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
+      </div>`:`<div class="rs-card-off">${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</div>`}
+    </div>`;};
+  const sum=picks.length?`<b>${escHtml(_retainerBundle(picks.map(s=>s.key)))}</b>, ${nTasks} monthly task${nTasks===1?'':'s'}.${c&&!c.portalEnabled?' Their portal is off, so they see the tab once it is on.':''}`:'Tick at least one service.';
+  const body=`<div class="rs-su2">
+    <p class="rs-su2-intro">One board for this client under Retained Services, with a group per service and the monthly tasks you keep. The client then sees a Retained Services tab in their portal.</p>
+    <div class="rs-su2-terms">
+      <label class="rs-cfg"><span>Client</span><select class="form-input" id="rs-su-client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
+      <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
+      <label class="rs-cfg"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
+      <label class="rs-cfg"><span>Priority</span><select class="form-input" onchange="_rsSet('priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===m.priority?' selected':''}>${p}</option>`).join('')}</select></label>
     </div>
-    <div class="rs-su-h">Services <span>${picks.length?escHtml(_retainerBundle(picks.map(s=>s.key))):'Tick at least one'}</span></div>
-    <div class="rs-su-list">${RETAINER_CATALOGUE.map(row).join('')}</div>
-    <p class="rs-su-sum">${picks.length?`Creates <b>${escHtml(c?c.name:'')}</b> under Retained Services with ${picks.length} service group${picks.length>1?'s':''} and ${nTasks} monthly task${nTasks===1?'':'s'}.${c&&!c.portalEnabled?' Their portal is off, so they see the tab once it is turned on.':''}`:'Tick at least one service to create the board.'}</p>
-    <div class="rs-su-foot"><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="rs-su-create" onclick="retainerCreate()"${picks.length?'':' disabled'}>Create board</button></div>
+    <div class="rs-su2-h">Services</div>
+    <div class="rs-cards">${RETAINER_CATALOGUE.map(card).join('')}</div>
+    <div class="rs-su2-foot"><p class="rs-su2-sum">${sum}</p><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="rs-su-create" onclick="retainerCreate()"${picks.length?'':' disabled'}>Create board</button></div>
   </div>`;
-  openGenericModal('New retained board',body,'760px');
+  openGenericModal('New retained board',body,'820px');
 }
 function retainerCreate(){
   if(currentUser?.role!=='admin')return;

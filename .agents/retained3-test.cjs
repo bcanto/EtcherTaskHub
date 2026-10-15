@@ -65,9 +65,9 @@ H.run('retained3-test', 3179, async (t) => {
   await ev(b => retainerEnd(b), id); await t.sleep(300);
   t.ok(await ev(() => !document.getElementById('confirm-modal').classList.contains('hidden')), 'ending a retainer asks first');
   await ev(() => document.getElementById('confirm-ok-btn').click()); await t.sleep(600);
-  const ended = await ev(b => ({ archived: !!DB.workboards.find(x => x.id === b).archived, inSidebar: !!document.querySelector(`.sb-retained [data-wb-row="${b}"]`) }), id);
+  const ended = await ev(b => ({ archived: !!DB.workboards.find(x => x.id === b).archived, inSidebar: !!document.querySelector(`#sidebar-retained-list [data-wb-row="${b}"]`) }), id);
   t.ok(ended.archived && !ended.inSidebar, 'an ended retainer\'s board is archived and leaves the Retained Services section');
   t.ok(await ev(() => !_cpClientBoards('c1').some(b => _isRetainedBoard(b))), 'the client\'s portal no longer has a retained board, so no Retained Services tab');
   await ev(b => { DB.workboards.find(x => x.id === b).archived = false; saveDB(DB); renderSidebarWorkboards(); }, id);
-  t.ok(await ev(b => !!document.querySelector(`.sb-retained [data-wb-row="${b}"]`), id), 'restoring the board brings it back to Retained Services');
+  t.ok(await ev(b => !!document.querySelector(`#sidebar-retained-list [data-wb-row="${b}"]`), id), 'restoring the board brings it back to Retained Services');
 });

@@ -8,9 +8,10 @@ H.run('retained-test', 3177, async (t) => {
   const ev = (fn, ...a) => ui.eval(fn, ...a);
 
   // Section: always there for an admin, with +, even before any retained board exists.
-  const sec0 = await ev(() => { const s = document.querySelector('.sb-retained'); return s ? { text: s.textContent, add: !!s.querySelector('.sb-ret-add') } : null; });
-  t.ok(sec0 && /Retained Services/.test(sec0.text) && /No retained boards yet/.test(sec0.text), 'the sidebar has a permanent Retained Services section, empty to start');
+  const sec0 = await ev(() => { const h = document.getElementById('nav-retained-header'), l = document.getElementById('sidebar-retained-list'), a = document.getElementById('retained-add-btn'); return h && l ? { shown: getComputedStyle(h).display !== 'none', text: h.textContent + ' ' + l.textContent, add: !!a && getComputedStyle(a).display !== 'none', sameAsWb: !!a && a.classList.contains('nav-add-btn') && h.querySelector('.section-header.nav-sec-toggle') !== null } : null; });
+  t.ok(sec0 && sec0.shown && /Retained Services/.test(sec0.text) && /No retained boards yet/.test(sec0.text), 'the sidebar has a permanent Retained Services section, empty to start');
   t.ok(sec0 && sec0.add, 'an admin sees + on the section');
+  t.ok(sec0 && sec0.sameAsWb, 'the section is built like WorkBoards and ISO (same header and + button)');
 
   // Set-up.
   await ev(() => openRetainerSetup()); await t.sleep(300);
@@ -44,7 +45,7 @@ H.run('retained-test', 3177, async (t) => {
   t.ok(made && made.groups === 3 && made.groupsOk, 'one group per service, each tied to its service');
   t.eq(made && made.tasks, 4, 'the monthly tasks kept ticked are created (2 + 1 + 1)');
   t.ok(made && made.recur && made.owners, 'monthly tasks repeat monthly from the start month and have the service owner');
-  const side = await ev(id => ({ inSection: !!document.querySelector(`.sb-retained [data-wb-row="${id}"]`), elsewhere: [...document.querySelectorAll(`[data-wb-row="${id}"]`)].filter(r => !r.closest('.sb-retained')).length }), made.id);
+  const side = await ev(id => ({ inSection: !!document.querySelector(`#sidebar-retained-list [data-wb-row="${id}"]`), elsewhere: [...document.querySelectorAll(`[data-wb-row="${id}"]`)].filter(r => !r.closest('#sidebar-retained-list')).length }), made.id);
   t.ok(side.inSection && side.elsewhere === 0, 'the board sits in Retained Services, not under Team Boards or a folder');
   await ev(() => openRetainerSetup()); await t.sleep(300);
   t.ok(!(await ev(() => [...document.querySelectorAll('#rs-su-client option')].some(o => o.value === 'c2'))), 'a client with a retained board is not offered again');
@@ -52,11 +53,11 @@ H.run('retained-test', 3177, async (t) => {
 
   // Admin only.
   const staffView = await ev(() => {
-    const role = currentUser.role; currentUser.role = 'staff'; renderSidebarWorkboards();
-    const add = !!document.querySelector('.sb-ret-add');
+    const role = currentUser.role; currentUser.role = 'staff'; applyRolePermissions(); renderSidebarWorkboards();
+    const ab = document.getElementById('retained-add-btn'), add = !!ab && getComputedStyle(ab).display !== 'none';
     document.getElementById('generic-modal').classList.add('hidden'); openRetainerSetup();
     const opened = !document.getElementById('generic-modal').classList.contains('hidden');
-    currentUser.role = role; renderSidebarWorkboards(); return { add, opened };
+    currentUser.role = role; applyRolePermissions(); renderSidebarWorkboards(); return { add, opened };
   });
   t.ok(!staffView.add && !staffView.opened, 'staff who are not admins get no + and cannot open the set-up');
 
