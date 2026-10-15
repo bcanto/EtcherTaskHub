@@ -5029,7 +5029,7 @@ function renderView(v){
       case 'time':      vc.innerHTML=renderTime();setTimeout(_teNoteInitFades,0);break;
       case 'reports':   vc.innerHTML=renderReports();setTimeout(_teNoteInitFades,0);break;
       case 'audit':     vc.innerHTML=renderAudit();break;
-      case 'archive':   vc.innerHTML=renderArchiveBin();break;
+      case 'archive':   vc.innerHTML=renderArchiveBin();if(window._isoEnabled&&window.ISO&&ISO.fillArchiveCard)ISO.fillArchiveCard();break;
       case 'notes':     renderNotes();break;
       case 'quotes':    vc.innerHTML=renderQuotes();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
@@ -16122,6 +16122,8 @@ function renderArchiveBin(){
         ?`<div style="${EMPTY}">No archived tasks</div>`
         :taskRows}
     </div>
+
+    ${window._isoEnabled&&window.ISO?'<div id="iso-archive-card"></div>':''}
 
   </div>`;
 }

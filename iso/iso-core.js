@@ -379,6 +379,7 @@
           <span class="iso-board-meta">${clientName ? esc(clientName) + ' · ' : ''}${esc(audit.ref)}${audit.visibility === 'private' ? ' · Private' : ''}${audit.previous ? ' · Maintenance audit of ' + esc(audit.previous.ref) : ''}</span>
         </div>
         ${boardStandardsHtml(audit, activeTab)}
+        ${canArchiveLocally() ? `<button type="button" class="btn btn-ghost btn-sm iso-archive-btn" title="Move this board to Archive & Bin" onclick="ISO._archiveBoard('${esc(audit.id)}')">Archive</button>` : ''}
         <button type="button" class="iso-icon-btn${activeTab === 'settings' ? ' is-on' : ''}" aria-label="Board settings" title="Settings — details, access, maintenance" onclick="ISO.setTab('settings')"><span aria-hidden="true">⚙</span></button>
       </div>
       <div class="iso-progress-strip" id="iso-pstrip"></div>
@@ -477,7 +478,6 @@
     </div>` : ''}
     ${isManager ? `<div class="card" style="padding:20px;margin-top:16px;max-width:720px;display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="ISO._saveAsTemplate('${esc(audit.id)}')">Save as template</button>
-      <button class="btn btn-ghost btn-sm" onclick="ISO._archiveBoard('${esc(audit.id)}')">Archive</button>
     </div>` : ''}
     <div class="card" id="iso-client-profile" style="padding:20px;margin-top:16px;max-width:900px">${skeletonRows(3)}</div>`;
   }
@@ -571,9 +571,37 @@
       catch (e) { root.showToast ? root.showToast('Could not save template: ' + e.message, true) : alert(e.message); }
     });
   }
-  async function _archiveBoard(auditId) {
-    try { await mutate('audit.archive', { auditId: auditId }); root.showToast ? root.showToast('Board archived.') : null; openLanding(); }
-    catch (e) { root.showToast ? root.showToast('Could not archive: ' + e.message, true) : alert(e.message); }
+  // Archive sits in the board header (managers only) and asks first, with the app's own confirm and
+  // never a native dialog (A49). The board then waits in Archive & Bin, where an admin can restore it.
+  function canArchiveLocally() { const r = _myAuditRole(); return r === 'admin' || r === 'lead_auditor' || r === 'audit_manager'; }
+  function _archiveBoard(auditId) {
+    const ref = _auditCache && _auditCache.id === auditId ? _auditCache.ref : 'This board';
+    const go = async () => {
+      if (root.closeConfirm) root.closeConfirm();
+      try { await mutate('audit.archive', { auditId: auditId }); if (root.showToast) root.showToast('Board archived. An admin can restore it from Archive & Bin.'); openLanding(); }
+      catch (e) { if (root.showToast) root.showToast('Could not archive: ' + e.message, true); }
+    };
+    if (root.openConfirm) root.openConfirm('Archive this ISO board?', ref + ' moves to Archive & Bin and leaves the ISO list. An admin can restore it from there.', 'Archive', go, false);
+  }
+  // Archive & Bin's ISO card (index.html renders the placeholder for admins, then calls this).
+  // Restore only: ISO records are never hard-deleted, so the card has no Delete.
+  async function fillArchiveCard() {
+    const el = document.getElementById('iso-archive-card'); if (!el) return;
+    let rows;
+    try { rows = await api('audit.listArchived', {}); }
+    catch (e) { el.innerHTML = `<div class="card iso-bin-empty">Could not load archived ISO boards: ${esc(e.message)}</div>`; return; }
+    if (!document.body.contains(el)) return;
+    const clients = _DB().clients || [];
+    const when = s => s ? new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
+      <div class="iso-bin-h"><div class="iso-bin-t">ISO boards <span class="iso-bin-n">${rows.length}</span></div></div>
+      ${rows.length ? rows.map(a => { const c = clients.find(x => x.id === a.client_id); return `<div class="iso-bin-row"><div class="iso-bin-main"><b>${esc(a.title || a.ref)}</b><span>${c ? `<i>${esc(c.name)}</i>` : ''}<i>${esc(a.ref)}</i></span></div><span class="iso-bin-when">${when(a.archived_at)}</span><button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" data-iso-restore="${esc(a.id)}" onclick="ISO._restoreBoard(this.dataset.isoRestore)">↩ Restore</button></div>`; }).join('') : '<div class="iso-bin-empty">No archived ISO boards</div>'}
+      <div class="iso-bin-note">ISO audit records are never deleted, so the audit trail stays complete. Restore puts a board back in the ISO list.</div>
+    </div>`;
+  }
+  async function _restoreBoard(auditId) {
+    try { await mutate('audit.restore', { auditId: auditId }); if (root.showToast) root.showToast('ISO board restored.'); await fillArchiveCard(); if (root._isoEnabled) renderSidebar(); }
+    catch (e) { if (root.showToast) root.showToast('Could not restore: ' + e.message, true); }
   }
 
   // Closing a board asks for its maintenance audit date (D31): shown, and filled with 12 months on.
@@ -6322,7 +6350,7 @@
     _wizToggleStandard: _wizToggleStandard, _wizAllStandards: _wizAllStandards, _wizSetEdition: _wizSetEdition,
     _wizSetVis: _wizSetVis, _wizAddMember: _wizAddMember, _wizSetRole: _wizSetRole, _wizRemoveMember: _wizRemoveMember,
     openAccessModal: openAccessModal, _saveAccess: _saveAccess,
-    saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, _profAddItem: _profAddItem, _profSave: _profSave,
+    saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, fillArchiveCard: fillArchiveCard, _restoreBoard: _restoreBoard, _profAddItem: _profAddItem, _profSave: _profSave,
     openImport: openImportFromMenu, _approveVersion: _approveVersion, _approveVersionConfirmed: _approveVersionConfirmed,
     _retireVersion: _retireVersion, _retireVersionConfirmed: _retireVersionConfirmed, _loadLibrarySeed: _loadLibrarySeed, _saveUploadCap: _saveUploadCap,
     fillReportsTab: fillReportsTab, _rptSetRange: _isoRptSetRange, _rptExportCsv: _isoRptExportCsv, _rptExportXlsx: _isoRptExportXlsx,

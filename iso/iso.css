@@ -1168,3 +1168,19 @@ button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset:
 /* Client logo beside the client's name on the ISO audits page. */
 .iso-land-gh:has(.iso-client-logo) { align-items: center; }
 .iso-client-logo { flex: none; height: 22px; width: auto; max-width: 72px; object-fit: contain; border-radius: 4px; }
+
+/* Archive & Bin: archived ISO boards (admin view), with Restore. Matches Task Hub's own cards there. */
+.iso-archive-btn { flex: none; }
+.iso-bin-h { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; background: #f4f7fa; border-bottom: 1px solid var(--border); }
+.iso-bin-t { display: flex; align-items: center; gap: 8px; font: 700 13px 'Jost', sans-serif; color: #0d1c33; }
+.iso-bin-n { font: 400 11px 'Lato', sans-serif; color: #8da2b2; background: #fff; border: 1px solid #e8edf4; border-radius: 10px; padding: 1px 7px; }
+.iso-bin-row { display: flex; align-items: center; gap: 12px; padding: 11px 20px; border-bottom: 1px solid var(--border); }
+.iso-bin-row:hover { background: #f8fbff; }
+.iso-bin-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.iso-bin-main b { font-size: 13px; font-weight: 500; color: #1a2940; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iso-bin-main span { display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 11px; color: #6b8399; }
+.iso-bin-main i { font-style: normal; }
+.iso-bin-when { font-size: 12px; color: #8da2b2; width: 90px; flex: none; }
+.iso-bin-empty { padding: 28px 20px; text-align: center; font-size: 13px; color: #b0bec5; font-style: italic; }
+.iso-bin-note { padding: 9px 20px; font-size: 11.5px; color: #8da2b2; background: #fafbfd; }
+@media (max-width: 560px) { .iso-bin-when { display: none; } .iso-bin-row { padding: 11px 14px; } }
