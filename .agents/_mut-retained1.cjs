@@ -1,0 +1,19 @@
+// Can-fail mutations for Retained Services batch 1 (node .agents/_canfail.cjs .agents/_mut-retained1.cjs --green).
+module.exports = [
+  { id: 'rt1-no-section', suite: 'retained-test', file: 'index.html', note: 'the Retained Services section is not drawn',
+    find: '  if(isStaffOrAdmin&&(retainedWbs.length||rsAdmin)){', replace: '  if(false&&isStaffOrAdmin&&(retainedWbs.length||rsAdmin)){' },
+  { id: 'rt1-setup-open', suite: 'retained-test', file: 'index.html', note: 'anyone can open the set-up',
+    find: "function openRetainerSetup(){\n  if(currentUser?.role!=='admin')return;", replace: "function openRetainerSetup(){\n  if(false)return;" },
+  { id: 'rt1-team-list', suite: 'retained-test', file: 'index.html', note: 'retained boards also list under Team Boards',
+    find: '  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb)&&!_isRetainedBoard(wb));', replace: '  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb));' },
+  { id: 'rt1-folder', suite: 'retained-test', file: 'index.html', note: 'a retained board can be moved into a folder',
+    find: "  if(_isRetainedBoard(wb)){showToast('Retained boards stay in Retained Services.','error');return;}\n", replace: '' },
+  { id: 'rt1-no-client', suite: 'retained-test', file: 'index.html', note: 'the new board is not linked to the client',
+    find: "visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,", replace: "visibility:'all_internal',personalBoard:false,clientId:'',folderId:null," },
+  { id: 'rt1-hidden-counts', suite: 'retained-test', file: 'index.html', note: 'hidden work counts toward the allowance',
+    find: "t.groupId===groupId&&(t.boardId||t.workboardId)===boardId&&!_cpTaskHidden(t)).forEach", replace: "t.groupId===groupId&&(t.boardId||t.workboardId)===boardId).forEach" },
+  { id: 'rt1-any-month', suite: 'retained-test', file: 'index.html', note: 'subitems finished in any month count',
+    find: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)&&_rsDoneYm(x)===ym).length;', replace: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)).length;' },
+  { id: 'rt1-staff-allowance', suite: 'retained-test', file: 'index.html', note: 'staff can change allowances',
+    find: '  }else{\n    if(!admin)return;\n    const s=key?', replace: '  }else{\n    const s=key?' },
+];

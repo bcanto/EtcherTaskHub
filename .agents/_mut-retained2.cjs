@@ -1,0 +1,21 @@
+// Can-fail mutations for Retained Services batch 2 (node .agents/_canfail.cjs .agents/_mut-retained2.cjs --green).
+module.exports = [
+  { id: 'rt2-slice-no-retainer', suite: 'retained2-test', file: 'api/_portal.js', note: 'the client slice drops the retainer',
+    find: 'const rt = sliceRetainer(blob, b, new Date()); if (rt) o.retainer = rt; return o;', replace: 'return o;' },
+  { id: 'rt2-slice-hidden', suite: 'retained2-test', file: 'api/_portal.js', note: 'hidden work counts in the client\'s meter',
+    find: "t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach", replace: "t.groupId === groupId && taskBoardId(blob, t) === boardId).forEach" },
+  { id: 'rt2-any-group', suite: 'retained2-test', file: 'api/_portal.js', note: 'a request may name another client\'s group',
+    find: "if (g && own(arr(blob.boards).find(x => x.id === (g.boardId || g.workboardId)))) return s;", replace: "if (g) return s;" },
+  { id: 'rt2-notify-all', suite: 'retained2-test', file: 'api/_portal.js', note: 'a retainer client\'s request notifies everyone',
+    find: "if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else", replace: "if (false) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else" },
+  { id: 'rt2-no-names', suite: 'retained2-test', file: 'api/_portal.js', note: 'client tasks carry no staff names',
+    find: '  s.ownerName = staffName(blob, t.ownerId);\n', replace: '' },
+  { id: 'rt2-all-boards', suite: 'retained2-test', file: 'index.html', note: 'Add to Workboard lists every client\'s boards',
+    find: "  const boards=(DB.boards||[]).filter(b=>!b.archived&&b.clientId===r.clientId&&!_isPersonalBoard(b));\n  const pre=", replace: "  const boards=(DB.boards||[]).filter(b=>!b.archived);\n  const pre=" },
+  { id: 'rt2-new-board-unlinked', suite: 'retained2-test', file: 'index.html', note: 'a board made from a request has no client',
+    find: "visibility:'all_internal',clientId:r.clientId,ownerId:currentUser.id,", replace: "visibility:'all_internal',ownerId:currentUser.id," },
+  { id: 'rt2-proforma', suite: 'retained2-test', file: 'index.html', note: 'retained hours reach the hourly pro forma',
+    find: '      entry.billable&&\n      !entry.retainer&&\n', replace: '      entry.billable&&\n' },
+  { id: 'rt2-tab-always', suite: 'retained2-test', file: 'index.html', note: 'every client gets the Retained Services tab',
+    find: "function _cpSyncRetainedTab(boards){const el=document.getElementById('cp-tab-retained');if(el)el.style.display=boards.some(b=>_isRetainedBoard(b))?'':'none';}", replace: "function _cpSyncRetainedTab(boards){const el=document.getElementById('cp-tab-retained');if(el)el.style.display='';}" },
+];

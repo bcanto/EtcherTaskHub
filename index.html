@@ -265,6 +265,37 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-task-row:hover{border-color:#97bcbd;box-shadow:0 2px 6px rgba(13,28,51,0.08),0 8px 20px rgba(13,28,51,0.07);transform:translateY(-1px)}
 .cp-desc{font-size:13px;color:#4a5568;line-height:1.7}.cp-desc>*:first-child{margin-top:0}.cp-desc>*:last-child{margin-bottom:0}.cp-desc p,.cp-desc div{margin:0 0 6px}.cp-desc ul,.cp-desc ol{margin:4px 0 8px;padding-left:20px}.cp-desc li{margin:2px 0}.cp-desc a{color:#0d6e4e;text-decoration:underline}.cp-desc a:hover{color:#0a5a40}.cp-desc a:focus-visible{outline:2px solid #97bcbd;outline-offset:2px;border-radius:2px}.cp-desc a:active{color:#08452f}
 .cp-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;font-family:'Jost',sans-serif}
+/* Retained Services in the portal (.agents/PLAN-retained-services.md) */
+.cp-req-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cp-req-hint{font-size:12.5px;color:#6b8399;margin-top:-6px}
+.cp-rt-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:24px}
+.cp-rt-head.solo{grid-template-columns:minmax(0,1fr)}
+.cp-rt-terms{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 16px;margin:8px 0 0;font-size:13px}
+.cp-rt-terms dt{color:#6b8399}.cp-rt-terms dd{margin:0;font-weight:700;color:#0d1c33}.cp-rt-terms dd span{font-weight:400;color:#6b8399}
+.cp-rt-by{font-family:Lato,sans-serif;font-weight:400;font-size:12px;color:#8da2b2;text-transform:none;letter-spacing:0}
+.cp-rt-focus{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:10px}
+.cp-rt-focus li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;font-size:13px}
+.cp-rt-focus li span{font-weight:700;color:#0d1c33}
+.cp-rt-focus li i{grid-column:1/-1;height:4px;border-radius:2px;background:#e6ecf2;overflow:hidden}
+.cp-rt-focus li em{display:block;height:100%;background:#31585a}
+.cp-rt-focus li small{grid-column:1/-1;color:#6b8399;font-size:12px}
+.cp-rt-ledger{padding:0;overflow:hidden}
+.cp-rt-svc{display:grid;grid-template-columns:240px minmax(0,1fr)}
+.cp-rt-svc+.cp-rt-svc{border-top:1px solid #e2eaf2}
+.cp-rt-side{padding:12px 16px;border-right:1px solid #eef2f6;background:#fbfcfd;display:grid;gap:6px;align-content:start;box-shadow:inset 3px 0 0 var(--rt-c)}
+.cp-rt-side b{font-family:Jost,sans-serif;font-size:14px;color:#0d1c33}.cp-rt-side small{color:#6b8399;margin-top:-4px}
+.cp-rt-cells{display:flex;flex-wrap:wrap;gap:2px;max-width:200px}.cp-rt-cells i{width:8px;height:8px;border-radius:2px;background:#e3e9f0}.cp-rt-cells i.on{background:var(--rt-c)}
+.cp-rt-used{font-size:12px;color:#4a5568}.cp-rt-used b{font-size:12px;color:#0d1c33}
+.cp-rt-jobs{min-width:0}
+.cp-rt-row{display:grid;grid-template-columns:minmax(0,1fr) auto 130px 56px;gap:12px;align-items:center;width:100%;border:0;border-bottom:1px solid #eef2f6;background:none;text-align:left;padding:9px 16px;cursor:pointer;font:inherit}
+.cp-rt-row:hover{background:#f7f9fc}.cp-rt-row:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+.cp-rt-t{font-family:Jost,sans-serif;font-weight:600;font-size:13.5px;color:#0d1c33;min-width:0}.cp-rt-t small{display:block;font-family:Lato,sans-serif;font-weight:400;font-size:12px;color:#6b8399}
+.cp-rt-with{font-size:12.5px;color:#4a5568;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-rt-due{font-size:12px;color:#6b8399;text-align:right}
+.cp-rt-none{padding:12px 16px;color:#8da2b2;font-size:13px}
+.cp-rt-review{margin-top:18px;display:grid;gap:6px}.cp-rt-review>b{font-family:Jost,sans-serif;font-size:14.5px;color:#0d1c33}
+.cp-rt-nums{display:flex;flex-wrap:wrap;gap:4px 20px;font-size:13px;color:#6b8399}.cp-rt-nums b{font-size:15px;color:#0d1c33;margin-right:4px}
+.cp-rt-review p{margin:0;font-size:13px;color:#4a5568}.cp-rt-review p span{display:block;font-size:12px;color:#8da2b2;margin-top:4px}
+@media (max-width:760px){.cp-req-grid,.cp-rt-head,.cp-rt-svc{grid-template-columns:minmax(0,1fr)}.cp-rt-side{border-right:0;border-bottom:1px solid #eef2f6}.cp-rt-row{grid-template-columns:minmax(0,1fr) auto}.cp-rt-with,.cp-rt-due{display:none}}
 /* ── Client Portal: new components ── */
 .cp-task-list-row{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.18s var(--ease),box-shadow 0.18s var(--ease);outline:none}
 .cp-task-list-row:hover{border-color:#97bcbd;box-shadow:var(--sh-sm)}
@@ -842,6 +873,49 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .ws-grp-count{width:34px;flex-shrink:0;text-align:center;font-size:11px;color:#8da2b2;background:#f0f4f8;border-radius:10px;padding:1px 0;margin-left:6px}
 .ws-grp-bar{width:64px;flex-shrink:0;margin-left:10px}
 .ws-grp-pct{width:38px;flex-shrink:0;text-align:right;font-size:10px;color:#8da2b2}
+/* Retained Services (.agents/PLAN-retained-services.md) */
+.ws-grp-meter{flex-shrink:0;margin-left:12px;font-size:11px;color:#6b8399;white-space:nowrap}
+.ws-grp-meter.full{color:#b45309;font-weight:700}
+.sb-ret-add{width:18px;height:18px;border:1px solid #3e5c75;border-radius:5px;background:none;color:#97bcbd;font-size:12px;line-height:1;padding:0;cursor:pointer;flex-shrink:0}
+.sb-ret-add:hover{border-color:#97bcbd;color:#fff;background:rgba(151,188,189,.12)}
+.sb-ret-add:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.rs-su,.rs-pl{display:grid;gap:12px}
+.rs-su-intro{margin:0;font-size:13px;color:#6b8399}
+.rs-su-top{display:grid;grid-template-columns:1.4fr 1.2fr 1fr .9fr;gap:10px}
+.rs-su-f{display:grid;gap:4px;min-width:0;font-size:13px;color:#1a2940}
+.rs-su-f>span:first-child{font-size:10.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.05em}
+.rs-su-h{font-family:Jost,sans-serif;font-size:13.5px;font-weight:700;color:#0d1c33}
+.rs-su-h span{font-family:Lato,sans-serif;font-weight:400;font-size:12.5px;color:#6b8399;margin-left:8px}
+.rs-su-list{border:1px solid #e2eaf2;border-radius:10px;overflow:hidden}
+.rs-su-s+.rs-su-s{border-top:1px solid #e2eaf2}
+.rs-su-s.on{background:#fbfcfd;box-shadow:inset 3px 0 0 var(--rs-c)}
+.rs-su-pick{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:13px}
+.rs-su-pick small{color:#8da2b2}
+.rs-su-cfg{display:grid;grid-template-columns:1.2fr .9fr 1.5fr;gap:12px;padding:0 14px 12px 38px}
+.rs-su-alw{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4a5568}
+.rs-su-alw input,.rs-pl-t input{width:64px;height:32px;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 8px;font-weight:600;color:#0d1c33}
+.rs-su-mt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#4a5568;cursor:pointer}
+.rs-su-sum{margin:0;padding:9px 12px;border-radius:7px;background:#f1ebfe;color:#4c1d95;font-size:12.5px}
+.rs-su-foot,.rs-pl-row{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.rs-pl-row{justify-content:space-between}
+.rs-pl-meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12.5px;color:#6b8399}
+.rs-chip{display:inline-flex;padding:1px 8px;border-radius:10px;background:#f1ebfe;color:#6d28d9;font-size:10.5px;font-weight:700}
+.rs-pl-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rs-pl-h{margin:4px 0 0;font-family:Jost,sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b8399}
+.rs-pl-wrap{overflow-x:auto}
+.rs-pl-t{width:100%;border-collapse:collapse;font-size:12.5px}
+.rs-pl-t th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8da2b2;padding:0 8px 6px 0}
+.rs-pl-t td{padding:7px 8px 7px 0;border-top:1px solid #eef2f6;vertical-align:middle}
+.rs-pl-t td small{display:block;color:#8da2b2;font-size:11px}
+.rs-pl-t td.rs-full b{color:#b45309}
+.rs-pl-n{display:flex;align-items:center;gap:8px;font-weight:600}
+.rs-pl-n i{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.rs-pl-f{list-style:none;margin:0;padding:0}
+.rs-pl-f li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #eef2f6;font-size:13px}
+.rs-pl-hint{margin:0;font-size:12px;color:#8da2b2}
+.rs-pl-note{min-height:70px;resize:vertical}
+.rs-pl-p{margin:0;font-size:13px;color:#4a5568}
+@media (max-width:700px){.rs-su-top,.rs-su-cfg,.rs-pl-grid{grid-template-columns:minmax(0,1fr)}.rs-su-cfg{padding-left:14px}}
 /* Labels column — the cell fills with the chosen label's colour, Monday-style. */
 .lbl-cell{display:flex;align-items:center;justify-content:center;height:38px;margin:0 -10px;color:#fff;
   font-family:'Jost',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:0.01em;
@@ -1682,6 +1756,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   </header>
   <nav class="cp-nav" style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
+    <div class="cp-nav-tab" data-section="retained" id="cp-tab-retained" onclick="cpNavigate('retained')" style="display:none">Retained Services</div>
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <!-- Named 'workboard', not 'board' — 'board' is already an internal renderView route name
          and sits in the client role's _acBlockedViews set; reusing it here would be one string
@@ -4608,7 +4683,8 @@ function launchClientView(){
   portal.querySelectorAll('.cp-nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.section==='overview'));
   // Render overview
   const tasks=getClientTasks(currentUser.clientId);
-  const boards=DB.boards.filter(b=>b.clientId===currentUser.clientId&&!b.archived);
+  const boards=_cpClientBoards(currentUser.clientId);
+  _cpSyncRetainedTab(boards);
   const body=document.getElementById('cp-body');
   if(body)body.innerHTML=renderCpOverview(currentUser.clientId,tasks,boards,client);
   updateCpNotifBadge();
@@ -6207,7 +6283,8 @@ function renderSidebarWorkboards(){
   const isStaffOrAdmin=currentUser&&currentUser.role!=='client';
   const personalMine=isStaffOrAdmin?allWbs.filter(wb=>_isPersonalBoard(wb)&&wb.ownerId===currentUser.id):[];
   const personalShared=isStaffOrAdmin?allWbs.filter(wb=>_isPersonalBoard(wb)&&wb.ownerId!==currentUser.id):[];
-  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb));
+  const retainedWbs=allWbs.filter(wb=>!_isPersonalBoard(wb)&&_isRetainedBoard(wb));
+  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb)&&!_isRetainedBoard(wb));
   const folders=(DB.wbFolders||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0))
     // A team folder only shows for someone who can currently see ≥1 board inside it, or who owns
     // the folder itself (an empty folder they made on purpose), or — for a legacy folder made
@@ -6304,6 +6381,21 @@ function renderSidebarWorkboards(){
     </div>`;
   });
 
+  // ── Retained Services: a permanent section, built from the boards' retainer object rather than a
+  // wbFolders record, so it cannot be renamed, deleted or lost in sync. Admins add a board with +.
+  const rsAdmin=currentUser?.role==='admin';
+  if(isStaffOrAdmin&&(retainedWbs.length||rsAdmin)){
+    const rc=_retainedSectionCollapsed();
+    html+=`<div class="sb-retained">
+      <div style="display:flex;align-items:center;padding:6px 10px 5px 10px;gap:5px;cursor:pointer;user-select:none;border-radius:6px" onclick="toggleRetainedSection()">
+        <span style="flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Retained Services</span>
+        ${rsAdmin?`<button type="button" class="sb-ret-add" onclick="event.stopPropagation();openRetainerSetup()" title="New retained board" aria-label="New retained board">+</button>`:''}
+        <span style="font-size:9px;color:#5a8a8c;display:inline-block;flex-shrink:0">${rc?'▶':'▾'}</span>
+      </div>
+      <div style="${rc?'display:none':''}">${retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join(''):`<div style="padding:5px 10px 6px 14px;font-size:11px;color:#3a5570;font-style:italic">No retained boards yet</div>`}</div>
+    </div>`;
+  }
+
   container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
 }
 function _wbDragStart(e,wbId){
@@ -6344,6 +6436,7 @@ function _wbRowDrop(e,targetWbId,targetFolderId){
   const target=(DB.workboards||[]).find(w=>w.id===targetWbId);
   if(!dragged||!target)return;
   if(targetFolderId&&_isPersonalBoard(dragged)){showToast('Personal boards stay in Personal Boards — use Board Access to share instead.','error');return;}
+  if(_isRetainedBoard(dragged)||_isRetainedBoard(target)){showToast('Retained boards stay in Retained Services.','error');return;}
   dragged.folderId=targetFolderId||null;
   const siblings=(DB.workboards||[]).filter(w=>!w.archived&&(w.folderId||null)===(targetFolderId||null));
   const ordered=[...siblings].sort((a,b)=>(a.order||0)-(b.order||0)).filter(w=>w.id!==draggedId);
@@ -6466,6 +6559,7 @@ function moveWbToFolder(wbId,folderId){
   if(currentUser?.role==='client')return;
   const wb=(DB.workboards||[]).find(w=>w.id===wbId);if(!wb)return;
   if(folderId&&_isPersonalBoard(wb)){showToast('Personal boards stay in Personal Boards — use Board Access to share instead.','error');return;}
+  if(_isRetainedBoard(wb)){showToast('Retained boards stay in Retained Services.','error');return;}
   wb.folderId=folderId||null;
   // Dropped into folder empty space rather than on a specific row — append to the end.
   const siblings=(DB.workboards||[]).filter(w=>!w.archived&&w.id!==wbId&&(w.folderId||null)===(folderId||null));
@@ -6474,6 +6568,317 @@ function moveWbToFolder(wbId,folderId){
   saveDB(DB);
   renderSidebarWorkboards();
   if(currentView==='dashboard')renderView('dashboard');
+}
+
+// ── Retained Services (.agents/PLAN-retained-services.md) ──────────────────────────────────
+// A retained board is an ordinary workboard with a `retainer` object: one per retained client,
+// listed in the sidebar's permanent Retained Services section (R1), set up by an admin (R8, R9).
+// The allowance meter counts finished subitems on client-visible work, by calendar month (R4, R5).
+const RETAINER_CATALOGUE=[
+  {key:'ims', name:'IMS and Document Control',              short:'IMS',          kind:'core',  unit:'document reviews',             allowance:20, color:'#1d6fb8', monthly:['Monthly document register check','Controlled forms housekeeping']},
+  {key:'hseq',name:'HSEQ Admin and Audit Readiness',        short:'HSEQ',         kind:'core',  unit:'reports and register updates', allowance:8,  color:'#0d6e4e', monthly:['Monthly HSEQ report','Licence and ticket register update']},
+  {key:'mob', name:'Mobilisation and Contractor Compliance',short:'Mobilisation', kind:'addon', unit:'compliance checks',            allowance:15, color:'#b45309', monthly:['Contractor insurance expiry check']},
+  {key:'ci',  name:'Continuous Improvement',                short:'Improvement',  kind:'addon', unit:'improvement actions',          allowance:4,  color:'#6d28d9', monthly:['Monthly improvement review']},
+  {key:'sys', name:'Systems and Data Backbone',             short:'Systems',      kind:'addon', unit:'data and dashboard updates',   allowance:6,  color:'#3d5269', monthly:['Monthly KPI dashboard refresh']},
+];
+const _RS_DONE=new Set(['done','completed','completed-approved','approved-client']);
+function _isRetainedBoard(wb){return !!(wb&&wb.retainer&&!wb.retainer.endedAt);}
+function _rsCat(key){return RETAINER_CATALOGUE.find(s=>s.key===key)||null;}
+function _rsDone(t){return !!t&&_RS_DONE.has(t.status);}
+function _rsYm(d){return toDateStr(d||new Date()).slice(0,7);}
+function _rsPrevYm(ym){const d=new Date(ym+'-01T12:00:00');d.setMonth(d.getMonth()-1);return _rsYm(d);}
+function _rsMonthName(ym){return new Date(ym+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long'});}
+function _rsDoneYm(t){const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||null;return at?_rsYm(new Date(at)):null;}
+function _rsStaff(){return allStaff().filter(u=>u.role!=='client'&&u.active!==false);}
+// "2 Core and 3 Add-ons", derived from the services picked; never typed (plan, set-up).
+function _retainerBundle(keys){
+  const core=keys.filter(k=>(_rsCat(k)||{}).kind==='core').length,add=keys.length-core;
+  return[core?`${core} Core`:'',add?`${add} Add-on${add>1?'s':''}`:''].filter(Boolean).join(' and ');
+}
+// R4: per service group, per calendar month. A top-level task with subitems counts its subitems
+// finished that month; one without subitems counts 1 once it is finished that month. Only work the
+// client can see counts (a hidden task, or a subitem of one, never uses the allowance).
+function _retainerUsed(boardId,groupId,ym){
+  ym=ym||_rsYm();
+  let n=0;
+  (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===groupId&&(t.boardId||t.workboardId)===boardId&&!_cpTaskHidden(t)).forEach(t=>{
+    const subs=(DB.tasks||[]).filter(x=>x.parentTaskId===t.id&&!x.archived&&!_cpTaskHidden(x));
+    if(subs.length)n+=subs.filter(x=>_rsDone(x)&&_rsDoneYm(x)===ym).length;
+    else if(_rsDone(t)&&_rsDoneYm(t)===ym)n++;
+  });
+  return n;
+}
+function _retainerMeterHtml(sec){
+  const wb=currentWorkboard;
+  if(wsGroupBy!=='group'||!_isRetainedBoard(wb))return'';
+  const s=(wb.retainer.services||[]).find(x=>x.groupId===sec.id);if(!s)return'';
+  const ym=_rsYm(),used=_retainerUsed(wb.id,s.groupId,ym);
+  return`<span class="ws-grp-meter${used>=s.allowance?' full':''}" title="Finished subitems on work the client can see, this month. Resets on the 1st.">${used} of ${s.allowance} ${escHtml(s.unit)} used in ${_rsMonthName(ym)}</span>`;
+}
+
+// ── Sidebar section (collapse is per viewer, like Personal Boards) ──
+function _retainedSectionCollapsed(){try{return localStorage.getItem(_wbFolderCollapseKey('__retained'))==='1';}catch(e){return false;}}
+function toggleRetainedSection(){try{localStorage.setItem(_wbFolderCollapseKey('__retained'),_retainedSectionCollapsed()?'0':'1');}catch(e){}renderSidebarWorkboards();}
+
+// ── New retained board (admins only, one screen) ──
+let _rsSetup=null;
+function _rsSetupClients(){
+  const taken=new Set((DB.workboards||[]).filter(b=>!b.archived&&_isRetainedBoard(b)).map(b=>b.clientId));
+  return(DB.clients||[]).filter(c=>!c.archived&&c.id!=='c0'&&!taken.has(c.id));
+}
+function openRetainerSetup(){
+  if(currentUser?.role!=='admin')return;
+  const clients=_rsSetupClients();
+  if(!clients.length){showToast('Every active client already has a retained board.','info');return;}
+  const staff=_rsStaff();
+  const lead=staff.some(u=>u.id===currentUser.id)?currentUser.id:((staff[0]||{}).id||null);
+  const d=new Date();
+  _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'High',svc:{}};
+  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:s.kind==='core',allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true)};});
+  _rsSetupRender();
+}
+function _rsSet(field,key,val,i){
+  const m=_rsSetup;if(!m)return;
+  if(key){
+    const v=m.svc[key];if(!v)return;
+    if(field==='on')v.on=!!val;
+    else if(field==='allowance')v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
+    else if(field==='owner')v.ownerId=val||null;
+    else if(field==='mt')v.mt[i]=!!val;
+  }else if(['clientId','leadId','startMonth','priority'].includes(field))m[field]=val;
+  _rsSetupRender();
+}
+function _rsSetupRender(){
+  const m=_rsSetup;if(!m)return;
+  const picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
+  const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
+  const c=(DB.clients||[]).find(x=>x.id===m.clientId);
+  const staffOpts=v=>_rsStaff().map(u=>`<option value="${u.id}"${u.id===v?' selected':''}>${escHtml(u.name)}</option>`).join('');
+  const row=s=>{const v=m.svc[s.key];return`<div class="rs-su-s${v.on?' on':''}" style="--rs-c:${s.color}">
+      <label class="rs-su-pick"><input type="checkbox" data-rs-svc="${s.key}"${v.on?' checked':''} onchange="_rsSet('on','${s.key}',this.checked)"><b>${escHtml(s.name)}</b><small>${s.kind==='core'?'Core service':'Add-on'}</small></label>
+      ${v.on?`<div class="rs-su-cfg">
+        <label class="rs-su-f"><span>Monthly allowance</span><span class="rs-su-alw"><input type="number" min="1" max="999" value="${v.allowance}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"> ${escHtml(s.unit)}</span></label>
+        <label class="rs-su-f"><span>Owner</span><select class="form-input" onchange="_rsSet('owner','${s.key}',this.value)">${staffOpts(v.ownerId)}</select></label>
+        <div class="rs-su-f"><span>Monthly tasks</span>${s.monthly.map((t,i)=>`<label class="rs-su-mt"><input type="checkbox"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"> ${escHtml(t)}</label>`).join('')}</div>
+      </div>`:''}</div>`;};
+  const body=`<div class="rs-su">
+    <p class="rs-su-intro">Creates the client's board under Retained Services, with one group per service and the monthly tasks you keep ticked. The client then sees a Retained Services tab in their portal.</p>
+    <div class="rs-su-top">
+      <label class="rs-su-f"><span>Client</span><select class="form-input" id="rs-su-client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
+      <label class="rs-su-f"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
+      <label class="rs-su-f"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
+      <label class="rs-su-f"><span>Priority</span><select class="form-input" onchange="_rsSet('priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===m.priority?' selected':''}>${p}</option>`).join('')}</select></label>
+    </div>
+    <div class="rs-su-h">Services <span>${picks.length?escHtml(_retainerBundle(picks.map(s=>s.key))):'Tick at least one'}</span></div>
+    <div class="rs-su-list">${RETAINER_CATALOGUE.map(row).join('')}</div>
+    <p class="rs-su-sum">${picks.length?`Creates <b>${escHtml(c?c.name:'')}</b> under Retained Services with ${picks.length} service group${picks.length>1?'s':''} and ${nTasks} monthly task${nTasks===1?'':'s'}.${c&&!c.portalEnabled?' Their portal is off, so they see the tab once it is turned on.':''}`:'Tick at least one service to create the board.'}</p>
+    <div class="rs-su-foot"><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="rs-su-create" onclick="retainerCreate()"${picks.length?'':' disabled'}>Create board</button></div>
+  </div>`;
+  openGenericModal('New retained board',body,'760px');
+}
+function retainerCreate(){
+  if(currentUser?.role!=='admin')return;
+  const m=_rsSetup;if(!m)return;
+  const c=(DB.clients||[]).find(x=>x.id===m.clientId);
+  const picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
+  if(!c||!picks.length||!/^\d{4}-\d{2}$/.test(m.startMonth||''))return;
+  if(!_rsSetupClients().some(x=>x.id===c.id)){showToast(`${c.name} already has a retained board.`,'error');return;}
+  const now=new Date().toISOString(),boardId=uid(),first=m.startMonth+'-01';
+  const board={id:boardId,name:c.name,color:c.color||'#7c3aed',visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,
+    ownerId:currentUser.id,description:'Retained services',archived:false,excludeFromReports:false,createdAt:now,updatedAt:now,
+    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:m.priority||'High',months:{},endedAt:null}};
+  DB.workboards.push(board);
+  let made=0;
+  picks.forEach((s,i)=>{
+    const v=m.svc[s.key],gid=uid();
+    DB.groups.push({id:gid,clientId:c.id,workboardId:boardId,boardId,name:s.name,order:i,color:s.color,createdAt:now});
+    board.retainer.services.push({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null});
+    s.monthly.forEach((name,j)=>{
+      if(!v.mt[j])return;
+      const r={freq:'monthly',interval:1,onDay:1,onWeekdayOrdinal:null,onWeekday:null,leadDays:0,weekendAction:'keep',endType:'never',endDate:null,occurrences:null,occurrenceCount:0,
+        copySameAssignee:true,copySameBoard:true,copySamePriority:true,copySameDescription:true};
+      r.nextDue=_recurNextDate(first,r);
+      DB.tasks.push({id:'t'+uid(),name,title:name,clientId:c.id,boardId,workboardId:boardId,groupId:gid,parentTaskId:null,
+        status:'todo',priority:'med',ownerId:v.ownerId||null,currentlyWith:v.ownerId||null,currentlyWithType:v.ownerId?'staff':'none',currentlyWithUserId:v.ownerId||null,
+        startDate:first,endDate:first,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:j,description:'',
+        dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,recurrence:r});
+      made++;
+    });
+  });
+  saveDB(DB);closeGenericModal();_rsSetup=null;
+  renderSidebarWorkboards();openWorkboard(boardId);
+  showToast(`${c.name} added to Retained Services with ${picks.length} service${picks.length>1?'s':''} and ${made} monthly task${made===1?'':'s'}.`,'success');
+}
+
+// ── Retainer plan (allowances, owners, the month's focus, a note for the client, billing rule) ──
+function openRetainerPlan(boardId){
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
+  const r=b.retainer,admin=currentUser?.role==='admin',ym=_rsYm(),prev=_rsPrevYm(ym);
+  const mo=(r.months||{})[ym]||{},pm=(r.months||{})[prev]||{};
+  const focus=(mo.focusTaskIds||[]).map(id=>(DB.tasks||[]).find(t=>t.id===id)).filter(t=>t&&!t.archived);
+  const cand=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_rsDone(t)&&!_cpTaskHidden(t)&&!focus.includes(t));
+  const staffOpts=v=>_rsStaff().map(u=>`<option value="${u.id}"${u.id===v?' selected':''}>${escHtml(u.name)}</option>`).join('');
+  const lead=r.leadId?getStaff(r.leadId):null;
+  const svcRows=(r.services||[]).map(s=>{
+    const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},used=_retainerUsed(b.id,s.groupId,ym),own=s.ownerId?getStaff(s.ownerId):null;
+    return`<tr><td><span class="rs-pl-n"><i style="background:${cat.color}"></i>${escHtml(cat.name)}</span></td>
+      <td>${admin?`<input type="number" min="1" max="999" value="${s.allowance}" data-rs-allow="${s.key}" onchange="_rsPlanSet('${b.id}','allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(cat.name)}">`:s.allowance}</td>
+      <td class="${used>=s.allowance?'rs-full':''}"><b>${used}</b> of ${s.allowance}<small>${escHtml(s.unit)}</small></td>
+      <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td></tr>`;
+  }).join('');
+  const body=`<div class="rs-pl">
+    <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>Started ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
+    <div class="rs-pl-grid">
+      <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
+      <label class="rs-su-f"><span>Priority</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===r.priority?' selected':''}>${p}</option>`).join('')}</select>`:`<b>${escHtml(r.priority||'')}</b>`}</label>
+      <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b></div>
+    </div>
+    <h4 class="rs-pl-h">Services and allowances</h4>
+    <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Monthly allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th></tr></thead><tbody>${svcRows}</tbody></table></div>
+    <p class="rs-pl-hint">${admin?'Changes apply from this month. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
+    <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
+    ${focus.length?`<ul class="rs-pl-f">${focus.map(t=>`<li><span>${escHtml(t.name||t.title||'')}</span><b>${getEffectiveTaskPct(t.id)}%</b><button class="btn btn-ghost btn-sm" onclick="_rsPlanSet('${b.id}','focusRm','${t.id}')" aria-label="Remove from the focus">Remove</button></li>`).join('')}</ul>`:'<p class="rs-pl-hint">No focus set, so the block stays hidden in the portal.</p>'}
+    ${focus.length<3&&cand.length?`<select class="form-input rs-pl-add" onchange="if(this.value)_rsPlanSet('${b.id}','focusAdd',this.value)"><option value="">+ Pin a task to the focus</option>${cand.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}</select>`:''}
+    <p class="rs-pl-hint">Up to three tasks. Their progress shows to the client by itself.</p>
+    <h4 class="rs-pl-h">Note for the ${_rsMonthName(prev)} review</h4>
+    <textarea id="rs-pl-note" class="form-input rs-pl-note" placeholder="Optional. Shown under the month in review in the portal. Leave blank to hide it.">${escHtml(pm.note||'')}</textarea>
+    <div class="rs-pl-row"><span class="rs-pl-hint">Delivered, requests and overdue figures are counted for you.</span><button class="btn btn-teal btn-sm" onclick="_rsPlanSet('${b.id}','note',null,document.getElementById('rs-pl-note').value)">Save note</button></div>
+    <h4 class="rs-pl-h">Billing</h4>
+    <p class="rs-pl-p">Hours logged on this board are covered by the retainer. They stay in timesheets and payroll, and never appear on the hourly pro forma.</p>
+  </div>`;
+  openGenericModal('Retainer plan',body,'720px');
+}
+function _rsPlanSet(boardId,field,key,val){
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
+  const r=b.retainer,ym=_rsYm(),admin=currentUser?.role==='admin';
+  r.months=r.months||{};
+  if(field==='focusAdd'||field==='focusRm'){
+    const mo=r.months[ym]=r.months[ym]||{};
+    const ids=(mo.focusTaskIds||[]).filter(id=>id!==key);
+    mo.focusTaskIds=field==='focusAdd'?ids.concat(key).slice(0,3):ids;
+  }else if(field==='note'){
+    const p=_rsPrevYm(ym);r.months[p]=r.months[p]||{};r.months[p].note=String(val||'').trim().slice(0,2000);
+  }else{
+    if(!admin)return;
+    const s=key?(r.services||[]).find(x=>x.key===key):null;
+    if(field==='allowance'&&s)s.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
+    else if(field==='owner'&&s)s.ownerId=val||null;
+    else if(field==='lead')r.leadId=val||null;
+    else if(field==='priority'&&['Standard','High','Highest'].includes(val))r.priority=val;
+    else return;
+  }
+  b.updatedAt=new Date().toISOString();
+  saveDB(DB);
+  openRetainerPlan(boardId);
+  if(currentView==='workspace')renderView('workspace');
+  if(field==='note')showToast('Note saved.','success');
+}
+
+// ── Retained Services in the portal and in requests (plan R2, R3, R6, R7, R11) ──
+// The Retained Services tab shows only while the client has a retained board.
+function _cpSyncRetainedTab(boards){const el=document.getElementById('cp-tab-retained');if(el)el.style.display=boards.some(b=>_isRetainedBoard(b))?'':'none';}
+// The client's boards as the portal shows them: a retained board reads "Retained Services".
+function _cpClientBoards(clientId){
+  return(DB.boards||[]).filter(b=>b.clientId===clientId&&!b.archived).map(b=>_isRetainedBoard(b)?Object.assign({},b,{name:'Retained Services'}):b);
+}
+// The retainer view the portal renders. Server mode: the slice already carries it (api/_portal.js
+// sliceRetainer). Local mode: built here the same way, from the full data, names only.
+function _rsClientRetainer(b){
+  if(!b||!b.retainer)return null;
+  if(_portalServerMode())return b.retainer;
+  const r=b.retainer,ym=_rsYm(),prev=_rsPrevYm(ym),months=r.months||{};
+  const nm=id=>{const u=id?getStaff(id):null;return u?u.name:null;};
+  return{services:(r.services||[]).map(s=>({key:s.key,groupId:s.groupId,unit:s.unit,allowance:s.allowance,core:!!s.core,ownerName:nm(s.ownerId),used:_retainerUsed(b.id,s.groupId,ym)})),
+    leadName:nm(r.leadId),startMonth:r.startMonth||null,priority:r.priority||null,month:ym,
+    focusTaskIds:((months[ym]||{}).focusTaskIds||[]).slice(0,3),reviewMonth:prev,reviewNote:(months[prev]||{}).note||null};
+}
+// What a request asked for, in words, on both sides.
+function _wrServiceLabel(r){
+  const ref=(r&&r.serviceRef)||'adhoc';
+  if(ref.startsWith('g:')){
+    const g=(DB.groups||[]).find(x=>x.id===ref.slice(2));
+    const b=g&&(DB.boards||[]).find(x=>x.id===(g.boardId||g.workboardId));
+    const s=b&&b.retainer&&(b.retainer.services||[]).find(x=>x.groupId===g.id);
+    return s?(((_rsCat(s.key)||{}).name||g.name)+' (retainer)'):(g?g.name:'Ad hoc');
+  }
+  if(ref.startsWith('b:')){const b=(DB.boards||[]).find(x=>x.id===ref.slice(2));return b?(_isRetainedBoard(b)?'Retained Services':b.name):'Ad hoc';}
+  return'Ad hoc';
+}
+// R11: a retainer client's request goes to the retainer lead and the admins; others to all staff.
+function _wrNotifyNewRequest(clientId,msg){
+  const rb=(DB.boards||[]).find(b=>b.clientId===clientId&&!b.archived&&_isRetainedBoard(b));
+  const to=rb?allStaff().filter(u=>u.role!=='client'&&u.active!==false&&(u.role==='admin'||u.id===rb.retainer.leadId)):[];
+  if(to.length)to.forEach(u=>notify(u.id,null,'work_request',msg));else _notifyAllStaff('work_request',msg);
+}
+// Add to Workboard, pre-filled from the client's Service choice (plan R3).
+function _wrPrefill(r,boards){
+  const ref=r.serviceRef||'adhoc';
+  if(ref.startsWith('g:')){
+    const g=(DB.groups||[]).find(x=>x.id===ref.slice(2)),b=g&&boards.find(x=>x.id===(g.boardId||g.workboardId));
+    if(b){const s=_isRetainedBoard(b)&&(b.retainer.services||[]).find(x=>x.groupId===g.id);return{boardId:b.id,groupId:g.id,ownerId:(s&&s.ownerId)||(_isRetainedBoard(b)?b.retainer.leadId:null)||null};}
+  }
+  if(ref.startsWith('b:')){const b=boards.find(x=>x.id===ref.slice(2));if(b)return{boardId:b.id,groupId:null,ownerId:_isRetainedBoard(b)?b.retainer.leadId:null};}
+  const c=(DB.clients||[]).find(x=>x.id===r.clientId),rb=boards.find(b=>_isRetainedBoard(b));
+  const ad=(c&&boards.find(b=>b.id===c.adhocBoardId&&!_isRetainedBoard(b)))||boards.find(b=>!_isRetainedBoard(b))||null;
+  return{boardId:ad?ad.id:'',groupId:null,ownerId:rb?rb.retainer.leadId:null};
+}
+// R7: hours on a retained board are covered by the retainer. They stay in timesheets and payroll and
+// never reach the hourly pro forma. Worked out from the task's board, never written onto the entry.
+function _rsEntryRetained(e,task){
+  if(!e||e.isoAuditId||!task)return false;
+  return _isRetainedBoard((DB.boards||[]).find(b=>b.id===_taskBoardId(task)));
+}
+// Request Work: the Service choices and the hint under them.
+function _cpServiceOptions(clientId){
+  const boards=_cpClientBoards(clientId),rb=boards.find(b=>_isRetainedBoard(b));
+  const ret=rb?((_rsClientRetainer(rb)||{}).services||[]).map(s=>`<option value="g:${s.groupId}">${escHtml((_rsCat(s.key)||{name:s.key}).name)}</option>`).join(''):'';
+  const other=boards.filter(b=>!_isRetainedBoard(b)).map(b=>`<option value="b:${b.id}">${escHtml(b.name)}</option>`).join('');
+  return(ret?`<optgroup label="Your retainer">${ret}</optgroup>`:'')+`<optgroup label="Other work">${other}<option value="adhoc" selected>Ad hoc</option></optgroup>`;
+}
+function _cpServiceHint(clientId,ref){
+  if(!ref||ref==='adhoc')return'Ad hoc work is charged separately, hourly or by quote. We confirm before starting.';
+  if(ref.startsWith('b:'))return'This goes to that board.';
+  const rb=_cpClientBoards(clientId).find(b=>_isRetainedBoard(b));
+  const s=rb&&((_rsClientRetainer(rb)||{}).services||[]).find(x=>'g:'+x.groupId===ref);
+  if(!s)return'';
+  const left=Math.max(0,s.allowance-s.used);
+  return left?`Covered by your retainer: ${left} of ${s.allowance} ${s.unit} left this month.`:`This month's ${s.unit} are used up, so we will quote before starting.`;
+}
+function cpReqServiceHint(){const el=document.getElementById('cp-req-hint'),sv=document.getElementById('cp-req-service');if(el&&sv)el.textContent=_cpServiceHint(currentUser?.clientId,sv.value);}
+// The client's Retained Services tab: their plan, team, the month's focus, each service with its
+// allowance and jobs, and last month in review (numbers counted, the lead's note if any).
+function renderCpRetained(clientId,tasks,b){
+  const rt=_rsClientRetainer(b);if(!rt)return'';
+  const mine=tasks.filter(t=>t.boardId===b.id),top=mine.filter(t=>!t.parentId),kids=id=>mine.filter(t=>t.parentId===id);
+  const cat=k=>_rsCat(k)||{name:k,short:k,kind:'addon',color:'#6b8399'};
+  const team=new Map(),add=(n,role)=>{if(!n)return;if(!team.has(n))team.set(n,[]);team.get(n).push(role);};
+  add(rt.leadName,'Retainer lead');(rt.services||[]).forEach(s=>add(s.ownerName,cat(s.key).short));
+  const started=rt.startMonth?new Date(rt.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'';
+  const due=t=>t.endDate?new Date(t.endDate+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';
+  const steps=t=>{const k=kids(t.id);return k.length?`${k.filter(x=>_RS_DONE.has(x.status)).length} of ${k.length} steps done`:'';};
+  const row=t=>{const st=cpBroadStatus(t.status),s=steps(t);
+    return`<button type="button" class="cp-rt-row" onclick="cpOpenTaskModal('${t.id}')"><span class="cp-rt-t">${escHtml(t.title)}${s?`<small>${s}</small>`:''}</span><span class="cp-badge" style="background:${st.bg};color:${st.color}">${escHtml(st.label)}</span><span class="cp-rt-with">${t.awaitingClient?'You':escHtml(t.withName||t.ownerName||'Etcher')}</span><span class="cp-rt-due">${due(t)}</span></button>`;};
+  const svc=s=>{const c=cat(s.key),list=top.filter(t=>t.groupId===s.groupId);
+    const cells=Array.from({length:Math.min(s.allowance,60)},(_,i)=>`<i${i<s.used?' class="on"':''}></i>`).join('');
+    return`<div class="cp-rt-svc" style="--rt-c:${c.color}"><div class="cp-rt-side"><b>${escHtml(c.name)}</b><small>${c.kind==='core'?'Core service':'Add-on'}</small><div class="cp-rt-cells" aria-hidden="true">${cells}</div><div class="cp-rt-used"><b>${s.used} of ${s.allowance}</b> ${escHtml(s.unit)} used${s.used>s.allowance?'. Extra work is quoted first':''}</div></div>
+      <div class="cp-rt-jobs">${list.length?list.map(row).join(''):'<div class="cp-rt-none">Nothing this month.</div>'}</div></div>`;};
+  const focus=(rt.focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean);
+  const inPm=d=>!!d&&_rsYm(new Date(d))===rt.reviewMonth;
+  const delivered=top.filter(t=>_RS_DONE.has(t.status)&&inPm(t.completedAt)).length;
+  const reqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===clientId&&inPm(r.submittedAt)).length;
+  const overdue=top.filter(t=>!_RS_DONE.has(t.status)&&t.endDate&&t.endDate<toDateStr(new Date())).length;
+  return`<div class="cp-rt">
+    <div class="cp-stat-card cp-rt-head${focus.length?'':' solo'}">
+      <div><div class="cp-section-title">Your retainer</div><dl class="cp-rt-terms">
+        <dt>Bundle</dt><dd>${escHtml(_retainerBundle((rt.services||[]).map(s=>s.key)))}</dd>
+        ${rt.priority?`<dt>Priority</dt><dd>${escHtml(rt.priority)}</dd>`:''}<dt>Fee</dt><dd>Fixed monthly fee</dd>${started?`<dt>Started</dt><dd>${escHtml(started)}</dd>`:''}
+        ${team.size?`<dt>Your team</dt><dd>${[...team].map(([n,roles])=>`${escHtml(n)} <span>${escHtml(roles.join(', '))}</span>`).join('<br>')}</dd>`:''}</dl></div>
+      ${focus.length?`<div><div class="cp-section-title">${_rsMonthName(rt.month)} focus${rt.leadName?` <span class="cp-rt-by">set by ${escHtml(rt.leadName)}</span>`:''}</div><ul class="cp-rt-focus">${focus.map(t=>{const p=Math.max(0,Math.min(100,t.percentComplete||0)),s=steps(t);return`<li><b>${escHtml(t.title)}</b><span>${p}%</span><i><em style="width:${p}%"></em></i>${s?`<small>${s}</small>`:''}</li>`;}).join('')}</ul></div>`:''}
+    </div>
+    <div class="cp-section-title" style="margin:22px 0 10px">Services this month</div>
+    <div class="cp-stat-card cp-rt-ledger">${(rt.services||[]).map(svc).join('')}</div>
+    <div class="cp-stat-card cp-rt-review"><b>${_rsMonthName(rt.reviewMonth)} in review</b><div class="cp-rt-nums"><span><b>${delivered}</b> delivered</span><span><b>${reqs}</b> requests sent</span><span><b>${overdue}</b> overdue now</span></div>${rt.reviewNote?`<p>${escHtml(rt.reviewNote)}${rt.leadName?`<span>${escHtml(rt.leadName)}, retainer lead</span>`:''}</p>`:''}</div>
+  </div>`;
 }
 
 // ── WorkBoard CRUD ──
@@ -10037,11 +10442,13 @@ function renderWorkRequestCard(r){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <span style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33">${escHtml(r.title)}</span>
           ${r.priority==='urgent'?`<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Urgent</span>`:''}
+          ${r.urgency==='week'?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Needed this week</span>`:''}
         </div>
         <div style="font-size:11px;color:#8da2b2;margin-bottom:${r.description?10:0}px">
           <span style="font-weight:600;color:${client?.color||'#8da2b2'}">${escHtml(client?.name||'Unknown')}</span>
           &nbsp;·&nbsp;${date}
         </div>
+        <div class="wr-ask" style="font-size:12px;color:#4a5568;margin-bottom:8px">Asked for <b>${escHtml(_wrServiceLabel(r))}</b>${r.neededBy?`, needed by ${new Date(r.neededBy+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`:''}</div>
         ${r.description?`<div class="clamp-body" style="font-size:12px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:10px;white-space:pre-wrap;word-break:break-word">${escHtml(r.description)}</div>`:''}
         ${r.attachments?.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${r.attachments.map(a=>`<a href="${_safeDataHref(a.data)}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -10152,12 +10559,14 @@ function wrUpdateStatus(requestId, status, note){
 function wrOpenAddModal(requestId){
   const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
   if(!r)return;
-  const boards=(DB.boards||[]).filter(b=>!b.archived);
-  const firstBoardId=boards[0]?.id||'';
+  // Only this client's boards: a request never lands on another client's board (plan R3, gap 1).
+  const boards=(DB.boards||[]).filter(b=>!b.archived&&b.clientId===r.clientId&&!_isPersonalBoard(b));
+  const pre=_wrPrefill(r,boards);
+  const firstBoardId=pre.boardId||'';
   const firstGroups=DB.groups.filter(g=>(g.boardId||g.workboardId)===firstBoardId);
-  const boardOpts=boards.map(b=>`<option value="${b.id}">${escHtml(b.name)}</option>`).join('')
+  const boardOpts=boards.map(b=>`<option value="${b.id}"${b.id===firstBoardId?' selected':''}>${escHtml(b.name)}${_isRetainedBoard(b)?' (Retained Services)':''}</option>`).join('')
     +`<option value="__new__">＋ Create new board…</option>`;
-  const groupOpts=firstGroups.map(g=>`<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  const groupOpts=boards.length?firstGroups.map(g=>`<option value="${g.id}"${g.id===pre.groupId?' selected':''}>${escHtml(g.name)}</option>`).join(''):'<option value="__main__">Main (auto-created)</option>';
   document.getElementById('generic-modal-title').textContent='Add to Workboard';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:16px">
@@ -10181,8 +10590,9 @@ function wrOpenAddModal(requestId){
       <div>
         <label class="form-label">Workboard</label>
         <select id="wr-modal-board" class="form-input" style="height:36px" onchange="wrModalBoardChange(this.value)">${boardOpts}</select>
+        <div style="font-size:11px;color:#8da2b2;margin-top:4px">Pre-filled from what the client picked: ${escHtml(_wrServiceLabel(r))}. Only their boards are listed.</div>
       </div>
-      <div id="wr-modal-newboard-row" class="hidden">
+      <div id="wr-modal-newboard-row" class="${boards.length?'hidden':''}">
         <label class="form-label">New Board Name</label>
         <input id="wr-modal-newboard-name" class="form-input" placeholder="e.g. General Cranes — 2026"/>
       </div>
@@ -10194,7 +10604,7 @@ function wrOpenAddModal(requestId){
         <label class="form-label">Assign to</label>
         <select id="wr-modal-owner" class="form-input" style="height:36px">
           <option value="">Unassigned</option>
-          ${allStaff().filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('')}
+          ${allStaff().filter(u=>u.role!=='client'&&u.active!==false).map(u=>`<option value="${u.id}"${u.id===pre.ownerId?' selected':''}>${escHtml(u.name)}</option>`).join('')}
         </select>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
@@ -10240,7 +10650,7 @@ function wrDoAddToWorkboard(requestId){
   if(boardId==='__new__'){
     const nbName=(document.getElementById('wr-modal-newboard-name')?.value||'').trim()||name;
     boardId=uid();
-    DB.workboards.push({id:boardId,name:nbName,color:client?.color||'#0d1c33',visibility:'all_internal',ownerId:currentUser.id,description:'',archived:false,createdAt:now,updatedAt:now});
+    DB.workboards.push({id:boardId,name:nbName,color:client?.color||'#0d1c33',visibility:'all_internal',clientId:r.clientId,ownerId:currentUser.id,description:'',archived:false,createdAt:now,updatedAt:now});
     const autoGroupId='g_'+uid();
     DB.groups.push({id:autoGroupId,workboardId:boardId,boardId,clientId:r.clientId,name:'Main',color:client?.color||'#97bcbd',order:0,createdAt:now});
     if(type==='task'){
@@ -10259,6 +10669,7 @@ function wrDoAddToWorkboard(requestId){
   }
 
   r.status='scoped';
+  if((r.serviceRef||'adhoc')==='adhoc'&&client&&!_isRetainedBoard((DB.boards||[]).find(b=>b.id===boardId)))client.adhocBoardId=boardId;
   saveDB(DB);
   closeGenericModal();
   renderSidebarWorkboards();
@@ -10276,7 +10687,7 @@ function _wrCreateTask(r,client,boardId,groupId,name,ownerId,now){
     currentlyWith:ownerId||null,
     currentlyWithType:ownerId?'staff':'none',
     currentlyWithUserId:ownerId||null,
-    startDate:null,endDate:null,
+    startDate:null,endDate:r.neededBy||null,
     percentComplete:0,percentMode:'manual',hourBudget:0,
     lockedDates:false,order:0,
     description:r.description||'',
@@ -11748,16 +12159,19 @@ function timeEntryForReport(e){
     hours:e.hours,
     note:e.note||null,
     billable:e.billable!==false,
+    retainer:_rsEntryRetained(e,task),
   };
 }
 
 // Exact JS port of filterTimeEntriesForReport.
-// clientId must be a real ID (not 'all'). Only billable entries pass.
+// clientId must be a real ID (not 'all'). Only billable entries pass, and never hours on a retained
+// board: those are covered by the retainer (plan R7) and stay in timesheets and payroll only.
 function filterTimeEntriesForReport(entries,clientId,startDate,endDate){
   return entries.filter(entry=>{
     return(
       entry.clientId===clientId&&
       entry.billable&&
+      !entry.retainer&&
       entry.date>=startDate&&
       entry.date<=endDate
     );
@@ -17912,6 +18326,7 @@ function renderWbTabs(activeView){
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="4" cy="8" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M10.3 4.2L5.7 6.8M5.7 9.2l4.6 2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Share
       </button>`:''}
+      ${_isRetainedBoard(wb)?`<button onclick="openRetainerPlan('${wb.id}')" class="btn btn-ghost btn-sm rs-plan-btn" style="font-size:12px;height:28px" title="Services, allowances, focus and the client note">Retainer plan</button>`:''}
       <button onclick="wsOpenComms()" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px;${wsCommsOpen?'border-color:#97bcbd;color:#0d1c33':''}" title="${commsCount} comms message${commsCount!==1?'s':''} · ${notesCount} meeting note${notesCount!==1?'s':''}">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M14 9a2 2 0 0 1-2 2H5l-3 3V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
         Comms &amp; Notes${commsCount>0?` <span style="background:#97bcbd;color:#0d1c33;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${commsCount}</span>`:''}${notesCount>0?` <span style="background:#c7e6d1;color:#0d6e4e;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${icon('note',10)}${notesCount}</span>`:''}
@@ -20305,6 +20720,7 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
         <span class="ws-grp-count">${sec.tasks.length}</span>
         <div class="ws-grp-bar">${statusMixBar(mix,64)||`<div class="progress-bar" style="width:64px"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>`}</div>
         <span class="ws-grp-pct">${pct}%</span>
+        ${_retainerMeterHtml(sec)}
         <button onclick="event.stopPropagation();openTaskModal(null,'${sec.defGrp||''}')" style="margin-left:auto;background:none;border:1px solid #e2eaf2;cursor:pointer;font-size:11px;color:#6b8399;padding:3px 10px;border-radius:4px;font-family:'Jost',sans-serif;font-weight:600" onmouseover="this.style.background='#fff'" onmouseout="this.style.background='none'">+ Add</button>
       </div>
     </td>
@@ -25343,6 +25759,11 @@ function sanitizeTaskForClient(task){
     clientApproval:  ca?{status:ca.status,note:ca.note||null,at:ca.at||null}:null,
     attachmentCount: (DB.taskFiles||[]).filter(f=>f.taskId===task.id&&!f.columnId&&(f.uploadedByClientId===currentUser?.clientId||(!f.internalOnly&&!task.clientAttachmentsHidden))).length,
     parentId:        task.parentTaskId||null,
+    groupId:         task.groupId||null,
+    completedAt:     task.completedAt||null,
+    // R6: staff display names (the server slice sends them; locally they are looked up).
+    ownerName:       task.ownerName!==undefined?task.ownerName:(task.ownerId?((getStaff(task.ownerId)||{}).name||null):null),
+    withName:        task.currentlyWithType==='client'?null:(task.withName!==undefined?task.withName:(task.currentlyWithUserId?((getStaff(task.currentlyWithUserId)||{}).name||null):null)),
     // Board-view-only additions — still whitelisted one field at a time, never the raw task.
     boardId:         _taskBoardId(task),
     groupName:       _grp?.name||null,
@@ -25428,8 +25849,12 @@ function cpNavigate(section){
   const clientId=currentUser?.clientId;
   const client=DB.clients.find(c=>c.id===clientId);
   const tasks=getClientTasks(clientId);
-  const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
+  const boards=_cpClientBoards(clientId);
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
+  // Retained Services tab: only for a client with a retained board (plan, tabs).
+  const rtBoard=boards.find(b=>_isRetainedBoard(b))||null;
+  _cpSyncRetainedTab(boards);
+  if(section==='retained'&&!rtBoard){section='overview';cpSection=section;portal.querySelectorAll('.cp-nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.section===section));}
   const body=document.getElementById('cp-body');
   if(!body)return;
   // The schedule uses the full width; every other tab keeps the reading width.
@@ -25437,6 +25862,7 @@ function cpNavigate(section){
   if(section==='schedule')          body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
   else if(section==='tasks')        body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
   else if(section==='workboard')    body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
+  else if(section==='retained')     body.innerHTML=renderCpRetained(clientId,tasks,rtBoard);
   else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
   else if(section==='notifications')body.innerHTML=renderCpNotifications();
   else                              body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
@@ -25730,7 +26156,7 @@ function _cpReloadGantt(keepScroll){
   const clientId=currentUser?.clientId;
   const client=DB.clients.find(c=>c.id===clientId);
   const tasks=getClientTasks(clientId);
-  const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
+  const boards=_cpClientBoards(clientId);
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
   const r=document.getElementById('cp-g-right');
@@ -26563,11 +26989,13 @@ function _cpRefreshCurrentSection(){
   if(!currentUser||currentUser.role!=='client')return;
   const clientId=currentUser.clientId;
   const tasks=getClientTasks(clientId);
-  const boards=DB.boards.filter(b=>b.clientId===clientId&&!b.archived);
+  const boards=_cpClientBoards(clientId);
+  _cpSyncRetainedTab(boards);
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
   if(!body)return;
-  if(cpSection==='tasks')body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
+  if(cpSection==='retained'){const rb=boards.find(b=>_isRetainedBoard(b));if(rb)body.innerHTML=renderCpRetained(clientId,tasks,rb);}
+  else if(cpSection==='tasks')body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
   else if(cpSection==='workboard')body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
   else if(cpSection==='overview'){const client=DB.clients.find(c=>c.id===clientId);body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);}
 }
@@ -26596,6 +27024,7 @@ function renderCpRequests(clientId){
           <div style="flex:1;min-width:0">
             <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:600;color:#0d1c33;margin-bottom:3px">${escHtml(r.title)}</div>
             <div style="font-size:11px;color:#8da2b2">Submitted ${new Date(r.submittedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})} · ${r.priority==='urgent'?'<span style="color:#b91c1c;font-weight:700">Urgent</span>':'Normal priority'}</div>
+            ${r.serviceRef?`<div style="font-size:11px;color:#6b8399;margin-top:2px">For ${escHtml(_wrServiceLabel(r))}${r.neededBy?`, needed by ${new Date(r.neededBy+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`:''}</div>`:''}
           </div>
           <span class="cp-badge" style="background:${sm.bg};color:${sm.color};flex-shrink:0">${sm.label}</span>
         </div>
@@ -26623,13 +27052,12 @@ function renderCpRequests(clientId){
         <label class="cp-form-label">Description</label>
         <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="Provide as much detail as possible — scope, deadline, references, any constraints…" style="resize:vertical;min-height:100px"></textarea>
       </div>
-      <div>
-        <label class="cp-form-label">Urgency</label>
-        <select id="cp-req-priority" class="cp-form-input" style="height:40px;cursor:pointer">
-          <option value="normal">Normal — no specific deadline pressure</option>
-          <option value="urgent">Urgent — time-sensitive</option>
-        </select>
+      <div class="cp-req-grid">
+        <div><label class="cp-form-label" for="cp-req-service">Service</label><select id="cp-req-service" class="cp-form-input" style="height:40px;cursor:pointer" onchange="cpReqServiceHint()">${_cpServiceOptions(clientId)}</select></div>
+        <div><label class="cp-form-label" for="cp-req-priority">Urgency</label><select id="cp-req-priority" class="cp-form-input" style="height:40px;cursor:pointer"><option value="normal">Normal</option><option value="week">Needed this week</option><option value="urgent">Urgent, holding up work</option></select></div>
+        <div><label class="cp-form-label" for="cp-req-needed">Needed by <span style="font-weight:400;color:#8da2b2">(optional)</span></label><input id="cp-req-needed" type="date" class="cp-form-input" style="height:40px"/></div>
       </div>
+      <div id="cp-req-hint" class="cp-req-hint">${escHtml(_cpServiceHint(clientId,'adhoc'))}</div>
       <div>
         <label class="cp-form-label">Supporting Documents (optional)</label>
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
@@ -26687,11 +27115,14 @@ function cpSubmitRequest(_unused){
     showAlert('Please enter a request title.');return;
   }
   const desc=(document.getElementById('cp-req-desc')?.value||'').trim();
-  const priority=document.getElementById('cp-req-priority')?.value||'normal';
+  const urgency=document.getElementById('cp-req-priority')?.value||'normal';
+  const priority=urgency==='urgent'?'urgent':'normal';
+  const serviceRef=document.getElementById('cp-req-service')?.value||'adhoc';
+  const neededBy=document.getElementById('cp-req-needed')?.value||null;
 
   function persist(attachments){
     if(_portalServerMode()){
-      _portalAction('submitWorkRequest',{title,description:desc,priority,attachments}).then(ok=>{
+      _portalAction('submitWorkRequest',{title,description:desc,priority,urgency,serviceRef,neededBy,attachments}).then(ok=>{
         if(!ok)return;
         _cpReqFiles=[];
         const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
@@ -26704,14 +27135,14 @@ function cpSubmitRequest(_unused){
     if(!DB.clientWorkRequests)DB.clientWorkRequests=[];
     DB.clientWorkRequests.push({
       id:'wr-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
-      clientId,title,description:desc,priority,
+      clientId,title,description:desc,priority,urgency,serviceRef,neededBy,
       submittedAt:new Date().toISOString(),
       status:'pending',adminNote:null,
       attachments,
     });
     _cpReqFiles=[];
     const client=DB.clients.find(c=>c.id===clientId);
-    _notifyAllStaff('work_request',`New work request from ${client?.name||'a client'}: "${title}"`);
+    _wrNotifyNewRequest(clientId,`New work request from ${client?.name||'a client'}: "${title}"`);
     saveDB(DB);updateClientReqBadge();
     // Reset form
     const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');

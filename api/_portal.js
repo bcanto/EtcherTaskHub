@@ -97,6 +97,49 @@ function taskOnPersonalBoard(blob, t) {
 function taskVisibleTo(blob, clientId, t) {
   return !!t && !t.archived && !taskHidden(blob, t) && taskClientId(blob, t) === clientId && !taskOnPersonalBoard(blob, t);
 }
+
+// ── Retained Services (.agents/PLAN-retained-services.md) ─────────────────────────────────────
+// The meter mirrors index.html's _retainerUsed: per service group and calendar month, finished
+// subitems of a top-level task, or the task itself when it has none, on client-visible work only.
+// Months are Perth calendar months, the same as the staff app on Etcher's machines.
+const RS_DONE = new Set(['done', 'completed', 'completed-approved', 'approved-client']);
+const RS_TZ = 'Australia/Perth';
+function rsYm(d) {
+  try { return new Intl.DateTimeFormat('en-CA', { timeZone: RS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(d)).slice(0, 7); }
+  catch (e) { return String(d).slice(0, 7); }
+}
+function rsPrevYm(ym) { const [y, m] = ym.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; }
+function isRetainedBoard(b) { return !!(b && b.retainer && !b.retainer.endedAt && !b.archived); }
+function staffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client'); return u ? u.name : null; }
+function retainerUsed(blob, boardId, groupId, ym) {
+  const tasks = arr(blob.tasks);
+  const doneYm = x => { const at = x.completedAt || (x.clientApproval && x.clientApproval.at); return at ? rsYm(at) : null; };
+  let n = 0;
+  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach(t => {
+    const subs = tasks.filter(x => x.parentTaskId === t.id && !x.archived && !taskHidden(blob, x));
+    if (subs.length) n += subs.filter(x => RS_DONE.has(x.status) && doneYm(x) === ym).length;
+    else if (RS_DONE.has(t.status) && doneYm(t) === ym) n++;
+  });
+  return n;
+}
+// Only what the portal shows: never fees, hours, rates or staff ids (plan, server slice).
+function sliceRetainer(blob, b, now) {
+  if (!isRetainedBoard(b)) return undefined;
+  const r = b.retainer, ym = rsYm(now), prev = rsPrevYm(ym), months = r.months || {};
+  return {
+    services: arr(r.services).map(s => ({ key: s.key, groupId: s.groupId, unit: s.unit, allowance: s.allowance, core: !!s.core, ownerName: staffName(blob, s.ownerId), used: retainerUsed(blob, b.id, s.groupId, ym) })),
+    leadName: staffName(blob, r.leadId), startMonth: r.startMonth || null, priority: r.priority || null,
+    month: ym, focusTaskIds: arr((months[ym] || {}).focusTaskIds).slice(0, 3), reviewMonth: prev, reviewNote: (months[prev] || {}).note || null,
+  };
+}
+// A request's service must be one of the client's own groups or boards; anything else is ad hoc.
+function workRequestRef(blob, clientId, ref) {
+  const s = String(ref || '');
+  const own = b => !!b && b.clientId === clientId && !b.archived && !(b.visibility === 'private' && b.personalBoard);
+  if (s.startsWith('g:')) { const g = findGroup(blob, s.slice(2)); if (g && own(arr(blob.boards).find(x => x.id === (g.boardId || g.workboardId)))) return s; }
+  if (s.startsWith('b:')) { if (own(arr(blob.boards).find(x => x.id === s.slice(2)))) return s; }
+  return 'adhoc';
+}
 // Same definition the portal uses for "this is waiting on you".
 // A task file is visible to the client when its task is, and either the client uploaded it, or
 // staff haven't switched attachments off for the task (clientAttachmentsHidden) and haven't
@@ -146,8 +189,11 @@ function sliceTask(blob, t) {
   const bid = taskBoardId(blob, t);
   s.boardId = bid; s.workboardId = bid;
   s.archived = false;
-  // Only whether it's with the client — never which staff member holds it.
+  // Whether it's with the client, and (R6, 2026-10-15) the owner's and holder's display names. Names
+  // only: the staff roster and internal ids still never leave the server.
   s.currentlyWithType = t.currentlyWithType === 'client' ? 'client' : 'staff';
+  s.ownerName = staffName(blob, t.ownerId);
+  s.withName = t.currentlyWithType === 'client' ? null : staffName(blob, t.currentlyWithUserId);
   s.awaitingClient = awaitingClient(t);
   if (t.clientApproval) s.clientApproval = { status: t.clientApproval.status, note: t.clientApproval.note || null, at: t.clientApproval.at || null };
   return s;
@@ -171,7 +217,7 @@ function sliceForClient(blob, clientId, userId) {
   // the same way as taskOnPersonalBoard above (both flags) — not personalBoard alone, which
   // stays stale-true after a board is switched back to a normal all_internal team board.
   const boards = arr(blob.boards).filter(b => b.clientId === clientId && !b.archived && !(b.visibility === 'private' && b.personalBoard))
-    .map(b => pick(b, ['id', 'name', 'color', 'clientId', 'order']));
+    .map(b => { const o = pick(b, ['id', 'name', 'color', 'clientId', 'order']); const rt = sliceRetainer(blob, b, new Date()); if (rt) o.retainer = rt; return o; });
   const boardIds = new Set(boards.map(b => b.id));
   const groupIds = new Set(tasks.map(t => t.groupId).filter(Boolean));
   const groups = arr(blob.groups)
@@ -538,7 +584,10 @@ function applyPortalAction(blob, ctx, action) {
       if (!title) return fail('Please enter a request title.');
       if (title.length > 300) return fail('That title is too long.');
       const description = String(a.description || '').trim().slice(0, 5000);
-      const priority = a.priority === 'urgent' ? 'urgent' : 'normal';
+      const urgency = ['normal', 'week', 'urgent'].includes(a.urgency) ? a.urgency : (a.priority === 'urgent' ? 'urgent' : 'normal');
+      const priority = urgency === 'urgent' ? 'urgent' : 'normal';
+      const neededBy = /^\d{4}-\d{2}-\d{2}$/.test(String(a.neededBy || '')) ? String(a.neededBy) : null;
+      const serviceRef = workRequestRef(blob, ctx.clientId, a.serviceRef);
       const atts = arr(a.attachments);
       if (atts.length > 10) return fail('Attach at most 10 files.');
       const attachments = [];
@@ -564,9 +613,13 @@ function applyPortalAction(blob, ctx, action) {
         if (JSON.stringify(blob).length + total > MAX_BLOB_CHARS_FOR_FILES) return fail('File storage is full right now. Please send files as SharePoint links, or contact Etcher.', 507);
       }
       if (!blob.clientWorkRequests) blob.clientWorkRequests = [];
-      blob.clientWorkRequests.push({ id: 'wr-' + ctx.rid() + ctx.rid(), clientId: ctx.clientId, title, description, priority,
+      blob.clientWorkRequests.push({ id: 'wr-' + ctx.rid() + ctx.rid(), clientId: ctx.clientId, title, description, priority, urgency, neededBy, serviceRef,
         submittedAt: ctx.now, status: 'pending', adminNote: null, attachments });
-      rec.notifyAllStaff('work_request', `New work request from ${clientName}: "${title}"`, null);
+      // R11: a retainer client's request goes to the retainer lead and the admins; others to all staff.
+      const rmsg = `New work request from ${clientName}: "${title}"`;
+      const rb = arr(blob.boards).find(b => b.clientId === ctx.clientId && isRetainedBoard(b));
+      const staff = activeStaff(blob), to = new Set(rb ? staff.filter(u => u.role === 'admin' || u.id === rb.retainer.leadId).map(u => u.id) : []);
+      if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else rec.notifyAllStaff('work_request', rmsg, null);
       return ok({ append: ['clientWorkRequests', 'notifications'] });
     }
 
