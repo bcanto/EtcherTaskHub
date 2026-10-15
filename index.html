@@ -335,6 +335,70 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-form-input:focus{border-color:#0d6e4e;box-shadow:0 0 0 3px rgba(13,110,78,0.1)}
 /* ── Client portal: page body + empty states ── */
 .cp-body{flex:1;padding:28px 32px 40px;max-width:1200px;margin:0 auto;width:100%;box-sizing:border-box}
+/* ── Portal look from the approved concept (2026-10-15): one white sheet per subject, hairlines not cards,
+   compact rows, wider page. Layered here so every class the portal suites use keeps working. ── */
+#client-portal .cp-body{max-width:1340px;padding:24px 24px 48px}
+#client-portal .cp-nav-tab{padding:14px 16px 12px;font-weight:500;color:#5c6b80}
+#client-portal .cp-nav-tab.active{color:#0d1c33;font-weight:600;border-bottom-color:#0d1c33}
+#client-portal .cp-sec{margin:0 0 22px}
+#client-portal .cp-sec-head{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}
+#client-portal .cp-sec-title{margin:0;font:600 15.5px/1.3 Jost,sans-serif;color:#0d1c33;letter-spacing:-.01em}
+#client-portal .cp-sec-count{font:500 13.5px Jost,sans-serif;color:#5c6b80;background:none;padding:0}
+#client-portal .cp-sec-dot,#client-portal .cp-sec-hint{display:none}
+.cp-sec-link{margin-left:auto;border:0;background:none;padding:2px 0;font:500 13px Jost,sans-serif;color:#31585a;cursor:pointer}
+.cp-sec-link:hover{text-decoration:underline}.cp-sec-link:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+#client-portal .cp-list{background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(13,28,51,.07);overflow:hidden}
+#client-portal .cp-list>.cp-task-row,#client-portal .cp-list>.cp-task-list-row{margin:0;border:0;border-radius:0;border-bottom:1px solid #eef2f6;box-shadow:none;transform:none;background:#fff}
+#client-portal .cp-list>.cp-task-row:last-child,#client-portal .cp-list>.cp-task-list-row:last-child{border-bottom:0}
+#client-portal .cp-list>.cp-task-row:hover,#client-portal .cp-list>.cp-task-list-row:hover{background:#f7f9fc;box-shadow:none;transform:none}
+#client-portal .cp-task-list-row{padding:9px 16px 9px 0!important}
+.cp-tl-meta{display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:auto;font-size:12.5px;color:#4a5568}
+.cp-tl-eng{width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#5c6b80}.cp-tl-who{width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Overview */
+.cp-sum{background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(13,28,51,.07);margin:0 0 22px;overflow:hidden}
+.cp-sum-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:16px 20px 10px}
+.cp-sum-top h1{margin:0;font:600 22px/1.15 Jost,sans-serif;letter-spacing:-.02em;color:#0d1c33}
+.cp-sum-top span{margin-left:auto;font:500 13px Jost,sans-serif;color:#5c6b80}
+.cp-sum-line{height:4px;margin:0 20px 14px;border-radius:2px;background:#e6ecf2;overflow:hidden}.cp-sum-line i{display:block;height:100%;background:#31585a}
+#client-portal .cp-sum .cp-band{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0;border-top:1px solid #e4eaf3;background:none;box-shadow:none;border-radius:0}
+#client-portal .cp-sum .cp-band-cell{display:flex;align-items:baseline;gap:8px;padding:11px 20px;border:0;border-left:1px solid #e4eaf3;background:none;border-radius:0;text-align:left;font:inherit;color:inherit;box-shadow:none}
+#client-portal .cp-sum .cp-band-cell:first-child{border-left:0}
+#client-portal .cp-sum .cp-band-cell.lead{justify-content:flex-start}
+#client-portal .cp-sum button.cp-band-cell{cursor:pointer}#client-portal .cp-sum button.cp-band-cell:hover{background:#f7f9fc}
+#client-portal .cp-sum button.cp-band-cell:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+#client-portal .cp-sum .cp-band-num{font:600 20px/1 Jost,sans-serif;color:#0d1c33}
+#client-portal .cp-sum .cp-band-cell.warn .cp-band-num{color:#b45309}
+#client-portal .cp-sum .cp-band-unit,#client-portal .cp-sum .cp-band-of{font-size:13px;font-weight:500;color:#5c6b80}
+#client-portal .cp-sum .cp-band-label{font-size:12.5px;color:#5c6b80;margin:0;text-transform:none;letter-spacing:0;font-weight:400}
+.cp-ov2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start}.cp-ov2.single{grid-template-columns:minmax(0,1fr)}
+.cp-col{display:grid;gap:0;min-width:0}
+#client-portal .cp-need{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:9px 18px;cursor:pointer}
+.cp-need-t{display:grid;gap:1px;min-width:0}.cp-need-t b{font:600 13.5px/1.35 Jost,sans-serif;color:#0d1c33}.cp-need-t span{font-size:12.5px;color:#5c6b80}.cp-need-t span.late{color:#b91c1c}
+.cp-need-a{display:flex;flex-wrap:wrap;gap:4px 8px;justify-content:flex-end;align-items:center}
+.cp-btn{display:inline-flex;align-items:center;border:1.5px solid transparent;border-radius:8px;padding:6px 13px;font:600 13px Jost,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(.2,0,0,1),background .15s}
+.cp-btn:active{transform:scale(.97)}.cp-btn:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.cp-btn.sign{background:#0d6e4e;color:#fff}.cp-btn.sign:hover{background:#0a5a40}
+.cp-btn.line{background:#fff;border-color:#d8e0ec;color:#3d5269}.cp-btn.line:hover{border-color:#0d1c33;color:#0d1c33}
+.cp-btn.text{background:none;padding:6px 4px;color:#3d5269}.cp-btn.text:hover{color:#0d1c33;text-decoration:underline;text-underline-offset:3px}
+#client-portal .cp-due{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 18px;cursor:pointer}
+.cp-due-d{font:600 12.5px Jost,sans-serif;color:#0d1c33}.cp-due-t b{display:block;font:600 13.5px/1.35 Jost,sans-serif;color:#0d1c33}.cp-due-t small{font-size:12.5px;color:#5c6b80}
+#client-portal button.cp-eng{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;width:100%;margin:0;padding:10px 18px;border:0;border-bottom:1px solid #eef2f6;border-radius:0;background:#fff;text-align:left;cursor:pointer;box-shadow:none;font:inherit}
+#client-portal button.cp-eng:last-child{border-bottom:0}#client-portal button.cp-eng:hover{background:#f7f9fc}#client-portal button.cp-eng:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+.cp-eng-n{display:flex;align-items:center;gap:8px;font:600 13.5px Jost,sans-serif;color:#0d1c33}.cp-eng-n i{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.cp-eng-f{font:600 12.5px Jost,sans-serif;color:#3d5269}
+.cp-eng-x{grid-column:1/-1;font-size:12px;color:#5c6b80;padding-left:17px}
+.cp-eng-bar{grid-column:1/-1;height:4px;border-radius:2px;background:#e6ecf2;overflow:hidden;margin-left:17px}.cp-eng-bar i{display:block;height:100%}
+.cp-act{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;width:100%;padding:8px 18px;border:0;border-bottom:1px solid #eef2f6;background:#fff;text-align:left;cursor:pointer;font:inherit}
+.cp-act:last-child{border-bottom:0}.cp-act:hover{background:#f7f9fc}.cp-act:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+.cp-act-w{font:500 12px Jost,sans-serif;color:#5c6b80}.cp-act-t{font:600 13px/1.4 Jost,sans-serif;color:#0d1c33}
+.cp-act.un .cp-act-t::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#31585a;margin-right:7px;vertical-align:2px}
+/* Request Work */
+.cp-req2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:22px;align-items:start}
+.cp-req2 .cp-col{gap:16px}
+.cp-req-after ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.cp-req-after li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:13px;color:#3d5269}.cp-req-after li b{font-family:Jost,sans-serif;color:#0d1c33}
+@media (max-width:1000px){.cp-ov2,.cp-req2{grid-template-columns:minmax(0,1fr)}.cp-tl-eng{width:140px}}
+@media (max-width:640px){#client-portal .cp-body{padding:16px 14px 32px}#client-portal .cp-sum .cp-band{grid-template-columns:repeat(2,minmax(0,1fr))}#client-portal .cp-sum .cp-band-cell:nth-child(3){border-left:0}#client-portal .cp-sum .cp-band-cell:nth-child(n+3){border-top:1px solid #e4eaf3}.cp-tl-meta{display:none}#client-portal .cp-need{grid-template-columns:minmax(0,1fr)}.cp-need-a{justify-content:flex-start}#client-portal .cp-due{grid-template-columns:70px minmax(0,1fr)}#client-portal .cp-due .cp-badge{display:none}}
 .cp-body.cp-wide{max-width:1680px}
 .cp-empty{background:#fff;border:1px solid #e2eaf2;border-radius:14px;padding:56px 24px 60px;text-align:center}
 .cp-empty-icon{width:44px;height:44px;border-radius:12px;background:#eef5f4;color:#0d6e4e;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
@@ -534,7 +598,7 @@ button.cp-band-cell:focus-visible{outline:2px solid #e7a94b;outline-offset:-3px}
 button.cp-m-btn.on{border-color:#0078d4;color:#0063b1;background:#eef6fd}
 @media (max-width:600px){.cp-m-head{padding:20px 18px 16px}.cp-m-sec{padding:18px}.cp-m-ask,.cp-m-state{margin:0 18px 18px}.cp-m-title{font-size:18px}.cp-m-facts{grid-template-columns:1fr 1fr}.cp-m-fact{border-left:0;border-top:1px solid #e6edf4}.cp-m-fact:first-child{grid-column:1/-1;border-top:0}.cp-m-fact:nth-child(3){border-left:1px solid #e6edf4}}
 /* in a joined list the row accent is a thin edge, not a rounded bar */
-.cp-list>.cp-task-list-row>div:first-child,.cp-list>.cp-task-row>div:first-child{width:3px!important;border-radius:0!important;opacity:0.85}
+.cp-list>.cp-task-list-row>div:first-child,.cp-list>.cp-task-row:not(.cp-need):not(.cp-due)>div:first-child{width:3px!important;border-radius:0!important;opacity:0.85}
 @media (max-width:900px){.cp-brow{grid-template-columns:minmax(0,1fr) 150px 90px 50px}.cp-bcol-date{display:none}}
 @media (max-width:600px){.cp-brow{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}.cp-bcol-prog,.cp-bhead{display:none}.cp-bwith{grid-column:1;grid-row:2;font-size:11px;font-weight:500;margin-top:-4px}}
 /* ── Client portal: shell ── */
@@ -550,8 +614,8 @@ body:has(#client-portal:not(.hidden)) #mobile-tabbar,body:has(#client-portal:not
   .cp-nav::-webkit-scrollbar{display:none}
   .cp-nav-tab{padding:13px 12px;flex-shrink:0}
   .cp-list>.cp-task-row{flex-wrap:wrap;row-gap:8px}
-  .cp-list>.cp-task-row>div:nth-child(2){flex:1 1 calc(100% - 40px)!important}
-  .cp-list>.cp-task-row>div:nth-child(3){margin-left:16px!important}
+  .cp-list>.cp-task-row:not(.cp-need):not(.cp-due)>div:nth-child(2){flex:1 1 calc(100% - 40px)!important}
+  .cp-list>.cp-task-row:not(.cp-need):not(.cp-due)>div:nth-child(3){margin-left:16px!important}
   .cp-sec-hint{display:none}
 }
 @media (max-width:900px){.cp-band{grid-template-columns:1fr 1fr}.cp-band-cell:nth-child(3){border-left:0}.cp-band-cell:nth-child(n+3){border-top:1px solid #eef2f6}.cp-ov-grid{grid-template-columns:minmax(0,1fr)}}
@@ -26034,57 +26098,56 @@ function cpBarColor(broadLabel){
 
 // ── Overview page ─────────────────────────────────────────
 function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
+  // Concept layout (approved 2026-10-15): the month at a glance, then two columns: what needs the
+  // client and what is due, beside their engagements and recent activity. The four counts keep their
+  // meaning (portal-design-test, audit-fixes-test); no rings or hero tiles (the user's own rule).
   const todayStr=toDateStr(new Date());
-  // tasks are already pre-filtered (no archived) by sanitizeTaskForClient pipeline
   const activeTasks=tasks;
   const awaitingTasks=activeTasks.filter(t=>t.awaitingClient);
   const _isDone=t=>t.status==='done'||t.status==='completed'||t.status==='completed-approved';
   const doneTasks=activeTasks.filter(_isDone);
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
-
-
-  // ── Stat band ──
-  // One joined band instead of three floating cards; the lead cell carries the headline number.
   const _wk=new Date();_wk.setDate(_wk.getDate()+7);const _wkStr=toDateStr(_wk);
-  // Same rule as the 'Due this week' list below, so the band and the list always agree.
+  // Same rule as the 'Due this week' list below, so the count and the list always agree.
   const _dueSoon=t=>t.endDate&&t.endDate>=todayStr&&t.endDate<=_wkStr&&!_isDone(t)&&t.percentComplete!==100&&!t.awaitingClient;
   const dueWeek=activeTasks.filter(_dueSoon).length;
-  const stats=`<div class="cp-band">
-    <div class="cp-band-cell lead">
-      <div class="cp-band-ring">${cpProgressRing(overallPct,64,6,'#7fd1b2')}</div>
-      <div><div class="cp-band-num">${overallPct}<span class="cp-band-unit">%</span></div><div class="cp-band-label">Overall progress</div></div>
-    </div>
-    <div class="cp-band-cell"><div class="cp-band-num">${doneTasks.length}<span class="cp-band-of"> / ${activeTasks.length}</span></div><div class="cp-band-label">Tasks complete</div></div>
-    <${awaitingTasks.length?'button type="button" onclick="document.getElementById(\'cp-attn\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})"':'div'} class="cp-band-cell${awaitingTasks.length?' warn':''}"><div class="cp-band-num">${awaitingTasks.length}</div><div class="cp-band-label">Waiting on you</div></${awaitingTasks.length?'button':'div'}>
-    <div class="cp-band-cell"><div class="cp-band-num">${dueWeek}</div><div class="cp-band-label">Due in the next 7 days</div></div>
-  </div>`;
+  const now=new Date(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),day=now.getDate();
+  const retained=boards.some(b=>_isRetainedBoard(b));
+  const month=now.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  const fmtD=s=>s?new Date(s+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';
+  const fmtDay=s=>new Date(s+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+  const boardName=t=>{const b=boards.find(x=>x.id===t.boardId);return b?b.name:'';};
 
-  // ── Awaiting client action ──
+  const stats=`<section class="cp-sum" aria-label="This month">
+    <div class="cp-sum-top"><h1>${escHtml(month)}</h1><span>${retained?'Retainer month, day':'Day'} ${day} of ${dim}</span></div>
+    <div class="cp-sum-line" role="img" aria-label="${Math.round(day/dim*100)}% of the month gone"><i style="width:${(day/dim*100).toFixed(1)}%"></i></div>
+    <div class="cp-band">
+      <div class="cp-band-cell lead"><div class="cp-band-num">${overallPct}<span class="cp-band-unit">%</span></div><div class="cp-band-label">Overall progress</div></div>
+      <div class="cp-band-cell"><div class="cp-band-num">${doneTasks.length}<span class="cp-band-of"> / ${activeTasks.length}</span></div><div class="cp-band-label">Tasks complete</div></div>
+      <${awaitingTasks.length?'button type="button" onclick="document.getElementById(\'cp-attn\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})"':'div'} class="cp-band-cell${awaitingTasks.length?' warn':''}"><div class="cp-band-num">${awaitingTasks.length}</div><div class="cp-band-label">Waiting on you</div></${awaitingTasks.length?'button':'div'}>
+      <div class="cp-band-cell"><div class="cp-band-num">${dueWeek}</div><div class="cp-band-label">Due in the next 7 days</div></div>
+    </div>
+  </section>`;
+
+  // ── Waiting on you: answer straight from the list ──
   let awaitingSection='';
   if(awaitingTasks.length){
     const rows=awaitingTasks.map(t=>{
-      const dateStr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:'';
-      const overdue=t.endDate&&t.endDate<todayStr;
       const hasApproved=t.clientApproval?.status==='approved';
-      return`<div class="cp-task-row" style="padding:9px 14px 9px 0;min-height:unset;align-items:center;cursor:pointer" onclick="cpOpenTaskModal('${t.id}')">
-        <div style="width:4px;min-height:36px;border-radius:2px;background:#f59e0b;flex-shrink:0;align-self:stretch"></div>
-        <div style="flex:1;min-width:0;padding-left:12px;display:flex;align-items:center;gap:10px;overflow:hidden">
-          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1">${escHtml(t.title)}</span>
-          ${dateStr?`<span style="font-size:11px;color:${overdue?'#dc2626':'#b0bec5'};white-space:nowrap;flex-shrink:0">${overdue?'⚠ ':''}${dateStr}</span>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px" onclick="event.stopPropagation()">
-          ${!hasApproved&&!_cpIsApprovalAsk(t)?`
-            <button onclick="event.stopPropagation();cpOpenTaskModal('${t.id}')" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">⚡ View request</button>
-          `:!hasApproved?`
-            <button onclick="event.stopPropagation();cpApproveTask('${t.id}')" style="font-size:11px;font-weight:700;color:#fff;background:#0d6e4e;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#065f46'" onmouseout="this.style.background='#0d6e4e'">✓ Approve</button>
-            <button onclick="event.stopPropagation();cpOpenChangesModal('${t.id}')" style="font-size:11px;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Jost',sans-serif" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">↩ Request Review</button>
-          `:`<span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:3px 10px;border-radius:20px">✓ Approved</span>`}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d0dae6" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      const overdue=t.endDate&&t.endDate<todayStr;
+      const where=[boardName(t),t.endDate?`Due ${fmtD(t.endDate)}`:''].filter(Boolean).join('. ');
+      return`<div class="cp-task-row cp-need" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')">
+        <div class="cp-need-t"><b>${escHtml(t.title)}</b><span class="${overdue?'late':''}">${escHtml(where)}${overdue?'. Overdue':''}</span></div>
+        <div class="cp-need-a" onclick="event.stopPropagation()">
+          ${!hasApproved&&!_cpIsApprovalAsk(t)?`<button type="button" class="cp-btn line" onclick="cpOpenTaskModal('${t.id}')">View request</button>`
+          :!hasApproved?`<button type="button" class="cp-btn sign" onclick="cpApproveTask('${t.id}')">Sign off</button><button type="button" class="cp-btn text" onclick="cpOpenChangesModal('${t.id}')">Request changes</button>`
+          :`<span class="cp-badge" style="background:#dcfce7;color:#15803d">Signed off</span>`}
+          <button type="button" class="cp-btn text" onclick="cpOpenTaskModal('${t.id}')">Details</button>
         </div>
       </div>`;
     }).join('');
     awaitingSection=`<section id="cp-attn" class="cp-sec">
-      <div class="cp-sec-head"><span class="cp-sec-dot" style="background:#e7a94b"></span><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${awaitingTasks.length}</span><span class="cp-sec-hint">Select a task for details</span></div>
+      <div class="cp-sec-head"><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${awaitingTasks.length}</span></div>
       <div class="cp-list">${rows}</div>
     </section>`;
   }
@@ -26093,64 +26156,42 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   const dueSoonTasks=activeTasks.filter(_dueSoon).sort((a,b)=>a.endDate.localeCompare(b.endDate));
   let dueSoonSection='';
   if(dueSoonTasks.length){
-    const dueSoonRows=dueSoonTasks.slice(0,5).map(t=>{
-      const dObj=new Date(t.endDate);
-      const daysLeft=Math.round((dObj-new Date(todayStr))/(1000*60*60*24));
-      const label=daysLeft===0?'Due today':daysLeft===1?'Due tomorrow':`Due in ${daysLeft} days`;
-      const urgent=daysLeft<=2;
-      return`<div class="cp-task-row" style="padding:8px 14px 8px 0;min-height:unset;align-items:center;cursor:pointer" onclick="cpOpenTaskModal('${t.id}')">
-        <div style="width:4px;min-height:32px;border-radius:2px;background:${urgent?'#dc2626':'#3b82f6'};flex-shrink:0;align-self:stretch"></div>
-        <div style="flex:1;min-width:0;padding-left:12px;overflow:hidden">
-          <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:600;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escHtml(t.title)}</span>
-        </div>
-        <div style="flex-shrink:0;margin-left:8px;font-size:11px;font-weight:700;color:${urgent?'#dc2626':'#3b82f6'};white-space:nowrap">${label}</div>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d0dae6" stroke-width="2" stroke-linecap="round" style="margin-left:6px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`;
-    }).join('');
+    const dueSoonRows=dueSoonTasks.slice(0,5).map(t=>{const bs=cpBroadStatus(t.status);return`<div class="cp-task-row cp-due" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')">
+        <span class="cp-due-d">${fmtDay(t.endDate)}</span><span class="cp-due-t"><b>${escHtml(t.title)}</b><small>${escHtml(boardName(t))}</small></span><span class="cp-badge" style="background:${bs.bg};color:${bs.color}">${escHtml(bs.label)}</span>
+      </div>`;}).join('');
     dueSoonSection=`<section class="cp-sec">
-      <div class="cp-sec-head"><span class="cp-sec-dot" style="background:#3a73ad"></span><h2 class="cp-sec-title">Due this week</h2><span class="cp-sec-count">${dueSoonTasks.length}</span></div>
+      <div class="cp-sec-head"><h2 class="cp-sec-title">Due this week</h2><span class="cp-sec-count">${dueSoonTasks.length}</span></div>
       <div class="cp-list">${dueSoonRows}</div>
     </section>`;
   }
 
-  // ── Per-engagement cards ──
-  const engCards=boards.map(b=>{
+  // ── Engagements: one quiet row each, opening that board ──
+  const engRows=boards.map(b=>{
     const btIds=boardIdx.get(b.id)||new Set();
-    const bt=activeTasks.filter(t=>btIds.has(t.id));
-    const done=bt.filter(_isDone).length;
-    const awaiting=bt.filter(t=>t.awaitingClient).length;
-    const pct=bt.length?Math.round(done/bt.length*100):0;
-    const counts=[
-      bt.filter(t=>t.status==='todo').length,
-      bt.filter(t=>t.status==='in-progress'||t.status==='review').length,
-      done,
-      awaiting,
-    ];
-    const labels=['Not Started','In Progress','Completed','With You'];
-    const statPills=labels.map((l,i)=>counts[i]?`<span style="font-size:11px;color:#8da2b2"><strong style="color:#1a2940;font-family:'Jost',sans-serif">${counts[i]}</strong> ${l}</span>`:'').filter(Boolean).join('<span style="color:#e2eaf2">·</span>');
-    return`<div class="cp-eng">
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">
-        <div style="width:10px;height:10px;border-radius:3px;background:${b.color};flex-shrink:0;margin-top:4px"></div>
-        <div style="flex:1;min-width:0">
-          <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;margin-bottom:2px">${escHtml(b.name)}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${statPills}</div>
-        </div>
-        <div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:800;color:${b.color};flex-shrink:0">${pct}%</div>
-      </div>
-      <div style="background:#f0f4f8;border-radius:6px;height:8px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${b.color};border-radius:6px;transition:width 0.4s ease"></div>
-      </div>
-      ${awaiting?`<div style="margin-top:10px;font-size:11px;color:#b45309;font-weight:600">⚡ ${awaiting} task${awaiting!==1?'s':''} awaiting your action</div>`:''}
-    </div>`;
+    const bt=activeTasks.filter(t=>btIds.has(t.id)&&!t.parentId);
+    const done=bt.filter(_isDone).length,pct=bt.length?Math.round(done/bt.length*100):0;
+    const next=bt.filter(t=>!_isDone(t)&&t.endDate).sort((x,y)=>x.endDate.localeCompare(y.endDate))[0];
+    const go=_isRetainedBoard(b)?`cpNavigate('retained')`:`cpNavigate('workboard')`;
+    return`<button type="button" class="cp-eng" onclick="${go}">
+      <span class="cp-eng-n"><i style="background:${b.color}"></i>${escHtml(b.name)}</span><span class="cp-eng-f">${done} of ${bt.length} done</span>
+      <span class="cp-eng-x">${next?`Next due ${fmtD(next.endDate)}: ${escHtml(next.title)}`:'Nothing open.'}</span>
+      <span class="cp-eng-bar"><i style="width:${pct}%;background:${b.color}"></i></span>
+    </button>`;
   }).join('');
-
   const engSection=boards.length?`<section class="cp-sec">
     <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length}</span></div>
-    <div class="cp-list">${engCards}</div>
+    <div class="cp-list">${engRows}</div>
   </section>`:'';
 
-  // Engagements and the week ahead sit side by side on a wide screen.
-  return stats+awaitingSection+`<div class="cp-ov-grid${dueSoonSection?'':' single'}">${engSection}${dueSoonSection}</div>`;
+  // ── Recent activity: the client's own notifications ──
+  const notes=(DB.notifications||[]).filter(n=>n.recipientId===currentUser?.id).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,5);
+  const recent=notes.length?`<section class="cp-sec">
+    <div class="cp-sec-head"><h2 class="cp-sec-title">Recent activity</h2><button type="button" class="cp-sec-link" onclick="cpNavigate('notifications')">All notifications</button></div>
+    <div class="cp-list">${notes.map(n=>`<button type="button" class="cp-act${n.read?'':' un'}" onclick="${n.taskId?`cpOpenTaskModal('${escHtml(n.taskId)}')`:`cpNavigate('notifications')`}"><span class="cp-act-w">${n.createdAt?new Date(n.createdAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''}</span><span class="cp-act-t">${escHtml(n.message||'')}</span></button>`).join('')}</div>
+  </section>`:'';
+
+  const left=awaitingSection+dueSoonSection, right=engSection+recent;
+  return stats+`<div class="cp-ov2${left&&right?'':' single'}"><div class="cp-col">${left}</div><div class="cp-col">${right}</div></div>`;
 }
 
 // ── Client-facing read-only Gantt ─────────────────────────
@@ -26464,6 +26505,7 @@ function renderCpTasks(clientId,tasks,boards,boardIdx){
         ${hasApproved?`<span style="font-size:10px;font-weight:700;color:#15803d;background:#dcfce7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">✓ Approved</span>`:''}
         ${hasChanges&&!showActions?`<span style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0">↩ Changes Sent</span>`:''}
       </div>
+      <span class="cp-tl-meta"><span class="cp-tl-eng">${escHtml((boards.find(b=>b.id===t.boardId)||{}).name||'')}</span><span class="cp-tl-who">${escHtml(t.awaitingClient&&!isDone(t.status)?'You':(t.withName||t.ownerName||'Etcher'))}</span></span>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px" onclick="event.stopPropagation()">
         ${showActions&&!hasApproved&&!_cpIsApprovalAsk(t)?`
           <button onclick="event.stopPropagation();cpOpenTaskModal('${t.id}')" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fef3c7'">⚡ View request</button>
@@ -27190,7 +27232,7 @@ function renderCpRequests(clientId){
 
   const form=`<div class="cp-stat-card">
     <div class="cp-section-title" style="margin-bottom:6px">Submit a Work Request</div>
-    <p style="font-size:13px;color:#6b8399;margin-bottom:24px;line-height:1.65">Tell us what you need — we'll review, scope, and follow up. Once approved, it becomes a tracked task in your portal.</p>
+    <p style="font-size:13px;color:#6b8399;margin-bottom:24px;line-height:1.65">Tell us what you need. We review it, scope it and follow up. Once it is in scope, it becomes a tracked task in your portal.</p>
     <div style="display:flex;flex-direction:column;gap:18px">
       <div>
         <label class="cp-form-label">Request Title <span style="color:#dc2626">*</span></label>
@@ -27198,7 +27240,7 @@ function renderCpRequests(clientId){
       </div>
       <div>
         <label class="cp-form-label">Description</label>
-        <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="Provide as much detail as possible — scope, deadline, references, any constraints…" style="resize:vertical;min-height:100px"></textarea>
+        <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="What is needed, which site or crew, any deadline, and documents we should use." style="resize:vertical;min-height:100px"></textarea>
       </div>
       <div class="cp-req-grid">
         <div><label class="cp-form-label" for="cp-req-service">Service</label><select id="cp-req-service" class="cp-form-input" style="height:40px;cursor:pointer" onchange="cpReqServiceHint()">${_cpServiceOptions(clientId)}</select></div>
@@ -27234,7 +27276,12 @@ function renderCpRequests(clientId){
     </div>
   </div>`;
 
-  return infoBanner+myRequests+form;
+  const after=`<div class="cp-stat-card cp-req-after"><div class="cp-section-title">After you send it</div><ol>
+    <li><b>Received</b><span>Your Etcher team sees it straight away.</span></li>
+    <li><b>In scope</b><span>We add it to the right board. Retainer work counts toward that service; ad hoc work is quoted or charged hourly.</span></li>
+    <li><b>In progress</b><span>Follow it here and message the person working on it.</span></li>
+    <li><b>Done</b><span>Anything that needs your sign-off comes back to you first.</span></li></ol></div>`;
+  return`<div class="cp-req2"><div class="cp-col">${form}</div><div class="cp-col">${myRequests||'<div class="cp-stat-card"><div class="cp-section-title">My Requests</div><p style="margin:0;font-size:13px;color:#6b8399">Requests you send are listed here.</p></div>'}${after}</div></div>`;
 }
 
 function cpReqFileChanged(input){
