@@ -267,6 +267,16 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.02em;white-space:nowrap;font-family:'Jost',sans-serif}
 /* Retained Services in the portal (.agents/PLAN-retained-services.md) */
 .cp-req-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cp-fbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 16px;padding:6px;background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(13,28,51,.07)}
+.cp-f{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:7px;border:1px solid #e2eaf2;cursor:pointer;min-width:0}
+.cp-f.on{border-color:#0d1c33;background:#f5f8fb}
+.cp-f span{font-size:12px;color:#6b8399;font-family:'Jost',sans-serif}
+.cp-f select{border:0;background:none;font:600 12.5px 'Jost',sans-serif;color:#0d1c33;cursor:pointer;max-width:200px;outline:0}
+.cp-f:focus-within{box-shadow:0 0 0 2px #31585a}
+.cp-fn{margin-left:auto;display:inline-flex;align-items:center;gap:10px;padding:0 8px;font-size:12.5px;color:#6b8399;white-space:nowrap}
+.cp-fclear{border:0;background:none;padding:0;font:600 12.5px 'Jost',sans-serif;color:#31585a;cursor:pointer}
+.cp-fclear:hover{text-decoration:underline}.cp-fclear:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+@media (max-width:640px){.cp-fn{margin-left:0}.cp-f select{max-width:150px}}
 .cp-req-hint{font-size:12.5px;color:#6b8399;margin-top:-6px}
 .cp-rt-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:24px}
 .cp-rt-head.solo{grid-template-columns:minmax(0,1fr)}
@@ -25858,6 +25868,55 @@ function renderCpNotifications(){
   </div>`;
 }
 
+// ── Portal filters (Tasks, Board, Schedule) ──
+const _cpFilters={tasks:{},workboard:{},schedule:{}};
+const _CP_DONE=['done','completed','approved-client','completed-approved','cancelled'];
+function _cpStatusKey(t){
+  if(_CP_DONE.includes(t.status))return'done';
+  if(t.awaitingClient)return'you';
+  if(['review','waiting-review','waiting-client'].includes(t.status))return'review';
+  if(['in-progress','needs-changes','change-requested','declined-client'].includes(t.status))return'progress';
+  return'scope';
+}
+function _cpWhoOf(t){return t.awaitingClient&&!_CP_DONE.includes(t.status)?'You':(t.withName||t.ownerName||'Etcher');}
+function _cpDueKey(t,today){
+  if(!t.endDate)return'none';
+  if(!_CP_DONE.includes(t.status)&&t.endDate<today)return'over';
+  const d7=toDateStr(new Date(Date.now()+7*864e5));
+  if(t.endDate<=d7)return'7';
+  return t.endDate.slice(0,7)===today.slice(0,7)?'month':'later';
+}
+// With (staff names) is on Tasks only: the Board view promises no staff names (action-requests-test),
+// a rule older than R6; whether the Board may show names now is the user's call.
+// Top-level tasks are matched; a match keeps its subtasks, so steps never go missing.
+function _cpFilterTasks(section,tasks){
+  const f=_cpFilters[section]||{},today=toDateStr(new Date());
+  if(!Object.values(f).some(Boolean))return tasks;
+  const keep=new Set(tasks.filter(t=>!t.parentId).filter(t=>{
+    if(f.eng&&t.boardId!==f.eng)return false;
+    if(f.st&&_cpStatusKey(t)!==f.st)return false;
+    if(f.who&&_cpWhoOf(t)!==f.who)return false;
+    if(f.due&&_cpDueKey(t,today)!==f.due)return false;
+    return true;
+  }).map(t=>t.id));
+  return tasks.filter(t=>keep.has(t.parentId?t.parentId:t.id));
+}
+function _cpFilterBar(section,boards,all,shown){
+  const f=_cpFilters[section]||{},top=all.filter(t=>!t.parentId),n=shown.filter(t=>!t.parentId).length;
+  const active=Object.values(f).some(Boolean);
+  const who=[...new Set(top.map(_cpWhoOf))].sort((a,b)=>a==='You'?-1:b==='You'?1:a.localeCompare(b));
+  const sel=(key,label,opts)=>`<label class="cp-f${f[key]?' on':''}"><span>${label}</span><select data-cp-f="${key}" onchange="cpSetFilter('${section}','${key}',this.value)">${opts.map(([v,l])=>`<option value="${escHtml(v)}"${(f[key]||'')===v?' selected':''}>${escHtml(l)}</option>`).join('')}</select></label>`;
+  return`<div class="cp-fbar" role="search" aria-label="Filters">
+    ${boards.length>1?sel('eng','Engagement',[['','All']].concat(boards.map(b=>[b.id,b.name]))):''}
+    ${sel('st','Status',[['','All'],['you','Waiting on you'],['progress','In progress'],['review','Under review'],['scope','In scope'],['done','Done']])}
+    ${sel('due','Due',[['','Any time'],['over','Overdue'],['7','Next 7 days'],['month','This month'],['later','Later']])}
+    ${section==='tasks'?sel('who','With',[['','Anyone']].concat(who.map(w=>[w,w]))):''}
+    <span class="cp-fn" role="status">${active?`${n} of ${top.length} shown<button type="button" class="cp-fclear" onclick="cpClearFilters('${section}')">Clear filters</button>`:`${top.length} items`}</span>
+  </div>`;
+}
+function cpSetFilter(section,key,value){if(!_cpFilters[section])return;_cpFilters[section][key]=value||'';cpNavigate(section);}
+function cpClearFilters(section){_cpFilters[section]={};cpNavigate(section);}
+
 // ── Client portal navigation ──────────────────────────────
 // Builds Map<boardId, Set<taskId>> from internal DB — called before sanitization
 // so the rendered client portal never needs boardId on the sanitized task.
@@ -25891,9 +25950,13 @@ function cpNavigate(section){
   if(!body)return;
   // The schedule uses the full width; every other tab keeps the reading width.
   body.classList.toggle('cp-wide',section==='schedule');
-  if(section==='schedule')          body.innerHTML=renderCpGantt(clientId,tasks,boards,client,boardIdx);
-  else if(section==='tasks')        body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
-  else if(section==='workboard')    body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
+  // Filters (Tasks, Board, Schedule): the list is narrowed before the tab draws.
+  const fl=['tasks','workboard','schedule'].includes(section);
+  const ft=fl?_cpFilterTasks(section,tasks):tasks,fb=fl&&(_cpFilters[section]||{}).eng?boards.filter(b=>b.id===_cpFilters[section].eng):boards;
+  const bar=fl?_cpFilterBar(section,boards,tasks,ft):'';
+  if(section==='schedule')          body.innerHTML=bar+renderCpGantt(clientId,ft,fb,client,boardIdx);
+  else if(section==='tasks')        body.innerHTML=bar+renderCpTasks(clientId,ft,fb,boardIdx);
+  else if(section==='workboard')    body.innerHTML=bar+renderCpBoard(clientId,ft,fb,boardIdx);
   else if(section==='retained')     body.innerHTML=renderCpRetained(clientId,tasks,rtBoard);
   else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
   else if(section==='notifications')body.innerHTML=renderCpNotifications();
