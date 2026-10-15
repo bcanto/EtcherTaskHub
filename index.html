@@ -26027,7 +26027,7 @@ function _cpFilterBar(section,boards,all,shown){
     ${boards.length>1?sel('eng','Engagement',[['','All']].concat(boards.map(b=>[b.id,b.name]))):''}
     ${sel('st','Status',[['','All'],['you','Waiting on you'],['progress','In progress'],['review','Under review'],['scope','In scope'],['done','Done']])}
     ${sel('due','Due',[['','Any time'],['over','Overdue'],['7','Next 7 days'],['month','This month'],['later','Later']])}
-    ${section==='tasks'?sel('who','With',[['','Anyone']].concat(who.map(w=>[w,w]))):''}
+    ${sel('who','With',[['','Anyone']].concat(who.map(w=>[w,w])))}
     <span class="cp-fn" role="status">${active?`${n} of ${top.length} shown<button type="button" class="cp-fclear" onclick="cpClearFilters('${section}')">Clear filters</button>`:`${top.length} items`}</span>
   </div>`;
 }
@@ -26436,12 +26436,10 @@ function renderCpBoard(clientId,tasks,boards,boardIdx){
 function cpBoardRow(t,subs){
   const bs=cpBroadStatus(t.status);
   const dateStr=t.startDate&&t.endDate?`${formatDate(t.startDate)} → ${formatDate(t.endDate)}`:t.endDate?`Due ${formatDate(t.endDate)}`:'—';
-  // "With" is deliberately just You/Etcher, never a staff name — sanitizeTaskForClient never
-  // sends currentlyWithUserId to the client in the first place, so there is nothing here that
-  // could resolve into one even by mistake.
-  // A finished task isn't "with" anyone — seed/legacy data can leave With=Client on done work.
+  // "With" shows You or the staff member's display name (R6). The slice carries withName/ownerName
+  // only, never a staff id or email. A finished task isn't "with" anyone.
   const finished=['done','completed','approved-client','completed-approved','cancelled'].includes(t.status);
-  const withLabel=finished?'—':t.awaitingClient?'You':'Etcher';
+  const withLabel=finished?'—':escHtml(_cpWhoOf(t));
   const withColor=!finished&&t.awaitingClient?'#9a5b12':'#8da2b2';
   return`<div class="cp-brow" role="button" tabindex="0" onclick="cpOpenTaskModal('${t.id}')" onkeypress="if(event.key==='Enter')cpOpenTaskModal('${t.id}')" style="--acc:${t.openRequest?'#e7a94b':bs.color}">
     <span class="cp-bcol-task">

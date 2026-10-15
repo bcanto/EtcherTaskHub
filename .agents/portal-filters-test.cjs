@@ -37,7 +37,9 @@ H.run('portal-filters-test', 3180, async (t) => {
   // Each tab keeps its own filters; Board and Schedule have the bar too.
   await ev(() => { cpSetFilter('tasks', 'st', 'done'); cpNavigate('workboard'); }); await t.sleep(400);
   t.ok(await ev(() => !!document.querySelector('#cp-body .cp-fbar') && !Object.values(_cpFilters.workboard).some(Boolean)), 'the Board tab has its own filter bar, unaffected by the Tasks filters');
-  t.ok(await ev(() => !document.querySelector('#cp-body [data-cp-f="who"]')), 'the Board tab has no With filter: it shows no staff names');
+  t.ok(await ev(() => !!document.querySelector('#cp-body [data-cp-f="who"]')), 'the Board tab has the With filter (staff names are shown, R6)');
+  const bw = await ev(() => { const all = getClientTasks('c1').filter(x => !x.parentId && !_CP_DONE.includes(x.status) && !x.awaitingClient && (x.withName || x.ownerName)); const cells = [...document.querySelectorAll('#cp-body .cp-bwith')].map(c => c.textContent); return { want: all.length ? (all[0].withName || all[0].ownerName) : null, cells }; });
+  t.ok(bw.want === null || bw.cells.includes(bw.want), 'the Board With column shows who has the task by name (' + bw.want + ')');
   await ev(() => cpNavigate('schedule')); await t.sleep(600);
   t.ok(await ev(() => !!document.querySelector('#cp-body .cp-fbar')), 'the Schedule tab has the filter bar');
   await ev(() => cpNavigate('tasks')); await t.sleep(300);

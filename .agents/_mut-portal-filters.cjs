@@ -11,6 +11,10 @@ module.exports = [
     replace: "function cpSetFilter(section,key,value){['tasks','workboard','schedule'].forEach(s=>{_cpFilters[s][key]=value||'';});cpNavigate(section);}" },
   { id: 'pf-clear-broken', suite: 'portal-filters-test', file: 'index.html', note: 'Clear filters does nothing',
     find: "function cpClearFilters(section){_cpFilters[section]={};cpNavigate(section);}", replace: "function cpClearFilters(section){cpNavigate(section);}" },
-  { id: 'pf-who-on-board', suite: 'portal-filters-test', file: 'index.html', note: 'the Board tab lists staff names in a With filter',
-    find: "    ${section==='tasks'?sel('who','With',", replace: "    ${true?sel('who','With'," },
+  { id: 'pf-board-no-name', suite: 'portal-filters-test', file: 'index.html', note: 'the Board With column goes back to Etcher instead of the name',
+    find: "const withLabel=finished?'—':escHtml(_cpWhoOf(t));", replace: "const withLabel=finished?'—':t.awaitingClient?'You':'Etcher';" },
+  { id: 'pf-board-email-leak', suite: 'action-requests-test', file: 'index.html', note: 'the Board With column leaks a staff email',
+    find: "const withLabel=finished?'—':escHtml(_cpWhoOf(t));", replace: "const withLabel=finished?'—':escHtml(_cpWhoOf(t)+' '+((DB.staff||[]).find(s=>s.email)||{}).email);" },
+  { id: 'pf-who-off-board', suite: 'portal-filters-test', file: 'index.html', note: 'the With filter is back to Tasks only',
+    find: "    ${sel('who','With',", replace: "    ${section!=='tasks'?'':sel('who','With'," },
 ];

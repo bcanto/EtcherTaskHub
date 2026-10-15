@@ -229,7 +229,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   ok(reconcileTest.afterSecond.currentlyWithType==='staff','a second reconcile call is idempotent — no further change');
   ok(reconcileTest.guardResult.currentlyWithType==='client','a later deliberate staff edit (newer updatedAt) is never fought by reconcile');
 
-  // ── 9. No staff name leaks in the client board view ──
+  // ── 9. No staff id or email leaks in the client board view (display names are allowed, R6) ──
   const boardLeak=await p.evaluate(()=>{
     const real=currentUser;
     const withTasks=DB.clients.map(c=>({c,n:(typeof getClientTasks==='function'?getClientTasks(c.id):[]).length})).filter(x=>x.n>0);
@@ -239,8 +239,9 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
     document.getElementById('client-portal')?.classList.remove('hidden');
     cpNavigate('workboard');
     const txt=document.getElementById('cp-body')?.innerText||'';
-    const staffNames=(DB.staff||[]).map(s=>s.name).filter(n=>n&&n.length>2);
-    const leaked=staffNames.filter(n=>txt.includes(n));
+    const html=document.getElementById('cp-body')?.innerHTML||'';
+    const secrets=(DB.staff||[]).flatMap(s=>[s.email,s.loginEmail,s.id]).filter(v=>v&&String(v).length>3);
+    const leaked=secrets.filter(v=>html.includes(String(v)));
     currentUser=real;
     document.getElementById('client-portal')?.classList.add('hidden');
     return{leaked,len:txt.length};
@@ -249,7 +250,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   if(boardLeak.skip){console.log('  (board leak check skipped: '+boardLeak.skip+')');}
   else{
     ok(boardLeak.len>0,'the board view renders content for a client with tasks');
-    ok(boardLeak.leaked.length===0,'no staff name appears anywhere in the rendered board view');
+    ok(boardLeak.leaked.length===0,'no staff id or email appears anywhere in the rendered board view');
   }
 
   // ── 10. internalOnly attachment defaults + the share toggle ──
