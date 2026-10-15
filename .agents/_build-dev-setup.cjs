@@ -12,6 +12,7 @@ const FILES = [
   'supabase/migrations/014_iso_doc_prompts.sql',
   'supabase/migrations/015_iso_history.sql',
   'supabase/migrations/011_iso_reports.sql',
+  'supabase/migrations/013_iso_client_responses.sql',
 ];
 const today = new Date().toISOString().slice(0, 10);
 // Hash with line endings normalised: git's autocrlf may check these files out as CRLF.

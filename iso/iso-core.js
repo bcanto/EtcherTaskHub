@@ -5597,6 +5597,7 @@
     action_due: { label: 'ISO · Due', color: '#b45309', icon: '⏰' }, action_overdue: { label: 'ISO · Overdue', color: '#a8362d', icon: '⏰' },
     effectiveness_due: { label: 'ISO · Review due', color: '#b45309', icon: '⏰' }, follow_up_due: { label: 'ISO · Follow-up due', color: '#b45309', icon: '⏰' },
     report_due: { label: 'ISO · Report due', color: '#b45309', icon: '⏰' },
+    client_response: { label: 'ISO · Client', color: '#0f766e', icon: '✉' },
   };
   let _notif = { items: [], unread: 0, at: 0, busy: false };
   async function refreshNotifs() {
@@ -5659,6 +5660,7 @@
     if (entityType === 'requirement') { _reqPendingJump = entityId; openBoard(auditId, 'requirements'); return; }
     if (entityType === 'finding') { openBoard(auditId, 'findings'); setTimeout(() => { if (_fnd.auditId === auditId) openFindingDrawer(auditId, entityId); }, 1800); return; }
     if (entityType === 'action') { openBoard(auditId, 'worklist'); setTimeout(() => _wlOpenAction(entityId, auditId), 1800); return; }
+    if (entityType === 'report') { openBoard(auditId, 'dashboard'); setTimeout(() => { if (_auditCache && _auditCache.id === auditId) _openReport(); }, 1800); return; }
     openBoard(auditId, 'dashboard');
   }
 
@@ -5760,8 +5762,19 @@
         <div class="muted">${v.acknowledgements.length ? v.acknowledgements.map(a => `${esc(a.wording)} by ${esc(a.name)}${a.role ? ', ' + esc(a.role) : ''} on ${esc(fmtDate(a.acknowledged_on))}`).join('; ') : 'Not acknowledged yet.'}</div>
         <div class="iso-rep-v-btns"><button type="button" class="btn btn-ghost btn-sm" data-id="${esc(v.id)}" onclick="ISO._repDownload(this.dataset.id)">Download PDF</button>
           <button type="button" class="btn btn-ghost btn-sm" data-id="${esc(v.id)}" onclick="ISO._repAckForm(this.dataset.id)">Record acknowledgement</button></div>
-        <div class="iso-rep-ack" id="iso-rep-ack-${esc(v.id)}" hidden></div></div>`).join('')}</section>` : ''}
+        <div class="iso-rep-ack" id="iso-rep-ack-${esc(v.id)}" hidden></div>
+        ${(v.responses || []).map(r => `<div class="iso-rep-resp"><div><b>${esc(r.respondent_name || 'The client')}</b> <span class="muted">${esc(fmtTs(r.created_at))}</span> ${r.factual_status === 'confirmed' ? 'confirmed the report is accurate.' : 'asked for a correction.'}</div>
+          ${r.suggested_corrections ? `<p>${esc(r.suggested_corrections)}</p>` : ''}${r.management_response ? `<p><span class="muted">Management response:</span> ${esc(r.management_response)}</p>` : ''}
+          ${r.status === 'submitted' ? `<div class="iso-rep-resp-d"><input class="form-input" id="iso-resp-n-${esc(r.id)}" maxlength="2000" placeholder="Note for the client (required)"/><button type="button" class="btn btn-teal btn-sm" data-id="${esc(r.id)}" data-d="accepted" onclick="ISO._respDecide(this.dataset.id, this.dataset.d)">Accept</button><button type="button" class="btn btn-ghost btn-sm" data-id="${esc(r.id)}" data-d="rejected" onclick="ISO._respDecide(this.dataset.id, this.dataset.d)">Reject</button></div>`
+            : `<div class="muted">${r.status === 'accepted' ? 'Accepted' : 'Rejected'}: ${esc(r.auditor_decision_note || '')}</div>`}</div>`).join('')}</div>`).join('')}</section>` : ''}
     </div>`, '760px');
+  }
+  // B7b: Etcher's answer to a client's report response; the note is what the client reads.
+  async function _respDecide(id, decision) {
+    const note = String((document.getElementById('iso-resp-n-' + id) || {}).value || '').trim();
+    if (!note) { if (root.showToast) root.showToast('Add a note for the client.', true); const n = document.getElementById('iso-resp-n-' + id); if (n) n.focus(); return; }
+    try { await mutate('response.decide', { auditId: _rep.auditId, id: id, decision: decision, note: note }); if (root.showToast) root.showToast(decision === 'accepted' ? 'Accepted. The client can see your note.' : 'Rejected. The client can see your note.'); _openReport(); }
+    catch (e) { if (root.showToast) root.showToast('Could not save: ' + e.message, true); }
   }
   function _repSections() { const o = {}; document.querySelectorAll('.iso-rep-sec').forEach(t => { o[t.dataset.k] = t.value; }); return o; }
   async function _repSave(quiet) {
@@ -6406,7 +6419,7 @@
     _wizToggleStandard: _wizToggleStandard, _wizAllStandards: _wizAllStandards, _wizSetEdition: _wizSetEdition,
     _wizSetVis: _wizSetVis, _wizAddMember: _wizAddMember, _wizSetRole: _wizSetRole, _wizRemoveMember: _wizRemoveMember,
     openAccessModal: openAccessModal, _saveAccess: _saveAccess,
-    openClientPortal: openClientPortal, _cpsSet: _cpsSet, _cpsSave: _cpsSave, _repPdf: _repPdf,
+    openClientPortal: openClientPortal, _respDecide: _respDecide, _cpsSet: _cpsSet, _cpsSave: _cpsSave, _repPdf: _repPdf,
     saveSettings: saveSettings, _saveAsTemplate: _saveAsTemplate, _archiveBoard: _archiveBoard, fillArchiveCard: fillArchiveCard, _restoreBoard: _restoreBoard, _removeFromBin: _removeFromBin, _profAddItem: _profAddItem, _profSave: _profSave,
     openImport: openImportFromMenu, _approveVersion: _approveVersion, _approveVersionConfirmed: _approveVersionConfirmed,
     _retireVersion: _retireVersion, _retireVersionConfirmed: _retireVersionConfirmed, _loadLibrarySeed: _loadLibrarySeed, _saveUploadCap: _saveUploadCap,

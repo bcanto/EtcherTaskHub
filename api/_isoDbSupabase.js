@@ -58,6 +58,7 @@ const FILTERABLE = {
   iso_evidence: ['audit_id', 'client_id', 'archived_at', 'visibility', 'kind'],
   iso_evidence_links: ['evidence_id', 'audit_id', 'target_type', 'target_id', 'review_status'],
   iso_evidence_requests: ['audit_id', 'target_type', 'target_id', 'status', 'archived_at'],
+  iso_client_responses: ['audit_id', 'archived_at', 'report_version_id', 'status'],
   iso_evidence_uploads: ['evidence_id', 'audit_id', 'reserved_by', 'closed_at'],
   // Plan 8c (migration 014).
   iso_company_profiles: ['client_id'],

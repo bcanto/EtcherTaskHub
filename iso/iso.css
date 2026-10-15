@@ -1266,3 +1266,41 @@ button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset:
 .iso-cps-why { display: grid; gap: 5px; font: 600 11px Jost, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #5c6b80; }
 .iso-cps-why input { text-transform: none; letter-spacing: 0; font: 13px Lato, sans-serif; }
 .iso-cps-foot { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── B7b: the client's answers in the portal ISO tab ── */
+.cpi-x { grid-template-columns: minmax(0, 1fr) 150px 130px minmax(0, auto); }
+.cpi-xa { display: inline-flex; justify-content: flex-end; }
+.cpi-xa:empty { display: none; }
+.cpi-reply { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 4px; }
+.cpi-reply-b { display: flex; gap: 8px; align-items: center; }
+.cpi-l { font: 600 12.5px Jost, sans-serif; color: #0d1c33; }
+.cpi-l span { font-weight: 400; color: #5c6b80; }
+.cpi-rv textarea, .cpi-reply textarea { width: 100%; min-height: 60px; resize: vertical; border: 1.5px solid #d8e0ec; border-radius: 8px; padding: 8px 10px; background: #fff; font: 13.5px/1.5 Lato, sans-serif; color: #0d1c33; box-sizing: border-box; }
+.cpi-rv textarea:focus, .cpi-reply textarea:focus { outline: 0; border-color: #31585a; box-shadow: 0 0 0 3px rgba(151, 188, 189, .25); }
+.cpi-rv { margin-top: 12px; padding: 14px 16px; border: 1.5px solid #f0d7a5; border-radius: 10px; background: #fffaf0; display: grid; gap: 10px; }
+.cpi-rv h4 { margin: 0; font: 600 14px Jost, sans-serif; color: #92400e; }
+.cpi-rv-o { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; color: #0d1c33; }
+.cpi-rv-o label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.cpi-rv-o input { accent-color: #31585a; }
+.cpi-rv-f { display: grid; gap: 6px; }
+.cpi-rv-f[hidden] { display: none; }
+.cp-btn.cpi-send { background: #0d1c33; color: #fff; }
+.cp-btn.cpi-send:hover { background: #1b2c47; }
+.cp-btn[disabled] { opacity: .5; cursor: default; }
+.cpi-ans { flex-basis: 100%; margin-top: 6px; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; display: grid; gap: 4px; font-size: 13px; color: #3d5269; }
+.cpi-ans-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.cpi-ans-h b { font: 600 13px Jost, sans-serif; color: #0d1c33; }
+.cpi-ans-h > span:not(.cpi-s) { font-size: 12px; color: #5c6b80; }
+.cpi-ans-h .cpi-s { margin-left: auto; }
+.cpi-ans p { margin: 0; }
+.cpi-ans p span { color: #5c6b80; }
+.cpi-ans-n { color: #0d1c33; }
+@media (max-width: 640px) {
+  .cpi-x { grid-template-columns: minmax(0, 1fr) auto; }
+  .cpi-xa { grid-column: 1 / -1; justify-content: flex-start; }
+}
+/* Etcher side: the client's answers under each issued version */
+.iso-rep-resp { margin-top: 8px; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; display: grid; gap: 6px; font-size: 13px; }
+.iso-rep-resp p { margin: 0; }
+.iso-rep-resp-d { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.iso-rep-resp-d input { flex: 1 1 220px; }

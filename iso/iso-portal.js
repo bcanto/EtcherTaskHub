@@ -85,10 +85,28 @@
     const reps = (d.reports || []).slice().reverse();
     if (!reps.length) return sec('cpi-rep-h', 'Report', null, '<p class="cpi-muted">The report is issued after fieldwork.</p>', true);
     const last = reps[0];
+    const answers = d.responses || [];
+    const lastAns = answers.filter(r => r.versionId === last.id);
+    const open = !last.acknowledgement && !lastAns.some(r => r.status !== 'rejected');
     return sec('cpi-rep-h', 'Report', null, reps.map(v => `<div class="cpi-rep${v === last ? '' : ' old'}">
         <span class="cpi-file">${FILE}<span>${esc(d.board.ref)} audit report${v.versionNo > 1 ? ', version ' + v.versionNo : ''}, issued ${esc(fmt(v.issuedAt))}${v === last ? '' : '. Replaced by version ' + last.versionNo}</span></span>
         <button type="button" class="cp-btn line" data-id="${esc(v.id)}" onclick="ISO.portal.download(this.dataset.id)">Download PDF</button>
-        ${v.acknowledgement ? `<p class="cpi-ack">Received and discussed by ${esc(v.acknowledgement.name)}, ${esc(fmt(v.acknowledgement.on))}.</p>` : ''}</div>`).join(''), true);
+        ${v.acknowledgement ? `<p class="cpi-ack">Received and discussed by ${esc(v.acknowledgement.name)}, ${esc(fmt(v.acknowledgement.on))}.</p>` : ''}
+        ${answers.filter(r => r.versionId === v.id).map(answerHtml).join('')}</div>`).join('') + (open ? reviewHtml(last) : ''), true);
+  }
+  function answerHtml(r) {
+    const head = r.accurate ? 'You confirmed the report is accurate' : 'You asked for a correction';
+    const state = r.status === 'submitted' ? '<span class="cpi-s recv">With Etcher</span>' : r.status === 'accepted' ? '<span class="cpi-s done">Etcher accepted this</span>' : '<span class="cpi-s you">Etcher replied</span>';
+    return `<div class="cpi-ans"><div class="cpi-ans-h"><b>${head}</b><span>${esc([r.by, fmt(r.at)].filter(Boolean).join(', '))}</span>${state}</div>
+      ${r.correction ? `<p>${esc(r.correction)}</p>` : ''}${r.managementResponse ? `<p><span>Management response:</span> ${esc(r.managementResponse)}</p>` : ''}
+      ${r.decisionNote ? `<p class="cpi-ans-n"><span>Etcher:</span> ${esc(r.decisionNote)}</p>` : ''}</div>`;
+  }
+  function reviewHtml(v) {
+    return `<div class="cpi-rv"><h4>Check the report for factual accuracy</h4>
+      <div class="cpi-rv-o" role="radiogroup" aria-label="Is the report accurate?"><label><input type="radio" name="cpi-rv" value="ok" onchange="ISO.portal._rv(this.value)"> It is accurate</label><label><input type="radio" name="cpi-rv" value="fix" onchange="ISO.portal._rv(this.value)"> Something needs correcting</label></div>
+      <div id="cpi-rv-fix" class="cpi-rv-f" hidden><label class="cpi-l" for="cpi-rv-c">What needs correcting</label><textarea id="cpi-rv-c" maxlength="4000" placeholder="Which finding, and what is not accurate?"></textarea></div>
+      <div class="cpi-rv-f"><label class="cpi-l" for="cpi-rv-m">Management response <span>(optional)</span></label><textarea id="cpi-rv-m" maxlength="4000" placeholder="How you will address the findings, and by when."></textarea></div>
+      <div><button type="button" class="cp-btn cpi-send" data-id="${esc(v.id)}" onclick="ISO.portal.respond(this.dataset.id)">Send to Etcher</button></div></div>`;
   }
   function actState(a) {
     if (['verified', 'closed'].includes(a.status)) return ['Done', 'done'];
@@ -105,8 +123,12 @@
       const [label, cls] = actState(a);
       const late = a.dueDate && a.dueDate < t && !['Done', 'Etcher to verify'].includes(label);
       const sub = [a.clause, a.finding ? (CLASS[a.finding.classification] || '') + (a.finding.ref ? ' ' + a.finding.ref : '') : '', a.mine ? 'Yours to do' : 'Etcher is doing this'].filter(Boolean).join('. ');
+      const can = a.mine && ['assigned', 'in_progress', 'awaiting_evidence', 'more_info_required'].includes(a.status);
       return `<li class="cpi-x"><div class="cpi-tt"><b><span class="cpi-ref">${esc(a.ref)}</span>${esc(a.title)}</b><span>${esc(sub)}.</span></div>
-        <span class="cpi-s ${cls}">${esc(label)}</span><span class="cpi-due${late ? ' late' : ''}">${a.dueDate ? (late ? 'Overdue, ' : 'Due ') + esc(fmt(a.dueDate)) : ''}</span></li>`;
+        <span class="cpi-s ${cls}">${esc(label)}</span><span class="cpi-due${late ? ' late' : ''}">${a.dueDate ? (late ? 'Overdue, ' : 'Due ') + esc(fmt(a.dueDate)) : ''}</span>
+        <span class="cpi-xa">${can ? `<button type="button" class="cp-btn line" data-id="${esc(a.id)}" onclick="ISO.portal.doneOpen(this.dataset.id)">Mark done</button>` : ''}</span>
+        ${can ? `<div class="cpi-reply" id="cpi-done-${esc(a.id)}" hidden><label class="cpi-l" for="cpi-done-n-${esc(a.id)}">What was done <span>(optional)</span></label><textarea id="cpi-done-n-${esc(a.id)}" maxlength="4000" placeholder="For example: the register now lists every load cell with its calibration date."></textarea>
+          <div class="cpi-reply-b"><button type="button" class="cp-btn cpi-send" data-id="${esc(a.id)}" onclick="ISO.portal.done(this.dataset.id)">Send to Etcher</button><button type="button" class="cp-btn text" data-id="${esc(a.id)}" onclick="ISO.portal.doneCancel(this.dataset.id)">Cancel</button></div></div>` : ''}</li>`;
     }).join('')}</ul>`);
   }
   function requestsHtml(d) {
@@ -114,7 +136,8 @@
     if (!reqs.length) return '';
     const st = { open: ['Needs you', 'you'], submitted: ['Sent, Etcher to review', 'recv'], closed: ['Done', 'done'] };
     return sec('cpi-ev-h', 'Evidence requests', reqs.length, `<ul class="cpi-rows">${reqs.map(r => { const [l, c] = st[r.status] || ['', '']; return `<li class="cpi-x"><div class="cpi-tt"><b>${esc(r.description)}</b><span>${esc(r.clause || 'Requested by Etcher')}.</span></div>
-      <span class="cpi-s ${c}">${esc(l)}</span><span class="cpi-due">${r.dueDate ? 'Due ' + esc(fmt(r.dueDate)) : ''}</span></li>`; }).join('')}</ul>`);
+      <span class="cpi-s ${c}">${esc(l)}</span><span class="cpi-due">${r.dueDate ? 'Due ' + esc(fmt(r.dueDate)) : ''}</span>
+      <span class="cpi-xa">${r.status === 'open' ? `<button type="button" class="cp-btn line" data-id="${esc(r.id)}" onclick="ISO.portal.sent(this.dataset.id)">Mark sent</button>` : ''}</span></li>`; }).join('')}</ul>`);
   }
 
   function pick(id) {
@@ -133,6 +156,39 @@
       const r = await root.ISO.api('portal.report', { auditId: sel, versionId: versionId });
       root.ISO._repPdf(r.version);
     } catch (e) { if (root.showToast) root.showToast('Could not download the report: ' + e.message, true); }
+  }
+
+  // What the client sends back. Every send reloads the board and the Overview counts.
+  const toast = (m, bad) => { if (root.showToast) root.showToast(m, bad); };
+  const val = id => String((document.getElementById(id) || {}).value || '');
+  async function send(op, payload, okMsg) {
+    const btns = [...document.querySelectorAll('#cpi-main button')];
+    btns.forEach(b => { b.disabled = true; });
+    try {
+      await root.ISO.api(op, Object.assign({ auditId: sel }, payload));
+      toast(okMsg);
+      await load(); syncTab(); await fill(sel);
+      return true;
+    } catch (e) { toast('Could not send: ' + e.message, true); btns.forEach(b => { b.disabled = false; }); return false; }
+  }
+  function _rv(v) { const f = document.getElementById('cpi-rv-fix'); if (f) f.hidden = v !== 'fix'; }
+  function respond(versionId) {
+    const pick = (document.querySelector('input[name="cpi-rv"]:checked') || {}).value;
+    if (!pick) { toast('Choose whether the report is accurate.', true); return; }
+    const correction = val('cpi-rv-c').trim();
+    if (pick === 'fix' && !correction) { toast('Say what needs correcting.', true); const c = document.getElementById('cpi-rv-c'); if (c) c.focus(); return; }
+    return send('portal.respond', { versionId: versionId, accurate: pick === 'ok', correction: pick === 'fix' ? correction : null, managementResponse: val('cpi-rv-m').trim() || null },
+      pick === 'ok' ? 'Thank you. Etcher has your confirmation.' : 'Sent. Etcher will look at the correction and reply.');
+  }
+  function doneOpen(id) { const r = document.getElementById('cpi-done-' + id); if (r) { r.hidden = false; const t = r.querySelector('textarea'); if (t) t.focus(); } }
+  function doneCancel(id) { const r = document.getElementById('cpi-done-' + id); if (r) r.hidden = true; }
+  function done(id) {
+    const a = ((current && current.actions) || []).find(x => x.id === id); if (!a) return;
+    return send('portal.actionDone', { id: id, expectedVersion: a.rowVersion, note: val('cpi-done-n-' + id).trim() || null }, 'Sent. Etcher will check it and close it.');
+  }
+  function sent(id) {
+    const r = ((current && current.requests) || []).find(x => x.id === id); if (!r) return;
+    return send('portal.requestSent', { id: id, expectedVersion: r.rowVersion }, 'Thank you. Etcher will review it.');
   }
 
   // Overview pieces: the client's ISO asks inside "Waiting on you", and one quiet engagement row.
@@ -154,5 +210,5 @@
   }
 
   root.ISO = root.ISO || {};
-  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; } };
+  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, respond: respond, _rv: _rv, doneOpen: doneOpen, doneCancel: doneCancel, done: done, sent: sent, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; } };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -310,7 +310,7 @@ const CLIENT_FIELDS = {
     'client_response', 'verification_requirements', 'visibility', 'row_version'],
   // B7: the portal.* ops build their client payloads field by field (portalBoardRow, portalActions …);
   // these are the only top-level keys they may return.
-  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version'],
+  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version', 'responses'],
 };
 // Fields never sent to a client caller for ANY entity, even one whose CLIENT_FIELDS is generous —
 // a second layer so a future typo in one allowlist can't leak these (plan §6.3).
@@ -2059,7 +2059,8 @@ async function portalNeeds(ctx, audit) {
   const needs = [];
   const { versions, acks } = await portalVersions(ctx, audit.id);
   const last = versions[versions.length - 1];
-  if (last && !acks.some(k => k.version_id === last.id)) needs.push({ kind: 'report', auditId: audit.id, ref: audit.ref, title: `Review the ${audit.ref} audit report`, date: last.issued_at });
+  const answered = last ? (await portalResponsesOf(ctx, audit.id)).some(r => r.report_version_id === last.id && r.status !== 'rejected') : false;
+  if (last && !answered && !acks.some(k => k.version_id === last.id)) needs.push({ kind: 'report', auditId: audit.id, ref: audit.ref, title: `Review the ${audit.ref} audit report`, date: last.issued_at });
   for (const a of await portalActions(ctx, audit)) if (a.mine && PORTAL_OPEN_ACTION.includes(a.status)) needs.push({ kind: 'action', auditId: audit.id, ref: a.ref, title: a.title, date: a.dueDate });
   for (const r of await portalRequests(ctx, audit)) if (r.status === 'open') needs.push({ kind: 'request', auditId: audit.id, ref: audit.ref, title: r.description, date: r.dueDate });
   return needs;
@@ -2107,6 +2108,7 @@ defineOp('portal.board', {
         return { id: v.id, versionNo: v.version_no, title: v.title, issuedAt: v.issued_at, acknowledgement: k ? { name: k.name, on: k.acknowledged_on } : null }; }),
       actions: await portalActions(ctx, a),
       requests: await portalRequests(ctx, a),
+      responses: (await portalResponsesOf(ctx, a.id)).map(portalResponseRow),
     };
   },
 });
@@ -2132,6 +2134,139 @@ defineOp('portal.report', {
       ...pick(c, ['sections', 'setup', 'audit', 'standards', 'team', 'disclaimer', 'signedBy', 'ackWording', 'libraryRelease', 'calcVersion']),
       findings: (c.findings || []).filter(f => okF.has(f.ref)), actions: (c.actions || []).filter(a => okA.has(a.ref)),
       snapshot: { clauses } } } };
+  },
+});
+
+// ── Release-1 B7b: what the client sends back ───────────────────────────────────────────────────
+// A client may answer an issued report (factual accuracy, and a management response), say their own
+// action is done, and say a requested document is sent. Each waits for Etcher: they never change a
+// conclusion, verify or close anything (plan Phase 13, "clients may never").
+const PORTAL_TEXT_MAX = 4000;
+function portalCanRespond(ctx) { return ctx.caller.kind === 'client' && !!(ctx.membership && ctx.membership.can_respond); }
+function portalText(v, what) {
+  if (v == null || v === '') return null;
+  if (typeof v !== 'string' || v.length > PORTAL_TEXT_MAX) throw badRequest(`${what || 'That text'} is too long.`);
+  return v.trim() || null;
+}
+async function portalResponsesOf(ctx, auditId) {
+  return (await ctx.db.list('iso_client_responses', { where: [{ field: 'audit_id', op: 'eq', value: auditId }, { field: 'archived_at', op: 'isnull' }] }))
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+function portalResponseRow(r) {
+  return { id: r.id, versionId: r.report_version_id, accurate: r.factual_status === 'confirmed', correction: r.suggested_corrections || null,
+    managementResponse: r.management_response || null, status: r.status, decisionNote: r.status === 'submitted' ? null : (r.auditor_decision_note || null),
+    by: r.respondent_name || null, at: r.created_at };
+}
+defineOp('portal.respond', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanRespond,
+  async validate(payload) {
+    if (!isValidId(payload.versionId)) throw badRequest('Pick a report.');
+    if (typeof payload.accurate !== 'boolean') throw badRequest('Say whether the report is accurate.');
+    if (!payload.accurate && !isNonEmptyText(payload.correction, PORTAL_TEXT_MAX)) throw badRequest('Say what needs correcting.');
+    portalText(payload.correction, 'The correction'); portalText(payload.managementResponse, 'The management response');
+  },
+  async run(ctx) {
+    const v = await ctx.db.get('iso_report_versions', ctx.payload.versionId);
+    if (!v || v.audit_id !== ctx.audit.id) throw notFound();
+    const { versions } = await portalVersions(ctx, ctx.audit.id);
+    if (versions[versions.length - 1].id !== v.id) throw badRequest('A newer version of this report has been issued. Answer that one.');
+    if ((await portalResponsesOf(ctx, ctx.audit.id)).some(r => r.report_version_id === v.id && r.status === 'submitted')) throw badRequest('Your answer is with Etcher already.');
+    const accurate = ctx.payload.accurate;
+    const row = await ctx.db.insert('iso_client_responses', {
+      id: uid('icr_'), audit_id: ctx.audit.id, client_id: ctx.audit.client_id, report_version_id: v.id, finding_id: null,
+      respondent_uid: ctx.caller.uid, respondent_name: ctx.caller.name || null,
+      factual_status: accurate ? 'confirmed' : 'disputed', suggested_corrections: accurate ? null : portalText(ctx.payload.correction),
+      management_response: portalText(ctx.payload.managementResponse), status: 'submitted', row_version: 1, archived_at: null, created_at: ctx.now.toISOString(),
+    }, { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: v.report_id, action: accurate ? 'client_confirmed_report' : 'client_disputed_report',
+      source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind });
+    // "It is accurate" is the client's own "received and discussed" (ACK_WORDING), recorded as such.
+    if (accurate) {
+      await ctx.db.insert('iso_report_acknowledgements', {
+        id: uid('irack_'), version_id: v.id, report_id: v.report_id, audit_id: ctx.audit.id, client_id: ctx.audit.client_id,
+        name: ctx.caller.name || 'Client', role: 'Client', acknowledged_on: ctx.now.toISOString().slice(0, 10), wording: ACK_WORDING,
+        recorded_by: ctx.caller.uid, created_at: ctx.now.toISOString(),
+      }, { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: v.report_id, action: 'report_acknowledged', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind });
+    }
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'report', entity_id: v.report_id, type: 'client_response',
+      message: `${ctx.audit.ref}: the client ${accurate ? 'confirmed' : 'asked for a correction to'} the audit report.` });
+    return { responses: [portalResponseRow(row)] };
+  },
+});
+defineOp('portal.actionDone', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanRespond,
+  async validate(payload) {
+    if (!isValidId(payload.id) || payload.expectedVersion == null) throw badRequest('An action is required.');
+    portalText(payload.note, 'The note');
+  },
+  async run(ctx) {
+    const a = await ctx.db.get('iso_actions', ctx.payload.id);
+    if (!a || a.audit_id !== ctx.audit.id || a.archived_at || !portalSees(a, ctx.caller)) throw notFound();
+    if (a.owner_kind !== 'client') throw forbidden('This action is Etcher\'s to do.');
+    if (!PORTAL_OPEN_ACTION.includes(a.status)) throw badRequest('This action is not open for you right now.');
+    if (a.row_version !== ctx.payload.expectedVersion) throw conflict();
+    const log = { audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'action', entity_id: a.id, entity_ref: a.ref,
+      action: 'status_changed', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind };
+    let cur = a;
+    try {
+      // Through the same transition table as staff: assigned moves to in progress first.
+      if (cur.status === 'assigned') cur = await ctx.db.transition('iso_actions', cur.id, 'status', 'assigned', 'in_progress', log, { expectedVersion: cur.row_version });
+      cur = await ctx.db.transition('iso_actions', cur.id, 'status', cur.status, 'submitted_for_review', log, { expectedVersion: cur.row_version });
+    } catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+    const prior = await ctx.db.list('iso_action_reviews', { where: [{ field: 'action_id', op: 'eq', value: a.id }] });
+    await ctx.db.insert('iso_action_reviews', {
+      id: uid('irev_'), action_id: a.id, submission_no: prior.reduce((m, r) => Math.max(m, r.submission_no), 0) + 1,
+      submitted_by: ctx.caller.uid, submission_note: portalText(ctx.payload.note),
+    });
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'action', entity_id: a.id, type: 'client_response', message: `${a.ref}: the client says this action is done.` });
+    return { actions: [{ id: a.id, status: cur.status }] };
+  },
+});
+defineOp('portal.requestSent', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanRespond,
+  async validate(payload) { if (!isValidId(payload.id) || payload.expectedVersion == null) throw badRequest('A request is required.'); },
+  async run(ctx) {
+    const r = await ctx.db.get('iso_evidence_requests', ctx.payload.id);
+    if (!r || r.audit_id !== ctx.audit.id || r.archived_at || (r.requested_from_uid && r.requested_from_uid !== ctx.caller.uid)) throw notFound();
+    if (r.status !== 'open') throw badRequest('This request is not open.');
+    let row;
+    try {
+      row = await ctx.db.update('iso_evidence_requests', r.id, { status: 'submitted' }, ctx.payload.expectedVersion, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: r.target_id, action: 'evidence_request_submitted',
+        field: 'status', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+    } catch (e) { if (e.code === 'version_conflict') throw conflict(); throw e; }
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: 'requirement', entity_id: r.target_id, type: 'client_response', message: `${ctx.audit.ref}: the client says a requested document is sent.` });
+    return { requests: [{ id: r.id, status: row.status }] };
+  },
+});
+// Etcher's side: the answers, and the decision the client sees (a note is required).
+defineOp('response.list', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && canOpenAudit(ctx.caller, ctx.audit, ctx.members); },
+  async run(ctx) { return portalResponsesOf(ctx, ctx.audit.id); },
+});
+defineOp('response.decide', {
+  scope: 'audit', clientProjection: null,
+  allow(ctx) { return ctx.caller.kind === 'staff' && (ctx.caller.role === 'admin' || ['lead_auditor', 'audit_manager', 'auditor'].includes(ctx.membership.audit_role)); },
+  async validate(payload) {
+    if (!isValidId(payload.id)) throw badRequest('Pick an answer.');
+    if (!['accepted', 'rejected'].includes(payload.decision)) throw badRequest('Accept or reject it.');
+    if (!isNonEmptyText(payload.note, 2000)) throw badRequest('Add a note for the client.');
+  },
+  async run(ctx) {
+    const r = await ctx.db.get('iso_client_responses', ctx.payload.id);
+    if (!r || r.audit_id !== ctx.audit.id || r.archived_at) throw notFound();
+    if (r.status !== 'submitted') throw badRequest('This answer has been decided already.');
+    const out = await ctx.db.patchRow('iso_client_responses', r.id, {
+      status: ctx.payload.decision, auditor_decision: ctx.payload.decision, auditor_decision_note: ctx.payload.note.trim(),
+      decided_by: ctx.caller.uid, decided_at: ctx.now.toISOString(), row_version: (r.row_version || 1) + 1,
+    });
+    await ctx.db.log({ audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: r.report_version_id || r.id,
+      action: 'client_response_' + ctx.payload.decision, source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind });
+    return out;
   },
 });
 
@@ -5137,8 +5272,9 @@ defineOp('report.get', {
     const draft = await boardDraft(ctx);
     const versions = (await ctx.db.list('iso_report_versions', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] })).sort((a, b) => a.version_no - b.version_no);
     const acks = await ctx.db.list('iso_report_acknowledgements', { where: [{ field: 'audit_id', op: 'eq', value: ctx.audit.id }] });
+    const responses = await portalResponsesOf(ctx, ctx.audit.id);
     const kind = reportKindFor(ctx.audit);
-    return { kind, title: REPORT_KIND_TITLE[kind], draft, versions: versions.map(v => ({ ...v, acknowledgements: acks.filter(a => a.version_id === v.id) })), readiness: await reportReadiness(ctx) };
+    return { kind, title: REPORT_KIND_TITLE[kind], draft, versions: versions.map(v => ({ ...v, acknowledgements: acks.filter(a => a.version_id === v.id), responses: responses.filter(r => r.report_version_id === v.id) })), readiness: await reportReadiness(ctx) };
   },
 });
 defineOp('report.saveDraft', {
@@ -5233,7 +5369,7 @@ defineOp('report.acknowledge', {
 // or overdue, effectiveness review due, follow-up / maintenance due, report due) are worked out when
 // the bell asks — notification.list — so nothing has to run on a timer. Messages carry refs and
 // clause numbers only, never notes or client text.
-const ISO_NOTIF_TYPES = ['evidence_submitted', 'awaiting_approval', 'returned', 'derived_awaiting', 'finding_reopened', 'action_assigned'];
+const ISO_NOTIF_TYPES = ['evidence_submitted', 'awaiting_approval', 'returned', 'derived_awaiting', 'finding_reopened', 'action_assigned', 'client_response'];
 function leadUidsOf(ctx) {
   const staff = (ctx.members || []).filter(m => m.member_kind === 'staff');
   const leads = staff.filter(m => m.audit_role === 'lead_auditor');
