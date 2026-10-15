@@ -292,6 +292,9 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-rt-t{font-family:Jost,sans-serif;font-weight:600;font-size:13.5px;color:#0d1c33;min-width:0}.cp-rt-t small{display:block;font-family:Lato,sans-serif;font-weight:400;font-size:12px;color:#6b8399}
 .cp-rt-with{font-size:12.5px;color:#4a5568;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-rt-due{font-size:12px;color:#6b8399;text-align:right}
 .cp-rt-none{padding:12px 16px;color:#8da2b2;font-size:13px}
+.cp-rt-hist{margin-top:18px;display:grid;gap:8px}.cp-rt-hist>b{font-family:Jost,sans-serif;font-size:14.5px;color:#0d1c33}
+.cp-rt-hist table{width:100%;border-collapse:collapse;font-size:12.5px}.cp-rt-hist th{text-align:left;font-size:10.5px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.05em;padding:0 10px 6px 0}
+.cp-rt-hist td{padding:6px 10px 6px 0;border-top:1px solid #eef2f6;color:#4a5568}
 .cp-rt-review{margin-top:18px;display:grid;gap:6px}.cp-rt-review>b{font-family:Jost,sans-serif;font-size:14.5px;color:#0d1c33}
 .cp-rt-nums{display:flex;flex-wrap:wrap;gap:4px 20px;font-size:13px;color:#6b8399}.cp-rt-nums b{font-size:15px;color:#0d1c33;margin-right:4px}
 .cp-rt-review p{margin:0;font-size:13px;color:#4a5568}.cp-rt-review p span{display:block;font-size:12px;color:#8da2b2;margin-top:4px}
@@ -6719,12 +6722,13 @@ function openRetainerPlan(boardId){
   const cand=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_rsDone(t)&&!_cpTaskHidden(t)&&!focus.includes(t));
   const staffOpts=v=>_rsStaff().map(u=>`<option value="${u.id}"${u.id===v?' selected':''}>${escHtml(u.name)}</option>`).join('');
   const lead=r.leadId?getStaff(r.leadId):null;
+  const addable=RETAINER_CATALOGUE.filter(c=>!(r.services||[]).some(s=>s.key===c.key));
   const svcRows=(r.services||[]).map(s=>{
     const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},used=_retainerUsed(b.id,s.groupId,ym),own=s.ownerId?getStaff(s.ownerId):null;
     return`<tr><td><span class="rs-pl-n"><i style="background:${cat.color}"></i>${escHtml(cat.name)}</span></td>
       <td>${admin?`<input type="number" min="1" max="999" value="${s.allowance}" data-rs-allow="${s.key}" onchange="_rsPlanSet('${b.id}','allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(cat.name)}">`:s.allowance}</td>
       <td class="${used>=s.allowance?'rs-full':''}"><b>${used}</b> of ${s.allowance}<small>${escHtml(s.unit)}</small></td>
-      <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td></tr>`;
+      <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td>${admin?`<td><button class="btn btn-ghost btn-sm" data-rs-remove="${s.key}" onclick="_rsPlanSet('${b.id}','removeService','${s.key}')" aria-label="Remove ${escHtml(cat.name)} from the plan">Remove</button></td>`:''}</tr>`;
   }).join('');
   const body=`<div class="rs-pl">
     <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>Started ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
@@ -6734,8 +6738,9 @@ function openRetainerPlan(boardId){
       <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b></div>
     </div>
     <h4 class="rs-pl-h">Services and allowances</h4>
-    <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Monthly allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th></tr></thead><tbody>${svcRows}</tbody></table></div>
-    <p class="rs-pl-hint">${admin?'Changes apply from this month. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
+    <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Monthly allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
+    ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
+    <p class="rs-pl-hint">${admin?'Changes apply from this month. Removing a service keeps its group and jobs and stops its meter. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
     <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
     ${focus.length?`<ul class="rs-pl-f">${focus.map(t=>`<li><span>${escHtml(t.name||t.title||'')}</span><b>${getEffectiveTaskPct(t.id)}%</b><button class="btn btn-ghost btn-sm" onclick="_rsPlanSet('${b.id}','focusRm','${t.id}')" aria-label="Remove from the focus">Remove</button></li>`).join('')}</ul>`:'<p class="rs-pl-hint">No focus set, so the block stays hidden in the portal.</p>'}
     ${focus.length<3&&cand.length?`<select class="form-input rs-pl-add" onchange="if(this.value)_rsPlanSet('${b.id}','focusAdd',this.value)"><option value="">+ Pin a task to the focus</option>${cand.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}</select>`:''}
@@ -6745,8 +6750,19 @@ function openRetainerPlan(boardId){
     <div class="rs-pl-row"><span class="rs-pl-hint">Delivered, requests and overdue figures are counted for you.</span><button class="btn btn-teal btn-sm" onclick="_rsPlanSet('${b.id}','note',null,document.getElementById('rs-pl-note').value)">Save note</button></div>
     <h4 class="rs-pl-h">Billing</h4>
     <p class="rs-pl-p">Hours logged on this board are covered by the retainer. They stay in timesheets and payroll, and never appear on the hourly pro forma.</p>
+    ${admin?`<div class="rs-pl-row"><span class="rs-pl-hint">Ending moves the board to Archive & Bin and takes the Retained Services tab out of the portal. Jobs and history stay.</span><button class="btn btn-danger btn-sm" id="rs-pl-end" onclick="retainerEnd('${b.id}')">End retainer</button></div>`:''}
   </div>`;
   openGenericModal('Retainer plan',body,'720px');
+}
+function retainerEnd(boardId){
+  if(currentUser?.role!=='admin')return;
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
+  closeGenericModal();
+  openConfirm('End this retainer?',`${b.name}'s retained board moves to Archive & Bin and the Retained Services tab leaves their portal. Its jobs and history stay, and an admin can restore it.`,'End retainer',()=>{
+    b.archived=true;b.updatedAt=new Date().toISOString();saveDB(DB);closeConfirm();
+    if(currentWorkboard&&currentWorkboard.id===boardId){exitWorkboard();return;}
+    renderSidebarWorkboards();
+  });
 }
 function _rsPlanSet(boardId,field,key,val){
   const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
@@ -6765,6 +6781,20 @@ function _rsPlanSet(boardId,field,key,val){
     else if(field==='owner'&&s)s.ownerId=val||null;
     else if(field==='lead')r.leadId=val||null;
     else if(field==='priority'&&['Standard','High','Highest'].includes(val))r.priority=val;
+    else if(field==='removeService'){
+      const gone=(r.services||[]).find(x=>x.key===key);if(!gone)return;
+      r.services=r.services.filter(x=>x.key!==key);
+      r.pastServices=(r.pastServices||[]).filter(x=>x.key!==key).concat(gone);
+    }
+    else if(field==='addService'){
+      const cat=_rsCat(key);if(!cat||(r.services||[]).some(x=>x.key===key))return;
+      const past=(r.pastServices||[]).find(x=>x.key===key);
+      let gid=past&&(DB.groups||[]).some(g=>g.id===past.groupId)?past.groupId:null;
+      if(!gid){gid=uid();const order=(DB.groups||[]).filter(g=>(g.boardId||g.workboardId)===b.id).length;
+        DB.groups.push({id:gid,clientId:b.clientId,workboardId:b.id,boardId:b.id,name:cat.name,order,color:cat.color,createdAt:new Date().toISOString()});}
+      r.services=(r.services||[]).concat({key,groupId:gid,unit:cat.unit,allowance:past?past.allowance:cat.allowance,core:cat.kind==='core',ownerId:(past&&past.ownerId)||r.leadId||null});
+      r.pastServices=(r.pastServices||[]).filter(x=>x.key!==key);
+    }
     else return;
   }
   b.updatedAt=new Date().toISOString();
@@ -6790,7 +6820,8 @@ function _rsClientRetainer(b){
   const nm=id=>{const u=id?getStaff(id):null;return u?u.name:null;};
   return{services:(r.services||[]).map(s=>({key:s.key,groupId:s.groupId,unit:s.unit,allowance:s.allowance,core:!!s.core,ownerName:nm(s.ownerId),used:_retainerUsed(b.id,s.groupId,ym)})),
     leadName:nm(r.leadId),startMonth:r.startMonth||null,priority:r.priority||null,month:ym,
-    focusTaskIds:((months[ym]||{}).focusTaskIds||[]).slice(0,3),reviewMonth:prev,reviewNote:(months[prev]||{}).note||null};
+    focusTaskIds:((months[ym]||{}).focusTaskIds||[]).slice(0,3),reviewMonth:prev,reviewNote:(months[prev]||{}).note||null,
+    history:[prev,_rsPrevYm(prev)].map(m=>({month:m,services:(r.services||[]).map(s=>({key:s.key,used:_retainerUsed(b.id,s.groupId,m)}))}))};
 }
 // What a request asked for, in words, on both sides.
 function _wrServiceLabel(r){
@@ -6877,6 +6908,7 @@ function renderCpRetained(clientId,tasks,b){
     </div>
     <div class="cp-section-title" style="margin:22px 0 10px">Services this month</div>
     <div class="cp-stat-card cp-rt-ledger">${(rt.services||[]).map(svc).join('')}</div>
+    ${(rt.history||[]).length&&(rt.services||[]).length?`<div class="cp-stat-card cp-rt-hist"><b>Earlier months</b><table><thead><tr><th>Service</th>${rt.history.map(h=>`<th>${_rsMonthName(h.month)}</th>`).join('')}</tr></thead><tbody>${rt.services.map(s=>`<tr><td>${escHtml(cat(s.key).name)}</td>${rt.history.map(h=>{const x=(h.services||[]).find(y=>y.key===s.key);return`<td>${x?x.used:0} ${escHtml(s.unit)}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
     <div class="cp-stat-card cp-rt-review"><b>${_rsMonthName(rt.reviewMonth)} in review</b><div class="cp-rt-nums"><span><b>${delivered}</b> delivered</span><span><b>${reqs}</b> requests sent</span><span><b>${overdue}</b> overdue now</span></div>${rt.reviewNote?`<p>${escHtml(rt.reviewNote)}${rt.leadName?`<span>${escHtml(rt.leadName)}, retainer lead</span>`:''}</p>`:''}</div>
   </div>`;
 }
@@ -8319,13 +8351,13 @@ function renderDashboard(){
       <h2 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:700;color:#0d1c33;margin-bottom:4px">WorkBoards</h2>
       <p style="font-size:13px;color:#8da2b2">Open a WorkBoard to enter its isolated workspace — tasks, views, and comms are fully scoped.</p>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <div style="position:relative">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%">
+      <div style="position:relative;min-width:0">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:9px;top:9px;color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <input id="dash-wb-search" type="text" placeholder="Search everything…" value="${escHtml(dashWbSearch)}"
           oninput="onDashWbSearch(this.value)"
           onkeydown="if(event.key==='Escape'){onDashWbSearch('');this.value='';this.blur();}"
-          style="padding:6px 28px 6px 28px;border:1.5px solid #e2eaf2;border-radius:8px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;outline:none;width:220px;height:34px;box-sizing:border-box;transition:border-color 0.15s"
+          style="padding:6px 28px 6px 28px;border:1.5px solid #e2eaf2;border-radius:8px;font-size:12px;font-family:'Jost',sans-serif;color:#1a2940;outline:none;width:min(220px,100%);height:34px;box-sizing:border-box;transition:border-color 0.15s"
           onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
         ${dashWbSearch?`<button onclick="onDashWbSearch('');document.getElementById('dash-wb-search').value=''" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0" title="Clear">×</button>`:''}
         <div id="dash-search-dropdown" style="position:absolute;top:calc(100% + 4px);left:0;min-width:420px;max-width:560px;background:#fff;border:1.5px solid #e2eaf2;border-radius:10px;box-shadow:0 8px 24px rgba(13,28,51,0.12);z-index:900;overflow:hidden;max-height:460px;overflow-y:auto">${_dashSearchDropdownHtml(dashWbSearch)}</div>

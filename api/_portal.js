@@ -130,6 +130,8 @@ function sliceRetainer(blob, b, now) {
     services: arr(r.services).map(s => ({ key: s.key, groupId: s.groupId, unit: s.unit, allowance: s.allowance, core: !!s.core, ownerName: staffName(blob, s.ownerId), used: retainerUsed(blob, b.id, s.groupId, ym) })),
     leadName: staffName(blob, r.leadId), startMonth: r.startMonth || null, priority: r.priority || null,
     month: ym, focusTaskIds: arr((months[ym] || {}).focusTaskIds).slice(0, 3), reviewMonth: prev, reviewNote: (months[prev] || {}).note || null,
+    // The last two months, read only (plan §5).
+    history: [prev, rsPrevYm(prev)].map(m => ({ month: m, services: arr(r.services).map(s => ({ key: s.key, used: retainerUsed(blob, b.id, s.groupId, m) })) })),
   };
 }
 // A request's service must be one of the client's own groups or boards; anything else is ad hoc.
