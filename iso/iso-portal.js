@@ -34,8 +34,8 @@
     const list = boards();
     if (!list.length) { body.innerHTML = '<div class="cp-empty"><div class="cp-empty-title">No ISO audits shared with you</div><div class="cp-empty-text">Etcher shares an audit here once it is ready for you.</div></div>'; return; }
     if (!sel || !list.some(b => b.id === sel)) sel = list[0].id;
-    body.innerHTML = `<div class="cpi">${listHtml(list)}<div class="cpi-main" id="cpi-main" aria-live="polite"><div class="cpi-sheet cpi-pad cpi-muted">Loading the audit…</div></div></div>`;
-    fill(sel);
+    body.innerHTML = `<div class="cpi"><div class="cpi-left">${listHtml(list)}<section class="cp-sec" aria-labelledby="cpi-hi-h" id="cpi-hist" hidden></section></div><div class="cpi-main" id="cpi-main" aria-live="polite"><div class="cpi-sheet cpi-pad cpi-muted">Loading the audit…</div></div></div>`;
+    fill(sel); history(0);
   }
   function listHtml(list) {
     return `<section class="cp-sec cpi-side" aria-labelledby="cpi-l-h"><div class="cp-sec-head"><h2 class="cp-sec-title" id="cpi-l-h">Your audits</h2><span class="cp-sec-count">${list.length}</span></div>
@@ -51,7 +51,20 @@
     if (my !== seq) return;
     current = d;
     const m = document.getElementById('cpi-main'); if (!m) return;
-    m.innerHTML = headHtml(d) + resultsHtml(d) + reportHtml(d) + actionsHtml(d) + requestsHtml(d);
+    m.innerHTML = headHtml(d) + resultsHtml(d) + reportHtml(d) + actionsHtml(d) + requestsHtml(d)
+      + '<input type="file" id="cpi-file" hidden onchange="ISO.portal._fileChosen(this)" aria-label="Choose a file to send to Etcher">';
+  }
+  // Your history: what this login sent to Etcher, newest first, a page at a time.
+  let _hist = [];
+  async function history(offset) {
+    let r;
+    try { r = await root.ISO.api('portal.history', { offset: offset }); } catch (e) { return; }
+    _hist = offset ? _hist.concat(r.history) : r.history;
+    const h = document.getElementById('cpi-hist'); if (!h) return;
+    h.hidden = !_hist.length;
+    h.innerHTML = `<div class="cp-sec-head"><h2 class="cp-sec-title" id="cpi-hi-h">Your history</h2></div>
+      <ul class="cpi-sheet cpi-hist">${_hist.map(x => `<li><span class="cpi-hist-w">${esc(fmt(x.at))}</span><span>${esc(x.what)}<small>${esc(x.ref)}</small></span></li>`).join('')}</ul>
+      ${r.more ? `<button type="button" class="cp-sec-link cpi-more" data-n="${_hist.length}" onclick="ISO.portal.history(+this.dataset.n)">Show more</button>` : ''}`;
   }
   function sec(id, title, count, inner, pad) {
     return `<section class="cp-sec" aria-labelledby="${id}"><div class="cp-sec-head"><h2 class="cp-sec-title" id="${id}">${esc(title)}</h2>${count != null ? `<span class="cp-sec-count">${count}</span>` : ''}</div><div class="cpi-sheet${pad ? ' cpi-pad' : ''}">${inner}</div></section>`;
@@ -122,11 +135,11 @@
     return sec('cpi-act-h', 'Actions', acts.length, `<ul class="cpi-rows">${acts.map(a => {
       const [label, cls] = actState(a);
       const late = a.dueDate && a.dueDate < t && !['Done', 'Etcher to verify'].includes(label);
-      const sub = [a.clause, a.finding ? (CLASS[a.finding.classification] || '') + (a.finding.ref ? ' ' + a.finding.ref : '') : '', a.mine ? 'Yours to do' : 'Etcher is doing this'].filter(Boolean).join('. ');
+      const sub = [a.clause, a.finding ? (CLASS[a.finding.classification] || '') + (a.finding.ref ? ' ' + a.finding.ref : '') : '', a.mine ? 'Yours to do' : 'Etcher is doing this', (a.files || []).length ? 'Files: ' + a.files.join(', ') : ''].filter(Boolean).join('. ');
       const can = a.mine && ['assigned', 'in_progress', 'awaiting_evidence', 'more_info_required'].includes(a.status);
       return `<li class="cpi-x"><div class="cpi-tt"><b><span class="cpi-ref">${esc(a.ref)}</span>${esc(a.title)}</b><span>${esc(sub)}.</span></div>
         <span class="cpi-s ${cls}">${esc(label)}</span><span class="cpi-due${late ? ' late' : ''}">${a.dueDate ? (late ? 'Overdue, ' : 'Due ') + esc(fmt(a.dueDate)) : ''}</span>
-        <span class="cpi-xa">${can ? `<button type="button" class="cp-btn line" data-id="${esc(a.id)}" onclick="ISO.portal.doneOpen(this.dataset.id)">Mark done</button>` : ''}</span>
+        <span class="cpi-xa">${can ? `<button type="button" class="cp-btn text" data-kind="action" data-id="${esc(a.id)}" onclick="ISO.portal.upload(this.dataset.kind, this.dataset.id)">Add a file</button><button type="button" class="cp-btn line" data-id="${esc(a.id)}" onclick="ISO.portal.doneOpen(this.dataset.id)">Mark done</button>` : ''}</span>
         ${can ? `<div class="cpi-reply" id="cpi-done-${esc(a.id)}" hidden><label class="cpi-l" for="cpi-done-n-${esc(a.id)}">What was done <span>(optional)</span></label><textarea id="cpi-done-n-${esc(a.id)}" maxlength="4000" placeholder="For example: the register now lists every load cell with its calibration date."></textarea>
           <div class="cpi-reply-b"><button type="button" class="cp-btn cpi-send" data-id="${esc(a.id)}" onclick="ISO.portal.done(this.dataset.id)">Send to Etcher</button><button type="button" class="cp-btn text" data-id="${esc(a.id)}" onclick="ISO.portal.doneCancel(this.dataset.id)">Cancel</button></div></div>` : ''}</li>`;
     }).join('')}</ul>`);
@@ -137,7 +150,7 @@
     const st = { open: ['Needs you', 'you'], submitted: ['Sent, Etcher to review', 'recv'], closed: ['Done', 'done'] };
     return sec('cpi-ev-h', 'Evidence requests', reqs.length, `<ul class="cpi-rows">${reqs.map(r => { const [l, c] = st[r.status] || ['', '']; return `<li class="cpi-x"><div class="cpi-tt"><b>${esc(r.description)}</b><span>${esc(r.clause || 'Requested by Etcher')}.</span></div>
       <span class="cpi-s ${c}">${esc(l)}</span><span class="cpi-due">${r.dueDate ? 'Due ' + esc(fmt(r.dueDate)) : ''}</span>
-      <span class="cpi-xa">${r.status === 'open' ? `<button type="button" class="cp-btn line" data-id="${esc(r.id)}" onclick="ISO.portal.sent(this.dataset.id)">Mark sent</button>` : ''}</span></li>`; }).join('')}</ul>`);
+      <span class="cpi-xa">${r.status === 'open' ? `<button type="button" class="cp-btn line" data-kind="request" data-id="${esc(r.id)}" onclick="ISO.portal.upload(this.dataset.kind, this.dataset.id)">Upload</button><button type="button" class="cp-btn text" data-id="${esc(r.id)}" onclick="ISO.portal.sent(this.dataset.id)">Mark sent</button>` : ''}</span></li>`; }).join('')}</ul>`);
   }
 
   function pick(id) {
@@ -167,7 +180,7 @@
     try {
       await root.ISO.api(op, Object.assign({ auditId: sel }, payload));
       toast(okMsg);
-      await load(); syncTab(); await fill(sel);
+      await load(); syncTab(); await fill(sel); history(0);
       return true;
     } catch (e) { toast('Could not send: ' + e.message, true); btns.forEach(b => { b.disabled = false; }); return false; }
   }
@@ -191,6 +204,28 @@
     return send('portal.requestSent', { id: id, expectedVersion: r.rowVersion }, 'Thank you. Etcher will review it.');
   }
 
+  // Upload: reserve, send the bytes (the signed link online, through the API on the offline dev
+  // server), then register. The server decides everything else about the file.
+  let _up = null;
+  function upload(kind, id) { _up = { kind: kind, id: id }; const f = document.getElementById('cpi-file'); if (f) { f.value = ''; f.click(); } }
+  function _b64(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('the file could not be read')); r.readAsDataURL(file); }); }
+  async function _fileChosen(input) {
+    const file = input && input.files && input.files[0], t = _up; _up = null;
+    if (!file || !t) return;
+    const btns = [...document.querySelectorAll('#cpi-main button')];
+    btns.forEach(b => { b.disabled = true; });
+    toast('Sending ' + file.name + '…');
+    try {
+      const base = { auditId: sel };
+      const st = (await root.ISO.api('portal.uploadStart', Object.assign({}, base, t.kind === 'request' ? { requestId: t.id } : { actionId: t.id }, { filename: file.name, size: file.size, mime: file.type || null }))).upload;
+      if (st.offline) await root.ISO.api('portal.uploadPut', Object.assign({}, base, { evidenceId: st.evidenceId, dataBase64: await _b64(file) }));
+      else { const put = await fetch(st.signedUrl, { method: 'PUT', headers: { 'Content-Type': st.mime }, body: file }); if (!put.ok) throw new Error('the file could not be sent (' + put.status + ')'); }
+      await root.ISO.api('portal.uploadFinish', Object.assign({}, base, { evidenceId: st.evidenceId }));
+      toast('Sent. Etcher will review ' + file.name + '.');
+      await load(); syncTab(); await fill(sel); history(0);
+    } catch (e) { toast('Could not send the file: ' + e.message, true); btns.forEach(b => { b.disabled = false; }); }
+  }
+
   // Overview pieces: the client's ISO asks inside "Waiting on you", and one quiet engagement row.
   function needRowsHtml() {
     return needs().map(n => {
@@ -210,5 +245,5 @@
   }
 
   root.ISO = root.ISO || {};
-  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, respond: respond, _rv: _rv, doneOpen: doneOpen, doneCancel: doneCancel, done: done, sent: sent, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; } };
+  root.ISO.portal = { load: load, syncTab: syncTab, render: render, pick: pick, open: open, download: download, needRowsHtml: needRowsHtml, respond: respond, _rv: _rv, doneOpen: doneOpen, doneCancel: doneCancel, done: done, sent: sent, upload: upload, _fileChosen: _fileChosen, history: history, engRowHtml: engRowHtml, needCount: () => needs().length, boardCount: () => boards().length, _reset: () => { summary = null; sel = null; current = null; } };
 })(typeof window !== 'undefined' ? window : globalThis);

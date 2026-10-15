@@ -88,6 +88,17 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   t.eq((await srv.call(CU, { op: 'portal.requestSent', auditId: b.id, id: req.id, expectedVersion: req.rowVersion + 1 })).status, 400, 'once only');
   t.eq(await needs(), [], 'nothing is waiting on the client now');
 
+  // ── Your history (13.6b) ──
+  // Etcher marks the staff-only request sent: that is Etcher's action, never the client's history.
+  await srv.must(AUD, { op: 'evidenceRequest.update', auditId: b.id, id: staffReq.id, status: 'submitted', expectedVersion: staffReq.row_version });
+  const hist = await srv.call(CU, { op: 'portal.history' });
+  const whats = (hist.data && hist.data.history || []).map(x => x.what);
+  t.ok(hist.status === 200 && whats.includes('You asked for a correction to the audit report') && whats.includes('You confirmed the audit report is accurate') && whats.includes('You said ' + mine.ref + ' is done') && whats.includes('You sent a requested document'), 'Your history lists what the client sent (' + whats.join(' | ') + ')');
+  t.ok(!/serial|calibrated|offline:|register by 1 December/.test(JSON.stringify(hist.body)), 'history is sentences only: no text the client or Etcher wrote, no ids');
+  t.eq((await srv.call(CU2, { op: 'portal.history' })).data.history.length, 0, 'another login of the client sees none of it');
+  t.eq((await srv.call(A, { op: 'portal.history' })).status, 403, 'staff cannot call it');
+  t.ok(!whats.some(w => /Etcher|rejected|accepted/.test(w)) && whats.filter(w => w === 'You sent a requested document').length === 1, 'only the client\'s own actions, not Etcher\'s');
+
   // ── UI: client answers, marks done and sent; Etcher decides in the Report panel ──
   // A fresh board for the UI, shared with the local preview login.
   const u = await srv.board({ standards: ['9001'], title: 'Maintenance audit 2026', members: [{ id: LEAD.id, auditRole: 'lead_auditor' }, { id: AUD.id, auditRole: 'auditor' }] });
@@ -114,11 +125,12 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   await cl.eval(() => { document.getElementById('cpi-rv-c').value = 'The audit dates were 1 to 3 October.'; document.getElementById('cpi-rv-m').value = 'Training sheets will be filed weekly.'; document.querySelector('.cpi-rv .cpi-send').click(); }); await t.sleep(2200);
   let ui = await cl.eval(() => ({ form: !!document.querySelector('.cpi-rv'), ans: (document.querySelector('.cpi-ans') || {}).textContent || '' }));
   t.ok(!ui.form && /You asked for a correction/.test(ui.ans) && /With Etcher/.test(ui.ans) && /1 to 3 October/.test(ui.ans), 'the answer shows as sent and waiting for Etcher');
-  await cl.eval(() => document.querySelector('.cpi-xa .cp-btn').click()); await t.sleep(300);
+  t.ok(await cl.eval(() => { const r = document.querySelector('.cpi-reply'); return !!r && r.hidden && getComputedStyle(r).display === 'none'; }), 'the Mark done note stays closed until asked for');
+  await cl.eval(() => [...document.querySelectorAll('.cpi-xa .cp-btn')].find(x => x.textContent === 'Mark done').click()); await t.sleep(300);
   t.ok(await cl.eval(() => { const r = document.querySelector('.cpi-reply'); return r && !r.hidden && document.activeElement && document.activeElement.tagName === 'TEXTAREA'; }), 'Mark done opens a short note');
   await cl.eval(() => { const r = document.querySelector('.cpi-reply'); r.querySelector('textarea').value = 'Attendance is now on the sign-in sheet.'; r.querySelector('.cpi-send').click(); }); await t.sleep(2200);
   t.ok(await cl.eval(() => [...document.querySelectorAll('.cp-sec:has(#cpi-act-h) .cpi-s')].some(s => s.textContent === 'Etcher to verify') && !document.querySelector('.cp-sec:has(#cpi-act-h) .cpi-xa .cp-btn')), 'the action shows Etcher to verify, with nothing left to press');
-  await cl.eval(() => document.querySelector('.cp-sec:has(#cpi-ev-h) .cpi-xa .cp-btn').click()); await t.sleep(2200);
+  await cl.eval(() => [...document.querySelectorAll('.cp-sec:has(#cpi-ev-h) .cpi-xa .cp-btn')].find(x => x.textContent === 'Mark sent').click()); await t.sleep(2200);
   t.ok(await cl.eval(() => /Sent, Etcher to review/.test(document.querySelector('.cp-sec:has(#cpi-ev-h)').textContent)), 'Mark sent marks the request');
   const shot = await cl.shot('iso-portal2-client');
   t.eq(shot.phone, 0, 'the answered tab fits a phone');
@@ -134,5 +146,6 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   t.ok(await st.eval(() => /Accepted: Dates corrected in version 2\./.test((document.querySelector('.iso-rep-resp') || {}).textContent || '')), 'the decision and its note are recorded');
   await cl.eval(id => { ISO.portal._reset(); ISO.portal.open(id); }, u.id); await t.sleep(2200);
   t.ok(await cl.eval(() => /Etcher accepted this/.test(document.querySelector('.cpi-ans').textContent) && /Dates corrected in version 2/.test(document.querySelector('.cpi-ans').textContent)), 'the client reads Etcher\'s note');
+  t.ok(await cl.eval(() => { const h = document.getElementById('cpi-hist'); return !!h && !h.hidden && /You asked for a correction/.test(h.textContent) && /is done/.test(h.textContent); }), 'Your history shows in the ISO tab');
   t.ok(!/offline:|SENTINEL/.test(await cl.eval(() => document.getElementById('cp-body').innerText)), 'nothing internal on the client\'s screen');
 });

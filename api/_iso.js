@@ -310,7 +310,7 @@ const CLIENT_FIELDS = {
     'client_response', 'verification_requirements', 'visibility', 'row_version'],
   // B7: the portal.* ops build their client payloads field by field (portalBoardRow, portalActions …);
   // these are the only top-level keys they may return.
-  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version', 'responses'],
+  portal: ['boards', 'needs', 'board', 'lead', 'previous', 'next', 'results', 'previousResults', 'reports', 'actions', 'requests', 'version', 'responses', 'upload', 'history', 'more'],
 };
 // Fields never sent to a client caller for ANY entity, even one whose CLIENT_FIELDS is generous —
 // a second layer so a future typo in one allowlist can't leak these (plan §6.3).
@@ -2038,7 +2038,13 @@ async function portalActions(ctx, audit) {
         if (r && r.audit_id === audit.id) clause = `${r.clause} ${r.clause_name || ''}`.trim();
       }
     }
-    out.push({ id: a.id, ref: a.ref, title: a.title, status: a.status, dueDate: a.due_date || null, mine: a.owner_kind === 'client',
+    const files = [];
+    for (const l of await ctx.db.list('iso_evidence_links', { where: [{ field: 'target_type', op: 'eq', value: 'action' }, { field: 'target_id', op: 'eq', value: a.id }] })) {
+      if (DEAD_LINK_STATUSES.includes(l.review_status)) continue;
+      const e = await ctx.db.get('iso_evidence', l.evidence_id);
+      if (e && !e.archived_at && e.audit_id === audit.id && portalSees(e, ctx.caller)) files.push(e.title);
+    }
+    out.push({ id: a.id, ref: a.ref, title: a.title, status: a.status, dueDate: a.due_date || null, mine: a.owner_kind === 'client', files,
       clientResponse: a.client_response || null, finding: found, clause, rowVersion: a.row_version });
   }
   return out.sort((x, y) => String(x.ref).localeCompare(String(y.ref)));
@@ -2267,6 +2273,97 @@ defineOp('response.decide', {
     await ctx.db.log({ audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'report', entity_id: r.report_version_id || r.id,
       action: 'client_response_' + ctx.payload.decision, source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind });
     return out;
+  },
+});
+
+// ── Release-1 B7c: the client uploads a file (plan 13.6) ───────────────────────────────────────
+// For an open evidence request addressed to them, or their own open action. The staff pipeline
+// does the work (evidence.uploadUrl / offlinePut / register, run with the client's ctx), with what
+// the client may not choose fixed here: shared with the client, a draft document, linked "not
+// reviewed" so Etcher reviews it (D39), no related-clause suggestions. Uploaded via 'portal'.
+function portalCanUpload(ctx) { return ctx.caller.kind === 'client' && !!(ctx.membership && ctx.membership.can_upload_evidence); }
+async function portalUploadTarget(ctx, p) {
+  if (p.requestId) {
+    const r = await ctx.db.get('iso_evidence_requests', p.requestId);
+    if (!r || r.audit_id !== ctx.audit.id || r.archived_at || (r.requested_from_uid && r.requested_from_uid !== ctx.caller.uid)) throw notFound();
+    if (r.status !== 'open') throw badRequest('This request is not open.');
+    return { targetType: r.target_type, targetId: r.target_id, requestId: r.id };
+  }
+  const a = await ctx.db.get('iso_actions', p.actionId);
+  if (!a || a.audit_id !== ctx.audit.id || a.archived_at || !portalSees(a, ctx.caller)) throw notFound();
+  if (a.owner_kind !== 'client' || !PORTAL_OPEN_ACTION.includes(a.status)) throw badRequest('This action is not open for you right now.');
+  return { targetType: 'action', targetId: a.id, requestId: null };
+}
+defineOp('portal.uploadStart', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanUpload,
+  async validate(payload) {
+    if (!isValidId(payload.requestId) && !isValidId(payload.actionId)) throw badRequest('Pick a request or an action.');
+    portalText(payload.note, 'The note');
+  },
+  async run(ctx) {
+    const t = await portalUploadTarget(ctx, ctx.payload);
+    const payload = { auditId: ctx.audit.id, targetType: t.targetType, targetId: t.targetId, filename: ctx.payload.filename, size: ctx.payload.size, mime: ctx.payload.mime || null,
+      description: portalText(ctx.payload.note), visibility: 'client_all', confidentiality: 'normal', documentStatus: 'draft', role: 'primary', suggestRelated: false, requestId: t.requestId };
+    const op = registry['evidence.uploadUrl'];
+    await op.validate(payload, ctx);
+    const res = await op.run({ ...ctx, payload });
+    return { upload: { evidenceId: res.evidenceId, signedUrl: res.signedUrl, offline: res.offline, mime: res.mime, maxBytes: res.maxBytes } };
+  },
+});
+defineOp('portal.uploadPut', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanUpload,
+  async validate(payload) { await registry['evidence.offlinePut'].validate(payload); },
+  async run(ctx) { const r = await registry['evidence.offlinePut'].run(ctx); return { upload: { received: r.received } }; },
+});
+defineOp('portal.uploadFinish', {
+  scope: 'audit', clientProjection: 'portal',
+  allow: portalCanUpload,
+  async validate(payload) { if (!isValidId(payload.evidenceId)) throw badRequest('An upload is required.'); },
+  async run(ctx) {
+    const r = await openReservation(ctx, ctx.payload.evidenceId);
+    if (!r || r.reserved_by !== ctx.caller.uid) throw badRequest('No upload is in progress for that record.');
+    const d = r.details || {};
+    const out = await registry['evidence.register'].run(ctx);
+    if (d.requestId) {
+      const q = await ctx.db.get('iso_evidence_requests', d.requestId);
+      if (q && q.status === 'open') await ctx.db.update('iso_evidence_requests', q.id, { status: 'submitted' }, q.row_version, {
+        audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'requirement', entity_id: q.target_id, action: 'evidence_request_submitted',
+        field: 'status', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,
+      });
+    }
+    await notifyUids(ctx, leadUidsOf(ctx), { entity_type: r.target_type, entity_id: r.target_id, type: 'client_response', message: `${ctx.audit.ref}: the client uploaded a file for review.` });
+    return { upload: { title: out.evidence.title } };
+  },
+});
+
+// ── Release-1 B7d: the client's own history (plan 13.6b) ───────────────────────────────────────
+// What this login sent, from iso_activity rows they are the actor of, on boards they can still open.
+// Each row becomes a fixed sentence: no field values, no other person's actions.
+const PORTAL_HISTORY_LABEL = {
+  client_confirmed_report: 'You confirmed the audit report is accurate',
+  client_disputed_report: 'You asked for a correction to the audit report',
+  evidence_request_submitted: 'You sent a requested document',
+  evidence_uploaded: 'You uploaded a file',
+};
+const PORTAL_HISTORY_PAGE = 25;
+defineOp('portal.history', {
+  scope: 'none', clientProjection: 'portal',
+  allow(ctx) { return ctx.caller.kind === 'client' && !!ctx.caller.clientId; },
+  async validate(payload) { if (payload.offset != null && (!Number.isInteger(payload.offset) || payload.offset < 0 || payload.offset > 100000)) throw badRequest('Invalid page.'); },
+  async run(ctx) {
+    const boards = new Map((await portalBoardsOf(ctx)).map(x => [x.audit.id, x.audit]));
+    const rows = (await ctx.db.list('iso_activity', { where: [{ field: 'actor_uid', op: 'eq', value: ctx.caller.uid }], limit: 5000 }))
+      .filter(r => boards.has(r.audit_id))
+      .map(r => {
+        let what = PORTAL_HISTORY_LABEL[r.action] || null;
+        if (!what && r.action === 'status_changed' && r.entity_type === 'action' && r.after && r.after.status === 'submitted_for_review') what = `You said ${r.entity_ref || 'an action'} is done`;
+        return what ? { at: r.at, ref: boards.get(r.audit_id).ref, auditId: r.audit_id, what } : null;
+      })
+      .filter(Boolean).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    const offset = ctx.payload.offset || 0;
+    return { history: rows.slice(offset, offset + PORTAL_HISTORY_PAGE), more: rows.length > offset + PORTAL_HISTORY_PAGE };
   },
 });
 
@@ -3758,6 +3855,7 @@ defineOp('evidence.list', {
         samplePopulation: e.sample_population == null ? null : e.sample_population, sampleSize: e.sample_size == null ? null : e.sample_size, sampleExceptions: e.sample_exceptions || null,
         // 8.2: an uploaded file's name, size, type and document status — never its storage path.
         hasFile: !!e.storage_path, originalFilename: e.original_filename || null, sizeBytes: e.size_bytes == null ? null : Number(e.size_bytes), mime: e.mime || null, documentStatus: e.document_status || 'draft',
+        uploadedVia: e.uploaded_via || 'staff', // B7c: a file the client sent from the portal
         linkId: l.id, role: l.role || 'primary', relevanceNote: l.relevance_note || null,
         reviewStatus: l.review_status, reviewedBy: l.reviewed_by, reviewedAt: l.reviewed_at, reviewComment: l.review_comment,
         // 8b.5: what the review controls need — the link's own version (optimistic concurrency), who
@@ -4170,6 +4268,8 @@ defineOp('evidence.uploadUrl', {
         confidentiality: ctx.payload.confidentiality || 'normal', visibility: ctx.payload.visibility || 'internal', role: ctx.payload.role || 'primary',
         relevanceNote: ctx.payload.relevanceNote ? String(ctx.payload.relevanceNote).trim() : null, suggestRelated: ctx.payload.suggestRelated !== false,
         documentStatus: ctx.payload.documentStatus || 'draft', ownerUid: ctx.payload.ownerUid || null, approverUid: ctx.payload.approverUid || null, effectiveDate: ctx.payload.effectiveDate || null,
+        // B7c: a client upload (portal.uploadStart) is recorded as such, with the request it answers.
+        via: ctx.caller.kind === 'client' ? 'portal' : 'staff', requestId: ctx.caller.kind === 'client' ? (ctx.payload.requestId || null) : null,
       },
       reserved_by: ctx.caller.uid, expires_at: expiresAt, closed_at: null, close_reason: null,
     });
@@ -4232,7 +4332,7 @@ defineOp('evidence.register', {
       document_status: d.documentStatus || 'draft', approver_uid: d.approverUid || null, effective_date: d.effectiveDate || null,
       version_label: d.versionLabel || null, evidence_date: d.evidenceDate || null, owner_uid: d.ownerUid || ctx.caller.uid,
       confidentiality: d.confidentiality || 'normal', visibility: d.visibility || 'internal', suggest_related: d.suggestRelated !== false,
-      uploaded_by: ctx.caller.uid, uploaded_via: 'staff', created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
+      uploaded_by: ctx.caller.uid, uploaded_via: d.via === 'portal' ? 'portal' : 'staff', created_by: ctx.caller.uid, updated_by: ctx.caller.uid,
     }, {
       audit_id: ctx.audit.id, client_id: ctx.audit.client_id, entity_type: 'evidence', entity_id: null,
       action: 'created', source: 'user', actor_uid: ctx.caller.uid, actor_kind: ctx.caller.kind,

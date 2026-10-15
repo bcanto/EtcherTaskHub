@@ -1272,6 +1272,7 @@ button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset:
 .cpi-xa { display: inline-flex; justify-content: flex-end; }
 .cpi-xa:empty { display: none; }
 .cpi-reply { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 4px; }
+.cpi-reply[hidden] { display: none; }
 .cpi-reply-b { display: flex; gap: 8px; align-items: center; }
 .cpi-l { font: 600 12.5px Jost, sans-serif; color: #0d1c33; }
 .cpi-l span { font-weight: 400; color: #5c6b80; }
@@ -1304,3 +1305,12 @@ button.iso-da-st-btn:focus-visible { outline: 2px solid #31585a; outline-offset:
 .iso-rep-resp p { margin: 0; }
 .iso-rep-resp-d { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .iso-rep-resp-d input { flex: 1 1 220px; }
+.cpi-xa { gap: 4px; flex-wrap: wrap; }
+/* B7d: Your history */
+.cpi-left { display: grid; gap: 0; min-width: 0; align-content: start; }
+.cpi-hist { list-style: none; padding: 4px 0; }
+.cpi-hist li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 7px 16px; font-size: 13px; color: #0d1c33; }
+.cpi-hist li + li { border-top: 1px solid #eef2f6; }
+.cpi-hist small { display: block; font-size: 12px; color: #5c6b80; }
+.cpi-hist-w { font: 500 12px Jost, sans-serif; color: #5c6b80; font-variant-numeric: tabular-nums; }
+.cpi-more { margin: 8px 0 0; }

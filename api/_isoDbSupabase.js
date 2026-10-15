@@ -32,7 +32,7 @@ const FILTERABLE = {
   iso_findings: ['audit_id', 'client_id', 'archived_at', 'status', 'classification'],
   iso_actions: ['audit_id', 'client_id', 'archived_at', 'status', 'owner_uid', 'owner_kind', 'due_date'],
   iso_comments: ['audit_id', 'entity_type', 'entity_id', 'archived_at'],
-  iso_activity: ['audit_id', 'entity_type', 'entity_id', 'action'],
+  iso_activity: ['audit_id', 'entity_type', 'entity_id', 'action', 'actor_uid'],
   iso_saved_views: ['audit_id', 'owner_uid'],
   iso_templates: ['archived_at'],
   iso_config: [],
