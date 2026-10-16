@@ -2817,13 +2817,16 @@ let _pendingRemote=null;
 let _supabaseSyncEnabled=false; // only true after post-login app_state load confirms data
 let _realtimeChannel=null;
 let _syncFailCount=0;
+// A save that does not reach the server is never answered with an overwrite (audit C1, 2026-10-17): the changes
+// stay in this browser (written locally on every edit), the save is tried again with growing pauses, and this
+// banner stays up until one gets through. It used to disappear after 12 seconds and say nothing more.
 function _showSyncError(msg){
   const id='sync-err-toast';
   let el=document.getElementById(id);
-  if(!el){el=document.createElement('div');el.id=id;el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px';document.body.appendChild(el);}
-  el.innerHTML='⚠ Sync failed: '+escHtml(msg)+' — <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">reload to reconnect</a>';
-  clearTimeout(el._t);el._t=setTimeout(()=>el.remove(),12000);
+  if(!el){el=document.createElement('div');el.id=id;el.setAttribute('role','alert');el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;max-width:92vw';document.body.appendChild(el);}
+  el.innerHTML='⚠ Your latest changes are saved on this computer but have not reached the server ('+escHtml(msg)+'). Trying again. <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">Reload</a> if this stays.';
 }
+function _hideSyncError(){document.getElementById('sync-err-toast')?.remove();}
 // Two people saving within one network round-trip used to silently lose one of them. This
 // sent the WHOLE database as a blob and blind-upserted it, so whichever request reached
 // Postgres second replaced the row outright — and BOTH clients got a success response, with
@@ -2834,41 +2837,53 @@ function _showSyncError(msg){
 // write only if nobody else has written since that read. If someone has, re-read and
 // re-merge. `updated_at` is the version token — it is already written on every save.
 let _syncInFlight=false,_syncQueued=false;
-function _syncToSupabase(data,opts){
+let _syncRetryTimer=null,_syncRetryMs=4000;
+function _syncToSupabase(data){
   if(!window._supabase||!_supabaseSyncEnabled)return;
-  // beforeunload cannot await anything — a read/merge round-trip certainly will not finish —
-  // so that one path stays a single best-effort blind write.
-  if(opts&&opts.blind){_syncBlindUpsert(data);return;}
   // Never run two of these at once: they would read the same row and race each other.
   if(_syncInFlight){_syncQueued=true;return;}
   _syncInFlight=true;
   _syncMergeWrite(data)
-    .catch(e=>{console.warn('[sync]',e&&e.message);})
+    .then(_syncSucceeded,e=>_syncFailed(e&&e.message||'unknown error'))
     .then(()=>{
       _syncInFlight=false;
       if(_syncQueued){_syncQueued=false;_syncToSupabase(_stripPasswords(DB));}
     });
 }
-function _syncBlindUpsert(data){
-  return window._supabase.from('app_state').upsert({id:1,data,updated_at:new Date().toISOString()},{onConflict:'id'}).then(({error})=>{
-    if(error){
-      _syncFailCount++;
-      console.warn('[sync] Save failed (attempt '+_syncFailCount+'):', error.message, '| code:', error.code);
-      if(_syncFailCount>=2)_showSyncError(error.message);
-    } else {
-      _syncFailCount=0;
-    }
-  });
+function _syncSucceeded(){
+  _syncFailCount=0;_syncRetryMs=4000;
+  clearTimeout(_syncRetryTimer);_syncRetryTimer=null;
+  _hideSyncError();
 }
+function _syncFailed(msg){
+  _syncFailCount++;
+  console.warn('[sync] Save failed (attempt '+_syncFailCount+'): '+msg);
+  if(_syncFailCount>=2)_showSyncError(msg);
+  if(!_syncRetryTimer){
+    _syncRetryTimer=setTimeout(()=>{_syncRetryTimer=null;_syncToSupabase(_stripPasswords(DB));},_syncRetryMs);
+    _syncRetryMs=Math.min(_syncRetryMs*2,120000);
+  }
+}
+// Back online: try at once rather than waiting out the pause.
+window.addEventListener('online',()=>{if(_syncFailCount>0){clearTimeout(_syncRetryTimer);_syncRetryTimer=null;_syncToSupabase(_stripPasswords(DB));}});
+const _syncPause=ms=>new Promise(r=>setTimeout(r,ms));
+// Writes only what was merged on top of the row that is actually stored, and only if nobody has written since
+// that read (compare-and-swap on updated_at). Anything else (a failed read, a refused write, losing the race six
+// times running) throws, so the caller keeps the changes and tries again. It never replaces the row with this
+// browser's copy: that fallback is how a bad connection used to wipe out other people's work (audit C1).
 async function _syncMergeWrite(payload){
   const sb=window._supabase;
-  for(let attempt=0;attempt<4;attempt++){
+  for(let attempt=0;attempt<6;attempt++){
     const{data:rows,error:readErr}=await sb.from('app_state').select('data,updated_at').eq('id',1).limit(1);
-    if(readErr)break;                    // can't read — fall through to the blind write
+    if(readErr)throw new Error(readErr.message||'could not read the shared record');
     const row=rows&&rows[0];
-    // No row yet, or no version to compare against: the blind upsert below creates/stamps it,
-    // and every write after that is protected.
-    if(!row||!row.updated_at)break;
+    if(!row){
+      // Nothing is stored yet, so there is nothing to overwrite. If someone creates it first, read again and merge.
+      const{error}=await sb.from('app_state').insert({id:1,data:payload,updated_at:new Date().toISOString()});
+      if(!error)return;
+      if(error.code==='23505'){await _syncPause(60*(attempt+1));continue;}
+      throw new Error(error.message||'could not create the shared record');
+    }
     let outgoing=payload;
     if(row.data){
       const fresh=JSON.parse(JSON.stringify(row.data));
@@ -2877,20 +2892,16 @@ async function _syncMergeWrite(payload){
     }
     let stamp=new Date().toISOString();
     if(stamp===row.updated_at)stamp=new Date(Date.now()+1).toISOString(); // keep it strictly moving
-    const{data:written,error}=await sb.from('app_state')
-      .update({data:outgoing,updated_at:stamp})
-      .eq('id',1).eq('updated_at',row.updated_at)
-      .select('id');
-    if(error)break;
-    if(written&&written.length){_syncFailCount=0;return;}
+    let q=sb.from('app_state').update({data:outgoing,updated_at:stamp}).eq('id',1);
+    q=row.updated_at?q.eq('updated_at',row.updated_at):q.is('updated_at',null);
+    const{data:written,error}=await q.select('id');
+    if(error)throw new Error(error.message||'the server refused the save');
+    if(written&&written.length)return;
     // Zero rows updated means the precondition failed: somebody wrote between our read and
     // our write. Their data is on the server now, so re-read and merge on top of it.
-    await new Promise(r=>setTimeout(r,60*(attempt+1)));
+    await _syncPause(60*(attempt+1));
   }
-  // Safety valve. Whatever went wrong — unreadable row, missing version, or four lost races —
-  // never leave someone unable to save. This is exactly the old behaviour, so the worst case
-  // here is what already shipped, not a dead save path.
-  return _syncBlindUpsert(payload);
+  throw new Error('other people kept saving at the same moment');
 }
 // Records which ids just vanished from a collection into DB[tombstoneKey], so a peer who
 // hasn't synced this deletion yet — and still has those exact records — doesn't resurrect
@@ -3282,8 +3293,13 @@ function _flushDB(){
 }
 // Flush on tab close; warn only if a textarea has an active session draft (user typed something unsaved)
 window.addEventListener('beforeunload',e=>{
-  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));_syncToSupabase(safe,{blind:true});}
+  // Only the local copy is written here (audit C1). A closing page cannot finish a read, merge and write, and the
+  // blind upload that tried anyway could overwrite other people's changes. What is saved locally is merged with the
+  // server and sent the next time this browser signs in.
+  if(_saveDebounceTimer){clearTimeout(_saveDebounceTimer);_applyPendingRemote();const safe=_stripPasswords(DB);_safeSaveLocal(JSON.stringify(safe));}
   let hasUnsaved=false;
+  // Changes the server has not received yet (the banner is showing): ask before closing.
+  if(_syncFailCount>=2)hasUnsaved=true;
   // #task-panel and #generic-modal are siblings of #view-container, not nested inside it, so
   // scoping this scan to #view-container meant this warning could essentially never fire for
   // a draft sitting in the task panel or any modal — scan the whole document instead. Include
