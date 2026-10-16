@@ -1,16 +1,34 @@
 // Main Board progress cell (2026-10-16): log hours with a progress change, like the status
 // dropdown's "Log hours for <owner>" on completion. Hours typed first save with the % in one
 // click; picking a % first keeps the field open with Log. In memory only (saveDB stubbed).
+// Its own static offline server (never the user's :3001, which shares their ISO store).
 const puppeteer = require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/node_modules/puppeteer');
+const path = require('path'), http = require('http'), fs = require('fs');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PORT = 3195;
+function staticOffline(port) {
+  const root = path.resolve(__dirname, '..');
+  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/api/config') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ supabaseUrl: '', supabaseAnonKey: '', isoEnabled: false, microsoftSignIn: false })); }
+    if (url.pathname.startsWith('/api/')) { res.writeHead(404, { 'Content-Type': 'application/json' }); return res.end('{"error":"not in this test"}'); }
+    const file = path.join(root, decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
+    if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
+    fs.createReadStream(file).pipe(res);
+  });
+  return new Promise(r => server.listen(port, '127.0.0.1', () => r(server)));
+}
 (async () => {
   const pass = [], fail = []; const ok = (c, m) => (c ? pass : fail).push(m);
+  const srv = await staticOffline(PORT);
   const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox'], defaultViewport: { width: 1440, height: 900 } });
   const errs = [];
   try {
     const p = await b.newPage(); await p.setCacheEnabled(false);
     p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { errs.push('dialog ' + d.message()); d.dismiss(); });
-    await p.goto('http://localhost:3001/', { waitUntil: 'networkidle2' }); await sleep(900);
+    await p.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle2' }); await sleep(900);
     await p.type('#login-email', 'b.canto@etchersolutions.com'); await p.type('#login-password', 'TaskHub123'); await p.keyboard.press('Enter'); await sleep(2200);
     await p.evaluate(() => { window.saveDB = () => {}; });
     const setup = await p.evaluate(() => {
@@ -65,7 +83,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(errs.length === 0, 'no page errors or native dialogs (' + errs.slice(0, 2).join(' | ') + ')');
   } catch (e) { fail.push('crashed: ' + (e && e.stack || e)); }
   finally {
-    await b.close();
+    await b.close(); srv.close();
     console.log('\nprogress-hours-test');
     console.log('PASS (' + pass.length + '):'); pass.forEach(m => console.log('  + ' + m));
     console.log('FAIL (' + fail.length + '):'); fail.forEach(m => console.log('  - ' + m));

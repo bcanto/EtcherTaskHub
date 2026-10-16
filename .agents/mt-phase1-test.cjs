@@ -53,7 +53,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
 
   // ---- rendered table ----
   await p.evaluate(()=>{
-    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b)c[b]=(c[b]||0)+1;});
+    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b&&!t.parentTaskId)c[b]=(c[b]||0)+1;});
     openWorkboard(Object.keys(c).sort((a,b)=>c[b]-c[a])[0]);
   });
   await new Promise(r=>setTimeout(r,1500));

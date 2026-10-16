@@ -52,7 +52,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
 
   // ---- new task gets the next number, never a reused one ----
   const created=await p.evaluate(()=>{
-    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b)c[b]=(c[b]||0)+1;});
+    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b&&!t.parentTaskId)c[b]=(c[b]||0)+1;});
     const bid=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];
     const board=DB.workboards.find(w=>w.id===bid);
     const beforeNext=board.nextRef;
@@ -77,7 +77,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
 
   // ---- 3.3 surfaced in the table ----
   await p.evaluate(()=>{
-    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b)c[b]=(c[b]||0)+1;});
+    const c={};(DB.tasks||[]).forEach(t=>{const b=t.boardId||t.workboardId;if(b&&!t.parentTaskId)c[b]=(c[b]||0)+1;});
     openWorkboard(Object.keys(c).sort((a,b)=>c[b]-c[a])[0]);
   });
   await new Promise(r=>setTimeout(r,1400));
