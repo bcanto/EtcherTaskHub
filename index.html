@@ -26253,9 +26253,15 @@ function renderCpGantt(clientId,tasks,boards,client,boardIdx=new Map()){
   const rawMin=new Date(Math.min(...allDates));
   const rawMax=new Date(Math.max(...allDates));
   const pad={days:3,weeks:7,months:14,quarters:30}[scale]||7;
-  const viewStart=new Date(rawMin);viewStart.setUTCDate(viewStart.getUTCDate()-pad);
-  if(scale==='weeks'){const dow=viewStart.getUTCDay();viewStart.setUTCDate(viewStart.getUTCDate()-(dow===0?6:dow-1));}
-  const viewEnd=new Date(rawMax);viewEnd.setUTCDate(viewEnd.getUTCDate()+pad);
+  let viewStart=new Date(rawMin);viewStart.setUTCDate(viewStart.getUTCDate()-pad);
+  let viewEnd=new Date(rawMax);viewEnd.setUTCDate(viewEnd.getUTCDate()+pad);
+  // The top header band shows whole units at both ends, never a sliver whose label is cut ("NOVEMBER 20",
+  // 2026-10-16): whole months at Weeks, whole quarters at Months, whole years at Quarters. Days keep
+  // their padding; their short month labels fit a few days.
+  const _unit=scale==='months'?3:scale==='quarters'?12:1;
+  const _uStart=d=>new Date(Date.UTC(d.getUTCFullYear(),Math.floor(d.getUTCMonth()/_unit)*_unit,1));
+  const _uNext=d=>{const x=_uStart(d);x.setUTCMonth(x.getUTCMonth()+_unit);return x;};
+  if(scale!=='days'){viewStart=_uStart(viewStart);viewEnd=_uNext(new Date(viewEnd.getTime()-86400000));}
   let totalDays=Math.max(1,Math.ceil((viewEnd-viewStart)/86400000));
 
   // Fill the available width. Stretch the scale up to a readable maximum; past that, add days.
@@ -26267,6 +26273,8 @@ function renderCpGantt(clientId,tasks,boards,client,boardIdx=new Map()){
   const MAX_DW={days:64,weeks:40,months:14,quarters:5}[scale]||40;
   let DW=BASE;
   if(totalDays*DW<avail){DW=Math.min(MAX_DW,avail/totalDays);if(totalDays*DW<avail)totalDays=Math.ceil(avail/DW);}
+  // Filling the width can end the range on any day: round it out to the next whole unit again.
+  if(scale!=='days'){const e=new Date(viewStart);e.setUTCDate(e.getUTCDate()+totalDays-1);totalDays=Math.round((_uNext(e)-viewStart)/86400000);}
   const trackW=Math.ceil(totalDays*DW);
   const d2x=ds=>(new Date(ds)-viewStart)/86400000*DW;
   const todayStr=toDateStr(new Date());

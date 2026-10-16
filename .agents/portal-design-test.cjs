@@ -68,6 +68,30 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   ok(g.months&&g.fit,'zoom buttons and Fit all switch the scale');
   ok(g.todayDisabled,'Today is disabled when today is outside the schedule, and enabled when it is on it');
 
+  // Whole header units at both ends (2026-10-16): the range stopped a few days into its last month and the
+  // label read "NOVEMBER 20". A task ending 22 Feb used to leave a one-day March sliver.
+  const hdr=await p.evaluate(async()=>{
+    const out={};
+    const saved=DB.tasks.map(t=>({id:t.id,s:t.startDate,e:t.endDate}));
+    const live=getClientTasks('c1').filter(t=>!t.parentTaskId&&t.startDate&&t.endDate).slice(0,2).map(t=>DB.tasks.find(x=>x.id===t.id));
+    // Every client task inside September to February, the earliest on 5 Sep: with the padding the range used to start on 29 Aug, a three-day August sliver.
+    for(const t of getClientTasks('c1')){const x=DB.tasks.find(k=>k.id===t.id);if(x&&(x.startDate||x.endDate)){x.startDate='2026-09-14';x.endDate='2026-09-30';}}
+    live[0].startDate='2026-09-05';live[0].endDate='2026-09-20';
+    live[1].startDate='2026-10-05';live[1].endDate='2027-02-22';
+    for(const sc of ['weeks','months','quarters']){
+      cpGanttScale=sc;cpNavigate('schedule');await new Promise(r=>setTimeout(r,40));
+      const cells=[...document.querySelectorAll('#cp-g-right .cpg-head > div:first-child > div')];
+      out[sc]={n:cells.length,clipped:cells.filter(c=>c.scrollWidth>c.clientWidth+1).map(c=>c.textContent),first:(cells[0]||{}).textContent,last:(cells[cells.length-1]||{}).textContent};
+    }
+    for(const x of saved){const t=DB.tasks.find(k=>k.id===x.id);if(t){t.startDate=x.s;t.endDate=x.e;}}
+    cpGanttScale='weeks';cpNavigate('overview');
+    return out;
+  });
+  ok(['weeks','months','quarters'].every(s=>hdr[s]&&hdr[s].n>0&&hdr[s].clipped.length===0),'no label in the top header band is cut off, at any zoom ('+JSON.stringify(hdr)+')');
+  ok(/^august 2026$/i.test(hdr.weeks.first||''),'Weeks: the band starts on a whole month, here August for a task from 5 Sep (got "'+(hdr.weeks&&hdr.weeks.first)+'")');
+  ok(/^february 2027$/i.test(hdr.weeks.last||''),'Weeks: the band ends on the last task\'s month, shown whole (got "'+(hdr.weeks&&hdr.weeks.last)+'")');
+  ok(/2027 Q1/i.test(hdr.months.last||'')&&/^2027$/.test(hdr.quarters.last||''),'Months ends on a whole quarter, Quarters on a whole year');
+
   // Short project: fills the width at the Weeks zoom (the reported case)
   const sh=await p.evaluate(async()=>{
     const ts=getClientTasks('c1');const keep=ts.filter(t=>t.startDate&&t.endDate&&!t.parentTaskId).slice(0,5);
