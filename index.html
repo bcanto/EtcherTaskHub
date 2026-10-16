@@ -11079,8 +11079,13 @@ async function saveClient(id){
     // overwritten.
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
-    let newAccountResult=null;
-    if(!c.supabaseUserId){
+    let newAccountResult=null,localEmail=null;
+    if(!c.supabaseUserId&&_localClientPreviewAllowed()){
+      // Local copy: no login accounts to create. Keep the email; the preview password signs in.
+      if(pw||pw2){showAlert(`This local copy can't create real portal logins. Leave both password boxes empty and save; the client signs in with the local preview password, ${_LOCAL_CLIENT_PASSWORD}.`,'Local copy');return;}
+      localEmail=(document.getElementById('cm-email')?.value||'').trim();
+      if(localEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(localEmail)){showAlert('Enter a valid portal email.','Validation');return;}
+    }else if(!c.supabaseUserId){
       // No portal account yet — this is the ADD case, not a change. cm-email is only
       // rendered editable here in the first place (see openClientModal); previously this
       // path only ever produced "Create a new client instead", a dead end for a client that
@@ -11131,6 +11136,7 @@ async function saveClient(id){
     }else{c.color=color;}
     const enabledEl=document.getElementById('cm-portal-enabled');
     if(enabledEl)c.portalEnabled=enabledEl.checked;
+    if(localEmail!==null)c.loginEmail=localEmail||undefined;
     const logoEl=document.getElementById('cm-logo-b64');
     if(logoEl)c.logo=logoEl.value||null;
     if(newAccountResult){
@@ -11150,6 +11156,13 @@ async function saveClient(id){
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
     const cid='c'+uid();
     const logo=document.getElementById('cm-logo-b64')?.value||null;
+    if(_localClientPreviewAllowed()){
+      if(pw||pw2){showAlert(`This local copy can't create real portal logins. Leave both password boxes empty and save; the client signs in with the local preview password, ${_LOCAL_CLIENT_PASSWORD}.`,'Local copy');return;}
+      if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAlert('Enter a valid portal email.','Validation');return;}
+      DB.clients.push({id:cid,name,shortCode,color,logo,active:true,loginEmail:email||undefined,portalEnabled:!!(email&&document.getElementById('cm-portal-enabled')?.checked),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      saveDB(DB);closeGenericModal();renderView('clients');
+      return;
+    }
     if(email&&pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
