@@ -24206,16 +24206,26 @@ function wsBuildDropdownHtml(taskId,field){
     </div>`;
   } else if(field==='progress'){
     const pcts=[0,10,25,50,75,90,100];
-    html=`<div style="padding:10px 14px;min-width:200px">
+    const _progOwner=DB.staff.find(st=>st.id===task.ownerId);
+    html=`<div style="padding:10px 14px;min-width:220px" onclick="event.stopPropagation()">
       <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">% Complete</div>
       <input type="range" min="0" max="100" step="5" value="${task.percentComplete||0}"
         style="width:100%;accent-color:#97bcbd;margin-bottom:8px" onclick="event.stopPropagation()"
         oninput="this.nextElementSibling.textContent=this.value+'%'"
-        onchange="wsCellSave('${taskId}','percentComplete',+this.value)"/>
+        onchange="wsProgressPick('${taskId}',+this.value)"/>
       <div style="text-align:center;font-size:13px;font-weight:700;color:#0d1c33">${task.percentComplete||0}%</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
-        ${pcts.map(p=>`<button onclick="wsCellSave('${taskId}','percentComplete',${p})" style="flex:1;min-width:26px;padding:3px 0;border:1px solid ${(task.percentComplete||0)===p?'#97bcbd':'#e2eaf2'};border-radius:5px;background:${(task.percentComplete||0)===p?'#f0f7f7':'#fff'};font-size:10px;font-weight:700;color:${(task.percentComplete||0)===p?'#0d6e4e':'#6b8399'};cursor:pointer">${p}%</button>`).join('')}
+        ${pcts.map(p=>`<button onclick="wsProgressPick('${taskId}',${p})" style="flex:1;min-width:26px;padding:3px 0;border:1px solid ${(task.percentComplete||0)===p?'#97bcbd':'#e2eaf2'};border-radius:5px;background:${(task.percentComplete||0)===p?'#f0f7f7':'#fff'};font-size:10px;font-weight:700;color:${(task.percentComplete||0)===p?'#0d6e4e':'#6b8399'};cursor:pointer">${p}%</button>`).join('')}
       </div>
+      <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
+      ${_progOwner?`<label for="ws-prog-hours" style="display:block;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Log hours for ${escHtml(_progOwner.name)} <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <div style="display:flex;gap:6px">
+          <input id="ws-prog-hours" type="number" min="0.25" step="0.25" placeholder="Hours" style="flex:1;min-width:0;font-size:12px;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;outline:none;font-family:'Lato',sans-serif" onkeydown="if(event.key==='Enter'){event.preventDefault();wsLogProgressHours('${taskId}')}"/>
+          <button type="button" onclick="event.stopPropagation();wsLogProgressHours('${taskId}')" style="background:#0d6e4e;color:#fff;border:none;border-radius:6px;padding:0 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Log</button>
+        </div>
+        <div style="font-size:11px;color:#8da2b2;margin-top:6px">Enter hours, then pick the new %, to save both at once.</div>
+        <div id="ws-prog-msg" role="status" style="font-size:11px;font-weight:700;color:#0d6e4e;margin-top:6px"></div>`
+      :`<div style="font-size:11px;color:#8da2b2">Set an owner to log hours with a progress update.</div>`}
     </div>`;
   } else if(field==='attachments'||field.startsWith('cc_')){
     // A custom "File" column reuses this exact real attachment system (DB.taskFiles), scoped to
@@ -24507,6 +24517,40 @@ function _wsShowHoursPrompt(taskId){
       :`<div style="font-size:11px;color:#8da2b2">Set an owner to log hours for this task.</div>`}
     </div>`;
   document.getElementById('ws-dd-hours')?.focus();
+}
+// Progress cell: picking a % saves it at once (as before). Hours typed first are logged in the same
+// action; otherwise the field stays open so they can still be added with Log. Each entry is an
+// ordinary time entry for the owner, noted with the change for reporting.
+function wsProgressPick(taskId,pct){
+  const task=DB.tasks.find(t=>t.id===taskId);if(!task)return;
+  const from=+task.percentComplete||0;
+  const input=document.getElementById('ws-prog-hours');
+  const hours=parseFloat(input?.value);
+  wsCellSave(taskId,'percentComplete',pct,!!input); // keep the popover open when there's an hours field
+  const msg=document.getElementById('ws-prog-msg');
+  if(!input)return;
+  if(hours>0){
+    const entry=_wsLogProgressEntry(task,hours,from,pct);
+    if(entry){input.value='';if(msg)msg.textContent=`Saved ${pct}% and logged ${hours}h.`;}
+  }else if(msg){msg.textContent=`Saved ${pct}%. Add hours above if you worked on it.`;input.focus();}
+  const shown=document.querySelector('#ws-cell-dd input[type=range]');if(shown){shown.value=pct;if(shown.nextElementSibling)shown.nextElementSibling.textContent=pct+'%';}
+}
+function wsLogProgressHours(taskId){
+  const input=document.getElementById('ws-prog-hours');
+  const hours=parseFloat(input?.value);
+  if(!hours||hours<=0){input?.focus();return;}
+  const task=DB.tasks.find(t=>t.id===taskId);if(!task)return;
+  const pct=+task.percentComplete||0;
+  const entry=_wsLogProgressEntry(task,hours,pct,pct);
+  const msg=document.getElementById('ws-prog-msg');
+  if(entry){input.value='';if(msg)msg.textContent=`Logged ${hours}h at ${pct}%.`;}
+}
+function _wsLogProgressEntry(task,hours,from,to){
+  if(!task.ownerId)return null;
+  const name=task.name||task.title||'Task';
+  return _teCreateEntry({taskId:task.id,staffId:task.ownerId,hours,date:toDateStr(new Date()),
+    note:from!==to?`${name}: progress ${from}% to ${to}%`:`${name}: progress ${to}%`,
+    earningsRateId:'er1',earningsRateName:'Ordinary Hours',location:'remote',billable:true});
 }
 function wsLogHoursFromStatusDD(taskId){
   const input=document.getElementById('ws-dd-hours');
