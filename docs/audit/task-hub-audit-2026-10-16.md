@@ -36,9 +36,24 @@ Both fixes are on their own branches from `main`, so they can be deployed alone,
   - 4 of 4 deliberate breaks were caught.
 - **Test-fixture change.** Three Main Table suites opened "the board with the most tasks", counting each task's own board id. Sub-items now carry a board id, so they counted too and the suites opened a different board. The suites now count top-level tasks. The other board's "0%" label is pre-existing; it is finding L1 below.
 
+### Update, 17 October: the four critical items are fixed
+
+They are four commits (plus a small follow-up to C1) on branch `critical-fixes`, built from `main` so they can be deployed alone, and also applied on `retained-services`.
+
+| # | What changed | Commit on `critical-fixes` | Evidence |
+|---|---|---|---|
+| C3 | Staff passwords are no longer stored in the browser when Supabase is on; what is there is deleted. | `49116a3` | `crit-c3-passwords-test` 10 checks, can-fail 5/5 |
+| C4 | Staff names and initials, client codes, custom status and priority labels, custom column values, the task change history, digest lines, Teams links and Link columns, the @mention list, the share-link manager and the quote number box can no longer run as code. Found by filling every text field with a marker and clicking about 450 controls: 11 fields fired before, none after. | `4f2f4f3` | `crit-c4-injection-test` 22 checks, can-fail 15/15 |
+| C2 | Remove staff switches the login off (and stops if it cannot); a switched-off account is refused at sign-in; adding the person again switches it back on. Migration `016_inactive_accounts_lose_access.sql` is written, **not applied**. | `e9db42a` | `crit-c2-staff-access-test` 27 checks, can-fail 12/12 |
+| C1 | A failed or contested save never overwrites the shared record: the changes are kept, the save is retried, and a banner stays until it gets through. Closing a tab writes the local copy only. | `0aa53a4`, `4c296c7` | `crit-c1-sync-test` 22 checks, can-fail 13/13 |
+
+Known limits: a hand-crafted record can still carry hostile colours or ids into style or handler attributes (only removing inline script from the content policy closes that class); changes made in the last moments before closing a tab reach the server the next time that browser signs in; migration 016 makes a removed person's open session stop at once instead of at token expiry.
+
 ---
 
 ## Critical issues
+
+All four are fixed as described above; the text below is the original finding.
 
 ### C1. A failed or contested save can overwrite the whole company record with one browser's copy (Live)
 - **Issue:**
@@ -277,13 +292,13 @@ Both fixes are on their own branches from `main`, so they can be deployed alone,
 
 | | Count |
 |---|---|
-| Fixed during this audit | 7 (F1 to F7) |
-| Critical | 4 |
+| Fixed during this audit | 11 (F1 to F7 and C1 to C4) |
+| Critical | 4 (all fixed 17 October) |
 | High | 11 |
 | Medium | 17 |
 | Low | 7 |
 | Technical debt items | 7 |
-| **Total issues found** | **46**: 7 fixed, 39 open, plus 7 technical debt items |
+| **Total issues found** | **46**: 11 fixed, 35 open (none critical), plus 7 technical debt items |
 
 **Checked and found sound:**
 - Every button on 18 views clicked (435 controls) with no script error, and every view opens without errors.
@@ -305,12 +320,9 @@ Both fixes are on their own branches from `main`, so they can be deployed alone,
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
 **Recommended deployment order:**
-1. **Now:** `client-add-fix` and `notif-board-fix`. Both are isolated on `main` and tested; they can go together.
-2. **Security batch:**
-   - Items: C2, C3, C4, H1, and the security half of H2 (link revoke, board access).
-   - Includes one migration you apply: `active` in `is_internal()`.
-   - About 2 days.
-3. **Data integrity batch:** C1, H3, H4, H5, H6, the rest of H2, and M1. About 3 days.
+1. **Now:** `critical-fixes` (C1 to C4), `client-add-fix` and `notif-board-fix`. Each is isolated on `main` and tested, so they can go together or one at a time. Then apply migration `016_inactive_accounts_lose_access.sql` yourself.
+2. **Rest of the security batch:** H1, the security half of H2 (link revoke, board access) and H11. About 2 days.
+3. **Data integrity batch:** H3, H4, H5, H6, the rest of H2, and M1. About 3 days.
 4. **Forms and screens:** H7, M2, M9, M10, M13 to M17. About 2 days.
 5. **Performance:** H9, H10, M12, then plan T1 and T2.
 6. **The ISO / Retained Services release:** after its migrations and the SSO plan.
