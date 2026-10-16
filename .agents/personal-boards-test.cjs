@@ -208,6 +208,38 @@ function testPortalExclusion(){
   ok(folderChecks.adminCollapsedAfterToggle,'toggling a folder collapses it for the toggling user');
   ok(!folderChecks.ownerSeesCollapsed,"a DIFFERENT user's view of the same folder is unaffected by admin's collapse (per-user, not shared)");
 
+  // ── A board whose folderId points at a folder this browser no longer has (2026-10-16: "I can
+  // access the missing boards through the overview, but not on the side menu") must still show,
+  // under Team Boards, instead of vanishing from the whole sidebar tree. ─────────────────────────
+  const orphanChecks=await admin.evaluate(()=>{
+    const now=new Date().toISOString();
+    DB.workboards.push({id:'PBT-orphan',name:'PBT Orphan Tracker',color:'#c2410c',visibility:'all_internal',ownerId:currentUser.id,folderId:'PBT-gone-folder',order:0,archived:false,createdAt:now,updatedAt:now});
+    DB.wbFolders=(DB.wbFolders||[]).filter(f=>f.id!=='PBT-gone-folder');
+    renderSidebarWorkboards();
+    const list=document.getElementById('sidebar-wb-list');
+    const row=list&&list.querySelector('[data-wb-row="PBT-orphan"]');
+    // It sits in the Team Boards drop zone (data-drop-folder=""), not inside some folder.
+    const zone=row&&row.closest('[data-drop-folder]');
+    return{shown:!!row,underTeamBoards:!!zone&&zone.getAttribute('data-drop-folder')==='',stillViewable:canViewBoard(currentUser,DB.workboards.find(w=>w.id==='PBT-orphan')),folderIdKept:DB.workboards.find(w=>w.id==='PBT-orphan').folderId==='PBT-gone-folder'};
+  });
+  ok(orphanChecks.shown,'a board whose folder no longer exists still shows in the sidebar');
+  ok(orphanChecks.underTeamBoards,'…under Team Boards, not hidden');
+  ok(orphanChecks.stillViewable&&orphanChecks.folderIdKept,'…without changing the board data (display only)');
+
+  // Deleting a folder stamps the boards it releases, so the change wins the sync merge on other computers.
+  const delStamp=await admin.evaluate(async()=>{
+    const old='2026-01-01T00:00:00.000Z';
+    DB.wbFolders.push({id:'PBT-del-folder',name:'PBT Del Folder',order:98,ownerId:currentUser.id});
+    DB.workboards.push({id:'PBT-del-board',name:'PBT Del Board',color:'#000',visibility:'all_internal',ownerId:currentUser.id,folderId:'PBT-del-folder',order:0,archived:false,createdAt:old,updatedAt:old});
+    deleteWbFolder('PBT-del-folder');
+    const okBtn=document.getElementById('confirm-ok')||[...document.querySelectorAll('#confirm-modal button')].find(x=>/Delete/.test(x.textContent));
+    if(okBtn)okBtn.click();
+    await new Promise(r=>setTimeout(r,50));
+    const wb=DB.workboards.find(w=>w.id==='PBT-del-board');
+    return{cleared:wb.folderId===null,stamped:wb.updatedAt>old};
+  });
+  ok(delStamp.cleared&&delStamp.stamped,'deleting a folder moves its boards out AND stamps them, so other computers take the change');
+
   // ── The Personal Boards section header itself must also collapse, same per-viewer scheme ──
   const personalSectionChecks=await admin.evaluate(()=>{
     const before=_personalSectionCollapsed();
