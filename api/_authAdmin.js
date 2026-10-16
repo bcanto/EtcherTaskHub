@@ -48,7 +48,7 @@ async function requireAdminCaller(req, res) {
   // Look up the caller's role via the service-role key (bypasses RLS — this endpoint IS
   // the authority making the decision, not something relying on RLS to enforce it for it).
   const profileResp = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=role&limit=1`,
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=role,active&limit=1`,
     {
       headers: {
         'apikey': SUPABASE_SERVICE_ROLE_KEY,
@@ -62,7 +62,8 @@ async function requireAdminCaller(req, res) {
   }
   const rows = await profileResp.json();
   const role = rows[0]?.role;
-  if (role !== 'admin') {
+  // An admin who has been switched off stays refused even while their last session token is still valid.
+  if (role !== 'admin' || rows[0]?.active === false) {
     res.status(403).json({ error: 'Admin access required' });
     return null;
   }
