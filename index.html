@@ -6726,7 +6726,9 @@ function _rsDone(t){return !!t&&_RS_DONE.has(t.status);}
 function _rsYm(d){return toDateStr(d||new Date()).slice(0,7);}
 function _rsPrevYm(ym){const d=new Date(ym+'-01T12:00:00');d.setMonth(d.getMonth()-1);return _rsYm(d);}
 function _rsMonthName(ym){return new Date(ym+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long'});}
-function _rsDoneYm(t){const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||null;return at?_rsYm(new Date(at)):null;}
+// When it was finished: completedAt, else the client's approval, else (a finished task saved without a
+// date, e.g. created already Completed before 2026-10-16) its last update.
+function _rsDoneYm(t){const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||(_rsDone(t)?t.updatedAt:null)||null;return at?_rsYm(new Date(at)):null;}
 function _rsStaff(){return allStaff().filter(u=>u.role!=='client'&&u.active!==false);}
 // "2 Core and 3 Add-ons", derived from the services picked; never typed (plan, set-up).
 function _retainerBundle(keys){
@@ -18117,7 +18119,9 @@ function saveTask(){
       order:0,
       description:document.getElementById('tm-desc')?.innerHTML||'',
       dependencies:[],tags:[],archived:false,
-      createdAt:_taskNow,updatedAt:_taskNow,completedAt:null
+      createdAt:_taskNow,updatedAt:_taskNow,
+      // Created already finished: it was finished now (the retainer meter counts by this date).
+      completedAt:_TASK_DONE_STATUSES.includes(document.getElementById('tm-status').value)?_taskNow:null
     };
     {
       const _tmAssigneeIds=Array.from(document.querySelectorAll('#tm-assignees-box .tm-assignee-cb:checked')).map(el=>el.value);

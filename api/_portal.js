@@ -113,7 +113,8 @@ function isRetainedBoard(b) { return !!(b && b.retainer && !b.retainer.endedAt &
 function staffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client'); return u ? u.name : null; }
 function retainerUsed(blob, boardId, groupId, ym) {
   const tasks = arr(blob.tasks);
-  const doneYm = x => { const at = x.completedAt || (x.clientApproval && x.clientApproval.at); return at ? rsYm(at) : null; };
+  // Same rule as index.html _rsDoneYm: a finished task saved without a date counts by its last update.
+  const doneYm = x => { const at = x.completedAt || (x.clientApproval && x.clientApproval.at) || (RS_DONE.has(x.status) ? x.updatedAt : null); return at ? rsYm(at) : null; };
   let n = 0;
   tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach(t => {
     const subs = tasks.filter(x => x.parentTaskId === t.id && !x.archived && !taskHidden(blob, x));

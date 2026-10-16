@@ -86,6 +86,27 @@ H.run('retained-test', 3177, async (t) => {
   }, made.id); await t.sleep(600);
   const m1 = await meter();
   t.ok(/^3 of 12 /.test(m1[0]), `two subitems and one task finished this month count, last month's and hidden work do not (got "${m1[0]}")`);
+  // A finished task saved without a completion date (created already Completed, 2026-10-16) counts by
+  // its last update; one last updated last month does not.
+  await ev(id => {
+    const b = DB.workboards.find(w => w.id === id), g = b.retainer.services[0].groupId, now = new Date().toISOString(), lastMonth = new Date(Date.now() - 40 * 864e5).toISOString();
+    DB.tasks.push({ id: 'rt-nodate', name: 'Audit', title: 'Audit', boardId: id, workboardId: id, groupId: g, status: 'completed', priority: 'med', archived: false, createdAt: now, updatedAt: now, completedAt: null });
+    DB.tasks.push({ id: 'rt-nodate-old', name: 'Old', title: 'Old', boardId: id, workboardId: id, groupId: g, status: 'done', priority: 'med', archived: false, createdAt: lastMonth, updatedAt: lastMonth });
+    saveDB(DB); renderView('workspace');
+  }, made.id); await t.sleep(500);
+  t.ok(/^4 of 12 /.test((await meter())[0]), 'a finished task saved without a date counts by its last update; last month\'s does not (got "' + (await meter())[0] + '")');
+  // The New Task form records the completion date when a task is created already Completed.
+  const created = await ev(id => {
+    const b = DB.workboards.find(w => w.id === id), g = b.retainer.services[0].groupId;
+    openTaskModal(null, g);
+    document.getElementById('tm-name').value = 'Created done';
+    document.getElementById('tm-status').value = 'done';
+    saveTask();
+    const x = DB.tasks.find(k => k.name === 'Created done');
+    return x ? { at: x.completedAt, status: x.status } : null;
+  }, made.id); await t.sleep(500);
+  t.ok(created && created.at && created.at.slice(0, 7) === new Date().toISOString().slice(0, 7), 'a task created already Completed records when it was finished (' + JSON.stringify(created) + ')');
+  t.ok(/^5 of 12 /.test((await meter())[0]), 'and it counts on the meter');
   const shotWs = await ui.shot('retained-board');
   t.eq(shotWs.phone, 0, 'the retained board fits a phone');
 
@@ -94,7 +115,7 @@ H.run('retained-test', 3177, async (t) => {
   await ev(id => openRetainerPlan(id), made.id); await t.sleep(300);
   t.eq(await ev(() => document.getElementById('generic-modal-title').textContent), 'Retainer plan', 'the button opens the Retainer plan');
   await ev(id => _rsPlanSet(id, 'allowance', 'ims', '10'), made.id); await t.sleep(400);
-  t.ok(/^3 of 10 /.test((await meter())[0]), 'changing an allowance in the plan moves the meter');
+  t.ok(/^5 of 10 /.test((await meter())[0]), 'changing an allowance in the plan moves the meter');
   await ev(id => { _rsPlanSet(id, 'focusAdd', 'rt-parent'); _rsPlanSet(id, 'note', null, '  Licences all current.  '); }, made.id);
   const plan = await ev(id => { const r = DB.workboards.find(w => w.id === id).retainer, ym = _rsYm(); return { focus: (r.months[ym] || {}).focusTaskIds, note: (r.months[_rsPrevYm(ym)] || {}).note }; }, made.id);
   t.eq(plan.focus, ['rt-parent'], 'a task pinned to the focus is kept for this month');

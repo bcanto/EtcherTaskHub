@@ -24,12 +24,13 @@ H.run('retained2-test', 3178, async (t) => {
       { id: 's3', parentTaskId: 'p', status: 'done', completedAt: lastMonth }, { id: 's4', parentTaskId: 'p', status: 'todo' },
       { id: 'solo', groupId: 'g1', boardId: 'rb', clientId: 'c1', title: 'Register check', status: 'done', completedAt: now },
       { id: 'hid', groupId: 'g1', boardId: 'rb', clientId: 'c1', title: 'Internal', status: 'done', completedAt: now, clientHidden: true },
+      { id: 'nodate', groupId: 'g1', boardId: 'rb', clientId: 'c1', title: 'Audit', status: 'completed', updatedAt: now },
     ],
     clientWorkRequests: [], notifications: [],
   };
   const slice = P.sliceForClient(blob, 'c1', 'cu1');
   const rb = slice.boards.find(b => b.id === 'rb');
-  t.ok(rb && rb.retainer && rb.retainer.services[0].used === 3, `the client's slice carries the retainer with this month's use (got ${rb && rb.retainer && rb.retainer.services[0].used})`);
+  t.ok(rb && rb.retainer && rb.retainer.services[0].used === 4, `the client's slice carries the retainer with this month's use, a finished task without a date included (got ${rb && rb.retainer && rb.retainer.services[0].used})`);
   t.ok(rb && rb.retainer.leadName === 'Sam Wignall' && rb.retainer.services[0].ownerName === 'Bruna Canto', 'the slice names the lead and the service owner');
   t.ok(rb && !JSON.stringify(rb.retainer).includes('"u1"') && !JSON.stringify(rb.retainer).includes('"u2"'), 'the slice carries names, never staff ids');
   t.ok(!slice.boards.find(b => b.id === 'tb').retainer, 'a board without a retainer carries none');

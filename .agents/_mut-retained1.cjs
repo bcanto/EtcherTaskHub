@@ -18,4 +18,7 @@ module.exports = [
     find: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)&&_rsDoneYm(x)===ym).length;', replace: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)).length;' },
   { id: 'rt1-staff-allowance', suite: 'retained-test', file: 'index.html', note: 'staff can change allowances',
     find: '  }else{\n    if(!admin)return;\n    const s=key?', replace: '  }else{\n    const s=key?' },
+  {"id":"rt-nodate-ignored","suite":"retained-test","file":"index.html","note":"a finished task without a date never counts","find":"||(_rsDone(t)?t.updatedAt:null)||null;return at?","replace":"||null;return at?"},
+  {"id":"rt-create-nodate","suite":"retained-test","file":"index.html","note":"a task created Completed records no date","find":"completedAt:_TASK_DONE_STATUSES.includes(document.getElementById('tm-status').value)?_taskNow:null","replace":"completedAt:null"},
+  {"id":"rt2-slice-nodate","suite":"retained2-test","file":"api/_portal.js","note":"the client slice ignores a finished task without a date","find":"|| (RS_DONE.has(x.status) ? x.updatedAt : null); return at ?","replace":"; return at ?"},
 ];
