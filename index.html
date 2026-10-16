@@ -6129,7 +6129,15 @@ function renderSidebarWorkboards(){
 
   // Unfiled drop zone — under its own "Team Boards" heading (staff/admin), so team boards outside a
   // folder no longer sit directly under "Personal Boards" looking like they belong to it.
-  const unfiled=wbs.filter(wb=>!wb.folderId);
+  // A board whose folderId points at a folder this viewer's DB.wbFolders no longer has (the
+  // folder record didn't sync, or was deleted some other way than deleteWbFolder, which does
+  // clear it) must still land somewhere — the folders.forEach loop below only ever renders
+  // boards whose folderId matches a folder THAT EXISTS, so without this an orphaned board was
+  // silently invisible in the whole sidebar tree (while still showing on the Dashboard, which
+  // isn't folder-aware) — found 2026-10-16, reported as "I can access the missing boards
+  // through the overview, but not on the side menu".
+  const knownFolderIds=new Set((DB.wbFolders||[]).map(f=>f.id));
+  const unfiled=wbs.filter(wb=>!wb.folderId||!knownFolderIds.has(wb.folderId));
   if(isStaffOrAdmin&&unfiled.length)html+=`<div class="sb-team-boards-h" style="padding:6px 10px 5px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5a8a8c">Team Boards</div>`;
   html+=dropZone('', unfiled.map(wb=>wbRow(wb,14)).join(''));
 
@@ -6280,7 +6288,11 @@ function renameWbFolder(id){
 function deleteWbFolder(id){
   if(currentUser?.role==='client')return;
   openConfirm('Delete Folder','Boards inside will be moved out of the folder. This cannot be undone.','Delete',()=>{
-    (DB.workboards||[]).forEach(wb=>{if(wb.folderId===id)wb.folderId=null;});
+    // Stamped like moveWbToFolder: an unstamped change loses the sync merge, so another computer
+    // kept the old folderId while the folder itself was deleted, and the board fell out of its
+    // sidebar (2026-10-16).
+    const _now=new Date().toISOString();
+    (DB.workboards||[]).forEach(wb=>{if(wb.folderId===id){wb.folderId=null;wb.updatedAt=_now;}});
     DB.wbFolders=(DB.wbFolders||[]).filter(f=>f.id!==id);
     // Without a tombstone, _mergeDB's generic by-id merge treats wbFolders as a union — a
     // stale peer that syncs after this delete brings the folder right back.
