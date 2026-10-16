@@ -3109,10 +3109,18 @@ function _startRealtimeSync(){
     .subscribe();
 }
 // Separate, tiny store for staff passwords — never sent to Supabase or inside the main DB blob.
-// Lets passwords survive the _stripPasswords cycle in localStorage-only mode.
+// Lets passwords survive the _stripPasswords cycle in localStorage-only mode, which is the offline dev
+// login and nothing else. With Supabase on (every real deployment) the password lives in Supabase Auth
+// and this store stays empty: it used to be filled on the live site too, leaving staff passwords in
+// plain text in the admin's browser (audit C3, 2026-10-17).
 const _PW_KEY='etcher_pw_v1';
-function _loadPwStore(){try{return JSON.parse(localStorage.getItem(_PW_KEY)||'{}');}catch(_){return {};}}
-function _savePw(userId,pw){if(!userId||!pw)return;const s=_loadPwStore();s[userId]=pw;localStorage.setItem(_PW_KEY,JSON.stringify(s));}
+function _pwStoreAllowed(){return !window._supabase&&_localAuthAllowed();}
+function _purgePwStore(){try{localStorage.removeItem(_PW_KEY);}catch(_){}}
+function _loadPwStore(){if(!_pwStoreAllowed())return {};try{return JSON.parse(localStorage.getItem(_PW_KEY)||'{}');}catch(_){return {};}}
+function _savePw(userId,pw){if(!userId||!pw||!_pwStoreAllowed())return;const s=_loadPwStore();s[userId]=pw;try{localStorage.setItem(_PW_KEY,JSON.stringify(s));}catch(_){}}
+// What earlier versions left behind goes now on any origin that cannot use local sign-in, and again
+// below once the sign-in service is known to be on (a local origin connected to Supabase).
+if(!_localAuthAllowed())_purgePwStore();
 // The Supabase auth uid for a staff record. Users created through /api/invite-user carry it
 // as their own id; users linked at first Supabase sign-in carry it in supabase_uid; legacy
 // records that have never signed in have neither, and cannot have a password set remotely.
@@ -4668,7 +4676,7 @@ function _showOfflineBanner(){
 // The inline script runs before the deferred supabase-client.js, so _supabaseReady does not
 // exist yet here; DOMContentLoaded fires after deferred scripts have run.
 document.addEventListener('DOMContentLoaded',()=>{
-  Promise.resolve(window._supabaseReady).then(()=>{if(!window._supabase)_showOfflineBanner();});
+  Promise.resolve(window._supabaseReady).then(()=>{if(!window._supabase)_showOfflineBanner();else _purgePwStore();});
 });
 // Release-1 B6.3: "Sign in with Microsoft" through the Supabase Azure provider (restricted to Etcher's
 // tenant in the provider's own settings). Shown only when /api/config switches it on and the client
