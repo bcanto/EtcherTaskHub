@@ -2605,6 +2605,9 @@ function _syncSucceeded(){
 function _syncFailed(msg){
   _syncFailCount++;
   console.warn('[sync] Save failed (attempt '+_syncFailCount+'): '+msg);
+  // Signed out (no page reload happens): nothing to keep trying for, and no banner on the login screen. The
+  // next sign-in merges what this browser holds and sends it.
+  if(!currentUser)return;
   if(_syncFailCount>=2)_showSyncError(msg);
   if(!_syncRetryTimer){
     _syncRetryTimer=setTimeout(()=>{_syncRetryTimer=null;_syncToSupabase(_stripPasswords(DB));},_syncRetryMs);
@@ -4530,6 +4533,8 @@ function launchClientView(){
 }
 function doLogout(){
   _clearSession();
+  // A retry waiting after a failed save, and its banner, end with the session (audit C1).
+  clearTimeout(_syncRetryTimer);_syncRetryTimer=null;_syncFailCount=0;_syncRetryMs=4000;_hideSyncError();
   // Sign out of Supabase Auth when configured (clears the JWT from storage)
   if(window._supabase){
     const signOut=window._supabase.auth.signOut().catch(()=>{});
