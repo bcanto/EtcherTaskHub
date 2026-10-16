@@ -8999,10 +8999,13 @@ function ganttBuildHeaders(viewStart,totalDays,DW,scale){
   } else if(scale==='weeks'){
     const mg=spanGroups(d=>`${d.getUTCFullYear()}-${d.getUTCMonth()}`,d=>d.toLocaleString('default',{month:'long',year:'numeric'}));
     majorHTML=mg.map(g=>`<div ${mStyle(g.days*DW)}>${g.label}</div>`).join('');
-    for(let i=0;i<totalDays;i+=7){
-      const d=new Date(viewStart);d.setUTCDate(d.getUTCDate()+i);
-      const w=Math.min(7,totalDays-i);
-      const label=`${d.getUTCDate()} ${d.toLocaleString('default',{month:'short'})}`;
+    // Weeks start on Monday. The client schedule starts on the 1st of a month, so its first and last
+    // weeks can be part weeks; one too narrow for its date keeps just the line (2026-10-16).
+    const off=(8-viewStart.getUTCDay())%7;
+    for(let i=off?off-7:0;i<totalDays;i+=7){
+      const st=Math.max(0,i),w=Math.min(i+7,totalDays)-st;
+      const d=new Date(viewStart);d.setUTCDate(d.getUTCDate()+st);
+      const label=w*DW>=40?`${d.getUTCDate()} ${d.toLocaleString('default',{month:'short'})}`:'';
       minorHTML+=`<div style="flex-shrink:0;width:${w*DW}px;height:34px;border-right:1px solid #e2eaf2;padding:0 5px;font-size:10px;font-weight:500;color:#8da2b2;display:flex;align-items:center;background:#fff;overflow:hidden">${label}</div>`;
     }
   } else if(scale==='months'){

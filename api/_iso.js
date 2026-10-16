@@ -2177,7 +2177,10 @@ defineOp('portal.respond', {
     if (!v || v.audit_id !== ctx.audit.id) throw notFound();
     const { versions } = await portalVersions(ctx, ctx.audit.id);
     if (versions[versions.length - 1].id !== v.id) throw badRequest('A newer version of this report has been issued. Answer that one.');
-    if ((await portalResponsesOf(ctx, ctx.audit.id)).some(r => r.report_version_id === v.id && r.status === 'submitted')) throw badRequest('Your answer is with Etcher already.');
+    // One answer per version unless Etcher rejected it: waiting, or accepted, is final.
+    const prior = (await portalResponsesOf(ctx, ctx.audit.id)).filter(r => r.report_version_id === v.id);
+    if (prior.some(r => r.status === 'submitted' || r.status === 'under_review')) throw badRequest('Your answer is with Etcher already.');
+    if (prior.some(r => r.status === 'accepted')) throw badRequest('Etcher has accepted your answer to this report already.');
     const accurate = ctx.payload.accurate;
     const row = await ctx.db.insert('iso_client_responses', {
       id: uid('icr_'), audit_id: ctx.audit.id, client_id: ctx.audit.client_id, report_version_id: v.id, finding_id: null,

@@ -69,6 +69,11 @@ H.run('iso-portal2-test', 3186, async (t, srv) => {
   const old = await srv.call(CU, { op: 'portal.respond', auditId: b.id, versionId: v1.id, accurate: true });
   t.ok(old.status === 400 && /newer version/.test(old.error || ''), 'an answer to a replaced version is refused, pointing at the new one');
   t.eq((await srv.call(CU, { op: 'portal.respond', auditId: b.id, versionId: v2.id, accurate: true })).status, 200, 'the new version is answered');
+  // Accepted is final (audit 2026-10-16: a second answer used to go through, with a second acknowledgement).
+  const v2ans = (await srv.must(A, { op: 'response.list', auditId: b.id })).find(x => x.report_version_id === v2.id && x.status === 'submitted');
+  await srv.must(LEAD, { op: 'response.decide', auditId: b.id, id: v2ans.id, decision: 'accepted', note: 'Thank you.' });
+  const again = await srv.call(CU, { op: 'portal.respond', auditId: b.id, versionId: v2.id, accurate: true });
+  t.ok(again.status === 400 && /accepted/.test(again.error || '') && (await srv.must(A, { op: 'response.list', auditId: b.id })).filter(x => x.report_version_id === v2.id).length === 1, 'once Etcher accepts an answer, the client cannot answer that version again');
 
   // ── Mark done ──
   t.eq((await srv.call(CU, { op: 'portal.actionDone', auditId: b.id, id: theirs.id, expectedVersion: (await actRow(theirs.id)).row_version })).status, 403, 'Etcher\'s action cannot be marked done by the client');

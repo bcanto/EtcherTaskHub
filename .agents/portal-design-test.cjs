@@ -82,6 +82,9 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
       cpGanttScale=sc;cpNavigate('schedule');await new Promise(r=>setTimeout(r,40));
       const cells=[...document.querySelectorAll('#cp-g-right .cpg-head > div:first-child > div')];
       out[sc]={n:cells.length,clipped:cells.filter(c=>c.scrollWidth>c.clientWidth+1).map(c=>c.textContent),first:(cells[0]||{}).textContent,last:(cells[cells.length-1]||{}).textContent};
+      // Weeks: every labelled week cell after the first part week starts on a Monday, and no week label is cut.
+      if(sc==='weeks'){const wk=[...document.querySelectorAll('#cp-g-right .cpg-head > div:nth-child(2) > div')];
+        out.wk={labels:wk.map(c=>c.textContent).filter(Boolean).slice(0,4),notMon:wk.slice(1).map(c=>c.textContent).filter(Boolean).filter(l=>new Date(l+' 2026 12:00 UTC').getUTCDay()!==1&&new Date(l+' 2027 12:00 UTC').getUTCDay()!==1),clipped:wk.filter(c=>c.textContent&&c.scrollWidth>c.clientWidth+1).map(c=>c.textContent)};}
     }
     for(const x of saved){const t=DB.tasks.find(k=>k.id===x.id);if(t){t.startDate=x.s;t.endDate=x.e;}}
     cpGanttScale='weeks';cpNavigate('overview');
@@ -89,6 +92,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   });
   ok(['weeks','months','quarters'].every(s=>hdr[s]&&hdr[s].n>0&&hdr[s].clipped.length===0),'no label in the top header band is cut off, at any zoom ('+JSON.stringify(hdr)+')');
   ok(/^august 2026$/i.test(hdr.weeks.first||''),'Weeks: the band starts on a whole month, here August for a task from 5 Sep (got "'+(hdr.weeks&&hdr.weeks.first)+'")');
+  ok(hdr.wk&&hdr.wk.labels.length>2&&hdr.wk.notMon.length===0&&hdr.wk.clipped.length===0,'Weeks: week columns start on Mondays, with no cut-off date ('+JSON.stringify(hdr.wk)+')');
   ok(/^february 2027$/i.test(hdr.weeks.last||''),'Weeks: the band ends on the last task\'s month, shown whole (got "'+(hdr.weeks&&hdr.weeks.last)+'")');
   ok(/2027 Q1/i.test(hdr.months.last||'')&&/^2027$/.test(hdr.quarters.last||''),'Months ends on a whole quarter, Quarters on a whole year');
 
