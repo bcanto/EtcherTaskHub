@@ -2823,8 +2823,10 @@ let _syncFailCount=0;
 function _showSyncError(msg){
   const id='sync-err-toast';
   let el=document.getElementById(id);
-  if(!el){el=document.createElement('div');el.id=id;el.setAttribute('role','alert');el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;max-width:92vw';document.body.appendChild(el);}
-  el.innerHTML='⚠ Your latest changes are saved on this computer but have not reached the server ('+escHtml(msg)+'). Trying again. <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">Reload</a> if this stays.';
+  if(!el){el=document.createElement('div');el.id=id;el.setAttribute('role','alert');el.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7f1d1d;color:#fff;font-size:12px;font-family:Jost,sans-serif;padding:8px 16px;border-radius:8px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;width:max-content;max-width:92vw;line-height:1.4';document.body.appendChild(el);}
+  // Above the bottom tab bar on a phone; one text block so the link stays inside the sentence.
+  el.style.bottom=window.innerWidth<=760?'72px':'20px';
+  el.innerHTML='<span>⚠ Your latest changes are saved on this computer but have not reached the server ('+escHtml(msg)+'). Trying again. <a href="" onclick="location.reload();return false" style="color:#fca5a5;text-decoration:underline">Reload</a> if this stays.</span>';
 }
 function _hideSyncError(){document.getElementById('sync-err-toast')?.remove();}
 // Two people saving within one network round-trip used to silently lose one of them. This

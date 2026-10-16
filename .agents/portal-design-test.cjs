@@ -106,14 +106,19 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
     cpGanttScale='weeks';cpNavigate('schedule');await new Promise(r=>setTimeout(r,50));
     const right=document.getElementById('cp-g-right');
     const widest=Math.max(...[...document.querySelectorAll('.cpg-bar')].map(el=>el.offsetWidth));
-    const r={bars:document.querySelectorAll('.cpg-bar').length,widest,avail:right.clientWidth,today:!!document.querySelector('.cpg-today'),
+    // Longest project in days (inclusive): from yesterday to 5+i days ahead, i up to 4.
+    const maxDays=Math.max(...keep.map((k,i)=>(5+i)-(-1)+1));
+    const r={bars:document.querySelectorAll('.cpg-bar').length,widest,avail:right.clientWidth,maxDays,today:!!document.querySelector('.cpg-today'),
       todayEnabled:[...document.querySelectorAll('.cpg-tool')].find(x=>x.textContent==='Today')?.disabled===false};
     saved.forEach(x=>{const t=DB.tasks.find(y=>y.id===x.id);t.startDate=x.s;t.endDate=x.e;});
     cpNavigate('overview');
     return r;
   });
   console.log('SHORT:',JSON.stringify(sh));
-  ok(sh.bars===5&&sh.widest>sh.avail*0.35,'a one-week project uses the width: the longest bar spans over a third of the chart (was ~84px per week)');
+  // Judged per day, not as a share of the chart: the header now shows whole months (one month, or two when the
+  // project sits near a month end), so the share depends on today's date. The chart is stretched to fill the
+  // width, which is at least ~16px a day, against the 12px a day it used to show.
+  ok(sh.bars===5&&sh.widest/sh.maxDays>=12*1.3,'a one-week project uses the width: its bars are well over the old 12px a day, whatever the date ('+Math.round(sh.widest/sh.maxDays)+'px a day)');
   ok(sh.today&&sh.todayEnabled,'with today in range there is a Today marker and the Today button works');
 
   // ── Overview band ──
