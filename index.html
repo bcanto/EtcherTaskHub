@@ -3483,6 +3483,9 @@ async function _supabaseRestoreSession(session){
     if(!sb||!session)return false;
     const {data:profileData,error}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
     if(error||!profileData)return false;
+    // A switched-off account (Remove staff, audit C2) gets no session. Sign it out so the stored session is
+    // not tried again on every page load.
+    if(profileData.active===false){try{await sb.auth.signOut();}catch(_){}return false;}
     const p=profileData;
     const isClient=p.role==='client';
     if(isClient){
@@ -17396,11 +17399,26 @@ function deleteStaff(id){
   const adminCount=DB.staff.filter(x=>x.role==='admin').length;
   if(s.role==='admin'&&adminCount<=1){showAlert('Cannot remove the last admin account.','Remove Staff');return;}
   const taskCount=DB.tasks.filter(t=>isAssignedTo(t,id)&&!t.archived).length;
-  const msg=taskCount
+  // With Supabase on, removing a person also switches their login off (audit C2, 2026-10-17). Deleting only
+  // the app's own record used to leave them able to sign in, and the next sign-in made them a new staff record.
+  const _uid=window._supabase?_staffAuthUid(s):null;
+  const msg=(taskCount
     ?`Remove ${s.name}? They have ${taskCount} open task${taskCount!==1?'s':''} which will become unassigned.`
-    :`Remove ${s.name}? This cannot be undone.`;
+    :`Remove ${s.name}? This cannot be undone.`)+(_uid?' Their login is switched off.':'');
   closeGenericModal();
-  openConfirm('Remove Staff',msg,'Remove',()=>{
+  openConfirm('Remove Staff',msg,'Remove',async ()=>{
+    if(_uid){
+      // Switch the login off first. If that fails the person must not look removed, so stop here.
+      const btn=document.getElementById('confirm-ok-btn');
+      if(btn){btn.disabled=true;btn.textContent='Removing…';}
+      let err=null;
+      try{
+        const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({userId:_uid,access:'disable'})});
+        if(!resp.ok){const r=await resp.json().catch(()=>({}));err=r.error||'Could not switch this login off.';}
+      }catch(e){err='Could not reach the server.';}
+      if(btn){btn.disabled=false;btn.textContent='Remove';}
+      if(err){closeConfirm();showAlert(`${err} ${s.name} has not been removed.`,'Remove Staff');return;}
+    }
     DB.tasks.forEach(t=>{
       if(t.ownerId===id)t.ownerId=null;
       if(t.currentlyWithUserId===id){t.currentlyWithUserId=null;t.currentlyWith=null;}

@@ -1,4 +1,5 @@
 const { requireAdminCaller } = require('./_authAdmin');
+const { enableIfDisabled } = require('./_accountAccess');
 
 // A readable sentence from a Supabase REST/Auth error, never the raw JSON. The Add Client form used
 // to show {"code":"23503","details":...} straight from PostgREST.
@@ -199,6 +200,10 @@ module.exports = async function handler(req, res) {
       }).catch(() => {});
     }
   }
+  // An admin adding someone whose login was switched off by Remove staff (audit C2): adding them again
+  // switches it back on. An active profile, or one that does not exist yet, is left alone.
+  try { await enableIfDisabled(userId); }
+  catch (e) { return res.status(500).json({ error: e.message }); }
 
   // ── Upsert profile via SECURITY DEFINER function (bypasses RLS) ───────────
   const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_profile`, {
