@@ -5593,8 +5593,21 @@ const STATUS_META = {
   'cancelled':      { label: 'Cancelled',          color: '#78716c', bg: '#f5f5f4', dot: '#a8a29e' },
 };
 function hexToRgba(hex,a){if(!hex||hex.length<7)return`rgba(150,188,189,${a})`;const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;}
-function getStatusMeta(key){const ov=(DB?.labelConfig?.statuses||{})[key]||{};return{...(STATUS_META[key]||{label:key,color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'}),...ov};}
-function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>k.startsWith('cst_'));return[...builtin,...custom];}
+// A custom status or priority is typed by a person and kept in the record every staff session can write,
+// so what comes out of here must never be markup (audit C4, 2026-10-17): HTML-significant characters become
+// look-alikes (an apostrophe becomes a curly one), colours must be colours, and only the four fields a label
+// really has are read. Every badge in the app takes its label through getStatusMeta / getPrioMeta.
+function _safeLabel(v){return String(v==null?'':v).replace(/[<>"'`]/g,c=>({'<':'\u2039','>':'\u203a','"':'\u201d',"'":'\u2019','`':'\u02cb'}[c])).replace(/&(?=#?\w+;)/g,'\uff06');}
+function _safeCss(v,fallback){const t=String(v==null?'':v).trim();return /^(#[0-9a-fA-F]{3,8}|(?:rgb|hsl)a?\([0-9 ,.%\/]+\)|[a-zA-Z]{3,20})$/.test(t)?t:fallback;}
+function _metaOverride(base,ov){
+  const out={...base};
+  if(!ov||typeof ov!=='object')return out;
+  if(ov.label!==undefined)out.label=_safeLabel(ov.label);
+  ['color','bg','dot'].forEach(k=>{if(ov[k]!==undefined)out[k]=_safeCss(ov[k],base[k]);});
+  return out;
+}
+function getStatusMeta(key){return _metaOverride(STATUS_META[key]||{label:_safeLabel(key),color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'},(DB?.labelConfig?.statuses||{})[key]);}
+function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>/^cst_[A-Za-z0-9_-]{1,40}$/.test(k));return[...builtin,...custom];}
 function statusBadge(s){const sm=getStatusMeta(s);return`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`;}
 // ── Bright preset palette for statuses, priorities and labels ──
 // One cohesive family: each entry pairs a saturated ink with a tinted ground and a dot, so
@@ -5682,8 +5695,8 @@ const PRIO_META={
   high:{icon:'▲',label:'High',cls:'prio-high',color:'#c2410c',bg:'#fff7ed'},
   crit:{icon:'‼',label:'Critical',cls:'prio-crit',color:'#b91c1c',bg:'#fef2f2'},
 };
-function getPrioMeta(key){const ov=(DB?.labelConfig?.priorities||{})[key]||{};return{...(PRIO_META[key]||{icon:'●',label:key,cls:'prio-med',color:'#64748b',bg:'#f1f5f9'}),...ov};}
-function getAllPriorities(){const builtin=['low','med','high','crit'];const custom=Object.keys((DB?.labelConfig?.priorities)||{}).filter(k=>k.startsWith('cp_'));return[...builtin,...custom];}
+function getPrioMeta(key){return _metaOverride(PRIO_META[key]||{icon:'●',label:_safeLabel(key),cls:'prio-med',color:'#64748b',bg:'#f1f5f9'},(DB?.labelConfig?.priorities||{})[key]);}
+function getAllPriorities(){const builtin=['low','med','high','crit'];const custom=Object.keys((DB?.labelConfig?.priorities)||{}).filter(k=>/^cp_[A-Za-z0-9_-]{1,40}$/.test(k));return[...builtin,...custom];}
 function prioBadge(p,short=false){const m=getPrioMeta(p);return`<span class="prio-badge ${m.cls||'prio-med'}">${m.icon||'●'} ${short?m.label.slice(0,4):m.label}</span>`;}
 // Compact flag for kanban cards (no text, just icon+colour)
 function prioFlag(p){
@@ -5693,9 +5706,9 @@ function prioFlag(p){
   return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800;background:${bg};color:${color};letter-spacing:0.04em">${m.icon} ${m.label}</span>`;
 }
 function avatarHtml(s,size=26){
-  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${s.color};font-size:${Math.floor(size*0.4)}px">${s.initials}</div>`;
+  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${_safeCss(s.color,'#64748b')};font-size:${Math.floor(size*0.4)}px">${escHtml(s.initials)}</div>`;
 }
-function formatDate(d){if(!d)return'—';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+function formatDate(d){if(!d)return'—';const[y,m,day]=String(d).split('-');return escHtml(`${day}/${m}/${y}`);}
 // ── Compact date range for dense tables ─────────────────────
 // "26/06/2026 → 07/07/2026" is 178px of mostly repeated digits. Drop what the reader can
 // infer: the current year, and a month repeated on both ends of the range.
@@ -7177,13 +7190,13 @@ function openBoardShareModal(boardId){
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:#6b8399;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Members with access</div>
       <div style="font-size:12px;color:#0d1c33;display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:2px">
-        <span style="width:26px;height:26px;border-radius:50%;background:${(DB.users||[]).find(u=>u.id===wb.ownerId)?.displayColor||'#0d1c33'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${((DB.users||[]).find(u=>u.id===wb.ownerId)?.initials||'?')}</span>
+        <span style="width:26px;height:26px;border-radius:50%;background:${(DB.users||[]).find(u=>u.id===wb.ownerId)?.displayColor||'#0d1c33'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${escHtml((DB.users||[]).find(u=>u.id===wb.ownerId)?.initials||'?')}</span>
         <span>${escHtml((DB.users||[]).find(u=>u.id===wb.ownerId)?.name||'Owner')}</span>
         <span style="font-size:11px;color:#8da2b2">Owner</span>
       </div>
       ${shares.map(s=>{const u=(DB.users||[]).find(x=>x.id===s.userId);if(!u)return'';return`
       <div style="font-size:12px;color:#0d1c33;display:flex;align-items:center;gap:8px;padding:4px 0">
-        <span style="width:26px;height:26px;border-radius:50%;background:${u.displayColor||'#64748b'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${u.initials||'?'}</span>
+        <span style="width:26px;height:26px;border-radius:50%;background:${u.displayColor||'#64748b'};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${escHtml(u.initials||'?')}</span>
         <span style="flex:1">${escHtml(u.name)}</span>
         <button onclick="removeBoardShare('${boardId}','${s.userId}')" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:11px;padding:2px 6px;border-radius:4px" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">Remove</button>
       </div>`;}).join('')}
@@ -7699,7 +7712,7 @@ function renderSchedList(){
                 <span style="font-size:11px;color:${evtColor(e)};font-weight:600;background:${evtColor(e)}18;padding:1px 8px;border-radius:20px">${SCHED_TYPE_ICONS[e.type]||icon('calendar',11)} ${SCHED_TYPE_LABELS[e.type]||'Personal'}</span>
                 ${e.endDate?`<span style="font-size:11px;color:#8da2b2;font-weight:600">${formatDate(e.date)} → ${formatDate(e.endDate)}</span>`:''}
                 ${e.startTime?`<span style="font-size:11px;color:#8da2b2">${fmtTime(e.startTime)}${e.endTime?' – '+fmtTime(e.endTime):''}</span>`:''}
-                ${e.teamsLink?`<a href="${e.teamsLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#7b5ea7;text-decoration:none;padding:1px 8px;background:#7b5ea718;border-radius:20px;font-weight:600">Join ↗</a>`:''}
+                ${e.teamsLink?`<a href="${_safeHref(e.teamsLink)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="font-size:11px;color:#7b5ea7;text-decoration:none;padding:1px 8px;background:#7b5ea718;border-radius:20px;font-weight:600">Join ↗</a>`:''}
               </div>
               ${e.description?`<div style="font-size:12px;color:#6b8399;margin-top:4px">${escHtml(e.description)}</div>`:''}
               ${(e.attendees||[]).length?`<div style="display:flex;gap:3px;margin-top:6px;align-items:center">${e.attendees.map(id=>{const s=DB.staff.find(x=>x.id===id);return s?avatarHtml(s,18):''}).join('')}</div>`:''}
@@ -11672,7 +11685,7 @@ function renderTime(){
     return`<div data-terowdate="${e.date}" class="te-row${e.note?' te-hasnote':''}" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
       <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
       <div id="te-name-cell-${e.id}" class="_te-name-wrapper" onclick="${canEdit?`_teOpenTaskPicker('${e.id}',this)`:''}" style="display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;min-width:0;${canEdit?'cursor:pointer;':''}" ${canEdit?'title="Click to change task or client"':''}><span class="_te-name-body" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLabel}</span><span class="_te-name-chev" onclick="event.stopPropagation();_teNameToggle(this.closest('._te-name-wrapper'))" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;visibility:hidden;cursor:pointer;transition:transform 0.15s;padding:2px 0 2px 4px">▾</span></div>
-      <div id="te-client-cell-${e.id}" ${canEdit?`onclick="_teOpenClientPicker('${e.id}',this)" title="Click to change client" style="display:flex;align-items:center;cursor:pointer"`:'style="display:flex;align-items:center"'}>${client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${clientShort}</span>`:'<span style="color:#c8d3dc">—</span>'}</div>
+      <div id="te-client-cell-${e.id}" ${canEdit?`onclick="_teOpenClientPicker('${e.id}',this)" title="Click to change client" style="display:flex;align-items:center;cursor:pointer"`:'style="display:flex;align-items:center"'}>${client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${escHtml(clientShort)}</span>`:'<span style="color:#c8d3dc">—</span>'}</div>
       <div style="display:flex;align-items:center">${hoursCell}</div>
       <div style="display:flex;align-items:center;min-width:0;width:100%">${noteCell}</div>
       <div style="display:flex;align-items:center">${locPill}</div>
@@ -12166,7 +12179,7 @@ function _tePickerPick(id,taskId,clientId,el){
   }
   if(clientCell){
     const cs=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
-    clientCell.innerHTML=client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${cs}</span>`:'<span style="color:#c8d3dc">—</span>';
+    clientCell.innerHTML=client?`<span style="font-size:10px;font-weight:800;color:${client.color||'#0d6e4e'};letter-spacing:0.02em">${escHtml(cs)}</span>`:'<span style="color:#c8d3dc">—</span>';
   }
 }
 function _teTaskRenderDrop(items){
@@ -14600,7 +14613,7 @@ function _quoteEditorHtml(q){
     <input id="quote-number-input" type="text" value="${escHtml(q.number)}"
       title="Click to edit quote number"
       onfocus="this.style.borderColor='#97bcbd';this.style.background='#f8fbff';this.style.color='#0d1c33'"
-      onblur="quoteSaveField('${q.id}','number',this.value.trim()||'${escHtml(q.number)}');this.style.borderColor='transparent';this.style.background='transparent';this.style.color='#6b8399'"
+      onblur="quoteSaveField('${q.id}','number',this.value.trim()||this.defaultValue);this.style.borderColor='transparent';this.style.background='transparent';this.style.color='#6b8399'"
       style="font-size:13px;font-weight:700;color:#6b8399;border:1.5px solid transparent;border-radius:6px;padding:3px 8px;font-family:'Jost',sans-serif;outline:none;width:90px;background:transparent;cursor:text;transition:all 0.15s"
       onmouseover="if(document.activeElement!==this)this.style.borderColor='#e2eaf2'"
       onmouseout="if(document.activeElement!==this)this.style.borderColor='transparent'"/>
@@ -15979,12 +15992,12 @@ function openShareLinkManager(type,targetId,label){
   const body=`<div style="padding:4px 0">
     ${links.length?`<div style="background:#f0f7f7;border:1.5px solid #97bcbd40;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
       <input value="${escHtml(url)}" readonly style="flex:1;font-size:12px;border:none;background:transparent;color:#1a2940;outline:none">
-      <button onclick="navigator.clipboard.writeText('${escHtml(url)}');showToast('Copied','success',2000)" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Copy</button>
+      <button data-url="${escHtml(url)}" onclick="navigator.clipboard.writeText(this.dataset.url);showToast('Copied','success',2000)" class="btn btn-teal btn-sm" style="font-size:12px;flex-shrink:0">Copy</button>
     </div>
     ${(()=>{const l=links[0],end=l.expiresAt?new Date(l.expiresAt):l.createdAt?new Date(Date.parse(l.createdAt)+365*86400000):null;return end?`<p style="font-size:12px;color:#6b8399;margin:0 0 10px">Works until ${escHtml(end.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}))} — after that, generate a new link.</p>`:'';})()}
-    <button onclick="revokeShareLink('${links[0].token}');closeGenericModal();showToast('Link revoked','info')" class="btn btn-ghost btn-sm" style="font-size:12px;color:#991b1b;border-color:#fecaca">Revoke link</button>`
+    <button data-token="${escHtml(links[0].token)}" onclick="revokeShareLink(this.dataset.token);closeGenericModal();showToast('Link revoked','info')" class="btn btn-ghost btn-sm" style="font-size:12px;color:#991b1b;border-color:#fecaca">Revoke link</button>`
     :`<p style="font-size:13px;color:#6b8399;margin-bottom:16px">Share a read-only progress view of this ${type} with anyone — no login required.</p>
-    <button onclick="createShareLink('${type}','${targetId}','${(label||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}');closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
+    <button data-label="${escHtml(label||'')}" onclick="createShareLink('${type}','${targetId}',this.dataset.label);closeGenericModal()" class="btn btn-teal">Generate share link</button>`}
   </div>`;
   openGenericModal(`Share Progress — ${escHtml(label||type)}`,body);
 }
@@ -16099,7 +16112,7 @@ function openCreateDigest(){
     </div>
     <div>
       <label class="form-label">Items (one per line)</label>
-      <textarea id="dg-items" class="form-input" rows="7" placeholder="Each line becomes a digest item…" style="resize:vertical;font-size:12px">${defaultItems.join('\n')}</textarea>
+      <textarea id="dg-items" class="form-input" rows="7" placeholder="Each line becomes a digest item…" style="resize:vertical;font-size:12px">${escHtml(defaultItems.join('\n'))}</textarea>
     </div>
     <div>
       <label class="form-label">Closing note (optional)</label>
@@ -16163,7 +16176,7 @@ function openDigestDetail(digestId){
         <label class="form-label" style="margin-bottom:0">Items (one per line)</label>
         ${window._isoEnabled?`<span onclick="_dgAddIsoProgress('${d.id}')" style="font-size:11px;color:#0d6e4e;cursor:pointer;font-weight:600">+ Add ISO progress</span>`:''}
       </div>
-      <textarea id="dg-edit-items" class="form-input" rows="7" style="resize:vertical;font-size:12px">${(d.items||[]).map(i=>i.text).join('\n')}</textarea>
+      <textarea id="dg-edit-items" class="form-input" rows="7" style="resize:vertical;font-size:12px">${escHtml((d.items||[]).map(i=>i.text).join('\n'))}</textarea>
     </div>
     <div>
       <label class="form-label">Closing note</label>
@@ -17773,7 +17786,7 @@ function openTaskModal(id, defaultGroupId){
     return`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${c?escHtml(c.name)+' — ':''} ${escHtml(g.name)}</option>`;
   }).join('');
 
-  const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+DB.staff.map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${s.name}</option>`).join('');
+  const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+DB.staff.map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
   const currentlyWithOptions=
     `<option value="" ${!t.currentlyWith||t.currentlyWith==='none'?'selected':''}>— None —</option>`+
     `<option value="client" ${t.currentlyWith==='client'?'selected':''}>Client</option>`+
@@ -17988,7 +18001,7 @@ function openTaskModal(id, defaultGroupId){
               const ts=a.createdAt||a.at;
               return`<div style="display:flex;gap:10px;padding:7px 12px;border-bottom:1px solid #f0f4f8;font-size:11px">
                 ${avatarHtml(actor,18)}
-                <span style="flex:1;color:#4a5568"><strong>${actor.name.split(' ')[0]}</strong> changed <strong>${label}</strong>: <span style="color:#8da2b2">${oldDisplay}</span> → <strong>${newDisplay}</strong></span>
+                <span style="flex:1;color:#4a5568"><strong>${escHtml(actor.name.split(' ')[0])}</strong> changed <strong>${escHtml(label)}</strong>: <span style="color:#8da2b2">${escHtml(oldDisplay)}</span> → <strong>${escHtml(newDisplay)}</strong></span>
                 <span style="color:#b0bec5;white-space:nowrap">${new Date(ts).toLocaleString()}</span>
               </div>`;
             }).join('')}
@@ -18604,7 +18617,7 @@ function renderWbTabs(activeView){
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 8l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Shared with
       </button>`:''}
-      ${currentUser.role==='admin'?`<button onclick="openShareLinkManager('workboard','${wb.id}','${wb.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Share progress link">
+      ${currentUser.role==='admin'?`<button data-label="${escHtml(wb.name)}" onclick="openShareLinkManager('workboard','${wb.id}',this.dataset.label)" class="btn btn-ghost btn-sm" style="font-size:12px;gap:5px;height:28px" title="Share progress link">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="12" cy="3" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.8" stroke="currentColor" stroke-width="1.4"/><circle cx="4" cy="8" r="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M10.3 4.2L5.7 6.8M5.7 9.2l4.6 2.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Share
       </button>`:''}
@@ -18639,6 +18652,9 @@ function _fileTypeIcon(type,name,url){const ext=(name||'').split('.').pop().toLo
 // base64 data URL of a non-renderable type is used (same rule as api/_portal.js DATA_URL_RE +
 // BLOCKED_MIME); anything else becomes '#'. Escaped as well, belt and braces.
 const _DATA_HREF_RE=/^data:([a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+)((?:;[a-z0-9_.+-]+=[a-z0-9_.+-]+)*);base64,[A-Za-z0-9+\/]*={0,2}$/i;
+// A link a person typed goes into href escaped, and an address that runs script or opens local data is never
+// followed (audit C4, 2026-10-17). Anything else behaves as before.
+function _safeHref(u){const t=String(u==null?'':u).trim();return /^(javascript|data|vbscript|file|blob):/i.test(t.replace(/[\u0000-\u0020]/g,''))?'#':escHtml(t);}
 function _safeDataHref(d){const m=typeof d==='string'&&_DATA_HREF_RE.exec(d);if(!m||_BLOCKED_MIME.has(m[1].toLowerCase()))return'#';return escHtml(d);}
 function _descToHtml(s){if(!s)return'';if(/<[a-z]/i.test(s)||/&[a-z#][a-z0-9]+;/i.test(s))return _descSanitize(s);return escHtml(s).replace(/\n/g,'<br>');}
 // Parsed with DOMParser, which is inert: a live element starts loading <img> etc. the moment
@@ -21323,7 +21339,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
       </div>
     </td>`:''}
     ${cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''}
-    ${cols.client?`<td>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${client.shortCode}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''}
+    ${cols.client?`<td>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${escHtml(client.shortCode)}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''}
     ${cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''}
     ${cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
       <div style="display:inline-flex;align-items:center;gap:3px">
@@ -23551,7 +23567,7 @@ function tpMentionCheck(el){
     const matches=(DB.users||DB.staff||[]).filter(u=>u.role!=='client'&&u.active!==false&&u.name.toLowerCase().includes(query)).slice(0,6);
     if(matches.length){
       _tpMentionStart=atIdx;
-      dd.innerHTML=matches.map((u,i)=>`<div data-mention-idx="${i}" onclick="tpMentionInsert('${u.name.replace(/'/g,"\\'")}')" style="padding:7px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.1s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background=''">${avatarHtml(u,22)}<span>${escHtml(u.name)}</span></div>`).join('');
+      dd.innerHTML=matches.map((u,i)=>`<div data-mention-idx="${i}" data-name="${escHtml(u.name)}" onclick="tpMentionInsert(this.dataset.name)" style="padding:7px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.1s" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background=''">${avatarHtml(u,22)}<span>${escHtml(u.name)}</span></div>`).join('');
       dd.style.display='block';
       return;
     }
@@ -25807,7 +25823,7 @@ function renderCustomColCell(taskId,cc){
       return`<div style="display:flex;align-items:center;gap:5px"><div class="progress-bar" style="width:40px;flex-shrink:0"><div class="progress-fill" style="width:${pct}%;background:${pct===100?'#22c55e':'#97bcbd'}"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span></div>`;
     }
     case 'number':
-      return`<span style="font-size:12px;color:${val?'#1a2940':'#c8d4e0'};font-weight:${val?600:400}">${val||'—'}</span>`;
+      return`<span style="font-size:12px;color:${val?'#1a2940':'#c8d4e0'};font-weight:${val?600:400}">${val?escHtml(String(val)):'—'}</span>`;
     case 'date':
       return`<span style="font-size:11px;color:${val?'#6b8399':'#c8d4e0'}">${val?formatDate(val):'—'}</span>`;
     case 'timeline':{
@@ -25817,7 +25833,7 @@ function renderCustomColCell(taskId,cc){
     }
     case 'people':{
       const s=getStaff(val);
-      return s?`<div style="display:flex;align-items:center;gap:4px">${avatarHtml(s,22)}<span style="font-size:11px;color:#6b8399">${s.name.split(' ')[0]}</span></div>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
+      return s?`<div style="display:flex;align-items:center;gap:4px">${avatarHtml(s,22)}<span style="font-size:11px;color:#6b8399">${escHtml(s.name.split(' ')[0])}</span></div>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
     }
     case 'status':{
       const sm=getStatusMeta(val);
@@ -25828,7 +25844,7 @@ function renderCustomColCell(taskId,cc){
       return val?`<span class="prio-badge ${pm.cls}">${pm.icon} ${escHtml(pm.label)}</span>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
     }
     case 'link':
-      return val?`<a href="${escHtml(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${icon('link',11)} Link</a>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
+      return val?`<a href="${_safeHref(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${icon('link',11)} Link</a>`:`<span style="color:#c8d4e0;font-size:12px">—</span>`;
     case 'file':{
       // Same clip+count badge as the main Attachments column — the value itself lives in
       // DB.taskFiles (scoped by columnId), not in customColumnValues; see mtOpenCellEdit.
@@ -25933,7 +25949,7 @@ function mtBuildCustomCellHtml(taskId,cc,val){
         style="width:100%;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 8px;font-size:12px;outline:none;box-sizing:border-box"
         onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
         onchange="mtSetCustomVal('${taskId}','${cc.id}',this.value)"/>
-      ${val?`<a href="${escHtml(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;display:block;margin-top:5px">Open link ↗</a>`:''}
+      ${val?`<a href="${_safeHref(val)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:11px;color:#97bcbd;display:block;margin-top:5px">Open link ↗</a>`:''}
       </div>`;
     default: // 'file' is handled before this function is ever called — see mtOpenCellEdit
       return label+`<div style="padding:0 14px 12px"><input type="text" value="${escHtml(val)}" placeholder="Enter value…"
