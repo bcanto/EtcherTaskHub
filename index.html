@@ -10853,9 +10853,13 @@ function openEditTimeEntry(id){
   // its task the moment this form opens.
   const tasks=DB.tasks.filter(t=>!t.archived&&(!_isTaskOnPersonalBoard(t)||t.id===e.taskId));
   const taskOpts=`<option value="">— No task —</option>`+tasks.map(t=>{const cl=getTaskClient(t);return`<option value="${t.id}"${t.id===e.taskId?' selected':''}>${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;}).join('');
-  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  // The entry's own client and person are listed even when they have since been removed. Otherwise the browser selects the
+  // first of the others and saving quietly moves the hours to them (audit H4, 2026-10-17: removed people's hours now stay).
+  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('')
+    +((e.clientId&&!DB.clients.some(c=>c.id===e.clientId))?`<option value="${escHtml(e.clientId)}" selected>(client removed)</option>`:'');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id===e.earningsRateId?' selected':''}>${escHtml(r.name)}</option>`).join('');
-  const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===e.staffId?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===e.staffId?' selected':''}>${escHtml(s.name)}</option>`).join('')
+    +((e.staffId&&!DB.staff.some(s=>s.id===e.staffId))?`<option value="${escHtml(e.staffId)}" selected>${escHtml(getStaff(e.staffId).name)}</option>`:'');
   document.getElementById('generic-modal-title').textContent='Edit Time Entry';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
