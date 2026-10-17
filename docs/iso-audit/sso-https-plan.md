@@ -1,5 +1,8 @@
 # Sign-in with Microsoft (SSO) and HTTPS: plan
 
+> **Replaced 18 October 2026** by `docs/security/sso-https-plan.md`, which covers Task Hub itself, says what is
+> built and lists your steps. This draft is kept for its reasoning. The ISO site has its own copy in its handover.
+
 Status: draft for decision, 2026-10-16. Nothing here is built or switched on yet beyond what
 "Already in place" says. Decide the open questions at the end before the ISO pilot.
 

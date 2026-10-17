@@ -9,6 +9,35 @@
 // profile role to be 'admin' — the same role the app's own route guard already requires to
 // reach the Staff/Clients screens that call these endpoints (_STAFF_BLOCKED in index.html
 // blocks 'staff'/'clients' views for everyone but admin).
+// Staff sign in with Microsoft only, once switched on in the database (migration 018, SSO + HTTPS plan phase B2). The
+// database answers for the caller's own session through public.session_allowed(), so the rule lives in one place.
+// "allowed": true or false; "missing": the migration is not applied (the rule does not exist yet, so nothing changes);
+// "error": anything else (refused by the callers, since they act with the service role and bypass the database's rules).
+async function sessionAllowed(token) {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!SUPABASE_URL) return 'missing';   // no project configured: there is no rule to ask about
+  try {
+    // A read (the function is STABLE), so it is asked with GET and never counted as a write.
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/session_allowed`, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_ANON_KEY || SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    if (r.status === 404) return 'missing';
+    if (!r.ok) return 'error';
+    return (await r.json()) === false ? false : true;
+  } catch (e) {
+    return 'error';
+  }
+}
+// Answers the request itself and returns false when the session does not meet the rule.
+async function enforceSignInRule(token, res) {
+  const a = await sessionAllowed(token);
+  if (a === true || a === 'missing') return true;
+  if (a === false) res.status(403).json({ error: 'Staff accounts sign in with Microsoft. Sign in again with "Sign in with Microsoft".' });
+  else res.status(503).json({ error: 'Could not check how this session signed in. Try again in a moment.' });
+  return false;
+}
+
 async function requireAdminCaller(req, res) {
   const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -67,6 +96,7 @@ async function requireAdminCaller(req, res) {
     res.status(403).json({ error: 'Admin access required' });
     return null;
   }
+  if (!(await enforceSignInRule(token, res))) return null;
 
   return caller;
 }
@@ -126,6 +156,10 @@ async function requireClientCaller(req, res) {
     res.status(403).json({ error: 'Client portal access required' });
     return null;
   }
+  // Someone who set up two-step sign-in must have given their code (migration 018; the Microsoft rule never applies to
+  // clients, so for them this is only that).
+  const token = (req.headers['authorization'] || '').slice(7);
+  if (!(await enforceSignInRule(token, res))) return null;
   // The name is shown to staff in notifications and comments; a user can edit their own, so cap it.
   const name = String(p.name || 'Client').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 100) || 'Client';
   return { id: caller.id, name, clientId: p.client_id };
@@ -150,9 +184,11 @@ async function requireStaffCaller(req, res) {
     res.status(403).json({ error: 'Staff access required' });
     return null;
   }
+  const token = (req.headers['authorization'] || '').slice(7);
+  if (!(await enforceSignInRule(token, res))) return null;
   // The server's own record of who this is (name and role), for endpoints that must not trust what the
   // browser says about the sender.
   return { ...caller, profileName: p.name || null, profileRole: p.role };
 }
 
-module.exports = { requireAdminCaller, requireAuthedCaller, requireClientCaller, requireStaffCaller };
+module.exports = { requireAdminCaller, requireAuthedCaller, requireClientCaller, requireStaffCaller, sessionAllowed };

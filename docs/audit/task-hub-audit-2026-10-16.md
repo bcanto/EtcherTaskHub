@@ -334,7 +334,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 | L4 | "director" is not a role the server or anything else issues; the five checks for it were dead code, now removed. | `low-test` |
 | L5 | Documented rather than built: there is no database table behind the MCP connector by design, so a denylist would be a table added purely for this. `api/_mcpAuth.js` now spells out the two things that can be revoked today (the whole secret, or one person's access to new tokens) and the gap (one lost device, on its own, until its token expires). | — |
 | L6 | The production placeholder for the email intake endpoint answered 200 with an empty list forever, defeating the app's own circuit breaker (built to stop polling after one 404). It now answers 404 until the real service exists. | `low-test` |
-| L7 | Not changed here: covered by the SSO plan (`docs/iso-audit/sso-https-plan.md`), which is part of the ISO / Retained Services release, not this batch. | open, tracked in the SSO plan |
+| L7 | Built 18 October with the sign-in work (branch `security-sso`, part B): signs out after a set time without activity, off until `SESSION_IDLE_MINUTES` is set in Vercel. See `docs/security/sso-https-plan.md`. | built, not deployed |
 
 **Regression testing.** `medium-fixes`: 70 suites, 1,607 checks, 0 failures (`iso-import-test` does not apply on `main`, which has no ISO files). The full gate caught two problems in the tap-target fix, both fixed before deployment: a button in a narrow table column could be pushed past it (it now only grows taller there), and the note box's delete cross grew over the corner of the note (a button floating over other content is never grown). Deployed 18 October (`67a4b16`); the live site was checked byte for byte.
 
@@ -348,7 +348,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 | L4 | Role checks for "director" are dead code (no such role). | Less confusion. | Remove. |
 | L5 | MCP connector tokens can only be revoked all at once (rotate the secret). | Finer control if one device is lost. | Add a short denylist, or keep as is and document it. |
 | L6 | The app checks for emails every 30 s against an endpoint that always answers "none". | Less background traffic. | Poll only when email intake is set up. |
-| L7 | Supabase sessions never time out from inactivity. | Shared computers do not stay signed in. | Covered by the SSO plan (`docs/iso-audit/sso-https-plan.md`). |
+| L7 | Supabase sessions never time out from inactivity. | Shared computers do not stay signed in. | Built with the sign-in work (`docs/security/sso-https-plan.md`, part B), not deployed yet. |
 
 ## Technical debt
 
@@ -384,7 +384,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 | Critical | 4 (all fixed 17 October) |
 | High | 11 (all fixed 17 October) |
 | Medium | 17 (16 fixed 17 October; M5 needs one query from you) |
-| Low | 7 (6 fixed 17 October; L7 is in the SSO plan) |
+| Low | 7 (6 fixed 17 October; L7 built 18 October with the sign-in work, not deployed yet) |
 | Technical debt items | 7 |
 | **Total issues found** | **46**: 44 fixed, 2 open (M5, L7; neither critical nor high), plus 7 technical debt items |
 
@@ -404,7 +404,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 - Critical: done.
 - High: done.
 - Medium: done, except M5 (waiting on one query from you).
-- Low: done, except L7 (the SSO plan).
+- Low: done, except L7 (built with the sign-in work, waiting for that deploy).
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
 **Recommended deployment order:**

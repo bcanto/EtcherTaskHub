@@ -7,5 +7,9 @@ module.exports = function handler(req, res) {
     isoEnabled:      process.env.ISO_ENABLED === '1',
     // Release-1 B6.3: shows "Sign in with Microsoft" once the Supabase Azure provider is set up.
     microsoftSignIn: process.env.MICROSOFT_SIGNIN === '1',
+    // Offer two-step sign-in (authenticator app) to password logins: TWO_STEP_SIGNIN=1.
+    twoStepSignIn: process.env.TWO_STEP_SIGNIN === '1',
+    // Sign out after this many minutes without activity (0 or unset = never): SESSION_IDLE_MINUTES.
+    sessionIdleMinutes: Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES || '0', 10) || 0),
   });
 };

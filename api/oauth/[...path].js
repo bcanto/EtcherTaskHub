@@ -21,6 +21,7 @@ const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmails, veri
 const { readBlob, casWrite } = require('../_blob');
 const { listActions, createOrUpdateAction, applyUpdate, toPublic } = require('../_mcpActions');
 const { resolveCallerUser, listBoardsForUser, listTasksForUser, getTaskForUser } = require('../_mcpBoards');
+const { sessionAllowed } = require('../_authAdmin');
 
 function baseUrl(req) {
   const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -191,6 +192,12 @@ async function complete(req, res) {
   const identity = await verifySupabaseSession(body.accessToken);
   if (!identity || !isAllowedEmail(identity.email)) {
     return json(res, 403, { error: 'access_denied', error_description: `This connector is restricted to ${allowedEmails().join(', ')}.` });
+  }
+  // Staff sign in with Microsoft only, once switched on (migration 018): sign in to Task Hub with Microsoft in this
+  // browser first, then connect again (this page then uses that session).
+  const allowed = await sessionAllowed(body.accessToken);
+  if (allowed === false || allowed === 'error') {
+    return json(res, 403, { error: 'access_denied', error_description: allowed === false ? 'Staff accounts sign in with Microsoft. Sign in to Task Hub with Microsoft in this browser, then connect again.' : 'Could not check how this session signed in. Try again in a moment.' });
   }
   const code = signToken({
     kind: 'code', sub: identity.id, email: identity.email,

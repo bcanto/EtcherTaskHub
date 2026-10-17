@@ -23,7 +23,7 @@ async function sendNotificationEmail({ to, recipientName, type, message, senderN
   if (!RESEND_KEY) return { skipped: 'RESEND_API_KEY not configured' };
   if (!to || !message) return { skipped: 'missing to/message' };
   const FROM = process.env.RESEND_FROM_EMAIL || 'Etcher Task Hub <notifications@etchersolutions.com>';
-  const APP_URL = process.env.APP_URL || 'https://etcher-task-hub.vercel.app';
+  const APP_URL = process.env.APP_URL || 'https://taskhub.etchersolutions.com';
   const meta = META[type] || { subject: 'New notification', emoji: '🔔', color: '#0d1c33' };
 
   const html = `<!DOCTYPE html>

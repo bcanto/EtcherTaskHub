@@ -28,7 +28,10 @@ window._supabaseReady = (async function _initSupabase() {
     // configured — ISO must still be enabled/disabled correctly in that (very common, dev)
     // case (plan Phase 5.1b).
     window._isoEnabled = cfg.isoEnabled === true;
-    window._microsoftSignIn = cfg.microsoftSignIn === true; // release-1 B6.3
+    // "Sign in with Microsoft" (release-1 B6.3)
+    window._microsoftSignIn = cfg.microsoftSignIn === true;
+    window._twoStepSignIn = cfg.twoStepSignIn === true;
+    window._sessionIdleMinutes = Math.max(0, Number(cfg.sessionIdleMinutes) || 0);
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
       window._supabaseInitError = 'no Supabase credentials are configured on the server.';
