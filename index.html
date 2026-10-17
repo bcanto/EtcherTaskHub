@@ -3083,6 +3083,7 @@ function _userIsTypingAnywhere(){
 }
 let _mergeRepaintPending=false;
 function _repaintAfterMerge(){
+  if(_applyStaffRecordToCurrentUser()){updateSidebarUser();applyRolePermissions();renderNav();}
   if(!_userIsTypingAnywhere()){if(currentView)renderView(currentView);return;}
   if(_mergeRepaintPending)return;   // already waiting for them to finish
   _mergeRepaintPending=true;
@@ -3146,6 +3147,27 @@ function _staffAuthUid(s){
   if(s.supabase_uid&&_UUID_RE.test(s.supabase_uid))return s.supabase_uid;
   if(_UUID_RE.test(s.id||''))return s.id;
   return null;
+}
+// The role the sign-in service knows for a Staff-screen role. Admin stays admin; Staff and Restricted are both a
+// staff login there (the service has no Restricted: it is a narrowing the app keeps on the staff record).
+function _serverRoleFor(r){return r==='admin'?'admin':'staff';}
+// Apply the staff record's Restricted setting to the signed-in person (audit H1, 2026-10-17). The live sign-in
+// takes the role from the server profile, which only knows admin and staff, so a person the Staff screen marks
+// Restricted used to keep full staff rights. A staff login can be narrowed by its record, never widened: an
+// admin stays an admin, and a record can not turn a staff login into an admin. The Billing tick is applied too.
+// Returns true when the access changed, so a person signed in at the time sees it without signing out.
+function _applyStaffRecordToCurrentUser(){
+  const cu=currentUser;
+  if(!window._supabase||!cu||cu.type==='client'||!cu.profileRole)return false;
+  const rec=(DB.users||[]).find(u=>u.id===cu.id);
+  const role=(cu.profileRole==='staff'&&rec&&rec.role==='restricted')?'restricted':cu.profileRole;
+  const type=role==='admin'||role==='pm'?role:role==='restricted'?'restricted':'staff';
+  // The Billing tick (Reports, approvals, invoicing: _canBill) belongs to a standard staff login. It was checked on the
+  // signed-in user but never copied onto it, so a Billing-ticked staff member got none of it on the live site.
+  const billing=role==='staff'&&!!rec&&rec.billing===true;
+  if(role===cu.role&&type===cu.type&&billing===!!cu.billing)return false;
+  cu.role=role;cu.type=type;cu.billing=billing;
+  return true;
 }
 
 function _stripPasswords(data){
@@ -3525,7 +3547,7 @@ async function _supabaseRestoreSession(session){
       _startPortalRefresh();      // replaces realtime (clients can't read app_state to subscribe to it)
       launchClientView();
     } else {
-      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,
+      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,profileRole:p.role,
         type:p.role==='admin'||p.role==='pm'?p.role:'staff',
         displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
         initials:p.initials||getInitials(p.name),
@@ -3612,6 +3634,7 @@ async function _supabaseRestoreSession(session){
         _autoCreated=true;
         console.info('[auth] Auto-created DB.users entry for',p.email,'→',_newId);
       }
+      _applyStaffRecordToCurrentUser();
       _supabaseSyncEnabled=true; // safe to write back to Supabase now
       // Always force-sync after login so migration fixes (ghost deletion,
       // email/name patches) reach Supabase before any other session can
@@ -17472,6 +17495,14 @@ async function saveStaff(id){
     // reverted the next time this browser synced.
     let s=DB.staff.find(x=>x.id===id);
     const pw=(document.getElementById('sm-pw')?.value||'').trim();
+    // The role has to reach the real login: the sign-in takes it from the server profile, so changing only this
+    // record changed nothing for the person (audit H1, 2026-10-17). Admin and Staff are the profile's own roles;
+    // Restricted is a narrowing of Staff kept on this record, so Staff <-> Restricted needs no request. Checked
+    // before anything is sent, so a refusal leaves the person exactly as they were.
+    const _roleChanges=_serverRoleFor(role)!==_serverRoleFor(s.role);
+    if(_roleChanges&&id===currentUser.id){showAlert('You cannot change your own role. Ask another admin to do it.','Cannot Change Role');return;}
+    const _roleUid=(_roleChanges&&window._supabase)?_staffAuthUid(s):null;
+    if(_roleChanges&&window._supabase&&!_roleUid){showAlert('No Supabase account is linked to '+s.name+' yet, so their role cannot be changed here. Ask them to sign in once, which links the account, then try again.','Cannot Change Role');return;}
     if(pw){
       if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
       // This used to write only to the local fallback store, so the form reported success
@@ -17495,6 +17526,18 @@ async function saveStaff(id){
       }
       _savePw(s.id,pw);
     }
+    if(_roleUid){
+      const btn=document.getElementById('sm-save-btn');
+      if(btn){btn.disabled=true;btn.textContent='Saving…';}
+      try{
+        const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({userId:_roleUid,role:_serverRoleFor(role)})});
+        if(!resp.ok){const r=await resp.json().catch(()=>({}));throw new Error(r.error||'Failed to change the role');}
+      }catch(e){
+        showAlert(e.message,'Role Update Failed');
+        if(btn){btn.disabled=false;btn.textContent='Save';}
+        return;
+      }
+    }
     // Same detached-object hazard as saveClient: a merge during the await can rebuild DB.users,
     // so re-resolve before writing rather than mutating a copy that is no longer in the array.
     s=DB.staff.find(x=>x.id===id)||s;
@@ -17515,7 +17558,7 @@ async function saveStaff(id){
     const btn=document.getElementById('sm-save-btn');
     if(btn){btn.disabled=true;btn.textContent='Creating…';}
     try{
-      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,role,color,initials,password:pw})});
+      const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,role:_serverRoleFor(role),color,initials,password:pw})});
       const result=await resp.json();
       if(!resp.ok)throw new Error(result.error||'Failed to create account');
       const _billingNew=role==='staff'&&!!document.getElementById('sm-billing')?.checked;
