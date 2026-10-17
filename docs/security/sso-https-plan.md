@@ -6,7 +6,7 @@ deployed yet**, and nothing changes how anyone signs in until you switch it on.
 This replaces the earlier draft (`docs/iso-audit/sso-https-plan.md` on `retained-services`), now for Task Hub itself.
 The ISO site has its own copy in its handover.
 
-## What is built (four commits, each tested, every check proven able to fail)
+## What is built (each part tested, every check proven able to fail)
 
 | Part | What it does | Switch | Commit |
 |---|---|---|---|
@@ -16,11 +16,12 @@ The ISO site has its own copy in its handover.
 | A. Sign in with Microsoft | A "Sign in with Microsoft" button (Supabase Azure provider). The password form stays. | `MICROSOFT_SIGNIN=1` (Vercel) | `7dc9e82` |
 | A. Email links | Notification emails link to `https://taskhub.etchersolutions.com` even when `APP_URL` is not set. | Always on once deployed | `7dc9e82` |
 | A2. Internal files not published | The live site served the database migrations, the local dev server, the email-intake service and the setup notes to anyone who asked. `.vercelignore` now keeps them off the site (a test checks everything the app needs is still uploaded). | Always on once deployed | `05d4142` |
+| A3. Clear refusals at sign-in | A Microsoft sign-in that opens no Task Hub account (never invited, switched off, or a second, empty account) is signed out and told "This Microsoft account has no access to Task Hub", instead of landing back on the login screen without a word and being tried again on every load. Errors Supabase sends back in the address (sign-ups off, a cancelled sign-in, an expired email link) are shown in fixed words; the address text itself is never shown. | With `MICROSOFT_SIGNIN`; the email-link message always | `0a35cf0` |
 | B. Idle sign-out | Signs out after a set time without activity, with a warning two minutes before and the reason on the login screen. A browser reopened after the limit starts signed out. Switching it on never signs out someone who has been working. | `SESSION_IDLE_MINUTES` (Vercel), e.g. `480` | `fd7c741` |
 | C. Staff use Microsoft only | Once switched on, a staff password session is refused by the database, the app ("Staff accounts sign in with Microsoft"), the server and the MCP connector. A break-glass list keeps one emergency password login. Clients are never affected. | Database switch in migration 018 (starts off) | `e4cd96a` |
 | D. Two-step sign-in | A 6-digit code from an authenticator app at sign-in, for password logins (the break-glass admin, clients who want it). Set up from a "Two-step sign-in" button. Once migration 018 is applied, the database refuses a session that skipped the code, and the break-glass login only counts with its code. | `TWO_STEP_SIGNIN=1` (Vercel) | `e289a3b` |
 
-Tests: `sec-a-test` 33 checks (22 proven breaks), `sec-b-test` 16 (15), `sec-c-test` 30 (24), `sec-d-test` 20 (19).
+Tests: `sec-a-test` 33 checks (22 proven breaks), `sec-b-test` 16 (15), `sec-c-test` 43 (40), `sec-d-test` 20 (19).
 
 ## Decisions taken (the recommended answers; change any of them)
 
@@ -50,6 +51,11 @@ libraries the content security policy must allow).
 
 ### 2. Microsoft sign-in (phase A)
 
+0. First, check new accounts get no access (migration 008). SQL editor:
+   `select column_default from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='role';`
+   It must say `'client'::user_role`. If it says `'staff'`, apply migration 008 before anything else: without it, anyone
+   in the Etcher Microsoft tenant who signs in for the first time gets staff access. Also check Supabase, Authentication,
+   "Allow new users to sign up" is off (invites keep working, and an existing account still links to its Microsoft login).
 1. Microsoft Entra: app registration, single tenant, redirect `https://<project>.supabase.co/auth/v1/callback`.
 2. Client secret, 24 months. Put the expiry date in the calendar: sign-in breaks when it lapses.
 3. Token configuration: add the optional claims `email` and `xms_edov`. Without `xms_edov`, Supabase does not treat the
@@ -59,7 +65,8 @@ libraries the content security policy must allow).
    only the https production address(es) and `http://localhost:3001` for development.
 6. Vercel: `MICROSOFT_SIGNIN=1`, redeploy.
 7. Test: a staff member signs in with Microsoft and lands as themselves (in Supabase, Users, one row with two
-   identities, not two rows); someone with no account gets no access; a removed staff member is refused.
+   identities, not two rows); someone with no account is told "This Microsoft account has no access to Task Hub"; a
+   removed staff member is refused. If an invited staff member is told they have no access, check step 3 (`xms_edov`).
 8. Conditional Access: require multi-factor sign-in for everyone who uses the app.
 
 To undo: remove `MICROSOFT_SIGNIN` in Vercel (the button disappears; passwords work as before).
