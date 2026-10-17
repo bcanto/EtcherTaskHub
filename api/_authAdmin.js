@@ -138,7 +138,7 @@ async function requireStaffCaller(req, res) {
   if (!caller) return null;
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   const profileResp = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=role,active&limit=1`,
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=role,active,name&limit=1`,
     { headers: { 'apikey': SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }
   );
   if (!profileResp.ok) {
@@ -150,7 +150,9 @@ async function requireStaffCaller(req, res) {
     res.status(403).json({ error: 'Staff access required' });
     return null;
   }
-  return caller;
+  // The server's own record of who this is (name and role), for endpoints that must not trust what the
+  // browser says about the sender.
+  return { ...caller, profileName: p.name || null, profileRole: p.role };
 }
 
 module.exports = { requireAdminCaller, requireAuthedCaller, requireClientCaller, requireStaffCaller };
