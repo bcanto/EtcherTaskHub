@@ -22742,21 +22742,34 @@ function duplicateWorkboard(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const wb=DB.workboards.find(w=>w.id===id);
   if(!wb)return;
+  const now=new Date().toISOString();
   const newId='wb_'+uid();
-  const newWb=Object.assign({},wb,{id:newId,name:wb.name+' (copy)',createdAt:new Date().toISOString(),archived:false});
+  // The copy starts its own life (audit H6, 2026-10-17): its tasks are numbered afresh, so the original's reference
+  // counter and prefix are not carried over, and it is stamped as new so it reaches the other computers.
+  const newWb=Object.assign({},wb,{id:newId,name:wb.name+' (copy)',createdAt:now,updatedAt:now,archived:false});
+  delete newWb.refPrefix;delete newWb.nextRef;
   DB.workboards.push(newWb);
-  const groups=DB.groups.filter(g=>g.workboardId===id);
+  // A group or task names its board in boardId or workboardId (boardId wins where both exist), and a sub-item names
+  // neither, so it is found through its parent or group (_taskBoardId). The copies used to keep the original's
+  // boardId, which won, so every copy appeared on the original board (doubling it) and the new board stayed empty.
+  // Now a copy that names a board names the new one in BOTH ids.
+  const toNewBoard=(o)=>{const c={};if(o.boardId||o.workboardId){c.boardId=newId;c.workboardId=newId;}return c;};
+  const groups=DB.groups.filter(g=>(g.boardId||g.workboardId)===id);
   const groupIdMap={};
   groups.forEach(g=>{
     const newGid='g_'+uid();
     groupIdMap[g.id]=newGid;
-    DB.groups.push(Object.assign({},g,{id:newGid,workboardId:newId}));
+    DB.groups.push(Object.assign({},g,toNewBoard(g),{id:newGid,updatedAt:now}));
   });
+  const source=DB.tasks.filter(t=>_taskBoardId(t)===id);
   const taskIdMap={};
-  DB.tasks.filter(t=>t.workboardId===id).forEach(t=>{taskIdMap[t.id]='t_'+uid();});
-  DB.tasks.filter(t=>t.workboardId===id).forEach(t=>{
-    const _now2=new Date().toISOString();
-    DB.tasks.push(Object.assign({},t,{id:taskIdMap[t.id],workboardId:newId,groupId:groupIdMap[t.groupId]||t.groupId,parentTaskId:taskIdMap[t.parentTaskId]||null,createdAt:_now2,updatedAt:_now2,tags:[],archived:false,completedAt:null}));
+  source.forEach(t=>{taskIdMap[t.id]='t_'+uid();});
+  source.forEach(t=>{
+    // refNumber is cleared so the copy is numbered in its own board; a recurring task is not copied as recurring, or
+    // the copy would start making occurrences of its own next to the original's.
+    const copy=Object.assign({},t,toNewBoard(t),{id:taskIdMap[t.id],groupId:groupIdMap[t.groupId]||t.groupId,parentTaskId:taskIdMap[t.parentTaskId]||null,createdAt:now,updatedAt:now,tags:[],archived:false,completedAt:null,recurrence:null});
+    delete copy.refNumber;
+    DB.tasks.push(copy);
   });
   saveDB(DB);
   renderSidebarWorkboards();
