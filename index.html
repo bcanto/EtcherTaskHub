@@ -25,9 +25,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://wowwiafaqzovlfwzyktj.supabase.co wss://wowwiafaqzovlfwzyktj.supabase.co https://cdn.tailwindcss.com; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
-<link id="app-favicon" rel="icon" type="image/png" href="favicon_taskapp.png"/>
+<link id="app-favicon" rel="icon" type="image/png" href="favicon-128.png"/>
 <!-- B7: Preload critical assets to eliminate render-blocking fetches -->
-<link rel="preload" href="Etcher White Logo.png" as="image" type="image/png"/>
+<link rel="preload" href="etcher-logo-white-520.png" as="image" type="image/png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
@@ -640,6 +640,12 @@ body:has(#client-portal:not(.hidden)) #mobile-tabbar,body:has(#client-portal:not
 .notes-list-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--surface-3);transition:background 0.15s}
 .notes-list-item:hover{background:var(--surface-3)}
 .notes-list-item.active{background:var(--navy);color:#fff}
+/* Client Notes on a phone: the three columns stack instead of squeezing the note off screen (audit M14, 2026-10-17) */
+@media (max-width:760px){
+  #notes-pane{flex-direction:column;height:auto;min-height:calc(100vh - 56px)}
+  .notes-clients,.notes-sections{width:auto;border-right:none;border-bottom:1px solid var(--border);max-height:34vh}
+  .notes-editor{min-height:60vh}
+}
 .note-warn{display:flex;align-items:center;gap:7px;padding:6px 16px;background:#fff8f0;border-bottom:1px solid #fcd9a8;font-size:11px;font-weight:600;color:#92400e;flex-shrink:0}
 .note-toolbar{display:flex;align-items:center;gap:2px;padding:5px 14px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
 .note-hint{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;color:#c8d4e0;font-style:italic}
@@ -1572,7 +1578,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <!-- Left brand panel -->
     <div class="login-left">
       <div>
-        <img src="Etcher White Logo.png" alt="Etcher" style="max-height:96px;height:auto;max-width:100%;width:auto;display:block;margin-bottom:28px;opacity:0.95" onerror="this.outerHTML='<span style=\'font-family:Jost,sans-serif;font-size:32px;font-weight:700;color:#97bcbd;letter-spacing:0.08em\'>ETCHER</span>'"/>
+        <img src="etcher-logo-white-520.png" alt="Etcher" style="max-height:96px;height:auto;max-width:100%;width:auto;display:block;margin-bottom:28px;opacity:0.95" onerror="this.outerHTML='<span style=\'font-family:Jost,sans-serif;font-size:32px;font-weight:700;color:#97bcbd;letter-spacing:0.08em\'>ETCHER</span>'"/>
         <div style="width:28px;height:2px;background:#97bcbd;border-radius:2px;margin-bottom:18px;opacity:0.6"></div>
         <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:10px">Task Hub</h2>
         <p style="font-size:13px;color:#8da2b2;line-height:1.6">Etcher's internal workspace for tasks, clients, and team collaboration.</p>
@@ -1643,7 +1649,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <aside id="sidebar">
     <!-- Logo -->
     <div style="padding:22px 18px 24px;border-bottom:1px solid rgba(255,255,255,0.05);position:relative;z-index:1">
-      <img src="Etcher White Logo.png" alt="Etcher" style="width:97%;height:auto;display:block;margin:0 auto;opacity:0.9;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
+      <img src="etcher-logo-white-520.png" alt="Etcher" style="width:97%;height:auto;display:block;margin:0 auto;opacity:0.9;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
     </div>
 
     <!-- User -->
@@ -1865,7 +1871,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 <!-- CLIENT PORTAL — completely separate shell, shown instead of app-shell for client logins -->
 <div id="client-portal" class="hidden">
   <header class="cp-top" style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
-    <img src="Etcher White Logo.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
+    <img src="etcher-logo-white-520.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1);flex-shrink:0;margin:0 2px"></div>
     <div id="cp-client-name" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:0.01em">Client Portal</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -3055,6 +3061,11 @@ function _mergeDB(current, incoming){
   const deletedClientIds=new Set([...(current.deletedClientIds||[]),...(incoming.deletedClientIds||[])]);
   merged.deletedClientIds=[...deletedClientIds];
   if(deletedClientIds.size)merged.clients=(merged.clients||[]).filter(c=>!deletedClientIds.has(c.id));
+  // What belonged to a deleted client stays gone when an older copy merges in: its notes and work requests (audit M1).
+  if(deletedClientIds.size){
+    merged.clientNotes=(merged.clientNotes||[]).filter(n=>!deletedClientIds.has(n.clientId));
+    merged.clientWorkRequests=(merged.clientWorkRequests||[]).filter(r=>!deletedClientIds.has(r.clientId));
+  }
   const deletedWorkRequestIds=new Set([...(current.deletedWorkRequestIds||[]),...(incoming.deletedWorkRequestIds||[])]);
   merged.deletedWorkRequestIds=[...deletedWorkRequestIds];
   if(deletedWorkRequestIds.size)merged.clientWorkRequests=(merged.clientWorkRequests||[]).filter(r=>!deletedWorkRequestIds.has(r.id));
@@ -3193,6 +3204,9 @@ function _serverRoleFor(r){return r==='admin'?'admin':'staff';}
 // Restricted used to keep full staff rights. A staff login can be narrowed by its record, never widened: an
 // admin stays an admin, and a record can not turn a staff login into an admin. The Billing tick is applied too.
 // Returns true when the access changed, so a person signed in at the time sees it without signing out.
+// The server's profile role, as the app uses it. pm is valid on the server but no screen knew it, so a pm login saw
+// nothing at all (audit M3, 2026-10-17); it signs in as staff.
+function _appRole(r){return r==='pm'?'staff':r;}
 function _applyStaffRecordToCurrentUser(){
   const cu=currentUser;
   if(!window._supabase||!cu||cu.type==='client'||!cu.profileRole)return false;
@@ -3584,8 +3598,8 @@ async function _supabaseRestoreSession(session){
       _startPortalRefresh();      // replaces realtime (clients can't read app_state to subscribe to it)
       launchClientView();
     } else {
-      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,profileRole:p.role,authUid:p.id,
-        type:p.role==='admin'||p.role==='pm'?p.role:'staff',
+      currentUser={id:p.id,name:p.name,email:p.email,role:_appRole(p.role),profileRole:_appRole(p.role),serverRole:p.role,authUid:p.id,
+        type:_appRole(p.role)==='admin'?'admin':'staff',
         displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
         initials:p.initials||getInitials(p.name),
         capacityHoursPerDay:p.capacity_hours_per_day||8,active:true,clientId:null};
@@ -3626,17 +3640,14 @@ async function _supabaseRestoreSession(session){
         // 1. Fast path: UUID was stored on a previous login
         const byUid=DB.users?.find(u=>u.supabase_uid===_supaUid);
         if(byUid)return byUid;
-        // 2. Hardcoded mapping — catches known email mismatches reliably
+        // A record already linked to a different login is never taken over (audit M4, 2026-10-17).
+        const _free=u=>!!u&&(!u.supabase_uid||u.supabase_uid===_supaUid);
+        // 2. Hardcoded mapping, for known email mismatches
         const _knownId=_KNOWN_IDS[(p.email||'').toLowerCase()];
-        if(_knownId){const byKnown=DB.users?.find(u=>u.id===_knownId);if(byKnown)return byKnown;}
-        // 3. Email match
-        const byEmail=DB.users?.find(u=>(u.email||'').toLowerCase()===(p.email||'').toLowerCase());
-        if(byEmail)return byEmail;
-        // 4. Exact name match
-        if(!p.name)return null;
-        const pName=p.name.toLowerCase().trim();
-        return DB.users?.filter(u=>u.role!=='client'&&u.active!==false)
-          .find(u=>(u.name||'').toLowerCase().trim()===pName)||null;
+        if(_knownId){const byKnown=DB.users?.find(u=>u.id===_knownId);if(_free(byKnown))return byKnown;}
+        // 3. Email match. There is no match by display name: two people can share a name, and the link is permanent.
+        const _em=(p.email||'').toLowerCase().trim();
+        return (_em&&DB.users?.find(u=>(u.email||'').toLowerCase().trim()===_em&&_free(u)))||null;
       })();
       const _newUidMapping=_legacyUser&&!_legacyUser.supabase_uid;
       let _autoCreated=false;
@@ -3692,7 +3703,7 @@ function _showSetPasswordForm(session){
   overlay.innerHTML=`
     <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(13,28,51,0.12)">
       <div style="text-align:center;margin-bottom:28px">
-        <img src="Etcher White Logo.png" style="height:36px;filter:invert(1) sepia(1) saturate(0) brightness(0.3);margin-bottom:16px"/>
+        <img src="etcher-logo-white-520.png" style="height:36px;filter:invert(1) sepia(1) saturate(0) brightness(0.3);margin-bottom:16px"/>
         <div style="font-size:20px;font-weight:700;color:#0d1c33">Set your password</div>
         <div style="font-size:13px;color:#8da2b2;margin-top:6px">Choose a password to log in next time</div>
       </div>
@@ -6619,6 +6630,97 @@ function updateNotifBadge(){
 // another app, another tab — which is exactly when a new notification is easiest to miss.
 // _tabBaseTitle is captured once, before any prefix is ever applied, so repeated calls never
 // stack "(3) (5) Etcher - Task Hub" on top of each other.
+// Keyboard access (audit M15, 2026-10-17). Clickable areas drawn as plain elements get a tab stop, and Enter or Space
+// clicks them; they get the button role unless they are table cells, rows or list items (their own role is kept). An
+// input with only a placeholder gets it as its accessible name. Applied to whatever is drawn, as it is drawn, so every
+// screen is covered without changing each one.
+const _KB_NATIVE='a,button,input,select,textarea,label,summary,option,iframe,[contenteditable="true"]';
+const _KB_KEEP_ROLE=new Set(['TR','TD','TH','LI']);
+function _kbEnhance(root){
+  if(!root||!root.querySelectorAll)return;
+  const els=root.matches&&root.matches('[onclick]')?[root,...root.querySelectorAll('[onclick]')]:[...root.querySelectorAll('[onclick]')];
+  for(const el of els){
+    if(el.hasAttribute('tabindex')||el.matches(_KB_NATIVE))continue;
+    if(/^\s*(event|e)\.stopPropagation\(\)\s*;?\s*$/.test(el.getAttribute('onclick')||''))continue;
+    if(el.querySelector(_KB_NATIVE))continue;   // it holds real controls of its own: those are the way in
+    el.setAttribute('tabindex','0');el.setAttribute('data-kb','1');
+    if(!el.hasAttribute('role')&&!_KB_KEEP_ROLE.has(el.tagName))el.setAttribute('role','button');
+  }
+  for(const i of root.querySelectorAll('input[placeholder]:not([aria-label]):not([aria-labelledby]),textarea[placeholder]:not([aria-label]):not([aria-labelledby])')){
+    if(!i.id||!document.querySelector('label[for="'+CSS.escape(i.id)+'"]'))i.setAttribute('aria-label',i.getAttribute('placeholder'));
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const el=e.target;
+  if(!el||!el.getAttribute||el.getAttribute('data-kb')!=='1'||!el.hasAttribute('onclick'))return;
+  e.preventDefault();el.click();
+});
+(function(){
+  let pending=new Set(),timer=null;
+  const flush=()=>{timer=null;const roots=[...pending];pending=new Set();roots.forEach(r=>{if(r.isConnected)_kbEnhance(r);});};
+  const start=()=>{
+    _kbEnhance(document.body);
+    new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)pending.add(n);if(pending.size&&!timer)timer=setTimeout(flush,30);})
+      .observe(document.body,{childList:true,subtree:true});
+  };
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
+// Tap targets (audit L3, 2026-10-17): on a touch screen, a clickable area under 32x32px is hard to hit. Measured at
+// runtime (so it covers every screen, not a guess from inline styles) and only ever grows an element, never shrinks
+// one. A colour swatch is left alone — its title is the hex code itself, never a human label, and a dense colour grid
+// (custom labels, board colours) is a deliberate, accepted pattern.
+function _ttIsSwatch(el){return/^#[0-9a-fA-F]{3,8}$/.test((el.getAttribute('title')||'').trim())||el.hasAttribute('data-swatch');}
+// Table cells and rows already have a decent-height click target from the row itself, and turning one into a flex
+// box would corrupt the table's layout — only their minimum height is raised, never their display or width.
+const _TT_TABLE=new Set(['TR','TD','TH']);
+function _ttEnhance(root){
+  if(!root||!root.querySelectorAll)return;
+  const cand=root.matches&&(root.matches('button,[onclick]'))?[root,...root.querySelectorAll('button,[onclick]')]:[...root.querySelectorAll('button,[onclick]')];
+  for(const el of cand){
+    if(el.hasAttribute('data-tt')||_ttIsSwatch(el))continue;
+    const r=el.getBoundingClientRect();
+    if(r.width<=0||r.height<=0)continue;   // not yet laid out or hidden; the observer will catch it once visible
+    el.setAttribute('data-tt','1');
+    // A button floating over other content (absolute or fixed position, e.g. a delete cross in a corner) is left at its
+    // size: growing it would cover what it floats over and turn a click on that content into a click on the button.
+    {const _pos=getComputedStyle(el).position;if(_pos==='absolute'||_pos==='fixed')continue;}
+    if(_TT_TABLE.has(el.tagName)){
+      // Table layout does not honour min-height on a row or a cell (a long-standing browser quirk), but it does
+      // honour height as a floor: content taller than it still grows the cell, content shorter does not shrink it.
+      if(r.height<32)for(const c of(el.tagName==='TR'?el.children:[el]))c.style.height='32px';
+      continue;
+    }
+    // A button inside a table cell (a dense column, often sized exactly for a small icon) only gets a taller hit
+    // area, never a wider one — growing its width could push it past its column and clip (mt-colresize-test guards
+    // against exactly this). Anywhere else, both dimensions grow.
+    const inCell=!!el.closest('td,th');
+    if(inCell){
+      if(r.height<32){
+        // min-height does nothing on a plain inline box (it ignores the block-direction size entirely);
+        // inline-block respects it without affecting how the button sits in its row.
+        if(getComputedStyle(el).display==='inline')el.style.display='inline-block';
+        el.style.minHeight='32px';
+      }
+    }else if(r.width<32||r.height<32){
+      const cs=getComputedStyle(el);
+      if(cs.display==='inline')el.style.display='inline-flex';
+      el.style.minWidth='32px';el.style.minHeight='32px';
+      if(!/center/.test(cs.alignItems))el.style.alignItems='center';
+      if(!/center/.test(cs.justifyContent))el.style.justifyContent='center';
+    }
+  }
+}
+(function(){
+  let pending=new Set(),timer=null;
+  const flush=()=>{timer=null;const roots=[...pending];pending=new Set();roots.forEach(r=>{if(r.isConnected)_ttEnhance(r);});};
+  const start=()=>{
+    _ttEnhance(document.body);
+    new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)pending.add(n);if(pending.size&&!timer)timer=setTimeout(flush,30);})
+      .observe(document.body,{childList:true,subtree:true});
+  };
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
 const _tabBaseTitle=document.title;
 let _faviconBaseHref=null,_faviconImg=null;
 function _updateTabNotifIndicator(unread){
@@ -7373,11 +7475,24 @@ function closeCreateWbForm(){
   const n=document.getElementById('new-wb-name');if(n)n.value='';
   const ex=document.getElementById('new-wb-exclude');if(ex)ex.checked=false;
 }
+// The board colours offered when creating a board (2026-10-17: 8 became 24, plus any colour from the "+" picker).
+const WB_COLOURS=[
+  ['#0d1c33','Navy'],['#31585a','Deep teal'],['#97bcbd','Teal'],['#475569','Slate'],['#94a3b8','Grey'],['#1d4ed8','Royal blue'],
+  ['#3b82f6','Blue'],['#0ea5e9','Sky'],['#06b6d4','Cyan'],['#14b8a6','Turquoise'],['#10b981','Emerald'],['#15803d','Forest'],
+  ['#84cc16','Lime'],['#eab308','Yellow'],['#f59e0b','Amber'],['#f97316','Orange'],['#c2410c','Rust'],['#ef4444','Red'],
+  ['#be123c','Crimson'],['#ec4899','Pink'],['#d946ef','Magenta'],['#8b5cf6','Purple'],['#6366f1','Indigo'],['#92400e','Brown'],
+];
 function selectWbColor(c){
+  // Only a plain #rrggbb colour is ever kept: it goes into style attributes across the app.
+  if(!/^#[0-9a-fA-F]{6}$/.test(String(c||'')))return;
+  c=c.toLowerCase();
   selectedWbColor=c;
-  document.querySelectorAll('[id^="wbc-"]').forEach(el=>{el.style.outline='none';el.style.transform='scale(1)';});
+  document.querySelectorAll('[id^="wbc-"]').forEach(el=>{el.style.outline='2px solid transparent';el.style.transform='scale(1)';});
   const sw=document.getElementById('wbc-'+c.replace('#',''));
+  const custom=document.getElementById('wbc-custom');
   if(sw){sw.style.outline='2px solid #97bcbd';sw.style.transform='scale(1.25)';}
+  else if(custom){custom.style.outline='2px solid #97bcbd';custom.style.background=c;custom.style.borderColor=c;}
+  if(sw&&custom){custom.style.background='';custom.style.borderColor='';}
 }
 function submitCreateWb(){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -7578,7 +7693,7 @@ function presenceSet(userId,dateStr,type,clientId,setBy){
   saveDB(DB);renderView('schedule');
 }
 function presenceRemove(userId,dateStr){
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   if(userId!==currentUser.id&&!isAdmin)return;
   DB.presenceEntries=(DB.presenceEntries||[]).filter(p=>!(p.userId===userId&&p.date===dateStr));
   saveDB(DB);renderView('schedule');
@@ -7613,7 +7728,7 @@ function _presenceDrop(e,dateStr){
   _presenceDragType=null;
   if(!type)return;
   _presencePendingDateStr=dateStr;_presencePendingType=type;_presencePendingIsShift=e.shiftKey;
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   if(isAdmin){_presencePickUser();}
   else{_presencePendingUserId=currentUser.id;_presencePendingSetBy=null;_presenceApplyPending();}
 }
@@ -7684,7 +7799,7 @@ function _presenceSvgIcon(type,size,color){
 function _renderPresenceDots(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return entries.map(p=>{
     const user=_presenceGetUser(p.userId);
     const col=user?getUserColor(user):'#97bcbd';
@@ -7703,7 +7818,7 @@ function _renderPresenceDots(dateStr){
 function _renderPresenceChips(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return entries.map(p=>{
     const user=_presenceGetUser(p.userId);
     const col=user?getUserColor(user):'#97bcbd';
@@ -7725,7 +7840,7 @@ function _renderPresenceChips(dateStr){
 function _renderPresenceListRows(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
     ${entries.map(p=>{
       const user=_presenceGetUser(p.userId);
@@ -8046,8 +8161,13 @@ function saveSchedEvent(existingId){
   const title=(document.getElementById('sched-title').value||'').trim();
   if(!title){showAlert('Title is required.','Validation');return;}
   const date=document.getElementById('sched-date').value;
+  if(!date){showAlert('Choose a date for the event.','Validation');return;}
   const endDate=(document.getElementById('sched-enddate')?.value||'').trim();
   if(endDate&&endDate<date){showAlert('End date cannot be before the start date.','Validation');return;}
+  {const _st=document.getElementById('sched-start').value,_et=document.getElementById('sched-end').value;
+   if((!endDate||endDate===date)&&_st&&_et&&_et<_st){showAlert('The end time cannot be before the start time.','Validation');return;}}
+  // Editing someone else's event used to make the editor its owner, so it left the real owner's calendar (audit M9).
+  const _prevEvt=existingId?(DB.scheduleEvents||[]).find(e=>e.id===existingId):null;
   if(!DB.scheduleEvents)DB.scheduleEvents=[];
   const attendees=DB.staff.filter(s=>{const el=document.getElementById('sched-att-'+s.id);return el&&el.checked;}).map(s=>s.id);
   const teamsEl=document.getElementById('sched-teams-link');
@@ -8061,14 +8181,14 @@ function saveSchedEvent(existingId){
     endTime:document.getElementById('sched-end').value,
     description:(document.getElementById('sched-desc').value||'').trim(),
     attendees,
-    ownerId:currentUser.id,
+    ownerId:(_prevEvt&&_prevEvt.ownerId)||currentUser.id,
     color:document.getElementById('sched-color').value,
     teamsLink:teamsEl?teamsEl.value.trim():'',
     updatedAt:new Date().toISOString(),   // the edit wins the merge instead of a colleague's older copy (audit H2, 2026-10-17)
   };
   if(existingId){
     const idx=DB.scheduleEvents.findIndex(e=>e.id===existingId);
-    if(idx>=0)DB.scheduleEvents[idx]=evt;else DB.scheduleEvents.push(evt);
+    if(idx>=0)DB.scheduleEvents[idx]={...DB.scheduleEvents[idx],...evt};else DB.scheduleEvents.push(evt);
   }else{DB.scheduleEvents.push(evt);}
   saveDB(DB);closeGenericModal();renderView('schedule');
 }
@@ -8782,7 +8902,7 @@ function renderDashboard(){
   const wbs=allWbs.filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
   const archivedWbs=allWbs.filter(wb=>wb.archived&&canViewBoard(currentUser,wb));
   const allTasks=DB.tasks;
-  const COLORS=['#0d1c33','#97bcbd','#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#f97316'];
+  const COLORS=WB_COLOURS.map(c=>c[0]);
 
   return`
   <!-- Email Triage + Personal Checklist — 2/3 + 1/3. minmax(0,...) rather than a bare
@@ -8828,10 +8948,15 @@ function renderDashboard(){
       </div>
       <div>
         <label class="form-label">Colour</label>
-        <div style="display:flex;gap:7px;align-items:center">
-          ${COLORS.map(c=>`<div id="wbc-${c.replace('#','')}" onclick="selectWbColor('${c}')"
-            style="width:22px;height:22px;border-radius:5px;background:${c};cursor:pointer;transition:transform 0.12s,outline 0.12s;outline:2px solid transparent;outline-offset:2px"
-            title="${c}"></div>`).join('')}
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:grid;grid-template-columns:repeat(12,18px);gap:5px">
+          ${WB_COLOURS.map(([c,n])=>`<div id="wbc-${c.replace('#','')}" onclick="selectWbColor('${c}')"
+            style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;transition:transform 0.12s,outline 0.12s;outline:2px solid transparent;outline-offset:2px"
+            title="${n}" aria-label="${n}"></div>`).join('')}
+          </div>
+          <label id="wbc-custom" title="Any colour" style="position:relative;width:24px;height:41px;border-radius:5px;border:1.5px dashed #c8d7e1;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#6b8399;outline:2px solid transparent;outline-offset:2px">+
+            <input id="wbc-custom-input" type="color" value="#0d1c33" aria-label="Any colour" oninput="selectWbColor(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0"/>
+          </label>
         </div>
       </div>
       <div>
@@ -10849,17 +10974,25 @@ function renderCapacity(){
 // ═══════════════════════════════════════════════════════════
 // CLIENT MANAGER
 // ═══════════════════════════════════════════════════════════
-function renderClients(){
-  const allRequests=(DB.clientWorkRequests||[]).slice().sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
-  const pendingCount=allRequests.filter(r=>r.status==='pending').length;
-
-  return`<div style="display:grid;gap:24px">
-    <div style="display:flex;justify-content:flex-end"><button onclick="openClientModal(null)" class="btn btn-primary">+ New Client</button></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-    ${DB.clients.map(c=>{
-      const clientTasks=DB.tasks.filter(t=>{const g=getGroup(t);return g&&g.clientId===c.id;});
-      const open=clientTasks.filter(t=>t.status!=='done').length;
-      const done=clientTasks.filter(t=>t.status==='done').length;
+// The Clients grid (audit M2, 2026-10-17): search by name, code or email; sort; archived clients hidden unless asked.
+// Open counts leave out finished and cancelled work.
+let clientsSearch='',clientsSort='name',clientsShowArchived=false;
+const _CLIENT_DONE=new Set(['done','completed','completed-approved']);
+function _clientTaskCounts(c){
+  const ts=DB.tasks.filter(t=>{if(t.archived)return false;const g=getGroup(t);return g&&g.clientId===c.id;});
+  return{ts,open:ts.filter(t=>!_CLIENT_DONE.has(t.status)&&t.status!=='cancelled').length,done:ts.filter(t=>_CLIENT_DONE.has(t.status)).length};
+}
+function _clientsGridHtml(){
+  const q=clientsSearch.trim().toLowerCase();
+  let list=(DB.clients||[]).filter(c=>clientsShowArchived||!c.archived);
+  if(q)list=list.filter(c=>[c.name,c.shortCode,c.loginEmail,c.contactEmail].some(v=>String(v||'').toLowerCase().includes(q)));
+  const counts=new Map(list.map(c=>[c.id,_clientTaskCounts(c)]));
+  const byName=(a,b)=>String(a.name||'').localeCompare(String(b.name||''));
+  list=list.slice().sort(clientsSort==='open'?(a,b)=>(counts.get(b.id).open-counts.get(a.id).open)||byName(a,b)
+    :clientsSort==='recent'?(a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))||byName(a,b):byName);
+  if(!list.length)return`<div class="card" style="text-align:center;padding:28px;color:#8da2b2;font-size:13px">${q?'No client matches "'+escHtml(clientsSearch.trim())+'".':'No clients yet.'}</div>`;
+  return`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(c=>{
+      const{ts:clientTasks,open,done}=counts.get(c.id);
       const pendingReqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===c.id&&r.status==='pending').length;
       return`<div style="background:#fff;border-radius:12px;border:1px solid #e2eaf2;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(13,28,51,0.05)">
         <div style="height:3px;background:${c.color}"></div>
@@ -10869,14 +11002,15 @@ function renderClients(){
             :`<div style="width:48px;height:48px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-family:'Jost',sans-serif;font-size:20px;font-weight:800;color:${c.color}">${(c.name||'?')[0].toUpperCase()}</span></div>`
           }
           <div style="flex:1;min-width:0">
-            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.name)}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.name)}${c.archived?' <span style="font-size:10px;font-weight:700;color:#6b8399;background:#f1f5f9;padding:1px 6px;border-radius:8px">Archived</span>':''}</div>
             <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}${c.loginEmail?` · ${escHtml(c.loginEmail)}`:''}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
             ${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}
             <div style="display:flex;gap:4px">
               <button onclick="openClientModal('${c.id}')" class="btn btn-ghost btn-sm">Edit</button>
-              <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm">✕</button>
+              ${c.archived?`<button onclick="clientSetArchived('${c.id}',false)" class="btn btn-ghost btn-sm">Restore</button>`:`<button onclick="clientSetArchived('${c.id}',true)" class="btn btn-ghost btn-sm" title="Hide this client from the list. Nothing is deleted.">Archive</button>`}
+              <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm" aria-label="Delete client">✕</button>
             </div>
           </div>
         </div>
@@ -10895,8 +11029,32 @@ function renderClients(){
           </div>
         </div>
       </div>`;
-    }).join('')}
+  }).join('')}</div>`;
+}
+function _clientsRegrid(){const g=document.getElementById('clients-grid');if(g)g.innerHTML=_clientsGridHtml();else renderView('clients');}
+let _clientsSearchTimer=null;
+function _clientsSearchInput(v){clientsSearch=v;clearTimeout(_clientsSearchTimer);_clientsSearchTimer=setTimeout(_clientsRegrid,150);}
+// Archive retires a client without deleting anything; Restore brings it back.
+function clientSetArchived(id,archived){
+  if(currentUser?.role!=='admin'){showAlert('Only admins can archive clients.');return;}
+  const c=(DB.clients||[]).find(x=>x.id===id);if(!c)return;
+  c.archived=!!archived;c.updatedAt=new Date().toISOString();
+  writeAuditEvent('Client',id,archived?'archived':'restored',null,{title:c.name});
+  saveDB(DB);renderView('clients');
+}
+function renderClients(){
+  const allRequests=(DB.clientWorkRequests||[]).slice().sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+  const pendingCount=allRequests.filter(r=>r.status==='pending').length;
+
+  const _archivedN=(DB.clients||[]).filter(c=>c.archived).length;
+  return`<div style="display:grid;gap:24px">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <input id="clients-search" type="search" class="form-input" placeholder="Search clients" aria-label="Search clients" value="${escHtml(clientsSearch)}" oninput="_clientsSearchInput(this.value)" style="flex:1;min-width:180px;max-width:320px"/>
+      <select id="clients-sort" class="form-input" aria-label="Sort clients" onchange="clientsSort=this.value;_clientsRegrid()" style="width:auto">${[['name','Name A to Z'],['open','Most open work'],['recent','Recently added']].map(([v,l])=>`<option value="${v}" ${clientsSort===v?'selected':''}>${l}</option>`).join('')}</select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b8399;cursor:pointer"><input id="clients-show-archived" type="checkbox" ${clientsShowArchived?'checked':''} onchange="clientsShowArchived=this.checked;_clientsRegrid()"/> Show archived${_archivedN?' ('+_archivedN+')':''}</label>
+      <button onclick="openClientModal(null)" class="btn btn-primary" style="margin-left:auto">+ New Client</button>
     </div>
+    <div id="clients-grid">${_clientsGridHtml()}</div>
 
     <!-- Work Requests panel -->
     <div>
@@ -12091,6 +12249,8 @@ function openEditTimeEntry(id){
 function saveEditTimeEntry(id){
   const e=DB.timeEntries.find(x=>x.id===id);
   if(!e){showAlert('Entry not found.');return;}
+  // Checked again at save: the entry may have been approved while this form was open (audit M11, 2026-10-17).
+  if(e.status==='approved'){showAlert('This entry was approved while the form was open, so it can no longer be edited.','Already Approved');return;}
   const hours=parseFloat(document.getElementById('ete-hours')?.value||'0');
   const date=document.getElementById('ete-date')?.value;
   if(!date){showAlert('Date is required.','Validation');return;}
@@ -17866,24 +18026,44 @@ const NOTIF_TYPES={
 // Central notification creator — never self-notifies.
 function notify(recipientId, taskId, type, message){
   if(!recipientId||recipientId===currentUser?.id)return;
+  // Not for someone who has left, nor about a task they cannot open (audit M12, 2026-10-17).
+  const _who=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
+  if(_who&&_who.active===false)return;
+  if(_who&&taskId){const _t=(DB.tasks||[]).find(t=>t.id===taskId);if(_t&&!canViewTask(_who,_t))return;}
   if(!DB.notifications)DB.notifications=[];
   DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
   updateNotifBadge();
   // Email for high-value types (fire-and-forget, never blocks UI)
   const _emailTypes=['mention','task_assigned','owner_changed','currently_with'];
   if(_emailTypes.includes(type)){
-    const _rec=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
-    if(_rec?.email){
-      // notify-email is staff-only (api/_authAdmin.js requireStaffCaller). A client session never
-      // gets here: its slice holds no users, and portal emails are sent by portal-action.js.
-      // _adminApiAuthHeaders resolves to {} with no session/offline; the endpoint then refuses.
-      // no-op'ing, matching how invite-user/set-password already behave unconfigured.
-      _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
-        body:JSON.stringify({to:_rec.email,recipientName:_rec.name,type,message,
-          senderName:currentUser?.name||'Etcher Team',taskId})
-      }).catch(()=>{}));
-    }
+    // notify-email is staff-only (api/_authAdmin.js requireStaffCaller). A client session never gets here: its slice
+    // holds no users, and portal emails are sent by portal-action.js.
+    if(_who?.email)_queueNotifyEmail(_who,type,message,taskId);
   }
+}
+// Notification emails are gathered for two seconds and sent as one per person, so a bulk action sends one email instead
+// of one per task (audit M12, 2026-10-17). The endpoint takes at most 300 characters.
+let _neQueue=new Map(),_neTimer=null;
+function _queueNotifyEmail(rec,type,message,taskId){
+  const q=_neQueue.get(rec.id)||{rec,items:[]};
+  q.items.push({type,message:String(message||''),taskId});_neQueue.set(rec.id,q);
+  if(!_neTimer)_neTimer=setTimeout(_flushNotifyEmails,2000);
+}
+function _flushNotifyEmails(){
+  _neTimer=null;const batch=[..._neQueue.values()];_neQueue=new Map();
+  batch.forEach(({rec,items})=>{
+    const first=items[0];
+    let message=first.message;
+    if(items.length>1){
+      const tail='. Open Task Hub to see the other '+(items.length-1)+'.';
+      message=items.length+' updates in Task Hub. First: '+first.message;
+      if(message.length+tail.length>300)message=message.slice(0,300-tail.length-1)+'…';
+      message+=tail;
+    }else if(message.length>300)message=message.slice(0,299)+'…';
+    _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
+      body:JSON.stringify({to:rec.email,recipientName:rec.name,type:first.type,message,senderName:currentUser?.name||'Etcher Team',taskId:items.length===1?first.taskId:null})
+    }).catch(()=>{}));
+  });
 }
 // Notify the people a freshly created task was assigned to. Covers the inline-add
 // paths (board "+ item" row, paste-multiline, inline subtask) which used to push a
@@ -18799,6 +18979,39 @@ function _cascadeSentence(lead,extraParts,c){
   if(c.entriesToReview)msg+=` ${c.entriesToReview} time ${c.entriesToReview!==1?'entries':'entry'} not yet approved will be kept too, so ${c.entriesToReview!==1?'they':'it'} can still be approved or rejected.`;
   return msg+' This cannot be undone.';
 }
+// What a client leaves behind besides its groups and tasks (audit M1, 2026-10-17). A board left with nothing else on it
+// goes to Archive & Bin; a board that still holds other work stays, without the client. Its client notes (which can hold
+// passwords) and its work requests are deleted.
+function _clientLeftovers(id){
+  const boards=(DB.boards||[]).filter(b=>b.clientId===id);
+  const other=b=>(DB.groups||[]).some(g=>(g.boardId||g.workboardId)===b.id&&g.clientId!==id);
+  const archive=boards.filter(b=>!other(b)),unlink=boards.filter(other);
+  const notes=(DB.clientNotes||[]).filter(n=>n.clientId===id);
+  const requests=(DB.clientWorkRequests||[]).filter(r=>r.clientId===id);
+  const parts=[];
+  if(archive.length)parts.push(archive.length+' board'+(archive.length!==1?'s':'')+' will move to Archive & Bin.');
+  if(unlink.length)parts.push(unlink.length+' board'+(unlink.length!==1?'s':'')+' will stay, with no client, because '+(unlink.length!==1?'they hold':'it holds')+' other work.');
+  const del=[];
+  if(notes.some(n=>(n.sections||[]).length))del.push('its client notes');
+  if(requests.length)del.push(requests.length+' work request'+(requests.length!==1?'s':''));
+  if(del.length){const t=del.join(' and ');parts.push(t.charAt(0).toUpperCase()+t.slice(1)+' will be deleted.');}
+  return{archive,unlink,notes,requests,text:parts.join(' ')};
+}
+function _removeClientLeftovers(id){
+  const lo=_clientLeftovers(id),now=new Date().toISOString();
+  lo.archive.forEach(b=>{b.archived=true;b.clientId=null;b.updatedAt=now;});
+  lo.unlink.forEach(b=>{b.clientId=null;b.updatedAt=now;});
+  if(lo.notes.length){
+    const ids=lo.notes.flatMap(n=>(n.sections||[]).map(x=>x.id));
+    (DB.deletedNoteSectionIds=DB.deletedNoteSectionIds||[]).push(...ids);
+    DB.clientNotes=(DB.clientNotes||[]).filter(n=>n.clientId!==id);
+  }
+  if(lo.requests.length){
+    (DB.deletedWorkRequestIds=DB.deletedWorkRequestIds||[]).push(...lo.requests.map(r=>r.id));
+    DB.clientWorkRequests=(DB.clientWorkRequests||[]).filter(r=>r.clientId!==id);
+  }
+  return lo;
+}
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   // Deleting a client cascades to every one of its groups and tasks (and everything under
@@ -18839,6 +19052,7 @@ function confirmDelete(type, id){
       msg=msg.replace(/ \d+ time entr(?:y|ies) not yet approved will be kept too, so (?:they|it) can still be approved or rejected\./,
         ` ${c.entriesToReview} time ${c.entriesToReview!==1?'entries':'entry'} not yet approved will be kept too, so ${c.entriesToReview!==1?'they':'it'} can still be approved or rejected, but with the client gone ${c.entriesToReview!==1?'they':'it'} can no longer be invoiced or reported against.`);
     }
+    {const _lo=_clientLeftovers(id);if(_lo.text)msg+=' '+_lo.text;}
   }
   if(type==='task'){
     // This used to delete immediately, bypassing the confirm modal below entirely — one
@@ -18863,6 +19077,7 @@ function confirmDelete(type, id){
       {const _cl=DB.clients.find(c=>c.id===id);writeAuditEvent('Client',id,'deleted',{name:_cl?_cl.name:id,tasks:ids.size,groups:DB.groups.filter(g=>g.clientId===id).length},null);}
       _cascadeDeleteTasks(ids,{quiet:true});
       {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.clientId!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
+      _removeClientLeftovers(id);
       DB.clients=DB.clients.filter(c=>c.id!==id);
       // Track deleted client IDs so realtime merge can't restore them
       (DB.deletedClientIds=DB.deletedClientIds||[]).push(id);
@@ -21722,7 +21937,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         ${hasChildren&&!isSubitem
           // A parent's progress is really the shape of its children — show the composition
           // rather than an average that flattens "blocked" and "not started" into one 0%.
-          ?`${statusMixBar(getTaskStatusMix(t.id),40)}<span style="font-size:11px;color:#6b8399">${effectivePct}%</span>`
+          ?`${statusMixBar(getTaskStatusMix(t.id),40)}${effectivePct===0?'<span style="font-size:12px;color:#d4dde8" title="Not started">—</span>':'<span style="font-size:11px;color:#6b8399">'+effectivePct+'%</span>'}`
           :isDone
           // The green "Completed" status chip already says this; a green bar and "100%"
           // beside it is the same fact three times.
@@ -23806,9 +24021,15 @@ function tpAddComment(){
 
 function tpDeleteComment(commentId){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  {const _before=DB.comments;DB.comments=DB.comments.filter(c=>c.id!==commentId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-  saveDB(DB);
-  tpShowTab('details');
+  const c=(DB.comments||[]).find(x=>x.id===commentId);
+  if(!c)return;
+  // Only the author or an admin, checked here and not only by hiding the button (audit M17, 2026-10-17).
+  if(!(currentUser.id===c.authorId||currentUser.role==='admin'))return;
+  openConfirm('Delete Comment','Delete this comment? This cannot be undone.','Delete',()=>{
+    {const _before=DB.comments;DB.comments=DB.comments.filter(x=>x.id!==commentId);_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
+    saveDB(DB);closeConfirm();
+    tpShowTab('details');
+  });
 }
 function tpReplyToComment(authorName){
   const inp=document.getElementById('tp-comment-input');
@@ -24141,8 +24362,10 @@ function _checkRecurringTasks(){
         createdAt:_now,
         updatedAt:_now,
       };
-      if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
-      if(!r.copySameBoard){newTask.boardId=source.boardId||null;newTask.workboardId=source.workboardId||null;newTask.groupId=source.groupId||null;}
+      // "Same assignee"/"Same board" off used to have no real effect: assignees stayed when the owner cleared, and
+      // "not the same board" copied the source's board anyway (audit L2, 2026-10-17).
+      if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;newTask.assigneeIds=[];}
+      if(!r.copySameBoard){newTask.boardId=null;newTask.workboardId=null;newTask.groupId=null;}
       if(!r.copySamePriority)newTask.priority='med';
       if(!r.copySameDescription)newTask.description='';
       DB.tasks.push(newTask);
@@ -25505,13 +25728,30 @@ function wsAddCustomLabel(fieldType){
   const body=document.getElementById('ws-cell-dd-body');
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
 }
+// Asks first, and moves the tasks that use the label to To Do (or Medium) instead of leaving them on a raw key
+// (audit M13, 2026-10-17).
 function wsDeleteCustomLabel(fieldType,key){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  const ns=fieldType==='status'?'statuses':'priorities';
-  _lcForget(ns,key);
-  saveDB(DB);
-  const body=document.getElementById('ws-cell-dd-body');
-  if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
+  const isSt=fieldType==='status';
+  const ns=isSt?'statuses':'priorities',field=isSt?'status':'priority',fallback=isSt?'todo':'med';
+  const name=(DB.labelConfig&&DB.labelConfig[ns]&&DB.labelConfig[ns][key]&&DB.labelConfig[ns][key].label)||'this label';
+  const fbName=isSt?((typeof getStatusMeta==='function'&&getStatusMeta('todo')?.label)||'To Do'):((PRIO_META.med&&PRIO_META.med.label)||'Medium');
+  const n=(DB.tasks||[]).filter(t=>t[field]===key).length;
+  const msg='Delete "'+name+'"? '+(n?n+' task'+(n!==1?'s use it and':' uses it and')+' will move to '+fbName+'.':'No task uses it.');
+  openConfirm('Delete '+(isSt?'Status':'Priority'),msg,'Delete',()=>{
+    const now=new Date().toISOString();
+    (DB.tasks||[]).forEach(t=>{
+      if(t[field]!==key)return;
+      t[field]=fallback;
+      if(isSt&&typeof _applyStatusProgress==='function')_applyStatusProgress(t,fallback,key);
+      t.updatedAt=now;
+    });
+    _lcForget(ns,key);
+    saveDB(DB);closeConfirm();
+    const body=document.getElementById('ws-cell-dd-body');
+    if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
+    renderView(currentView);
+  });
 }
 
 // ── Inline name editing ──

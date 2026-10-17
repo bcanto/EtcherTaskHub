@@ -52,7 +52,7 @@ const ok = (c, m) => (c ? pass : fail).push(m);
     r = await run("_lcSet('statuses','todo',{color:'#0f766e',bg:'#ccfbf1',dot:'#2dd4bf'});", 'status', 'todo');
     ok(r.c.color === '#0f766e' && r.i.color === '#0f766e', 'and customising it again afterwards still works: the new colour is newer than the reset (' + r.c.color + ' / ' + r.i.color + ')');
     // Deleting.
-    r = await run("wsDeleteCustomLabel('priority',key);", 'priority', prioKey);
+    r = await run("wsDeleteCustomLabel('priority',key);document.getElementById('confirm-ok-btn').click();", 'priority', prioKey);   // deleting a label now asks first (audit M13)
     ok(!r.c.all && !r.i.all, 'a deleted custom priority stays deleted after a colleague\'s save in both directions (' + r.c.all + ' / ' + r.i.all + ')');
     const tomb = await p.evaluate(k => (DB.deletedLabels || {})['priorities:' + k], prioKey);
     ok(typeof tomb === 'string' && tomb.length > 10, 'and the delete is remembered with its time');

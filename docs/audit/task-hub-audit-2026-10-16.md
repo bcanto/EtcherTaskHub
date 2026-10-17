@@ -289,6 +289,55 @@ All four are fixed as described above; the text below is the original finding.
 | M16 | A 744 KB logo is preloaded on every page load to show at 28 to 96 px. The 570 KB ISO module loads for every user even with ISO off (Branch). | Slower first load, especially on phones. | `index.html:30`; the ISO `<script>` tags | Export a small logo (under 30 KB). Load ISO only when enabled. |
 | M17 | Comment delete has no confirmation, and the function does not re-check the author (the button is only shown to the author or an admin). Live. | One click permanently removes a comment. | `tpDeleteComment` `index.html:23385` | Confirm, and check the author in the function. |
 
+### Update, 17 October (later): the medium priority items are fixed
+
+Three commits on branch `medium-fixes`, built on top of `high-fixes` (which already carries `deploy-batch`), so they
+can be deployed in one step with everything before them or on their own. Ported to `retained-services` after its own
+gate is clean.
+
+| # | What changed | Evidence |
+|---|---|---|
+| M1 | Deleting a client deals with what it leaves behind, and says so: a board with nothing else on it is archived, a board holding other work stays without the client, its client notes and work requests are deleted (remembered as deleted, so an older copy merging in cannot bring them back). | `med-a-test` 25 checks, can-fail 18/18 |
+| M2 | Clients has search (name, code or email), sort (name, most open work, recently added) and Archive / Restore. Counts leave out finished and cancelled work. | `med-b-test` 19 checks, can-fail 18/18 |
+| M3 | A `pm` login (valid on the server, no screen knew it) signs in as staff instead of seeing nothing. | `med-a-test` |
+| M4 | Sign-in links a login to a staff record by its stored id or email only, never by display name, and never takes over a record already linked to another login. | `med-a-test` |
+| M5 | Not yet done: needs a read-only `pg_get_functiondef` query from you (the Why column of the report item). | open |
+| M6 | Already safe: the quote number was already passed through `escHtml` and read from an input's value, never built into an inline handler. Kept covered by `med-a-test`. | `med-a-test` |
+| M7 | `api/upload-state.js`, which could overwrite the whole record with one call behind a single shared secret, is removed. Nothing called it. | — |
+| M8 | Already fixed in the critical batch (17 October, earlier): the user id is validated as a UUID and the server enforces at least 8 characters. | — |
+| M9 | Editing a colleague's calendar event keeps them as its owner; a date is required; an event cannot end before it starts. | `med-a-test` |
+| M10 | Already fixed with H9 (search is debounced). | — |
+| M11 | An entry approved while its edit form was open can no longer be changed; checked again at save. | `med-a-test` |
+| M12 | No notification for someone who has left or about a task they cannot open. Notification emails are gathered for two seconds and sent as one per person, cut to what the email service accepts. | `med-b-test` |
+| M13 | Deleting a custom status or priority asks first and moves its tasks to To Do or Medium instead of leaving them on a raw key. | `med-a-test` |
+| M14 | Client Notes stacks its three columns below 760px, as the portal already did. | `med-b-test` |
+| M15 | Every clickable area on every screen gets a tab stop and opens with Enter or Space; placeholder-only inputs get an accessible name. | `med-b-test` |
+| M16 | The logo preloaded on every page is 18 KB instead of 744 KB (the favicon likewise, 17 KB instead of 147 KB). Full-size files kept for PDFs. ISO's own load-only-when-enabled is already true on `retained-services`, where ISO lives. | `med-b-test` |
+| M17 | Deleting a comment asks first, and only its author or an admin can, checked in the function itself rather than only by hiding the button. | `med-a-test` |
+
+Also while in the area, a request from you: Create WorkBoard now offers 24 colours (the original 8 kept) plus a "+"
+picker for any colour, and the WorkBoards header no longer runs 12px off a phone screen. `wb-colours-test` 7 checks,
+can-fail 4/4.
+
+**Regression testing.** `medium-fixes`: 69 suites, 1,587 checks, 0 failures (one suite needed a one-line update: its
+scripted delete of a custom label now has to click the new confirmation, same as a person would).
+
+### Update, 17 October (later still): the low priority items are fixed
+
+One commit on branch `medium-fixes`, on top of the batch above.
+
+| # | What changed | Evidence |
+|---|---|---|
+| L1 | A parent row whose sub-items are all not-started shows a dash, like every other not-started row, instead of "0%" next to "0/3". | `low-test` 15 checks, can-fail 10/10 |
+| L2 | Recurring tasks: "Same board" off used to have no effect (it copied the source's board regardless, which was already the default); it now clears the board. "Same assignee" off cleared the owner but left the other assignees in place; it now clears them too. | `low-test` |
+| L3 | A clickable area under 32x32px is grown to that size at runtime, on every screen. A colour swatch (its title is the hex code, not a label) is left at its real size, since a dense colour grid is a deliberate pattern, not an accident. | `low-test` |
+| L4 | "director" is not a role the server or anything else issues; the five checks for it were dead code, now removed. | `low-test` |
+| L5 | Documented rather than built: there is no database table behind the MCP connector by design, so a denylist would be a table added purely for this. `api/_mcpAuth.js` now spells out the two things that can be revoked today (the whole secret, or one person's access to new tokens) and the gap (one lost device, on its own, until its token expires). | — |
+| L6 | The production placeholder for the email intake endpoint answered 200 with an empty list forever, defeating the app's own circuit breaker (built to stop polling after one 404). It now answers 404 until the real service exists. | `low-test` |
+| L7 | Not changed here: covered by the SSO plan (`docs/iso-audit/sso-https-plan.md`), which is part of the ISO / Retained Services release, not this batch. | open, tracked in the SSO plan |
+
+**Regression testing.** `medium-fixes`: 70 suites, 1,607 checks, 0 failures (`iso-import-test` does not apply on `main`, which has no ISO files). The full gate caught two problems in the tap-target fix, both fixed before deployment: a button in a narrow table column could be pushed past it (it now only grows taller there), and the note box's delete cross grew over the corner of the note (a button floating over other content is never grown). Deployed 18 October (`67a4b16`); the live site was checked byte for byte.
+
 ## Low priority improvements
 
 | # | Issue | Benefit | Recommended enhancement |
@@ -331,13 +380,13 @@ All four are fixed as described above; the text below is the original finding.
 
 | | Count |
 |---|---|
-| Fixed during this audit | 22 (F1 to F7, C1 to C4 and H1 to H11) |
+| Fixed during this audit | 44 (F1 to F7, C1 to C4, H1 to H11, M1 to M4 and M6 to M17, L1 to L6) |
 | Critical | 4 (all fixed 17 October) |
 | High | 11 (all fixed 17 October) |
-| Medium | 17 |
-| Low | 7 |
+| Medium | 17 (16 fixed 17 October; M5 needs one query from you) |
+| Low | 7 (6 fixed 17 October; L7 is in the SSO plan) |
 | Technical debt items | 7 |
-| **Total issues found** | **46**: 22 fixed, 24 open (none critical or high), plus 7 technical debt items |
+| **Total issues found** | **46**: 44 fixed, 2 open (M5, L7; neither critical nor high), plus 7 technical debt items |
 
 **Checked and found sound:**
 - Every button on 18 views clicked (435 controls) with no script error, and every view opens without errors.
@@ -354,14 +403,14 @@ All four are fixed as described above; the text below is the original finding.
 **Estimated effort to resolve:**
 - Critical: done.
 - High: done.
-- Medium: 5 to 7 days.
-- Low: 1 to 2 days.
+- Medium: done, except M5 (waiting on one query from you).
+- Low: done, except L7 (the SSO plan).
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
 **Recommended deployment order:**
 1. **Now:** `deploy-batch` (C1 to C4, `client-add-fix` and `notif-board-fix` merged; 55 suites clean), or each of those three branches on its own. Then apply migration `016_inactive_accounts_lose_access.sql` yourself.
 2. **Then:** `high-fixes` (H1 to H11, on top of `deploy-batch`; 66 suites clean). It can go in one step with the first, or later. Apply migration `017_audit_log_signed_in_insert.sql` yourself when you want the app's own events in the permanent trail.
-3. **Medium items:** M1 to M17 (M3, M4, M5, M7, M8 are quick). Then plan T1 and T2.
+3. **Then:** `medium-fixes` (M and L items, on top of `high-fixes`; 70 suites clean). It can go in one step with the above. M5 still needs a query from you; L7 is covered by the SSO plan. Then plan T1 and T2.
 4. **The ISO / Retained Services release** (`retained-services`, which already carries everything above): after its migrations and the SSO plan.
 
 Each batch gets its own tests (each proven able to fail) and a clean full gate before it is offered for deployment.
