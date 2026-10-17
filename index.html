@@ -6313,6 +6313,9 @@ function _ttEnhance(root){
     const r=el.getBoundingClientRect();
     if(r.width<=0||r.height<=0)continue;   // not yet laid out or hidden; the observer will catch it once visible
     el.setAttribute('data-tt','1');
+    // A button floating over other content (absolute or fixed position, e.g. a delete cross in a corner) is left at its
+    // size: growing it would cover what it floats over and turn a click on that content into a click on the button.
+    {const _pos=getComputedStyle(el).position;if(_pos==='absolute'||_pos==='fixed')continue;}
     if(_TT_TABLE.has(el.tagName)){
       // Table layout does not honour min-height on a row or a cell (a long-standing browser quirk), but it does
       // honour height as a floor: content taller than it still grows the cell, content shorter does not shrink it.
