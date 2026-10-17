@@ -18104,11 +18104,21 @@ async function wsSendComms(){
   const body=(input?.value||'').trim();
   if(!body&&wsCommsFiles.length===0)return;
   const attachments=[];
+  // Files go to file storage, like task files, and the record keeps only a reference. They used to be saved as text inside
+  // the record: a 4 MB file added about 5.3 MB to every save and to every person's local copy (audit H10, 2026-10-17).
+  // Where file storage is not available (offline, or the upload fails) the bytes stay in this browser's own file store.
+  const storageOn=_staffStorageOn();
   for(const file of wsCommsFiles){
-    if(file.size>4*1024*1024){showAlert(`"${file.name}" is over 4 MB — skipped to protect storage.`,'File Too Large');continue;}
+    const fid='cf'+uid();
+    if(storageOn&&file.size<=10*1024*1024){
+      const storagePath=await _storageUpload('comms',fid,file);
+      if(storagePath){attachments.push({id:fid,name:file.name,type:file.type,size:file.size,storagePath});continue;}
+    }
+    if(file.size>4*1024*1024){showAlert(storageOn&&file.size<=10*1024*1024?`"${file.name}" could not be uploaded. Files over 4 MB need file storage to be reachable — try again in a moment.`:`"${file.name}" is over ${storageOn?10:4} MB — skipped.`,'File Too Large');continue;}
     const data=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
     if(!data){showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');continue;}
-    attachments.push({name:file.name,type:file.type,data});
+    if(!_saveFileData(fid,data)){showAlert(`"${file.name}" could not be saved — this browser's storage is full.`,'Storage Full');continue;}
+    attachments.push({id:fid,name:file.name,type:file.type,size:file.size,stored:true});
   }
   if(!DB.internalComms)DB.internalComms=[];
   DB.internalComms.push({id:uid(),authorId:currentUser.id,body,attachments,timestamp:new Date().toISOString()});
@@ -18117,6 +18127,18 @@ async function wsSendComms(){
   setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);
 }
 const _BLOCKED_MIME=new Set(['image/svg+xml','text/html','application/xhtml+xml','text/xml','application/xml']);
+// Opens a comms attachment: from file storage, from this browser's own store, or (for messages sent before this fix)
+// from the text stored in the record.
+async function wsOpenCommsFile(msgId,idx){
+  const m=(DB.internalComms||[]).find(x=>x.id===msgId);const att=m&&(m.attachments||[])[idx];
+  if(!att)return;
+  if(att.data){if(_safeDataHref(att.data)==='#'){showAlert('This attachment cannot be opened.','Attachment');return;}_clickDownload(att.data,att.name);return;}
+  const local=att.id&&_getFileData(att.id);
+  if(local){_clickDownload(local,att.name);return;}
+  if(!att.storagePath){showAlert('This file was sent from another browser before file storage was set up, so only that browser can open it.','File not on this device');return;}
+  try{_clickDownload(await _storageSignedUrl(att.storagePath,att.name),att.name);}
+  catch(e){showAlert('Could not download the file. Please try again.','Download failed');}
+}
 function wsHandleAttachments(input){
   const blocked=Array.from(input.files).filter(f=>_BLOCKED_MIME.has(f.type)||(f.name.match(/\.(svg|html?|xml)$/i)));
   if(blocked.length){showToast(`File type not allowed: ${blocked.map(f=>f.name).join(', ')}`,'error');input.value='';return;}
@@ -18135,6 +18157,8 @@ function wsRefreshFileList(){
 function wsDeleteComms(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const _before=DB.internalComms;
+  // Its files go with it: from file storage and from this browser's store.
+  ((_before||[]).find(m=>m.id===id)?.attachments||[]).forEach(a=>{if(a.storagePath)_storageRemove(a.storagePath);if(a.id)_deleteFileData(a.id);});
   DB.internalComms=(DB.internalComms||[]).filter(m=>m.id!==id);
   _tombstoneRemoved(_before,DB.internalComms,'deletedInternalCommsIds');
   saveDB(DB);renderView('workspace');setTimeout(()=>{const t=document.getElementById('comms-thread');if(t)t.scrollTop=t.scrollHeight;},60);
@@ -18184,8 +18208,8 @@ function renderCommsThreadTab(msgs){
                 </div>
                 ${m.body?`<div class="clamp-body" style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;word-break:break-word">${escHtml(m.body)}</div>`:''}
                 ${(m.attachments||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-                  ${m.attachments.map(att=>`
-                  <a href="${att.data}" download="${escHtml(att.name)}" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#f0f4f8;border-radius:6px;font-size:11px;color:#1d4ed8;text-decoration:none;border:1px solid #e2eaf2;max-width:160px" title="${escHtml(att.name)}">
+                  ${m.attachments.map((att,ai)=>`
+                  <a ${att.data?`href="${_safeDataHref(att.data)}" download="${escHtml(att.name)}"`:`href="#" onclick="event.preventDefault();wsOpenCommsFile('${m.id}',${ai})"`} style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#f0f4f8;border-radius:6px;font-size:11px;color:#1d4ed8;text-decoration:none;border:1px solid #e2eaf2;max-width:160px" title="${escHtml(att.name)}">
                     <span style="flex-shrink:0;display:inline-flex;align-items:center">${att.type?.startsWith('image/')?`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`}</span>
                     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(att.name)}</span>
                   </a>`).join('')}
