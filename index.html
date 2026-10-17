@@ -2448,6 +2448,14 @@ function _applyCompatAliases(data){
       t.currentlyWith=t.currentlyWithType==='client'?'client':(t.currentlyWithUserId||'');
     }
   });
+  // Sub-items saved without a board id (every sub-item add until 2026-10-16) take their parent's,
+  // else their group's. Not stamped: every copy repairs itself the same way on load.
+  {
+    const _gBoard=new Map((data.groups||[]).map(g=>[g.id,g.boardId||g.workboardId||null]));
+    const _byId=new Map((data.tasks||[]).map(t=>[t.id,t]));
+    const _boardOf=(t,d)=>t.boardId||t.workboardId||(d<5&&t.parentTaskId&&_byId.has(t.parentTaskId)?_boardOf(_byId.get(t.parentTaskId),d+1):null)||_gBoard.get(t.groupId)||null;
+    (data.tasks||[]).forEach(t=>{if(!t.boardId&&!t.workboardId){const b=_boardOf(t,0);if(b){t.boardId=b;t.workboardId=b;}}});
+  }
   // Ensure every checklist item has both text and title
   (data.checklistItems||[]).forEach(ci=>{
     if(!ci.title&&ci.text)  ci.title=ci.text;
@@ -4524,8 +4532,11 @@ function _deepLinkOpenTask(taskId){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task){showAlert('That task could not be found — it may have been deleted.');return;}
   if(!canViewTask(currentUser,task)){showAlert('You do not have access to this task.');return;}
-  const boardId=task.boardId||task.workboardId;
-  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId))openWorkboard(boardId);
+  const boardId=_taskBoardId(task);
+  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId)){
+    openWorkboard(boardId);
+    if(currentWorkboard?.id!==boardId)return;
+  }
   else{wsCollapsed=new Set();if(currentView!=='workspace')navigate('workspace');}
   activeFilters=freshFilters();saveFilters();
   wsMtSearch='';wsMtPersonFilter='';
@@ -5925,15 +5936,17 @@ function requireClientScopedAccess(user,clientId){ assertClientCanAccessClientDa
 // ── Predicate helpers (return boolean, never throw) ──────────
 // Resolve the board a task belongs to. Subitems carry no boardId of their own, so fall
 // back to the group, then to the parent task.
-function _taskBoardId(t){
+function _taskBoardId(t,_depth=0){
   if(!t)return null;
   if(t.boardId||t.workboardId)return t.boardId||t.workboardId;
+  // A sub-item sits under its parent, so the parent's board is the one it is shown on.
+  if(t.parentTaskId&&_depth<5){
+    const p=(DB.tasks||[]).find(x=>x.id===t.parentTaskId);
+    const pb=p?_taskBoardId(p,_depth+1):null;
+    if(pb)return pb;
+  }
   const g=(DB.groups||[]).find(g=>g.id===t.groupId);
   if(g&&(g.boardId||g.workboardId))return g.boardId||g.workboardId;
-  if(t.parentTaskId){
-    const p=(DB.tasks||[]).find(x=>x.id===t.parentTaskId);
-    if(p)return p.boardId||p.workboardId||null;
-  }
   return null;
 }
 // A task hidden from the client, or a subtask of one — checked in both getClientTasks (the
@@ -16474,8 +16487,14 @@ function notifGoToTask(notifId,taskId,tab){
   notifMarkRead(notifId);
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task){openTaskPanel(taskId,tab);return;}
-  const boardId=task.boardId||task.workboardId;
-  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId))openWorkboard(boardId);
+  // _taskBoardId, not the task's own id: sub-items were saved without one, so a notification
+  // about a sub-item stayed on whatever board was open and the panel opened over the wrong
+  // board (2026-10-16).
+  const boardId=_taskBoardId(task);
+  if(boardId&&(!currentWorkboard||currentWorkboard.id!==boardId)){
+    openWorkboard(boardId);
+    if(currentWorkboard?.id!==boardId)return; // no access: openWorkboard has said so
+  }
   else{wsCollapsed=new Set();if(currentView!=='workspace')navigate('workspace');}
   // Clear whatever filters/search/person-chip were active — otherwise the row can pass
   // every navigation step above and still not be in the DOM to scroll to.
@@ -17071,7 +17090,7 @@ function tmAddSubitem(taskId){
   const text=inp?.value.trim();
   if(!text)return;
   const now=new Date().toISOString();
-  const si={id:'si_'+uid(),parentTaskId:pid,name:text,status:'todo',priority:'med',ownerId:null,currentlyWith:null,currentlyWithUserId:null,groupId:parent.groupId,startDate:null,endDate:null,percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,order:DB.tasks.filter(t=>t.parentTaskId===pid).length,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null};
+  const si={id:'si_'+uid(),parentTaskId:pid,name:text,status:'todo',priority:'med',ownerId:null,currentlyWith:null,currentlyWithUserId:null,groupId:parent.groupId,boardId:_taskBoardId(parent),workboardId:_taskBoardId(parent),startDate:null,endDate:null,percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,order:DB.tasks.filter(t=>t.parentTaskId===pid).length,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null};
   DB.tasks.push(si);
   saveDB(DB);
   if(inp)inp.value='';
@@ -18782,7 +18801,7 @@ function wsSaveInlineSubitem(){
     id:'si_'+uid(),parentTaskId:parentId,name:text,status,priority,
     clientId:parent.clientId||_pGrp?.clientId||null,
     ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
-    groupId:parent.groupId,startDate:startDate||null,endDate:endDate||null,
+    groupId:parent.groupId,boardId:_taskBoardId(parent),workboardId:_taskBoardId(parent),startDate:startDate||null,endDate:endDate||null,
     percentComplete:pct,tags:[],dependencies:[],archived:false,hourBudget:null,
     order:DB.tasks.filter(t=>t.parentTaskId===parentId).length,
     createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
@@ -18825,7 +18844,7 @@ function wsInlineSubitemPaste(e){
       id:'si_'+uid(),parentTaskId:parentId,name:line,status,priority,
       clientId:parent.clientId||_pGrp?.clientId||null,
       ownerId:ownerId||null,currentlyWith:cwith,currentlyWithUserId:cwith==='client'?null:ownerId||null,
-      groupId:parent.groupId,startDate:startDate||null,endDate:endDate||null,
+      groupId:parent.groupId,boardId:_taskBoardId(parent),workboardId:_taskBoardId(parent),startDate:startDate||null,endDate:endDate||null,
       percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
       order:baseOrder+i,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
     };
@@ -21761,7 +21780,7 @@ function tpAddSubitem(taskId){
   DB.tasks.push({
     id:'si_'+uid(),parentTaskId:taskId,name:text,status:'todo',priority:'med',
     ownerId:null,currentlyWith:null,currentlyWithUserId:null,
-    groupId:parent.groupId,startDate:null,endDate:null,
+    groupId:parent.groupId,boardId:_taskBoardId(parent),workboardId:_taskBoardId(parent),startDate:null,endDate:null,
     percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
     order:DB.tasks.filter(t=>t.parentTaskId===taskId).length,
     createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
@@ -21783,7 +21802,7 @@ function tpSubitemPaste(e,taskId){
     DB.tasks.push({
       id:'si_'+uid(),parentTaskId:taskId,name:line,status:'todo',priority:'med',
       ownerId:null,currentlyWith:null,currentlyWithUserId:null,
-      groupId:parent.groupId,startDate:null,endDate:null,
+      groupId:parent.groupId,boardId:_taskBoardId(parent),workboardId:_taskBoardId(parent),startDate:null,endDate:null,
       percentComplete:0,tags:[],dependencies:[],archived:false,hourBudget:null,
       order:baseOrder+i,createdAt:now,updatedAt:now,createdBy:currentUser?.id||null,
     });
