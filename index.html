@@ -2757,7 +2757,9 @@ function _mergeDB(current, incoming){
   merged.clientComments=unionById(current.clientComments,incoming.clientComments);
   merged.notifications=unionByIdReadOr(current.notifications,incoming.notifications);
   merged.meetingNotes=mergeById(current.meetingNotes,incoming.meetingNotes,'updatedAt');
-  merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'submittedAt');
+  // updatedAt, not submittedAt: that never changes after the request is made, so a status change (scoped, declined) could
+  // never win a merge and came back to "pending" on the next save from a colleague (audit H2, 2026-10-17).
+  merged.clientWorkRequests=mergeById(current.clientWorkRequests,incoming.clientWorkRequests,'updatedAt');
   merged.clientNotes=_mergeClientNotes(current.clientNotes,incoming.clientNotes);
   // Everything else used to come straight off `incoming`, so any collection the remote
   // snapshot had not caught up on was replaced by the older copy and the local work in it
@@ -2818,7 +2820,7 @@ function _mergeDB(current, incoming){
   // NB both halves of each alias pair must be filtered: the alias reconciliation further down
   // unions boards with workboards (and users with staff), so filtering only one half lets a
   // tombstoned board walk straight back in through its alias.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds'],['internalComms','deletedInternalCommsIds'],['meetingNotes','deletedMeetingNoteIds']]){
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds'],['internalComms','deletedInternalCommsIds'],['meetingNotes','deletedMeetingNoteIds'],['scheduleEvents','deletedScheduleEventIds'],['boardShares','deletedBoardShareIds'],['clientComments','deletedClientCommentIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
@@ -6583,7 +6585,8 @@ function addBoardShare(boardId){
   openBoardShareModal(boardId);
 }
 function removeBoardShare(boardId,userId){
-  DB.boardShares=(DB.boardShares||[]).filter(s=>!(s.boardId===boardId&&s.userId===userId));
+  // Remembered as removed, or a colleague's older copy gives the access back on the next save (audit H2, 2026-10-17).
+  {const _before=DB.boardShares;DB.boardShares=(DB.boardShares||[]).filter(s=>!(s.boardId===boardId&&s.userId===userId));_tombstoneRemoved(_before,DB.boardShares,'deletedBoardShareIds');}
   saveDB(DB);
   openBoardShareModal(boardId);
 }
@@ -7168,6 +7171,7 @@ function saveSchedEvent(existingId){
     ownerId:currentUser.id,
     color:document.getElementById('sched-color').value,
     teamsLink:teamsEl?teamsEl.value.trim():'',
+    updatedAt:new Date().toISOString(),   // the edit wins the merge instead of a colleague's older copy (audit H2, 2026-10-17)
   };
   if(existingId){
     const idx=DB.scheduleEvents.findIndex(e=>e.id===existingId);
@@ -7178,7 +7182,7 @@ function saveSchedEvent(existingId){
 
 function deleteSchedEvent(id){
   openConfirm('Delete Event','Delete this event? This cannot be undone.','Delete',()=>{
-    DB.scheduleEvents=(DB.scheduleEvents||[]).filter(e=>e.id!==id);
+    {const _before=DB.scheduleEvents;DB.scheduleEvents=(DB.scheduleEvents||[]).filter(e=>e.id!==id);_tombstoneRemoved(_before,DB.scheduleEvents,'deletedScheduleEventIds');}
     saveDB(DB);closeConfirm();closeGenericModal();renderView('schedule');
   });
 }
@@ -9839,6 +9843,7 @@ function wrUpdateStatus(requestId, status, note){
   const prevNote=r.adminNote||'';
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
+  r.updatedAt=new Date().toISOString();   // stamped so the change wins the merge (audit H2, 2026-10-17)
   // Client logins never live in DB.users — see _clientRecipientId.
   const _rcp=_clientRecipientId(r.clientId);
   const _clientUser=_rcp?{id:_rcp}:null;
@@ -9975,6 +9980,7 @@ function wrDoAddToWorkboard(requestId){
   }
 
   r.status='scoped';
+  r.updatedAt=now;   // or a colleague's save puts it back to pending and it can be scoped a second time (audit H2)
   saveDB(DB);
   closeGenericModal();
   renderSidebarWorkboards();
@@ -14797,7 +14803,7 @@ function createShareLink(type,targetId,label){
   if(!DB.shareLinks)DB.shareLinks=[];
   const existing=DB.shareLinks.find(l=>l.type===type&&l.targetId===targetId&&!l.revoked);
   if(existing){_copyShareUrl(existing.token);return;}
-  const link={id:'sl'+uid(),token:_genToken(),type,targetId,label:label||'',createdBy:currentUser.id,createdAt:new Date().toISOString(),revoked:false};
+  const link={id:'sl'+uid(),token:_genToken(),type,targetId,label:label||'',createdBy:currentUser.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),revoked:false};
   DB.shareLinks.push(link);
   saveDB(DB);
   _copyShareUrl(link.token);
@@ -14812,7 +14818,8 @@ function _copyShareUrl(token){
 
 function revokeShareLink(token){
   const l=(DB.shareLinks||[]).find(x=>x.token===token);
-  if(l){l.revoked=true;saveDB(DB);showToast('Link revoked','info');}
+  // Stamped, or the merge keeps a colleague's older copy and the revoked link is live again (audit H2, 2026-10-17).
+  if(l){l.revoked=true;l.updatedAt=new Date().toISOString();saveDB(DB);showToast('Link revoked','info');}
 }
 
 function renderSharePage(link){
@@ -22131,7 +22138,7 @@ function deleteClientComment(commentId,taskId){
   const c=(DB.clientComments||[]).find(x=>x.id===commentId);
   if(!c)return;
   if(currentUser?.role!=='admin'&&c.authorId!==currentUser?.id)return;
-  DB.clientComments=(DB.clientComments||[]).filter(x=>x.id!==commentId);
+  {const _before=DB.clientComments;DB.clientComments=(DB.clientComments||[]).filter(x=>x.id!==commentId);_tombstoneRemoved(_before,DB.clientComments,'deletedClientCommentIds');}
   saveDB(DB);
   _tpRepaintBody();
 }
