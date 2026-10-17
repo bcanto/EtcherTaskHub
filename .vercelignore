@@ -1,0 +1,14 @@
+# Files that are not part of the live site: they stay in the repository but are never uploaded to Vercel.
+# Before this list, the live site served the database migrations, the local dev server, the email-intake service and the
+# setup notes to anyone who asked (SSO + HTTPS plan, 2026-10-18). sec-a-test checks nothing the app needs is excluded.
+.env*
+.agents/
+.iso-offline/
+.impeccable/
+workboard/
+docs/
+supabase/
+scripts/
+serve.mjs
+email-intake.mjs
+*.md
