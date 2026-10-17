@@ -1,5 +1,6 @@
 const { requireAdminCaller } = require('./_authAdmin');
 const { enableIfDisabled, INTERNAL_ROLES } = require('./_accountAccess');
+const { recordAudit } = require('./_audit');
 
 // A readable sentence from a Supabase REST/Auth error, never the raw JSON. The Add Client form used
 // to show {"code":"23503","details":...} straight from PostgREST.
@@ -54,7 +55,8 @@ async function ensureClientRow(base, headers, clientId, name, shortCode) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  if (!(await requireAdminCaller(req, res))) return;
+  const caller = await requireAdminCaller(req, res);
+  if (!caller) return;
 
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY } = process.env;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
@@ -206,6 +208,10 @@ module.exports = async function handler(req, res) {
   catch (e) { return res.status(500).json({ error: e.message }); }
 
   // ── Upsert profile via SECURITY DEFINER function (bypasses RLS) ───────────
+  // "Restricted" is a setting on the staff record in the app, not a role the database knows (its role list is admin,
+  // pm, staff, client), so anything else becomes staff: sending it on made the profile step fail for every new
+  // Restricted person (audit H1, 2026-10-17).
+  const profileRole = clientId ? 'client' : (INTERNAL_ROLES.includes(role) ? role : 'staff');
   const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/upsert_profile`, {
     method: 'POST',
     headers: adminHeaders,
@@ -213,10 +219,7 @@ module.exports = async function handler(req, res) {
       p_id: userId,
       p_name: name,
       p_email: email,
-      // "Restricted" is a setting on the staff record in the app, not a role the database knows (its role list
-      // is admin, pm, staff, client), so anything else becomes staff: sending it on made the profile step fail
-      // for every new Restricted person (audit H1, 2026-10-17).
-      p_role: clientId ? 'client' : (INTERNAL_ROLES.includes(role) ? role : 'staff'),
+      p_role: profileRole,
       p_display_color: color || '#7aa3a4',
       p_client_id: clientId || null,
     }),
@@ -227,6 +230,9 @@ module.exports = async function handler(req, res) {
     console.error('[invite-user] profile upsert failed:', profileResp.status, profileErr);
     return res.status(500).json({ error: `The login was made, but its profile could not be saved: ${errText(profileErr, 'unknown error')}. Save again to finish.` });
   }
+
+  // A login made or reset by an admin goes into the server-side audit trail (audit H8, 2026-10-17).
+  await recordAudit({ entityType: 'User', entityId: userId, actorId: caller.id, action: clientId ? 'portal_login_created' : 'login_created', after: { email, role: profileRole, existed } });
 
   res.json({ id: userId, existed });
 };
