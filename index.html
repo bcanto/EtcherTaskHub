@@ -5648,7 +5648,12 @@ function getDependentTasks(taskId){
 }
 function getStaff(id){
   const u=allStaff().find(u=>u.id===id);
-  if(!u) return {id:null,name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
+  if(!u){
+    // Hours stay behind when a person is removed (audit H4, 2026-10-17); their name stays with them.
+    const f=(DB.formerStaff||[]).find(x=>x.id===id);
+    if(f) return {id:f.id,name:f.name+' (removed)',initials:f.initials||getInitials(f.name),color:f.color||'#ccc',displayColor:f.color||'#ccc',removed:true};
+    return {id:null,name:'Unassigned',initials:'?',color:'#ccc',displayColor:'#ccc'};
+  }
   return {...u, color: getUserColor(u)};
 }
 const STATUS_META = {
@@ -11881,9 +11886,13 @@ function openEditTimeEntry(id){
   // its task the moment this form opens.
   const tasks=DB.tasks.filter(t=>!t.archived&&(!_isTaskOnPersonalBoard(t)||t.id===e.taskId));
   const taskOpts=`<option value="">— No task —</option>`+tasks.map(t=>{const cl=getTaskClient(t);return`<option value="${t.id}"${t.id===e.taskId?' selected':''}>${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;}).join('');
-  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('');
+  // The entry's own client and person are listed even when they have since been removed. Otherwise the browser selects the
+  // first of the others and saving quietly moves the hours to them (audit H4, 2026-10-17: removed people's hours now stay).
+  const clientOpts=[...DB.clients].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}"${c.id===e.clientId?' selected':''}>${escHtml(c.name)}</option>`).join('')
+    +((e.clientId&&!DB.clients.some(c=>c.id===e.clientId))?`<option value="${escHtml(e.clientId)}" selected>(client removed)</option>`:'');
   const rateOpts=(DB.earningsRates||[]).filter(r=>r.active!==false).map(r=>`<option value="${r.id}"${r.id===e.earningsRateId?' selected':''}>${escHtml(r.name)}</option>`).join('');
-  const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===e.staffId?' selected':''}>${escHtml(s.name)}</option>`).join('');
+  const staffOpts=DB.staff.map(s=>`<option value="${s.id}"${s.id===e.staffId?' selected':''}>${escHtml(s.name)}</option>`).join('')
+    +((e.staffId&&!DB.staff.some(s=>s.id===e.staffId))?`<option value="${escHtml(e.staffId)}" selected>${escHtml(getStaff(e.staffId).name)}</option>`:'');
   document.getElementById('generic-modal-title').textContent='Edit Time Entry';
   document.getElementById('generic-modal-body').innerHTML=`
     <div style="display:grid;gap:14px">
@@ -12519,7 +12528,7 @@ function timeEntryForReport(e){
     staffId:e.staffId,
     staffName:staff?.name||'Unknown',
     taskId:e.taskId,
-    taskTitle:e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||'—'),
+    taskTitle:e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||'—'),
     date:e.date,
     hours:e.hours,
     note:e.note||null,
@@ -13138,7 +13147,7 @@ function _tsDetailTable(entries,canBill){
       <td style="${tdS};white-space:nowrap;font-weight:600;color:#1a2940">${formatDate(e.date)}</td>
       <td style="${tdS}"><div style="display:flex;align-items:center;gap:6px">${avatarHtml(staff,18)}<span>${escHtml(staff?.name||'Unknown')}</span></div></td>
       <td style="${tdS}">${client?`<span style="color:${client.color};font-weight:700;background:${client.color}18;padding:2px 7px;border-radius:8px;font-size:11px">${escHtml(client.shortCode||client.name)}</span>`:'<span style="color:#c8d7e1">—</span>'}</td>
-      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||''))}">${e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name||task.title||'Untitled'):'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||''))}">${e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name||task.title||'Untitled'):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="${tdS};color:#6b8399;white-space:nowrap">${escHtml(e.earningsRateName||'Ordinary Hours')}</td>
       <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif;text-align:right;white-space:nowrap">${e.hours.toFixed(1)}h</td>
       <td style="${tdS};text-align:center">${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:8px;font-weight:700">Bill.</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:8px;font-weight:700">N/B</span>`}</td>
@@ -13638,7 +13647,7 @@ function _pfiOpenImportModal(invId,candidates){
       <td style="padding:6px 8px;text-align:center"><input type="checkbox" class="pfi-import-cb" data-hours="${e.hours}" value="${e.id}" ${invoiced?'':'checked'} onchange="_pfiImportUpdateCount()" style="accent-color:#0d1c33"/></td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${formatDate(e.date)}</td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${escHtml(staff?.name||'Unknown')}</td>
-      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||''))}">${e.isoAuditId?escHtml(e.isoActionRef||e.isoLabel||'ISO audit'):task?escHtml(task.name||task.title):'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||''))}">${e.isoAuditId?escHtml(e.isoActionRef||e.isoLabel||'ISO audit'):task?escHtml(task.name||task.title):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:600;white-space:nowrap">${e.hours.toFixed(2)}h</td>
       <td style="padding:6px 8px 6px 4px;font-size:10px">${invoiced?`<span title="Already on ${escHtml(invoiced.number)}" style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap">⚠ ${escHtml(invoiced.number)}</span>`:''}</td>
     </tr>`;
@@ -13695,7 +13704,7 @@ function pfiConfirmImport(invId){
       memberCode:staff?.initials||((staff?.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3)),
       // D13/7b.4: an ISO-mode entry carries no task (D12) — its own ref/label stand in for the
       // task title and project grouping instead, exactly as every other ISO display site does.
-      taskId:e.taskId||null,taskTitle:e.isoAuditId?(e.isoActionRef||'General audit work'):(task?.name||task?.title||'—'),
+      taskId:e.taskId||null,taskTitle:e.isoAuditId?(e.isoActionRef||'General audit work'):(task?.name||task?.title||e.taskName||'—'),
       activity:e.earningsRateName||'Ordinary Hours',
       activityCode:(e.earningsRateName||'ORD').replace(/[aeiou\s]/gi,'').slice(0,4).toUpperCase()||'ORD',
       boardId:e.isoAuditId?('iso:'+e.isoAuditId):(board?.id||null),boardName:e.isoAuditId?(e.isoLabel||null):(board?.name||null),
@@ -16938,14 +16947,14 @@ function permanentRestoreTask(id){
 }
 function permanentDeleteTask(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  openConfirm('Delete Task Forever','Permanently delete this task? This CANNOT be undone.','Delete Forever',()=>{
+  openConfirm('Delete Task Forever','Permanently delete this task? This CANNOT be undone.'+_keptEntriesNote(_collectTaskIds(id)),'Delete Forever',()=>{
     const ids=new Set();
     function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
     collect(id);
+    _keepEntriesOfDeletedTasks(ids);
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
     {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();renderView('archive');
   });
 }
@@ -16953,11 +16962,12 @@ function permanentDeleteAllArchivedTasks(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const ids=new Set(DB.tasks.filter(t=>t.archived).map(t=>t.id));
   if(!ids.size)return;
-  openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`,'Delete All Forever',()=>{
+  const _allGone=()=>new Set(DB.tasks.filter(t=>ids.has(t.id)||ids.has(t.parentTaskId)).map(t=>t.id));
+  openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`+_keptEntriesNote(_allGone()),'Delete All Forever',()=>{
+    _keepEntriesOfDeletedTasks(_allGone());
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
     {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();renderView('archive');
   });
 }
@@ -17477,9 +17487,13 @@ function deleteStaff(id){
   // With Supabase on, removing a person also switches their login off (audit C2, 2026-10-17). Deleting only
   // the app's own record used to leave them able to sign in, and the next sign-in made them a new staff record.
   const _uid=window._supabase?_staffAuthUid(s):null;
+  const _hrs=(DB.timeEntries||[]).filter(e=>e.staffId===id);
+  const _hrsTotal=Math.round(_hrs.reduce((a,e)=>a+(+e.hours||0),0)*100)/100;
   const msg=(taskCount
     ?`Remove ${s.name}? They have ${taskCount} open task${taskCount!==1?'s':''} which will become unassigned.`
-    :`Remove ${s.name}? This cannot be undone.`)+(_uid?' Their login is switched off.':'');
+    :`Remove ${s.name}? This cannot be undone.`)
+    +(_hrs.length?` Their ${_hrs.length} time ${_hrs.length!==1?'entries':'entry'} (${_hrsTotal}h) stay in Timesheets under their name, so any not yet approved can still be approved or rejected.`:'')
+    +(_uid?' Their login is switched off.':'');
   closeGenericModal();
   openConfirm('Remove Staff',msg,'Remove',async ()=>{
     if(_uid){
@@ -17501,7 +17515,13 @@ function deleteStaff(id){
       if(Array.isArray(t.assigneeIds)&&t.assigneeIds.includes(id))setTaskAssignees(t,t.assigneeIds.filter(a=>a!==id));
     });
     {const _before=DB.notifications;DB.notifications=(DB.notifications||[]).filter(n=>n.recipientId!==id);_tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>e.staffId!==id||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
+    // Their hours stay. Deleting the unapproved ones here lost payroll hours for work already done (audit H4).
+    // The name stays so the entries still say whose they are.
+    if((DB.timeEntries||[]).some(e=>e.staffId===id)){
+      const _now=new Date().toISOString();
+      DB.formerStaff=(DB.formerStaff||[]).filter(f=>f.id!==id);
+      DB.formerStaff.push({id,name:s.name,initials:s.initials||getInitials(s.name),color:getUserColor(s),removedAt:_now,updatedAt:_now});
+    }
     {const _before=DB.users;DB.users=DB.users.filter(x=>x.id!==id);_tombstoneRemoved(_before,DB.users,'deletedUserIds');}
     DB.staff=DB.users;
     saveDB(DB);closeGenericModal();closeConfirm();renderView('staff');
@@ -18521,26 +18541,42 @@ function _taskCascadeCounts(ids){
     tasks:ids.size,
     comments:(DB.comments||[]).filter(c=>ids.has(c.taskId)).length,
     checklist:(DB.checklistItems||[]).filter(c=>ids.has(c.taskId)).length,
-    entriesDeleted:entries.filter(e=>e.status!=='approved').length,
     entriesKept:entries.filter(e=>e.status==='approved').length,
+    entriesToReview:entries.filter(e=>e.status!=='approved').length,
   };
 }
-// Approved time entries are deliberately NOT destroyed here. They are billing records, they
-// are already locked against direct deletion, and most of these paths are one misclick away —
-// a cascade must not become the way around that lock. They're kept, and the dialog says so.
+// Time entries are never destroyed by deleting a task (audit H4, 2026-10-17). Approved ones are billing records,
+// already locked against direct deletion. The rest are hours someone worked and has not had approved yet: deleting
+// them here lost payroll hours before anyone could approve or reject them. They stay in Timesheets, with the
+// task's name on them so they can still be recognised. Call this BEFORE the tasks are removed, to read the names.
+function _keepEntriesOfDeletedTasks(ids){
+  const now=new Date().toISOString();
+  (DB.timeEntries||[]).forEach(e=>{
+    if(!e.taskId||!ids.has(e.taskId)||e.taskDeleted)return;
+    const t=(DB.tasks||[]).find(x=>x.id===e.taskId);
+    e.taskDeleted=true;
+    if(t)e.taskName=taskTitle(t);
+    e.updatedAt=now;
+  });
+}
+// A sentence for the confirmations that do not count everything: how many hours stay.
+function _keptEntriesNote(ids){
+  const n=(DB.timeEntries||[]).filter(e=>ids.has(e.taskId)).length;
+  return n?` Its ${n} time ${n!==1?'entries':'entry'} stay${n===1?'s':''} in Timesheets.`:'';
+}
 function _cascadeDeleteTasks(ids){
+  _keepEntriesOfDeletedTasks(ids);
   {const _before=DB.tasks;DB.tasks=(DB.tasks||[]).filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
   {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
-  {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
 }
 function _cascadeSentence(lead,extraParts,c){
   const parts=[...extraParts];
   if(c.comments)parts.push(`${c.comments} comment${c.comments!==1?'s':''}`);
   if(c.checklist)parts.push(`${c.checklist} checklist item${c.checklist!==1?'s':''}`);
-  if(c.entriesDeleted)parts.push(`${c.entriesDeleted} time ${c.entriesDeleted!==1?'entries':'entry'}`);
   let msg=parts.length?`${lead} This also permanently deletes ${parts.join(', ')}.`:`${lead}`;
   if(c.entriesKept)msg+=` ${c.entriesKept} approved time ${c.entriesKept!==1?'entries':'entry'} will be kept as billing ${c.entriesKept!==1?'records':'record'}.`;
+  if(c.entriesToReview)msg+=` ${c.entriesToReview} time ${c.entriesToReview!==1?'entries':'entry'} not yet approved will be kept too, so ${c.entriesToReview!==1?'they':'it'} can still be approved or rejected.`;
   return msg+' This cannot be undone.';
 }
 function confirmDelete(type, id){
@@ -18578,6 +18614,10 @@ function confirmDelete(type, id){
     if(c.entriesKept){
       msg=msg.replace(/ \d+ approved time entr(?:y|ies) will be kept as billing record(?:s)?\./,
         ` ${c.entriesKept} approved time ${c.entriesKept!==1?'entries':'entry'} will be kept, but with the client gone they can no longer be invoiced or reported against.`);
+    }
+    if(c.entriesToReview){
+      msg=msg.replace(/ \d+ time entr(?:y|ies) not yet approved will be kept too, so (?:they|it) can still be approved or rejected\./,
+        ` ${c.entriesToReview} time ${c.entriesToReview!==1?'entries':'entry'} not yet approved will be kept too, so ${c.entriesToReview!==1?'they':'it'} can still be approved or rejected, but with the client gone ${c.entriesToReview!==1?'they':'it'} can no longer be invoiced or reported against.`);
     }
   }
   if(type==='task'){
@@ -23735,13 +23775,13 @@ function tpDeleteTask(){
   if(!_tpCurrentTask)return;
   const id=_tpCurrentTask.id;
   const hasChildren=DB.tasks.some(t=>t.parentTaskId===id&&!t.archived);
-  openConfirm('Delete Task',hasChildren?'Delete this task and all its subitems? This cannot be undone.':'Delete this task? This cannot be undone.','Delete',()=>{
+  openConfirm('Delete Task',(hasChildren?'Delete this task and all its subitems? This cannot be undone.':'Delete this task? This cannot be undone.')+_keptEntriesNote(_collectTaskIds(id)),'Delete',()=>{
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
+    _keepEntriesOfDeletedTasks(ids);
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
     {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
-    {const _before=DB.timeEntries;DB.timeEntries=(DB.timeEntries||[]).filter(e=>!ids.has(e.taskId)||e.status==='approved');_tombstoneRemoved(_before,DB.timeEntries,'deletedTimeEntryIds');}
     saveDB(DB);closeConfirm();closeTaskPanel();renderView(currentView);
   });
 }
