@@ -25,9 +25,9 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://placehold.co https://*.supabase.co; connect-src 'self' https://wowwiafaqzovlfwzyktj.supabase.co wss://wowwiafaqzovlfwzyktj.supabase.co https://cdn.tailwindcss.com; object-src 'none'; frame-src 'self' blob:; base-uri 'self'; form-action 'self';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
-<link id="app-favicon" rel="icon" type="image/png" href="favicon_taskapp.png"/>
+<link id="app-favicon" rel="icon" type="image/png" href="favicon-128.png"/>
 <!-- B7: Preload critical assets to eliminate render-blocking fetches -->
-<link rel="preload" href="Etcher White Logo.png" as="image" type="image/png"/>
+<link rel="preload" href="etcher-logo-white-520.png" as="image" type="image/png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
@@ -527,6 +527,12 @@ body:has(#client-portal:not(.hidden)) #mobile-tabbar,body:has(#client-portal:not
 .notes-list-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--surface-3);transition:background 0.15s}
 .notes-list-item:hover{background:var(--surface-3)}
 .notes-list-item.active{background:var(--navy);color:#fff}
+/* Client Notes on a phone: the three columns stack instead of squeezing the note off screen (audit M14, 2026-10-17) */
+@media (max-width:760px){
+  #notes-pane{flex-direction:column;height:auto;min-height:calc(100vh - 56px)}
+  .notes-clients,.notes-sections{width:auto;border-right:none;border-bottom:1px solid var(--border);max-height:34vh}
+  .notes-editor{min-height:60vh}
+}
 .note-warn{display:flex;align-items:center;gap:7px;padding:6px 16px;background:#fff8f0;border-bottom:1px solid #fcd9a8;font-size:11px;font-weight:600;color:#92400e;flex-shrink:0}
 .note-toolbar{display:flex;align-items:center;gap:2px;padding:5px 14px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
 .note-hint{margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;color:#c8d4e0;font-style:italic}
@@ -1373,7 +1379,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <!-- Left brand panel -->
     <div class="login-left">
       <div>
-        <img src="Etcher White Logo.png" alt="Etcher" style="max-height:96px;height:auto;max-width:100%;width:auto;display:block;margin-bottom:28px;opacity:0.95" onerror="this.outerHTML='<span style=\'font-family:Jost,sans-serif;font-size:32px;font-weight:700;color:#97bcbd;letter-spacing:0.08em\'>ETCHER</span>'"/>
+        <img src="etcher-logo-white-520.png" alt="Etcher" style="max-height:96px;height:auto;max-width:100%;width:auto;display:block;margin-bottom:28px;opacity:0.95" onerror="this.outerHTML='<span style=\'font-family:Jost,sans-serif;font-size:32px;font-weight:700;color:#97bcbd;letter-spacing:0.08em\'>ETCHER</span>'"/>
         <div style="width:28px;height:2px;background:#97bcbd;border-radius:2px;margin-bottom:18px;opacity:0.6"></div>
         <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:10px">Task Hub</h2>
         <p style="font-size:13px;color:#8da2b2;line-height:1.6">Etcher's internal workspace for tasks, clients, and team collaboration.</p>
@@ -1439,7 +1445,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <aside id="sidebar">
     <!-- Logo -->
     <div style="padding:22px 18px 24px;border-bottom:1px solid rgba(255,255,255,0.05);position:relative;z-index:1">
-      <img src="Etcher White Logo.png" alt="Etcher" style="width:97%;height:auto;display:block;margin:0 auto;opacity:0.9;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
+      <img src="etcher-logo-white-520.png" alt="Etcher" style="width:97%;height:auto;display:block;margin:0 auto;opacity:0.9;" onerror="this.outerHTML='<span style=\'color:#97bcbd;font-family:Jost,sans-serif;font-weight:700;font-size:17px;letter-spacing:0.06em\'>ETCHER</span>'"/>
     </div>
 
     <!-- User -->
@@ -1626,7 +1632,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 <!-- CLIENT PORTAL — completely separate shell, shown instead of app-shell for client logins -->
 <div id="client-portal" class="hidden">
   <header class="cp-top" style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
-    <img src="Etcher White Logo.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
+    <img src="etcher-logo-white-520.png" alt="Etcher Solutions" style="height:28px;width:auto;display:block;flex-shrink:0"/>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.1);flex-shrink:0;margin:0 2px"></div>
     <div id="cp-client-name" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:0.01em">Client Portal</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -3451,7 +3457,7 @@ function _showSetPasswordForm(session){
   overlay.innerHTML=`
     <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(13,28,51,0.12)">
       <div style="text-align:center;margin-bottom:28px">
-        <img src="Etcher White Logo.png" style="height:36px;filter:invert(1) sepia(1) saturate(0) brightness(0.3);margin-bottom:16px"/>
+        <img src="etcher-logo-white-520.png" style="height:36px;filter:invert(1) sepia(1) saturate(0) brightness(0.3);margin-bottom:16px"/>
         <div style="font-size:20px;font-weight:700;color:#0d1c33">Set your password</div>
         <div style="font-size:13px;color:#8da2b2;margin-top:6px">Choose a password to log in next time</div>
       </div>
@@ -6255,6 +6261,42 @@ function updateNotifBadge(){
 // another app, another tab — which is exactly when a new notification is easiest to miss.
 // _tabBaseTitle is captured once, before any prefix is ever applied, so repeated calls never
 // stack "(3) (5) Etcher - Task Hub" on top of each other.
+// Keyboard access (audit M15, 2026-10-17). Clickable areas drawn as plain elements get a tab stop, and Enter or Space
+// clicks them; they get the button role unless they are table cells, rows or list items (their own role is kept). An
+// input with only a placeholder gets it as its accessible name. Applied to whatever is drawn, as it is drawn, so every
+// screen is covered without changing each one.
+const _KB_NATIVE='a,button,input,select,textarea,label,summary,option,iframe,[contenteditable="true"]';
+const _KB_KEEP_ROLE=new Set(['TR','TD','TH','LI']);
+function _kbEnhance(root){
+  if(!root||!root.querySelectorAll)return;
+  const els=root.matches&&root.matches('[onclick]')?[root,...root.querySelectorAll('[onclick]')]:[...root.querySelectorAll('[onclick]')];
+  for(const el of els){
+    if(el.hasAttribute('tabindex')||el.matches(_KB_NATIVE))continue;
+    if(/^\s*(event|e)\.stopPropagation\(\)\s*;?\s*$/.test(el.getAttribute('onclick')||''))continue;
+    if(el.querySelector(_KB_NATIVE))continue;   // it holds real controls of its own: those are the way in
+    el.setAttribute('tabindex','0');el.setAttribute('data-kb','1');
+    if(!el.hasAttribute('role')&&!_KB_KEEP_ROLE.has(el.tagName))el.setAttribute('role','button');
+  }
+  for(const i of root.querySelectorAll('input[placeholder]:not([aria-label]):not([aria-labelledby]),textarea[placeholder]:not([aria-label]):not([aria-labelledby])')){
+    if(!i.id||!document.querySelector('label[for="'+CSS.escape(i.id)+'"]'))i.setAttribute('aria-label',i.getAttribute('placeholder'));
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const el=e.target;
+  if(!el||!el.getAttribute||el.getAttribute('data-kb')!=='1'||!el.hasAttribute('onclick'))return;
+  e.preventDefault();el.click();
+});
+(function(){
+  let pending=new Set(),timer=null;
+  const flush=()=>{timer=null;const roots=[...pending];pending=new Set();roots.forEach(r=>{if(r.isConnected)_kbEnhance(r);});};
+  const start=()=>{
+    _kbEnhance(document.body);
+    new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)pending.add(n);if(pending.size&&!timer)timer=setTimeout(flush,30);})
+      .observe(document.body,{childList:true,subtree:true});
+  };
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
 const _tabBaseTitle=document.title;
 let _faviconBaseHref=null,_faviconImg=null;
 function _updateTabNotifIndicator(unread){
@@ -9833,17 +9875,25 @@ function renderCapacity(){
 // ═══════════════════════════════════════════════════════════
 // CLIENT MANAGER
 // ═══════════════════════════════════════════════════════════
-function renderClients(){
-  const allRequests=(DB.clientWorkRequests||[]).slice().sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
-  const pendingCount=allRequests.filter(r=>r.status==='pending').length;
-
-  return`<div style="display:grid;gap:24px">
-    <div style="display:flex;justify-content:flex-end"><button onclick="openClientModal(null)" class="btn btn-primary">+ New Client</button></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-    ${DB.clients.map(c=>{
-      const clientTasks=DB.tasks.filter(t=>{const g=getGroup(t);return g&&g.clientId===c.id;});
-      const open=clientTasks.filter(t=>t.status!=='done').length;
-      const done=clientTasks.filter(t=>t.status==='done').length;
+// The Clients grid (audit M2, 2026-10-17): search by name, code or email; sort; archived clients hidden unless asked.
+// Open counts leave out finished and cancelled work.
+let clientsSearch='',clientsSort='name',clientsShowArchived=false;
+const _CLIENT_DONE=new Set(['done','completed','completed-approved']);
+function _clientTaskCounts(c){
+  const ts=DB.tasks.filter(t=>{if(t.archived)return false;const g=getGroup(t);return g&&g.clientId===c.id;});
+  return{ts,open:ts.filter(t=>!_CLIENT_DONE.has(t.status)&&t.status!=='cancelled').length,done:ts.filter(t=>_CLIENT_DONE.has(t.status)).length};
+}
+function _clientsGridHtml(){
+  const q=clientsSearch.trim().toLowerCase();
+  let list=(DB.clients||[]).filter(c=>clientsShowArchived||!c.archived);
+  if(q)list=list.filter(c=>[c.name,c.shortCode,c.loginEmail,c.contactEmail].some(v=>String(v||'').toLowerCase().includes(q)));
+  const counts=new Map(list.map(c=>[c.id,_clientTaskCounts(c)]));
+  const byName=(a,b)=>String(a.name||'').localeCompare(String(b.name||''));
+  list=list.slice().sort(clientsSort==='open'?(a,b)=>(counts.get(b.id).open-counts.get(a.id).open)||byName(a,b)
+    :clientsSort==='recent'?(a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))||byName(a,b):byName);
+  if(!list.length)return`<div class="card" style="text-align:center;padding:28px;color:#8da2b2;font-size:13px">${q?'No client matches "'+escHtml(clientsSearch.trim())+'".':'No clients yet.'}</div>`;
+  return`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${list.map(c=>{
+      const{ts:clientTasks,open,done}=counts.get(c.id);
       const pendingReqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===c.id&&r.status==='pending').length;
       return`<div style="background:#fff;border-radius:12px;border:1px solid #e2eaf2;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(13,28,51,0.05)">
         <div style="height:3px;background:${c.color}"></div>
@@ -9853,14 +9903,15 @@ function renderClients(){
             :`<div style="width:48px;height:48px;border-radius:8px;background:${c.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="font-family:'Jost',sans-serif;font-size:20px;font-weight:800;color:${c.color}">${(c.name||'?')[0].toUpperCase()}</span></div>`
           }
           <div style="flex:1;min-width:0">
-            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.name)}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:14px;font-weight:700;color:#0d1c33;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.name)}${c.archived?' <span style="font-size:10px;font-weight:700;color:#6b8399;background:#f1f5f9;padding:1px 6px;border-radius:8px">Archived</span>':''}</div>
             <div style="font-size:11px;color:#8da2b2;margin-top:2px">${escHtml(c.shortCode||'')}${c.loginEmail?` · ${escHtml(c.loginEmail)}`:''}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
             ${pendingReqs?`<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">${pendingReqs} request${pendingReqs>1?'s':''}</span>`:''}
             <div style="display:flex;gap:4px">
               <button onclick="openClientModal('${c.id}')" class="btn btn-ghost btn-sm">Edit</button>
-              <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm">✕</button>
+              ${c.archived?`<button onclick="clientSetArchived('${c.id}',false)" class="btn btn-ghost btn-sm">Restore</button>`:`<button onclick="clientSetArchived('${c.id}',true)" class="btn btn-ghost btn-sm" title="Hide this client from the list. Nothing is deleted.">Archive</button>`}
+              <button onclick="confirmDelete('client','${c.id}')" class="btn btn-danger btn-sm" aria-label="Delete client">✕</button>
             </div>
           </div>
         </div>
@@ -9879,8 +9930,32 @@ function renderClients(){
           </div>
         </div>
       </div>`;
-    }).join('')}
+  }).join('')}</div>`;
+}
+function _clientsRegrid(){const g=document.getElementById('clients-grid');if(g)g.innerHTML=_clientsGridHtml();else renderView('clients');}
+let _clientsSearchTimer=null;
+function _clientsSearchInput(v){clientsSearch=v;clearTimeout(_clientsSearchTimer);_clientsSearchTimer=setTimeout(_clientsRegrid,150);}
+// Archive retires a client without deleting anything; Restore brings it back.
+function clientSetArchived(id,archived){
+  if(currentUser?.role!=='admin'){showAlert('Only admins can archive clients.');return;}
+  const c=(DB.clients||[]).find(x=>x.id===id);if(!c)return;
+  c.archived=!!archived;c.updatedAt=new Date().toISOString();
+  writeAuditEvent('Client',id,archived?'archived':'restored',null,{title:c.name});
+  saveDB(DB);renderView('clients');
+}
+function renderClients(){
+  const allRequests=(DB.clientWorkRequests||[]).slice().sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+  const pendingCount=allRequests.filter(r=>r.status==='pending').length;
+
+  const _archivedN=(DB.clients||[]).filter(c=>c.archived).length;
+  return`<div style="display:grid;gap:24px">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <input id="clients-search" type="search" class="form-input" placeholder="Search clients" aria-label="Search clients" value="${escHtml(clientsSearch)}" oninput="_clientsSearchInput(this.value)" style="flex:1;min-width:180px;max-width:320px"/>
+      <select id="clients-sort" class="form-input" aria-label="Sort clients" onchange="clientsSort=this.value;_clientsRegrid()" style="width:auto">${[['name','Name A to Z'],['open','Most open work'],['recent','Recently added']].map(([v,l])=>`<option value="${v}" ${clientsSort===v?'selected':''}>${l}</option>`).join('')}</select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b8399;cursor:pointer"><input id="clients-show-archived" type="checkbox" ${clientsShowArchived?'checked':''} onchange="clientsShowArchived=this.checked;_clientsRegrid()"/> Show archived${_archivedN?' ('+_archivedN+')':''}</label>
+      <button onclick="openClientModal(null)" class="btn btn-primary" style="margin-left:auto">+ New Client</button>
     </div>
+    <div id="clients-grid">${_clientsGridHtml()}</div>
 
     <!-- Work Requests panel -->
     <div>
@@ -16665,24 +16740,44 @@ const NOTIF_TYPES={
 // Central notification creator — never self-notifies.
 function notify(recipientId, taskId, type, message){
   if(!recipientId||recipientId===currentUser?.id)return;
+  // Not for someone who has left, nor about a task they cannot open (audit M12, 2026-10-17).
+  const _who=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
+  if(_who&&_who.active===false)return;
+  if(_who&&taskId){const _t=(DB.tasks||[]).find(t=>t.id===taskId);if(_t&&!canViewTask(_who,_t))return;}
   if(!DB.notifications)DB.notifications=[];
   DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
   updateNotifBadge();
   // Email for high-value types (fire-and-forget, never blocks UI)
   const _emailTypes=['mention','task_assigned','owner_changed','currently_with'];
   if(_emailTypes.includes(type)){
-    const _rec=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
-    if(_rec?.email){
-      // notify-email is staff-only (api/_authAdmin.js requireStaffCaller). A client session never
-      // gets here: its slice holds no users, and portal emails are sent by portal-action.js.
-      // _adminApiAuthHeaders resolves to {} with no session/offline; the endpoint then refuses.
-      // no-op'ing, matching how invite-user/set-password already behave unconfigured.
-      _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
-        body:JSON.stringify({to:_rec.email,recipientName:_rec.name,type,message,
-          senderName:currentUser?.name||'Etcher Team',taskId})
-      }).catch(()=>{}));
-    }
+    // notify-email is staff-only (api/_authAdmin.js requireStaffCaller). A client session never gets here: its slice
+    // holds no users, and portal emails are sent by portal-action.js.
+    if(_who?.email)_queueNotifyEmail(_who,type,message,taskId);
   }
+}
+// Notification emails are gathered for two seconds and sent as one per person, so a bulk action sends one email instead
+// of one per task (audit M12, 2026-10-17). The endpoint takes at most 300 characters.
+let _neQueue=new Map(),_neTimer=null;
+function _queueNotifyEmail(rec,type,message,taskId){
+  const q=_neQueue.get(rec.id)||{rec,items:[]};
+  q.items.push({type,message:String(message||''),taskId});_neQueue.set(rec.id,q);
+  if(!_neTimer)_neTimer=setTimeout(_flushNotifyEmails,2000);
+}
+function _flushNotifyEmails(){
+  _neTimer=null;const batch=[..._neQueue.values()];_neQueue=new Map();
+  batch.forEach(({rec,items})=>{
+    const first=items[0];
+    let message=first.message;
+    if(items.length>1){
+      const tail='. Open Task Hub to see the other '+(items.length-1)+'.';
+      message=items.length+' updates in Task Hub. First: '+first.message;
+      if(message.length+tail.length>300)message=message.slice(0,300-tail.length-1)+'…';
+      message+=tail;
+    }else if(message.length>300)message=message.slice(0,299)+'…';
+    _adminApiAuthHeaders().then(hdrs=>fetch('/api/notify-email',{method:'POST',headers:{'Content-Type':'application/json',...hdrs},
+      body:JSON.stringify({to:rec.email,recipientName:rec.name,type:first.type,message,senderName:currentUser?.name||'Etcher Team',taskId:items.length===1?first.taskId:null})
+    }).catch(()=>{}));
+  });
 }
 // Notify the people a freshly created task was assigned to. Covers the inline-add
 // paths (board "+ item" row, paste-multiline, inline subtask) which used to push a
