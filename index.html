@@ -6037,6 +6037,23 @@ function _auditServerLoad(){
 }
 // What changed, written the way the Audit screen already reads task changes (a field, its old and new value).
 function _auditShow(v){return v==null||v===''?'—':typeof v==='object'?JSON.stringify(v):String(v);}
+// How one side of an event reads on the Audit screen: its own words if it has them (displayValue, title), else its name or
+// email and role with what went with it, else the one value it holds; the raw record only as a last resort.
+function _auditText(o){
+  if(o==null)return null;
+  if(typeof o!=='object')return String(o);
+  if(o.displayValue!=null)return String(o.displayValue);
+  if(o.title!=null)return String(o.title);
+  const n=(k,w)=>+o[k]>0?(+o[k])+' '+w+(+o[k]===1?'':'s'):'';
+  const more=[n('subItems','sub-item'),n('tasks','task'),n('taskCount','task')].filter(Boolean).join(', ');
+  if(Array.isArray(o.names)&&o.count>0)return o.count+' task'+(o.count===1?'':'s')+': '+o.names.slice(0,3).join(', ')+(o.count>3?' and more':'')+(more?', with '+more:'');
+  const who=[o.name,o.email,o.role].filter(x=>typeof x==='string'&&x).join(', ');
+  if(who)return who+(more?' (with '+more+')':'');
+  const keys=Object.keys(o);
+  if(!keys.length)return null;
+  if(keys.length===1&&['string','number'].includes(typeof o[keys[0]]))return String(o[keys[0]]);
+  return JSON.stringify(o);
+}
 function _auditFieldChanges(entityType,entityId,before,after,labels){
   for(const k of Object.keys(after)){
     if(JSON.stringify(before[k])===JSON.stringify(after[k]))continue;
@@ -14915,12 +14932,14 @@ function renderAudit(){
       const pred=DB.tasks.find(t=>t.id===(after?.predecessorTaskId||before?.predecessorTaskId));
       const dep=DB.tasks.find(t=>t.id===(after?.dependentTaskId||before?.dependentTaskId));
       if(pred&&dep)changeHtml=`<span style="color:#4a5568">${escHtml(pred.name)} → ${escHtml(dep.name)}</span>`;
+    }else if(a.action==='deleted'&&before&&_auditText(before)){
+      changeHtml=`<span style="color:#dc2626">${escHtml(String(_auditText(before)).slice(0,90))}</span>`;
     }else if(before||after){
-      const bv=before?.displayValue??before?.title??(before!==null?JSON.stringify(before):null);
-      const av=after?.displayValue??after?.title??(after!==null?JSON.stringify(after):null);
+      const bv=_auditText(before);
+      const av=_auditText(after);
       const bvStr=bv!=null?String(bv):'—';
       const avStr=av!=null?String(av):'—';
-      if(a.action==='created'){
+      if(a.action==='created'||(before==null&&/_created$/.test(a.action))){
         changeHtml=avStr&&avStr!=='—'?`<span style="color:#4a5568">${escHtml(avStr.slice(0,80))}</span>`:'';
       }else if(bvStr!==avStr){
         changeHtml=`<span style="color:#8da2b2">${escHtml(bvStr.slice(0,50))}</span>
