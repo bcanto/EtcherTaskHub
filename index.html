@@ -4345,6 +4345,8 @@ let tsSearch='';
 let tsFortnightEnding='';
 let tsWeekOffset=0;
 let tsSelectedIds=new Set();
+// How many rows the detailed timesheet table shows, and the filter set that number belongs to (audit H9, 2026-10-17).
+let tsRowLimit=150,_tsLimitSig='';
 // ── Pro Forma Invoice management state ──
 let pfiCurrentId=null;
 let pfiListClientFilter='all';
@@ -4871,6 +4873,18 @@ function _hideLoadingScreen(){
   ls.style.pointerEvents='none';
   setTimeout(()=>ls.remove(),420);
 }
+// Read notifications older than 90 days are cleared for the person signed in (audit H9, 2026-10-17): they were never
+// removed, so the record grew for ever. Unread ones stay. Each is remembered as removed so another computer's copy does
+// not bring it back.
+function _pruneOldNotifications(){
+  if(!currentUser||currentUser.type==='client')return;
+  const cutoff=Date.now()-90*86400000;
+  const before=DB.notifications||[];
+  const keep=before.filter(n=>!(n.recipientId===currentUser.id&&n.read&&new Date(n.createdAt||n.timestamp||0).getTime()<cutoff));
+  if(keep.length===before.length)return;
+  DB.notifications=keep;_tombstoneRemoved(before,keep,'deletedNotificationIds');
+  saveDB(DB);
+}
 function launchApp(){
   _hideLoadingScreen();
   document.getElementById('login-screen').classList.add('hidden');
@@ -4909,6 +4923,7 @@ function launchApp(){
     const _vc=document.getElementById('view-container');
     if(_vc){let _st=null;_vc.addEventListener('scroll',()=>{clearTimeout(_st);_st=setTimeout(_wsStateSave,250);});}
   }catch(_){}
+  _pruneOldNotifications();
   updateNotifBadge();updateClientReqBadge();
   startIntakePoller();
   _checkRecurringTasks();
@@ -5311,7 +5326,10 @@ function _dashSearchDropdownHtml(q){
     ${section('Sub-tasks','↳',subTasks.map(t=>{const parent=DB.tasks.find(p=>p.id===t.parentTaskId);return row(t.name||t.title||'Untitled',(parent?escHtml(parent.name||parent.title||''):'')+(wbName(t.workboardId||t.boardId)?(' · '+wbName(t.workboardId||t.boardId)):''),`openTaskModal('${t.id}');document.getElementById('dash-wb-search').value='';onDashWbSearch('')`);}))}
   </div>`;
 }
-function onGlobalSearch(){
+let _gsTimer=null;
+// Waits for a pause in typing: every keystroke rebuilt the whole list, 0.25 s each at 6,000 tasks (audit H9, 2026-10-17).
+function onGlobalSearch(){clearTimeout(_gsTimer);_gsTimer=setTimeout(_onGlobalSearchNow,150);}
+function _onGlobalSearchNow(){
   const q=(document.getElementById('global-search')?.value||'').trim().toLowerCase();
   if(!q){if(currentView==='list')renderView('list');return;}
   // Always scope to boards this user may actually see. Previously the board filter only
@@ -11524,6 +11542,7 @@ function _teIsoBoardChanged(auditId){
 }
 let _teBillableOn=true; // billable toggle state for the log form
 let _teViewAll=false; // admin: false = My Timesheets, true = All Staff
+let _teGroupLimit=14,_teGroupSig=false; // how many days of entries the Time view lists (audit H9)
 
 // Snapshot the Log Time form fields shared by both Task/Client modes, so switching
 // mode (which must re-render to swap the selector) doesn't lose what was typed.
@@ -11633,10 +11652,6 @@ function renderTime(){
   if(mode==='iso')_teLoadIsoTargets();
 
   const _teLoggableTasks=DB.tasks.filter(t=>!t.archived&&!_isTaskOnPersonalBoard(t));
-  const taskOpts=_teLoggableTasks.map(t=>{
-    const cl=getTaskClient(t);
-    return`<option value="${t.id}">${cl?escHtml(cl.name)+' — ':''}${escHtml(t.name)}</option>`;
-  }).join('');
   window._teTaskAllItems=_teLoggableTasks.map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
   // Nothing here was marked selected, so the browser pre-selected the first client
   // alphabetically and a fresh form looked as though it had silently chosen one. Lead with
@@ -11737,8 +11752,9 @@ function renderTime(){
     groupMap.get(e.date).entries.push(e);
   });
 
+  const _teTasks=new Map(DB.tasks.map(t=>[t.id,t]));   // not a scan of every task per row (audit H9, 2026-10-17)
   const rowHtml=(e)=>{
-    const task=DB.tasks.find(t=>t.id===e.taskId);
+    const task=_teTasks.get(e.taskId);
     const staff=getStaff(e.staffId);
     // The entry's own clientId wins, falling back to the task's. This row used to do the
     // reverse, which made it the only place in the app that did: the pro forma import,
@@ -11817,7 +11833,9 @@ function renderTime(){
     </div>`;
   };
 
-  const groupsHtml=groups.map(g=>{
+  // The latest days first; older days on request. 25,000 entries took 1.6 s to open (audit H9).
+  if(_teGroupSig!==(isAdmin&&_teViewAll)){_teGroupSig=!!(isAdmin&&_teViewAll);_teGroupLimit=14;}
+  const groupsHtml=groups.slice(0,_teGroupLimit).map(g=>{
     const dayTotal=g.entries.reduce((s,e)=>s+e.hours,0);
     return`<div>
       <div style="position:sticky;top:0;z-index:1;background:#f4f7fa;padding:10px 18px;display:flex;align-items:center;gap:10px">
@@ -11886,7 +11904,7 @@ function renderTime(){
   // Location/Billable/Status/delete columns were not just off-screen but unreachable —
   // clipped by the card, not scrollable past. #te-week-bar above already gets this right.
   const listBody=weekBarHtml+standaloneQuickAdd+`<div style="overflow-x:auto">
-      ${groups.length?groupsHtml:emptyState}
+      ${groups.length?groupsHtml+(groups.length>_teGroupLimit?`<div style="text-align:center;padding:14px"><button onclick="_teGroupLimit+=14;renderView('time')" class="btn btn-ghost btn-sm">Show earlier days (${groups.length-_teGroupLimit} more)</button></div>`:''):emptyState}
     </div>`;
 
   const summaryStat=(label,value,color)=>`<div style="display:flex;flex-direction:column;gap:1px">
@@ -12676,22 +12694,23 @@ function _tsFilterEntries(){
   const canBill=_canBill(currentUser);
   const _tsExcl=_excludedBoardIds();
   const _tsInvMap=tsInvoicedFilter!=='all'?pfiInvoicedEntryMap(null):null;
+  const _tsTasks=new Map((DB.tasks||[]).map(t=>[t.id,t]));   // a scan of every task per entry took seconds at 25,000 entries (audit H9)
   return (DB.timeEntries||[]).filter(e=>{
     if(e.deletedAt) return false;
     if(!canBill&&e.staffId!==currentUser?.id) return false;
     // exclude entries whose task belongs to an internal-only board
     if(_tsExcl.size){
-      const _tsTask=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const _tsTask=e.taskId&&_tsTasks.get(e.taskId);
       const _tsBoardId=e.workboardId||(_tsTask&&(_tsTask.workboardId||_tsTask.boardId));
       if(_tsBoardId&&_tsExcl.has(_tsBoardId)) return false;
     }
     if(tsStaffFilter!=='all'&&e.staffId!==tsStaffFilter) return false;
     if(tsClientFilter!=='all'){
-      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const task=e.taskId&&_tsTasks.get(e.taskId);
       if(e.clientId!==tsClientFilter&&(!task||task.clientId!==tsClientFilter)) return false;
     }
     if(tsBoardFilter!=='all'){
-      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const task=e.taskId&&_tsTasks.get(e.taskId);
       if(!task||(task.workboardId||task.boardId)!==tsBoardFilter) return false;
     }
     // D13: 'any_iso' = any ISO-mode entry; a specific value = that one board's own isoAuditId.
@@ -12714,7 +12733,7 @@ function _tsFilterEntries(){
     if(tsSearch){
       const q=tsSearch.toLowerCase();
       const staff=getStaff(e.staffId);
-      const task=e.taskId&&DB.tasks.find(t=>t.id===e.taskId);
+      const task=e.taskId&&_tsTasks.get(e.taskId);
       const client=DB.clients.find(c=>c.id===e.clientId);
       if(!(
         (staff?.name||'').toLowerCase().includes(q)||
@@ -12900,7 +12919,7 @@ function tsToggleSelected(id,checked){
   if(bar)bar.innerHTML=_tsBulkBarHtml();
 }
 function tsToggleAllSelected(checked){
-  if(checked)_tsFilterEntries().forEach(e=>tsSelectedIds.add(e.id));
+  if(checked)_tsShown(_tsSorted(_tsFilterEntries())).forEach(e=>tsSelectedIds.add(e.id));
   else tsSelectedIds=new Set();
   // Update the bulk bar immediately (same as individual toggle does)
   const bar=document.getElementById('ts-bulk-bar');
@@ -13151,14 +13170,40 @@ function _tsBulkBarHtml(){
 // ══════════════════════════════════════════════════════════════════════════
 // TIMESHEETS — Detail table view
 // ══════════════════════════════════════════════════════════════════════════
+// The detailed table shows the latest rows only: 25,000 entries took 5.6 s to open (audit H9, 2026-10-17). The window
+// goes back to 150 whenever a filter changes. "Select all" covers the rows shown, so a bulk approval can never include
+// entries nobody was looking at. The totals still count every entry.
+let _tsSearchTimer=null;
+function _tsSearchInput(v){
+  tsSearch=v;
+  clearTimeout(_tsSearchTimer);
+  _tsSearchTimer=setTimeout(()=>{
+    renderView('reports');
+    const el=document.getElementById('ts-search-input');
+    if(el&&v){el.focus();try{el.setSelectionRange(v.length,v.length);}catch(_){}}
+  },250);
+}
+function _tsSorted(entries){return [...entries].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffId||'').localeCompare(b.staffId||''));}
+function _tsShown(sorted){
+  const sig=JSON.stringify([tsStaffFilter,tsClientFilter,tsBoardFilter,tsEarningsRateFilter,tsBillableFilter,tsInvoicedFilter,tsDateFrom,tsDateTo,tsStatusTab,tsSearch,tsViewMode]);
+  if(sig!==_tsLimitSig){_tsLimitSig=sig;tsRowLimit=150;}
+  return sorted.length>tsRowLimit?sorted.slice(sorted.length-tsRowLimit):sorted;
+}
 function _tsDetailTable(entries,canBill){
   if(!entries.length)return`<div class="card" style="text-align:center;padding:48px;color:#8da2b2"><p style="font-size:14px">No timesheet entries match the current filters.</p><p style="font-size:12px;margin-top:8px;color:#b0bec5">Try adjusting your filters or date range.</p></div>`;
-  const sorted=[...entries].sort((a,b)=>a.date.localeCompare(b.date)||(a.staffId||'').localeCompare(b.staffId||''));
+  const sorted=_tsSorted(entries);
+  const shown=_tsShown(sorted);
+  const hiddenN=sorted.length-shown.length;
   const thS='font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;padding:10px 12px;text-align:left;background:#f8fbff;border-bottom:2px solid #e4ecf4;white-space:nowrap';
   const tdS='padding:10px 12px;font-size:12px;border-bottom:1px solid #f4f6fa;vertical-align:middle';
-  const allSel=sorted.length>0&&sorted.every(e=>tsSelectedIds.has(e.id));
+  const allSel=shown.length>0&&shown.every(e=>tsSelectedIds.has(e.id));
   const invoicedMap=pfiInvoicedEntryMap(null);
-  const rows=sorted.map(e=>{
+  const windowBar=hiddenN>0?`<div id="ts-window-bar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff8e6;border-bottom:1px solid #f3e3b8;font-size:12px;color:#7a5b00;flex-wrap:wrap">
+      <span>Showing the latest ${shown.length} of ${sorted.length} entries. The ${hiddenN} earlier ${hiddenN!==1?'entries are':'entry is'} not shown; the totals count them all.</span>
+      <button onclick="tsRowLimit+=150;renderView('reports')" class="btn btn-ghost btn-sm">Show 150 more</button>
+      <button onclick="tsRowLimit=1e9;renderView('reports')" class="btn btn-ghost btn-sm">Show all</button>
+    </div>`:'';
+  const rows=shown.map(e=>{
     const staff=getStaff(e.staffId);
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
     const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
@@ -13199,6 +13244,7 @@ function _tsDetailTable(entries,canBill){
   }).join('');
   const grandTotal=entries.reduce((s,e)=>s+e.hours,0);
   return`<div class="card" style="padding:0;overflow:hidden">
+    ${windowBar}
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;min-width:820px">
       <thead><tr>
@@ -13423,7 +13469,7 @@ function _rptTimesheetHtml(){
       <label style="${lbSty}">Search</label>
       <div style="position:relative">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#97bcbd;pointer-events:none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <input type="text" value="${escHtml(tsSearch)}" placeholder="Search..." oninput="tsSearch=this.value;renderView('reports')" style="${inSty};padding-left:26px;width:150px"/>
+        <input id="ts-search-input" type="text" value="${escHtml(tsSearch)}" placeholder="Search..." oninput="_tsSearchInput(this.value)" style="${inSty};padding-left:26px;width:150px"/>
         ${tsSearch?`<button onclick="tsSearch='';renderView('reports')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:16px;line-height:1;padding:0">×</button>`:''}
       </div>
     </div>
@@ -17746,12 +17792,13 @@ function _notifyAllStaff(type, message, taskId=null){
   allStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,taskId,type,message));
 }
 
+let _notifLimit=100;   // the notification list shows the latest 100 (audit H9, 2026-10-17); counts and Mark all read cover them all
 function renderNotifications(){
   const myNotifs=[...DB.notifications.filter(n=>n.recipientId===currentUser.id)]
     .sort((a,b)=>new Date(b.createdAt||b.timestamp)-new Date(a.createdAt||a.timestamp));
   const unreadCount=myNotifs.filter(n=>!n.read).length+((window._isoEnabled&&window.ISO&&ISO.notifUnread)?ISO.notifUnread():0); // + ISO 7.6
 
-  const rowObjs=myNotifs.map(n=>{
+  const rowObjs=myNotifs.slice(0,_notifLimit).map(n=>{
     const task=DB.tasks.find(t=>t.id===n.taskId);
     const meta=NOTIF_TYPES[n.type]||{label:n.type,color:'#8da2b2',icon:'●'};
     const bg=n.read?'':'#f8fbff';
@@ -17797,7 +17844,10 @@ function renderNotifications(){
   });
   // ISO 7.6 hook (release-1 B5.1): ISO's own items ({at, html}) merged into the same list, newest first.
   const isoRows=(window._isoEnabled&&window.ISO&&ISO.notifItems)?ISO.notifItems():[];
-  const rows=rowObjs.concat(isoRows).sort((a,b)=>b.at-a.at).map(r=>r.html).join('');
+  const allRows=rowObjs.concat(isoRows).sort((a,b)=>b.at-a.at);
+  const totalRows=myNotifs.length+isoRows.length;
+  const rows=allRows.slice(0,_notifLimit).map(r=>r.html).join('')
+    +(totalRows>_notifLimit?`<div style="text-align:center;padding:14px"><button onclick="_notifLimit+=100;renderView('notifications')" class="btn btn-ghost btn-sm">Show older (${totalRows-_notifLimit} more)</button></div>`:'');
 
   return`<div class="card" style="padding:0;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid #e2eaf2;display:flex;align-items:center;gap:10px">
