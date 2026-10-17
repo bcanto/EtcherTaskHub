@@ -23874,28 +23874,38 @@ function _checkRecurringTasks(){
     if(r.endType==='count'&&r.occurrences&&occCount>=parseInt(r.occurrences))return;
     // Build new task instance
     const _now=new Date().toISOString();
-    const base=JSON.parse(JSON.stringify(source));
-    const newTask={
-      ...base,
-      id:'t'+uid(),
-      startDate:nextDue,
-      endDate:nextDue,
-      status:'todo',
-      percentComplete:0,
-      completedAt:null,
-      recurrence:null,
-      recurSourceId:source.id,
-      createdAt:_now,
-      updatedAt:_now,
-    };
-    if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
-    if(!r.copySameBoard){newTask.boardId=source.boardId||null;newTask.workboardId=source.workboardId||null;newTask.groupId=source.groupId||null;}
-    if(!r.copySamePriority)newTask.priority='med';
-    if(!r.copySameDescription)newTask.description='';
-    DB.tasks.push(newTask);
-    if(r.copySameAssignee)notifyTaskCreated(newTask);
+    // One occurrence has one id, made from its source and its due date (audit H5, 2026-10-17). Every open session
+    // makes the occurrence that is due when it starts and at midnight, and two sessions used to make two tasks. With
+    // one id they make the same task and the merge keeps one. An occurrence that already exists (made by another
+    // session, or earlier) or that someone deleted is not made again; "next due" still moves on.
+    const occId='t_rec_'+source.id+'_'+nextDue;
+    if(!(DB.tasks||[]).some(t=>t.id===occId)&&!(DB.deletedTaskIds||[]).includes(occId)){
+      const base=JSON.parse(JSON.stringify(source));
+      delete base.refNumber;   // numbered on its own: it kept the source's, so two tasks shared one reference
+      const newTask={
+        ...base,
+        id:occId,
+        startDate:nextDue,
+        endDate:nextDue,
+        status:'todo',
+        percentComplete:0,
+        completedAt:null,
+        recurrence:null,
+        recurSourceId:source.id,
+        createdAt:_now,
+        updatedAt:_now,
+      };
+      if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
+      if(!r.copySameBoard){newTask.boardId=source.boardId||null;newTask.workboardId=source.workboardId||null;newTask.groupId=source.groupId||null;}
+      if(!r.copySamePriority)newTask.priority='med';
+      if(!r.copySameDescription)newTask.description='';
+      DB.tasks.push(newTask);
+      if(r.copySameAssignee)notifyTaskCreated(newTask);
+      created++;
+    }
     source.recurrence={...r,nextDue:_recurNextDate(nextDue,r),occurrenceCount:occCount+1};
-    created++;
+    // Stamped, or the merge keeps another session's older copy and that session makes the occurrence again.
+    source.updatedAt=_now;
   });
   if(created>0){saveDB(DB);showToast(`${created} recurring task${created!==1?'s':''} created`,'info',3500);}
 }
