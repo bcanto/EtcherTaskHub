@@ -3342,6 +3342,13 @@ async function _supabaseRestoreSession(session){
     // not tried again on every page load.
     if(profileData.active===false){try{await sb.auth.signOut();}catch(_){}return false;}
     _idleTouch(true);   // signing in is activity (idle sign-out, SSO + HTTPS plan)
+    // Staff sign in with Microsoft only, once switched on in the database (migration 018). Refused here with the reason,
+    // rather than letting the database rules hand over an empty app.
+    if(profileData.role!=='client'&&!(await _sessionAllowed(sb))){
+      try{await sb.auth.signOut();}catch(_){}
+      showLoginError('Staff accounts sign in with Microsoft. Use "Sign in with Microsoft" below.');
+      return false;
+    }
     const p=profileData;
     const isClient=p.role==='client';
     if(isClient){
@@ -4561,6 +4568,11 @@ async function _idleSignOutAtStartup(){
 // Recorded even while no limit is set, so switching one on later starts from real activity.
 ['mousedown','keydown','touchstart','wheel'].forEach(ev=>document.addEventListener(ev,()=>{if(currentUser)_idleTouch();},{passive:true,capture:true}));
 setInterval(_idleCheck,30000);
+// Asks the database whether this session meets the sign-in rule (public.session_allowed(), migration 018). Before the
+// migration is applied the function does not exist and every session is allowed, as today.
+async function _sessionAllowed(sb){
+  try{const{data,error}=await sb.rpc('session_allowed');if(error)return true;return data!==false;}catch(_){return true;}
+}
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
