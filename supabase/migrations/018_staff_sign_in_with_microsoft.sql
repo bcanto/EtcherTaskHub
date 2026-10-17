@@ -24,8 +24,9 @@ CREATE TABLE IF NOT EXISTS public.security_settings (
 INSERT INTO public.security_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 ALTER TABLE public.security_settings ENABLE ROW LEVEL SECURITY;
 
--- Accounts that may still sign in with a password while the switch is on (keep this to one or two people; protect them
--- with an authenticator app as well, plan phase C). Emails in lower case. No policies, as above.
+-- Accounts that may still sign in with a password while the switch is on (keep this to one or two people). Each must
+-- have set up two-step sign-in (authenticator app, plan phase C) and give its code: without it, a break-glass password
+-- session is refused. Emails in lower case. No policies, as above.
 CREATE TABLE IF NOT EXISTS public.break_glass_accounts (
   email       TEXT PRIMARY KEY CHECK (email = lower(email)),
   note        TEXT,
@@ -33,22 +34,29 @@ CREATE TABLE IF NOT EXISTS public.break_glass_accounts (
 );
 ALTER TABLE public.break_glass_accounts ENABLE ROW LEVEL SECURITY;
 
--- Does the current session meet the sign-in rule? True when the switch is off, for anyone who is not internal staff,
--- for a break-glass account, and for a session made through Microsoft (Supabase records how a session was made in the
--- token's "amr" claim: method "oauth" for Microsoft; "password" for the password form).
+-- Does the current session meet the sign-in rules?
+-- 1. Two-step sign-in (plan phase C), always: anyone who has set up an authenticator app must have given its code this
+--    session (the token's "aal" claim is "aal2"). People who never set one up are not affected.
+-- 2. Microsoft only for staff, when the switch is on: true for anyone who is not internal staff, for a break-glass
+--    account that gave its authenticator code, and for a session made through Microsoft (Supabase records how a session
+--    was made in the token's "amr" claim: method "oauth" for Microsoft; "password" for the password form).
 CREATE OR REPLACE FUNCTION public.session_allowed()
 RETURNS BOOLEAN
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public AS $$
-  SELECT CASE
-    WHEN NOT COALESCE((SELECT staff_microsoft_only FROM public.security_settings WHERE id = 1), false) THEN true
-    WHEN NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'pm', 'staff')) THEN true
-    WHEN lower(COALESCE(auth.jwt() ->> 'email', '')) IN (SELECT email FROM public.break_glass_accounts) THEN true
-    ELSE EXISTS (
-      SELECT 1 FROM jsonb_array_elements(COALESCE(auth.jwt() -> 'amr', '[]'::jsonb)) AS m(entry)
-      WHERE m.entry ->> 'method' IN ('oauth', 'sso/saml')
-    )
-  END
+  SELECT
+    (NOT EXISTS (SELECT 1 FROM auth.mfa_factors f WHERE f.user_id = auth.uid() AND f.status = 'verified')
+      OR COALESCE(auth.jwt() ->> 'aal', '') = 'aal2')
+    AND CASE
+      WHEN NOT COALESCE((SELECT staff_microsoft_only FROM public.security_settings WHERE id = 1), false) THEN true
+      WHEN NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'pm', 'staff')) THEN true
+      WHEN lower(COALESCE(auth.jwt() ->> 'email', '')) IN (SELECT email FROM public.break_glass_accounts)
+        THEN COALESCE(auth.jwt() ->> 'aal', '') = 'aal2'
+      ELSE EXISTS (
+        SELECT 1 FROM jsonb_array_elements(COALESCE(auth.jwt() -> 'amr', '[]'::jsonb)) AS m(entry)
+        WHERE m.entry ->> 'method' IN ('oauth', 'sso/saml')
+      )
+    END
 $$;
 REVOKE ALL ON FUNCTION public.session_allowed() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.session_allowed() TO authenticated;
@@ -78,10 +86,13 @@ $$;
 -- 1. Sign in to Task Hub with Microsoft as a staff member. In the browser console run:
 --      JSON.parse(atob((await window._supabase.auth.getSession()).data.session.access_token.split('.')[1])).amr
 --    It must list {"method":"oauth", ...}. (If it shows another method name, tell Claude before going further.)
--- 2. Add the break-glass admin:   insert into public.break_glass_accounts (email, note) values ('director@etchersolutions.com', 'break-glass');
+-- 2. The break-glass admin signs in with their password and sets up two-step sign-in (the "Two-step sign-in" button,
+--    with TWO_STEP_SIGNIN=1), signs out, and checks that signing in now asks for the code. Then add them:
+--      insert into public.break_glass_accounts (email, note) values ('director@etchersolutions.com', 'break-glass');
 -- 3. Switch on:                   update public.security_settings set staff_microsoft_only = true, updated_at = now() where id = 1;
 -- 4. Test: a staff password sign-in is refused with "Staff accounts sign in with Microsoft"; Microsoft sign-in works;
---    the break-glass admin can still use the password; a client login is unaffected.
+--    the break-glass admin can still use the password plus their code; a client login is unaffected (a client who set
+--    up two-step sign-in is asked for their code, as before the switch).
 --
 -- ── Switch off (immediate, no code change) ────────────────────────────────────
 --   update public.security_settings set staff_microsoft_only = false, updated_at = now() where id = 1;

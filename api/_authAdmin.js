@@ -155,6 +155,10 @@ async function requireClientCaller(req, res) {
     res.status(403).json({ error: 'Client portal access required' });
     return null;
   }
+  // Someone who set up two-step sign-in must have given their code (migration 018; the Microsoft rule never applies to
+  // clients, so for them this is only that).
+  const token = (req.headers['authorization'] || '').slice(7);
+  if (!(await enforceSignInRule(token, res))) return null;
   // The name is shown to staff in notifications and comments; a user can edit their own, so cap it.
   const name = String(p.name || 'Client').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 100) || 'Client';
   return { id: caller.id, name, clientId: p.client_id };

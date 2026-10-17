@@ -1569,6 +1569,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 
     <!-- Footer -->
     <div style="padding:10px 10px 14px;border-top:1px solid rgba(255,255,255,0.05);position:relative;z-index:1">
+      <button type="button" class="two-step-btn" onclick="openTwoStepSettings()" style="display:none;width:100%;margin-bottom:6px;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);color:#8da2b2;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:500;cursor:pointer">Two-step sign-in</button>
       <button onclick="doLogout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);color:#334e68;font-family:'Jost',sans-serif;font-size:11.5px;font-weight:500;cursor:pointer;transition:background 0.18s,color 0.18s,border-color 0.18s;letter-spacing:0.03em" onmouseover="this.style.background='rgba(151,188,189,0.1)';this.style.color='#7aaabb';this.style.borderColor='rgba(151,188,189,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.035)';this.style.color='#334e68';this.style.borderColor='rgba(255,255,255,0.06)'">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11 11l3-3-3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="8" x2="6" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Sign Out
@@ -1644,6 +1645,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     <div id="cp-client-name" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:0.01em">Client Portal</div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
       <span class="cp-top-tag" style="font-size:11px;color:#2a4560;font-family:'Jost',sans-serif;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Client Portal</span>
+      <button type="button" class="two-step-btn" onclick="openTwoStepSettings()" style="display:none;padding:6px 14px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#8da2b2;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Two-step sign-in</button>
       <button onclick="doLogout()" style="padding:6px 16px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#8da2b2;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.13)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#8da2b2'">Sign out</button>
     </div>
   </header>
@@ -3342,6 +3344,8 @@ async function _supabaseRestoreSession(session){
     // not tried again on every page load.
     if(profileData.active===false){try{await sb.auth.signOut();}catch(_){}return false;}
     _idleTouch(true);   // signing in is activity (idle sign-out, SSO + HTTPS plan)
+    // Two-step sign-in: anyone who set up an authenticator app gives a code before anything loads (plan phase C).
+    if(!(await _mfaSignInStep(sb))){try{await sb.auth.signOut();}catch(_){}showLoginError('Signed out: the code from your authenticator app is needed to sign in.');return false;}
     // Staff sign in with Microsoft only, once switched on in the database (migration 018). Refused here with the reason,
     // rather than letting the database rules hand over an empty app.
     if(profileData.role!=='client'&&!(await _sessionAllowed(sb))){
@@ -4573,6 +4577,118 @@ setInterval(_idleCheck,30000);
 async function _sessionAllowed(sb){
   try{const{data,error}=await sb.rpc('session_allowed');if(error)return true;return data!==false;}catch(_){return true;}
 }
+// Two-step sign-in with an authenticator app (SSO + HTTPS plan, phase C), through Supabase's own TOTP factors.
+// - At sign-in, anyone who has set one up is asked for a code before anything loads (the session becomes "aal2").
+// - Setting one up is offered to password logins (staff on the password form, the break-glass admin, clients) when
+//   TWO_STEP_SIGNIN=1. Microsoft logins already have Microsoft's own two-step check, so it is not offered to them.
+// - Once migration 018 is applied, the database refuses a session that skipped the code.
+function _jwtClaims(token){
+  try{const p=String(token||'').split('.')[1];return JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((p.length+3)%4)));}catch(_){return{};}
+}
+async function _sessionSignInMethods(){
+  try{const{data}=await window._supabase.auth.getSession();return((_jwtClaims(data&&data.session&&data.session.access_token).amr)||[]).map(a=>a&&a.method).filter(Boolean);}catch(_){return[];}
+}
+// The code prompt. Resolves true once a code is accepted, false if the person cancels. Its own layer, above the login
+// screen and everything else; never the browser's own prompt.
+function _mfaPrompt(sb,factorId){
+  return new Promise(resolve=>{
+    document.getElementById('mfa-prompt')?.remove();
+    const ov=document.createElement('div');
+    ov.id='mfa-prompt';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-labelledby','mfa-prompt-title');
+    ov.style.cssText='position:fixed;inset:0;z-index:800;background:rgba(13,28,51,0.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML=`<div style="background:#fff;border-radius:12px;max-width:380px;width:100%;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(13,28,51,0.3)">
+      <h3 id="mfa-prompt-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:700;color:#0d1c33;margin:0 0 6px">Enter your sign-in code</h3>
+      <p style="font-size:13px;color:#4b5e72;line-height:1.6;margin:0 0 14px">Open your authenticator app and type the 6-digit code it shows for Etcher Task Hub.</p>
+      <input id="mfa-code" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="6-digit code" placeholder="123456" style="font-size:20px;letter-spacing:0.3em;text-align:center"/>
+      <div id="mfa-error" role="alert" style="font-size:12px;color:#b91c1c;min-height:18px;margin-top:6px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button type="button" id="mfa-cancel" class="btn btn-ghost">Cancel</button>
+        <button type="button" id="mfa-verify" class="btn btn-primary">Verify</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    const input=ov.querySelector('#mfa-code'),err=ov.querySelector('#mfa-error'),btn=ov.querySelector('#mfa-verify');
+    const done=v=>{ov.remove();resolve(v);};
+    const verify=async()=>{
+      const code=(input.value||'').replace(/\D/g,'');
+      if(code.length!==6){err.textContent='Type the 6 digits from your authenticator app.';input.focus();return;}
+      btn.disabled=true;err.textContent='';
+      try{
+        const{error}=await sb.auth.mfa.challengeAndVerify({factorId,code});
+        if(error){err.textContent='That code did not work. Check the app and try again.';btn.disabled=false;input.select();return;}
+        done(true);
+      }catch(_){err.textContent='That code did not work. Check the app and try again.';btn.disabled=false;}
+    };
+    btn.onclick=verify;
+    ov.querySelector('#mfa-cancel').onclick=()=>done(false);
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')verify();if(e.key==='Escape')done(false);});
+    setTimeout(()=>input.focus(),0);
+  });
+}
+// At sign-in: true when no code is needed or the code was accepted; false when the person cancelled.
+async function _mfaSignInStep(sb){
+  try{
+    if(!sb.auth||!sb.auth.mfa)return true;
+    const{data,error}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(error||!data||data.nextLevel!=='aal2'||data.currentLevel==='aal2')return true;
+    const{data:f}=await sb.auth.mfa.listFactors();
+    const factor=((f&&f.totp)||[]).find(x=>x.status==='verified');
+    if(!factor)return true;
+    _hideLoadingScreen();
+    return await _mfaPrompt(sb,factor.id);
+  }catch(_){return true;}
+}
+// The "Two-step sign-in" button (staff sidebar and client portal header).
+async function _updateTwoStepButton(){
+  const show=!!(window._twoStepSignIn&&window._supabase&&currentUser)&&!(await _sessionSignInMethods()).includes('oauth');
+  document.querySelectorAll('.two-step-btn').forEach(b=>{b.style.display=show?'':'none';});
+}
+async function openTwoStepSettings(){
+  const sb=window._supabase;if(!sb||!sb.auth||!sb.auth.mfa)return;
+  const{data}=await sb.auth.mfa.listFactors();
+  const factor=((data&&data.totp)||[]).find(x=>x.status==='verified');
+  const body=factor
+    ?`<p style="font-size:13px;color:#4b5e72;line-height:1.7;margin:0 0 12px">Two-step sign-in is <strong>on</strong>. Each time you sign in with your password you are asked for a code from your authenticator app.</p>
+      <button type="button" class="btn btn-danger" data-factor="${escHtml(factor.id)}" onclick="twoStepTurnOff(this.dataset.factor)">Turn off two-step sign-in</button>`
+    :`<p style="font-size:13px;color:#4b5e72;line-height:1.7;margin:0 0 12px">Add a second step to your password: a 6-digit code from an authenticator app on your phone (Microsoft Authenticator, Google Authenticator or similar).</p>
+      <button type="button" class="btn btn-primary" onclick="twoStepStart()">Set it up</button>`;
+  openGenericModal('Two-step sign-in',`<div id="two-step-body">${body}</div>`,'');
+}
+async function twoStepStart(){
+  const sb=window._supabase,box=document.getElementById('two-step-body');if(!sb||!box)return;
+  // A half-finished set-up from before is cleared first, or the new one is refused.
+  try{const{data}=await sb.auth.mfa.listFactors();for(const f of((data&&data.all)||[]))if(f.status==='unverified')await sb.auth.mfa.unenroll({factorId:f.id});}catch(_){}
+  const{data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'Task Hub '+new Date().toISOString().slice(0,10)});
+  if(error||!data||!data.totp){box.innerHTML=`<p style="font-size:13px;color:#b91c1c">Two-step sign-in could not be set up right now. Try again later.</p>`;return;}
+  const qr=String(data.totp.qr_code||'');
+  box.innerHTML=`<p style="font-size:13px;color:#4b5e72;line-height:1.7;margin:0 0 10px">1. In your authenticator app, add an account and scan this code.</p>
+    ${/^data:image\/svg\+xml/.test(qr)?`<img id="two-step-qr" alt="QR code for your authenticator app" style="width:180px;height:180px;display:block;margin:0 auto 10px;background:#fff"/>`:''}
+    <p style="font-size:12px;color:#6b8399;margin:0 0 12px">Cannot scan? Type this key instead: <code id="two-step-secret" style="font-size:12px;word-break:break-all"></code></p>
+    <p style="font-size:13px;color:#4b5e72;line-height:1.7;margin:0 0 6px">2. Type the 6-digit code the app shows.</p>
+    <input id="two-step-code" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="6-digit code" placeholder="123456" style="font-size:18px;letter-spacing:0.3em;text-align:center"/>
+    <div id="two-step-error" role="alert" style="font-size:12px;color:#b91c1c;min-height:18px;margin-top:6px"></div>
+    <button type="button" class="btn btn-primary" data-factor="${escHtml(data.id)}" onclick="twoStepConfirm(this.dataset.factor)">Turn on</button>`;
+  const img=document.getElementById('two-step-qr');if(img)img.src=qr;   // set as a property: never parsed as markup
+  document.getElementById('two-step-secret').textContent=String(data.totp.secret||'');
+}
+async function twoStepConfirm(factorId){
+  const sb=window._supabase,err=document.getElementById('two-step-error'),code=(document.getElementById('two-step-code')?.value||'').replace(/\D/g,'');
+  if(code.length!==6){if(err)err.textContent='Type the 6 digits from your authenticator app.';return;}
+  const{error}=await sb.auth.mfa.challengeAndVerify({factorId,code});
+  if(error){if(err)err.textContent='That code did not work. Check the app and try again.';return;}
+  const box=document.getElementById('two-step-body');
+  if(box)box.innerHTML=`<p style="font-size:13px;color:#166534;line-height:1.7;margin:0">Two-step sign-in is on. Next time you sign in with your password, you will be asked for a code from the app.</p>`;
+  writeAuditEvent('User',currentUser&&currentUser.id,'two_step_on',null,null);
+}
+function twoStepTurnOff(factorId){
+  openConfirm('Turn off two-step sign-in','Your password alone will sign you in again. Turn off two-step sign-in?','Turn off',async()=>{
+    closeConfirm();
+    const{error}=await window._supabase.auth.mfa.unenroll({factorId});
+    const box=document.getElementById('two-step-body');
+    if(error){if(box)box.innerHTML=`<p style="font-size:13px;color:#b91c1c">It could not be turned off. Sign out, sign in again with your code, then try once more.</p>`;return;}
+    if(box)box.innerHTML=`<p style="font-size:13px;color:#4b5e72;margin:0">Two-step sign-in is off.</p>`;
+    writeAuditEvent('User',currentUser&&currentUser.id,'two_step_off',null,null);
+  });
+}
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
@@ -4734,6 +4850,7 @@ function launchClientView(){
   const portal=document.getElementById('client-portal');
   if(!portal){launchApp();return;}
   portal.classList.remove('hidden');
+  _updateTwoStepButton();
   // Set client name in header
   const client=DB.clients.find(c=>c.id===currentUser.clientId);
   const cpName=document.getElementById('cp-client-name');
@@ -4789,6 +4906,7 @@ function doLogout(){
   _updateTabNotifIndicator(0);
 }
 function updateSidebarUser(){
+  _updateTwoStepButton();
   document.getElementById('sidebar-avatar').textContent=currentUser.initials||'?';
   document.getElementById('sidebar-avatar').style.background=currentUser.color||'#97bcbd';
   document.getElementById('sidebar-name').textContent=currentUser.name;
