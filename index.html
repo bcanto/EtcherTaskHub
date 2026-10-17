@@ -4524,6 +4524,42 @@ function signInWithMicrosoft(){
   if(!window._supabase){showLoginError('Microsoft sign-in is not available right now.');return;}
   window._supabase.auth.signInWithOAuth({provider:'azure',options:{scopes:'openid email profile',redirectTo:location.origin+'/'}}).then(r=>{if(r&&r.error)showLoginError(r.error.message);});
 }
+// A Microsoft sign-in that opens no Task Hub account: never invited, switched off, or the second, empty account Supabase
+// makes when the Microsoft email is not marked verified (plan step 2.3). It used to land back on the login screen without
+// a word, and the stored session was tried again on every load. Signed out with the reason instead. A passing fault (the
+// profile could not be read) is left alone, so the next load tries again.
+async function _refuseUnknownMicrosoftSession(session){
+  try{
+    const sb=window._supabase;
+    const methods=((_jwtClaims(session&&session.access_token).amr)||[]).map(a=>a&&a.method);
+    if(!sb||!methods.includes('oauth'))return false;
+    const shown=document.getElementById('login-error');
+    if(shown&&!shown.classList.contains('hidden'))return false;   // already refused with its own reason
+    const{data:p,error}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+    const noAccount=error?error.code==='PGRST116':!p||p.active===false||(p.role==='client'&&!p.client_id);
+    if(!noAccount)return false;
+    try{await sb.auth.signOut();}catch(_){}
+    showLoginError('This Microsoft account has no access to Task Hub. Ask your administrator to invite you with the same email address.');
+    return true;
+  }catch(_){return false;}
+}
+// Supabase sends sign-in errors back in the address (#error=...&error_code=...): an unknown Microsoft account while new
+// sign-ups are off, a cancelled Microsoft sign-in, an expired email link. The library leaves them there and the login
+// screen said nothing. Returned in fixed words (never the address text: anyone can send a link with any text in it), and
+// taken out of the address so a refresh does not show it again.
+function _authErrorFromUrl(){
+  let q;
+  try{
+    q=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    if(!q.get('error')&&!q.get('error_code'))q=new URLSearchParams(location.search);
+  }catch(_){return '';}
+  const err=q.get('error')||'',code=q.get('error_code')||'',desc=q.get('error_description')||'';
+  if(!err&&!code)return '';
+  try{history.replaceState(history.state,'',location.pathname);}catch(_){}
+  if(code==='signup_disabled'||/signups? not allowed/i.test(desc))return 'This Microsoft account has no access to Task Hub. Ask your administrator to invite you with the same email address.';
+  if(code==='otp_expired')return 'This email link has expired or was already used. Ask your administrator to send a new one.';
+  return 'Sign-in did not finish. Try again, or ask your administrator.';
+}
 // Signed out after a stretch without activity (SSO + HTTPS plan; audit L7: sessions never timed out, so a shared or
 // lost computer stayed signed in). SESSION_IDLE_MINUTES on the server; off when unset or 0. Activity in any tab counts
 // (it is shared through this browser's storage), a warning shows two minutes before, and a browser reopened after the
@@ -26907,10 +26943,12 @@ document.addEventListener('keydown',e=>{
         }
         const restored=await _supabaseRestoreSession(session);
         if(restored)return;
+        await _refuseUnknownMicrosoftSession(session);
       }
       // No active Supabase session — show login (don't fall back to localStorage
       // when Supabase is configured, as that would bypass server-side auth)
       _idleShowNotice();
+      {const m=_authErrorFromUrl();if(m)showLoginError(m);}
       _hideLoadingScreen();
       return;
     }
