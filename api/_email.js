@@ -82,4 +82,7 @@ async function sendNotificationEmail({ to, recipientName, type, message, senderN
   }
 }
 
-module.exports = { sendNotificationEmail };
+// The notification kinds that may be emailed (the same four META describes).
+const EMAIL_TYPES = Object.keys(META);
+
+module.exports = { sendNotificationEmail, EMAIL_TYPES };
