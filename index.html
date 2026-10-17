@@ -18232,10 +18232,10 @@ async function wsSendComms(){
       const storagePath=await _storageUpload('comms',fid,file);
       if(storagePath){attachments.push({id:fid,name:file.name,type:file.type,size:file.size,storagePath});continue;}
     }
-    if(file.size>4*1024*1024){showAlert(storageOn&&file.size<=10*1024*1024?`"${file.name}" could not be uploaded. Files over 4 MB need file storage to be reachable — try again in a moment.`:`"${file.name}" is over ${storageOn?10:4} MB — skipped.`,'File Too Large');continue;}
+    if(file.size>4*1024*1024){showAlert(storageOn&&file.size<=10*1024*1024?`"${file.name}" could not be uploaded. Files over 4 MB need file storage to be reachable. Try again in a moment.`:`"${file.name}" is over ${storageOn?10:4} MB and was skipped.`,'File Too Large');continue;}
     const data=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
     if(!data){showAlert(`Failed to read "${file.name}" — skipped.`,'File Error');continue;}
-    if(!_saveFileData(fid,data)){showAlert(`"${file.name}" could not be saved — this browser's storage is full.`,'Storage Full');continue;}
+    if(!_saveFileData(fid,data)){showAlert(`"${file.name}" could not be saved because this browser's storage is full.`,'Storage Full');continue;}
     attachments.push({id:fid,name:file.name,type:file.type,size:file.size,stored:true});
   }
   if(!DB.internalComms)DB.internalComms=[];
