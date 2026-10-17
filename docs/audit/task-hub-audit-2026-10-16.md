@@ -65,7 +65,7 @@ Twelve commits on branch `high-fixes`, built on top of `deploy-batch` (the criti
 | H3 | Each custom status and priority is merged on its own time; deletes and resets are remembered. | `39925a1` | `high-h3-labels-test` 14 checks, can-fail 12/12 |
 | H9 | At 60 clients, 120 boards, 6,000 tasks, 25,000 hours and 3,000 notifications: Reports 5.6 s to 0.1 s, Notifications 0.64 s to 0.09 s, Time 1.55 s to 0.63 s (windows with "show more"; totals still count everything; Select all covers the rows shown); search boxes wait for a pause; read notifications older than 90 days are cleared. | `f44cb15` | `high-h9-performance-test` 23 checks, can-fail 21/21 |
 | H10 | Files sent in the internal comms go to file storage (up to 10 MB) and the record holds a reference; offline they stay in the browser's file store; deleting a message removes its files. | `a6be9b9` | `high-h10-comms-files-test` 20 checks, can-fail 14/14 |
-| H8 | Deleting tasks, client create/edit/delete, staff add/edit/remove, hours edits, approvals and rejections (single and bulk) are recorded; every event is also sent to `public.audit_log`; the server writes login, password, access and role events itself; the Audit screen shows both. Migration `017_audit_log_signed_in_insert.sql` is written, **not applied**. | `ab681fe` | `high-h8-audit-test` 50 checks, can-fail 46/46 |
+| H8 | Deleting tasks, client create/edit/delete, staff add/edit/remove, hours edits, approvals and rejections (single and bulk) are recorded; every event is also sent to `public.audit_log`; the server writes login, password, access and role events itself; the Audit screen shows both, each change in words (a delete reads as the thing deleted and what went with it, a role change as the old and new role). Migration `017_audit_log_signed_in_insert.sql` is written, **not applied**. | `ab681fe`, `4b1b4af` | `high-h8-audit-test` 58 checks, can-fail 60/60 |
 
 **Regression testing.** `high-fixes` (main-based): 66 suites, 1,530 checks, 0 failures. One suite (`crit-c2-staff-access-test`) lost its browser in the first run (Chrome closed under it) and passed 27 of 27 on three reruns. The combined `deploy-batch` passes 55 suites, 1,267 checks. `retained-high` runs the full retained-services gate. The stored-script fuzz (about 450 controls, every text field marked) finds 0 fields that fire.
 
@@ -218,7 +218,7 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H8. The audit trail misses key actions and can be edited (Live)
-- **Fixed 17 October** (`ab681fe`). Needs migration 017 for the app's own events to reach the server table.
+- **Fixed 17 October** (`ab681fe`, wording follow-up `4b1b4af`). Needs migration 017 for the app's own events to reach the server table.
 - **Issue:**
   - Nothing is recorded for: task deletion, client create/edit/delete, staff add/remove/role change, time entry edits, timesheet approval and rejection.
   - The log keeps only the last 1,000 events.

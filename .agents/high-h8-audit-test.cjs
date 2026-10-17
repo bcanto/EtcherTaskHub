@@ -246,10 +246,13 @@ async function browserTests() {
     await p.evaluate(() => {
       _auditServerRows = []; _auditServerAt = 0; _auditServerOff = false;
       const T = new Date().toISOString();
-      DB.auditLog = [{ id: 'aeLocalOnly', entityType: 'Task', entityId: 't1', actorId: currentUser.id, action: 'deleted', beforeValueJson: JSON.stringify({ name: 'Local only task' }), afterValueJson: null, createdAt: T },
+      // The shapes the real code writes: a task delete carries its board, client and sub-items; twelve at once carry the first names.
+      DB.auditLog = [{ id: 'aeLocalOnly', entityType: 'Task', entityId: 't1', actorId: currentUser.id, action: 'deleted', beforeValueJson: JSON.stringify({ name: 'Local only task', boardId: 'b1', clientId: null, subItems: 2 }), afterValueJson: null, createdAt: T },
+                     { id: 'aeBulk', entityType: 'Task', entityId: 'bulk', actorId: currentUser.id, action: 'deleted', beforeValueJson: JSON.stringify({ count: 12, subItems: 3, names: ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliet'] }), afterValueJson: null, createdAt: T },
                      { id: 'aeBoth', entityType: 'Client', entityId: 'cB', actorId: currentUser.id, action: 'deleted', beforeValueJson: JSON.stringify({ name: 'Edited locally' }), afterValueJson: null, createdAt: T },
                      { id: 'aeHours', entityType: 'TimeEntry', entityId: 'teQ', actorId: currentUser.id, action: 'approved', beforeValueJson: JSON.stringify({ displayValue: 'submitted' }), afterValueJson: JSON.stringify({ displayValue: 'approved', hours: 3 }), createdAt: T }];
-      window.__serverRows = [{ id: 'aeBoth', entity_type: 'Client', entity_id: 'cB', actor_id: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1', action: 'deleted', before_value: { name: 'The real client name' }, after_value: null, created_at: T },
+      window.__serverRows = [{ id: 'aeBoth', entity_type: 'Client', entity_id: 'cB', actor_id: 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1', action: 'deleted', before_value: { name: 'The real client name', tasks: 5, groups: 2 }, after_value: null, created_at: T },
+                             { id: 'aeSrvNew', entity_type: 'User', entity_id: 'uZ', actor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', action: 'login_created', before_value: null, after_value: { email: 'new@x.test', role: 'staff', existed: false }, created_at: T },
                              { id: 'aeServer', entity_type: 'User', entity_id: 'uZ', actor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', action: 'password_changed', before_value: null, after_value: null, created_at: T },
                              { id: 'aeSrvRole', entity_type: 'User', entity_id: 'uZ', actor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', action: 'role_changed', before_value: { role: 'staff' }, after_value: { role: 'admin' }, created_at: T },
                              { id: 'aeSrvOff', entity_type: 'User', entity_id: 'uZ', actor_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', action: 'access_disabled', before_value: null, after_value: null, created_at: T }];
@@ -259,7 +262,21 @@ async function browserTests() {
     await p.evaluate(() => new Promise(r => setTimeout(r, 600)));
     const screen = await p.evaluate(() => ({ text: document.getElementById('view-container').innerText.replace(/\s+/g, ' '), dots: document.querySelectorAll('#view-container td > span[title^="Recorded on the server"]').length, rows: document.querySelectorAll('#view-container tbody tr').length }));
     ok(/Local only task/.test(screen.text) && /The real client name/.test(screen.text) && !/Edited locally/.test(screen.text), 'the Audit screen shows the local log and the server trail together; where both hold an event the server\'s copy is shown (' + screen.rows + ' rows)');
-    ok(screen.rows === 6 && screen.dots === 4, 'four of the six rows are marked as recorded on the server (' + screen.dots + ' of ' + screen.rows + ')');
+    ok(screen.rows === 8 && screen.dots === 5, 'five of the eight rows are marked as recorded on the server (' + screen.dots + ' of ' + screen.rows + ')');
+    // The Change column in words, never the raw record: what was deleted, and what went with it.
+    const changeOf = re => p.evaluate(src => { const row = [...document.querySelectorAll('#view-container tbody tr')].find(r => new RegExp(src).test(r.innerText)); return row ? row.children[4].innerText.replace(/\s+/g, ' ').trim() : null; }, re.source);
+    const delTask = await changeOf(/Local only task/), delBulk = await changeOf(/Alpha/), delClient = await changeOf(/The real client name/);
+    ok(delTask === 'Local only task (with 2 sub-items)', 'a deleted task reads as its name and its sub-items, not as the stored record (' + delTask + ')');
+    ok(delBulk === '12 tasks: Alpha, Bravo, Charlie and more, with 3 sub-items', 'twelve tasks deleted at once read as the count and the first names (' + delBulk + ')');
+    ok(delClient === 'The real client name (with 5 tasks)', 'a deleted client reads as its name and the tasks that went with it (' + delClient + ')');
+    const roleCell = await changeOf(/Role Changed/), newCell = await changeOf(/Login Created/);
+    ok(/^staff\s+admin$/.test(roleCell || ''), 'a role change reads as the old and the new role (' + roleCell + ')');
+    ok(newCell === 'new@x.test, staff', 'a login that was created reads as the email and role alone, with no empty "before" (' + newCell + ')');
+    ok(await changeOf(/Password Changed/) === '' && await changeOf(/Login Switched Off/) === '', 'events with no values (a password change, a login switched off) leave the Change column empty');
+    const rawCells = await p.evaluate(() => [...document.querySelectorAll('#view-container tbody tr')].map(r => r.children[4].innerText).filter(t => /[{}"]/.test(t)));
+    ok(rawCells.length === 0, 'no row on the Audit screen shows the raw record (' + rawCells.slice(0, 2).join(' | ').slice(0, 120) + ')');
+    const words = await p.evaluate(() => ({ none: _auditText({}), one: _auditText({ order: 3 }), view: _auditText({ displayValue: 'x', name: 'y' }), board: _auditText({ name: 'Old board', taskCount: 1 }) }));
+    ok(words.none === null && words.one === '3' && words.view === 'x' && words.board === 'Old board (with 1 task)', 'the wording helper copes with an empty record, a single value, its own displayValue first, and a singular count (' + JSON.stringify(words) + ')');
     const hoursRow = await p.evaluate(() => { const row = [...document.querySelectorAll('#view-container tbody tr')].find(r => /TimeEntry/.test(r.innerText) && /Approved/.test(r.innerText)); return row ? row.innerText.replace(/\s+/g, ' ') : ''; });
     ok(/submitted/.test(hoursRow) && /approved/.test(hoursRow), 'an approval reads as the change it was, from submitted to approved (' + hoursRow.slice(0, 110) + ')');
     ok(/Password Changed/.test(screen.text) && /Role Changed/.test(screen.text) && /Login Switched Off/.test(screen.text) && /staff\s*→?\s*admin|staff.*admin/.test(screen.text), 'account events read in plain words (Login Switched Off, Role Changed), with the old and new role');

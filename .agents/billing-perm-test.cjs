@@ -150,6 +150,7 @@ const MARK = 'BILLINGPERMTEST';
   ok(R.checkboxShownForAdmin, 'the Billing checkbox IS shown to an admin editing a staff-role user');
   ok(R.billingPersisted, 'saveStaff persisted u.billing=true for Sam');
   ok(!!R.auditEvent && R.auditEvent.before.billing === false && R.auditEvent.after.billing === true, `a real billing_changed Audit Trail event was written (got ${JSON.stringify(R.auditEvent)})`);
+  ok(!!R.auditEvent && R.auditEvent.before.displayValue === 'off' && R.auditEvent.after.displayValue === 'on', `and the Audit screen reads it as off to on, not as the stored record (got ${JSON.stringify(R.auditEvent)})`);
   ok(R.afterNavVisible, 'with Billing, Sam now sees the Reports nav item');
   ok(!R.afterBlockedHasReports, 'with Billing, _acBlockedViews(Sam) no longer blocks the reports route');
   ok(R.reportsRendersReal, 'with Billing, navigating to reports renders the real page, not Access Restricted');
