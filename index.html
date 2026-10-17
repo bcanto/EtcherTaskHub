@@ -6319,7 +6319,18 @@ function _ttEnhance(root){
       if(r.height<32)for(const c of(el.tagName==='TR'?el.children:[el]))c.style.height='32px';
       continue;
     }
-    if(r.width<32||r.height<32){
+    // A button inside a table cell (a dense column, often sized exactly for a small icon) only gets a taller hit
+    // area, never a wider one — growing its width could push it past its column and clip (mt-colresize-test guards
+    // against exactly this). Anywhere else, both dimensions grow.
+    const inCell=!!el.closest('td,th');
+    if(inCell){
+      if(r.height<32){
+        // min-height does nothing on a plain inline box (it ignores the block-direction size entirely);
+        // inline-block respects it without affecting how the button sits in its row.
+        if(getComputedStyle(el).display==='inline')el.style.display='inline-block';
+        el.style.minHeight='32px';
+      }
+    }else if(r.width<32||r.height<32){
       const cs=getComputedStyle(el);
       if(cs.display==='inline')el.style.display='inline-flex';
       el.style.minWidth='32px';el.style.minHeight='32px';
