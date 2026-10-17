@@ -15,11 +15,12 @@
 // "error": anything else (refused by the callers, since they act with the service role and bypass the database's rules).
 async function sessionAllowed(token) {
   const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!SUPABASE_URL) return 'missing';   // no project configured: there is no rule to ask about
   try {
+    // A read (the function is STABLE), so it is asked with GET and never counted as a write.
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/session_allowed`, {
-      method: 'POST',
+      method: 'GET',
       headers: { 'apikey': SUPABASE_ANON_KEY || SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: '{}',
     });
     if (r.status === 404) return 'missing';
     if (!r.ok) return 'error';
