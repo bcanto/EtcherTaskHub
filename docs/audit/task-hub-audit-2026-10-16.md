@@ -49,6 +49,34 @@ They are four commits (plus a small follow-up to C1) on branch `critical-fixes`,
 
 Known limits: a hand-crafted record can still carry hostile colours or ids into style or handler attributes (only removing inline script from the content policy closes that class); changes made in the last moments before closing a tab reach the server the next time that browser signs in; migration 016 makes a removed person's open session stop at once instead of at token expiry.
 
+### Update, 17 October (later): the eleven high priority items are fixed
+
+Twelve commits on branch `high-fixes`, built on top of `deploy-batch` (the critical fixes plus `client-add-fix` and `notif-board-fix` merged), so they can be deployed after those or one at a time. The same fixes are on `retained-services` (branch `retained-high`), adapted to its Timesheets, boards and Staff form, and with the Billing and retained-services halves of H1 and H6.
+
+| # | What changed | Commit on `high-fixes` | Evidence |
+|---|---|---|---|
+| H11 | The email endpoint mails one active staff member only, in the caller's own name, with a short text and a ceiling per caller and per person. | `62bf58e` | `high-h11-email-test` 19 checks, can-fail 12/12 |
+| H1 | The Staff screen's Role reaches the real login (a new admin-only `role` action in `api/set-password.js`); a Restricted record narrows a staff login at sign-in and while signed in, never widens, never touches an admin; adding a Restricted person no longer fails at the profile step; Billing reaches the signed-in user (retained-services). Nobody can change their own role. | `8bb5286` | `high-h1-roles-test` 47 checks, can-fail 22/22; `high-h1-billing-test` 8 checks, 5/5 |
+| H7 | A message raised over an open form appears on its own layer; OK, Escape and a click outside close only the message; the form and what was typed stay. | `ec3e154` | `high-h7-alert-layer-test` 21 checks, can-fail 11/11 |
+| H4 | Remove Staff and every way of deleting a task or client keep the unapproved hours (with the person's and the task's name on them), and every confirmation says so. Edit Time Entry keeps a removed person's or client's hours where they are. | `f3419b7`, `9c8fcd7` | `high-h4-hours-test` 29 checks, can-fail 17/17 |
+| H6 | Duplicate board copies the board (3 groups and 15 tasks stay 3 and 15; the copy gets its own 3 and 15), numbered afresh, not copied as recurring, and without the original's retained-services arrangement. | `887d2ff` | `high-h6-duplicate-board-test` 17 checks, 11/11; retained: `high-h6-retainer-test` 5 checks, 1/1 |
+| H5 | An occurrence has one id made from its source and due date, so two sessions make one task; it has its own reference number; the source is stamped when next due moves. | `5ba479d` | `high-h5-recurring-test` 13 checks, can-fail 10/10 |
+| H2 | A revoked share link, a scoped work request and an edited calendar event are stamped; work requests merge on `updatedAt`; removed board access, a deleted client comment and a deleted calendar event are remembered as deleted. | `5e86ca4` | `high-h2-merge-test` 10 checks, can-fail 12/12 |
+| H3 | Each custom status and priority is merged on its own time; deletes and resets are remembered. | `39925a1` | `high-h3-labels-test` 14 checks, can-fail 12/12 |
+| H9 | At 60 clients, 120 boards, 6,000 tasks, 25,000 hours and 3,000 notifications: Reports 5.6 s to 0.1 s, Notifications 0.64 s to 0.09 s, Time 1.55 s to 0.63 s (windows with "show more"; totals still count everything; Select all covers the rows shown); search boxes wait for a pause; read notifications older than 90 days are cleared. | `f44cb15` | `high-h9-performance-test` 23 checks, can-fail 21/21 |
+| H10 | Files sent in the internal comms go to file storage (up to 10 MB) and the record holds a reference; offline they stay in the browser's file store; deleting a message removes its files. | `a6be9b9` | `high-h10-comms-files-test` 20 checks, can-fail 14/14 |
+| H8 | Deleting tasks, client create/edit/delete, staff add/edit/remove, hours edits, approvals and rejections (single and bulk) are recorded; every event is also sent to `public.audit_log`; the server writes login, password, access and role events itself; the Audit screen shows both. Migration `017_audit_log_signed_in_insert.sql` is written, **not applied**. | `ab681fe` | `high-h8-audit-test` 50 checks, can-fail 46/46 |
+
+**Regression testing.** `high-fixes` (main-based): 66 suites, 1,530 checks, 0 failures. One suite (`crit-c2-staff-access-test`) lost its browser in the first run (Chrome closed under it) and passed 27 of 27 on three reruns. The combined `deploy-batch` passes 55 suites, 1,267 checks. `retained-high` runs the full retained-services gate. The stored-script fuzz (about 450 controls, every text field marked) finds 0 fields that fire.
+
+**What to know before relying on it**
+- **Restricted is enforced in the app, not in the database.** The database has no Restricted role (and a view-only login could not keep notification read marks or its own settings, since all of them live in the one shared record). Closing that gap is a design decision: a `restricted` flag on the profile plus a policy that refuses its writes, and a read-only session in the app. Say if you want it.
+- **Existing mismatches are not corrected on their own.** A person whose staff record says Admin but whose login is Staff (or the reverse) stays as it is until an admin changes the role on the Staff screen. People the Staff screen already marks Restricted become view-only at their next sign-in.
+- **A role change needs a linked login.** Someone who has never signed in cannot be made an admin from the Staff screen; the screen says so.
+- **H8 needs migration 017 for the app's own events to reach the table.** Until you apply it the app stops trying quietly and keeps the local log; the server-side events (logins, passwords, access, roles) do not need it, only the `audit_log` table from migration 004.
+- **H10 covers new attachments.** Files already sent in comms stay inside the record until someone moves them; a move can be written if wanted.
+- **The one-record design is still there** (T1). The record is 9.3 MB at the size above, over a browser's 5 MB local storage limit; H9 makes the screens fast, it does not shrink the record.
+
 ---
 
 ## Critical issues
@@ -108,6 +136,7 @@ All four are fixed as described above; the text below is the original finding.
 ## High priority issues
 
 ### H1. Role, Restricted and Billing settings in the Staff screen do not apply to real logins (Live)
+- **Fixed 17 October** (`8bb5286`). Role changes reach the login; Restricted and Billing apply at sign-in. Restricted is enforced in the app only (see the update above).
 - **Issue:**
   - On the live site, the signed-in user's role comes from the server profile (`index.html:3496`), never from the Staff screen. So changing someone's role there does nothing.
   - "Restricted, view only" does not exist as a server role (`supabase/migrations/001_initial_schema.sql:15` allows admin, pm, staff, client), so restricted people keep full staff rights.
@@ -120,6 +149,7 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H2. Some edits are undone by a colleague's next save (Live)
+- **Fixed 17 October** (`5e86ca4`). The named edits are stamped and the named deletes are remembered. Other edit sites that stamp nothing are not covered by this sweep.
 - **Issue:** the merge keeps your local copy when neither side has a last-updated time. Several edits do not stamp one:
   - share link revoke `index.html:15880`
   - work request scoping `wrDoAddToWorkboard` `index.html:10904`
@@ -138,12 +168,14 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H3. Custom statuses and priorities are lost on sync (Live)
+- **Fixed 17 October** (`39925a1`).
 - **Issue:** labels are stored as an object, and for objects the merge keeps the server's copy (`index.html:2989`). A status or priority you create, rename, recolour or delete is not included when you save, and is replaced when a colleague's change arrives.
 - **Evidence:** probe. A new status was missing from what the save sends, and gone after the next merge.
 - **Recommended fix:** merge `labelConfig` per label with its own timestamp, the same way client note sections are merged.
 - **Priority:** 2.
 
 ### H4. Remove Staff silently deletes the person's unapproved hours (Live)
+- **Fixed 17 October** (`f3419b7`, `9c8fcd7`).
 - **Issue:**
   - Remove Staff deletes every time entry of theirs that is not yet approved. The confirmation only mentions tasks.
   - Deleting a task or a client also deletes unapproved hours, though those confirmations do say so.
@@ -154,6 +186,7 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H5. Recurring tasks are created twice, and with a duplicate reference number (Live)
+- **Fixed 17 October** (`5ba479d`).
 - **Issue:** every open session creates the next occurrence at start-up and at midnight (`_checkRecurringTasks` `index.html:23683`). Advancing "next due" stamps no time, so other sessions never see it.
 - **Impact:** duplicate tasks every period. Each copy also keeps the original's reference number.
 - **Evidence:** probe. Two sessions produced two copies, both with the original's reference.
@@ -164,12 +197,14 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H6. Duplicate board doubles the original and leaves the copy empty (Live)
+- **Fixed 17 October** (`887d2ff`).
 - **Issue:** copied groups and tasks keep the original's `boardId`, which wins over the new `workboardId` (`duplicateWorkboard` `index.html:24136`).
 - **Evidence:** probe. Original went from 3 groups and 15 tasks to 6 and 30; the copy had 0 and 0.
 - **Recommended fix:** set both ids on every copy. Copy only groups and tasks that resolve to the board. Clear `refNumber`, retainer and share settings on the copy.
 - **Priority:** 2.
 
 ### H7. Error popups wipe forms in the shared dialog, including two client-portal forms (Live)
+- **Fixed 17 October** (`ec3e154`).
 - **Issue:** `showAlert` writes into the same dialog as the form, replacing it (`index.html:3810`). These 13 forms report problems that way, so clicking OK closes the form and loses what was typed:
   - Add/Edit Staff, Edit Time Entry
   - timesheet reject, bulk reject, bulk reject per staff member, bulk approve
@@ -183,6 +218,7 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H8. The audit trail misses key actions and can be edited (Live)
+- **Fixed 17 October** (`ab681fe`). Needs migration 017 for the app's own events to reach the server table.
 - **Issue:**
   - Nothing is recorded for: task deletion, client create/edit/delete, staff add/remove/role change, time entry edits, timesheet approval and rejection.
   - The log keeps only the last 1,000 events.
@@ -193,6 +229,7 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H9. Performance at a realistic data size (Live)
+- **Fixed 17 October** (`f44cb15`). Screens are fast at the tested size; the record itself is not smaller (T1).
 - **Issue:**
   - Probe setup: 60 clients, 120 boards, 6,000 tasks, 25,000 time entries and 3,000 notifications. That is roughly two years for a ten-person team.
   - The company record is then 9.3 MB, which is over a typical browser's 5 MB local storage limit, and every save uploads all of it.
@@ -214,12 +251,14 @@ All four are fixed as described above; the text below is the original finding.
 - **Priority:** 2.
 
 ### H10. Comms attachments are stored inside the company record (Live)
+- **Fixed 17 October** (`a6be9b9`) for new attachments.
 - **Issue:** files up to 4 MB sent in a board's comms are saved as text inside the record (`wsSendComms` `index.html:19112`), not in file storage.
 - **Impact:** one file adds about 5.3 MB to every sync and every user's local copy.
 - **Recommended fix:** upload to Supabase Storage, as task files already do (`_storageUpload`).
 - **Priority:** 2.
 
 ### H11. Any staff session can send any email as Etcher (Live)
+- **Fixed 17 October** (`62bf58e`).
 - **Issue:** `api/notify-email.js` accepts any recipient and any text from any staff login. There is no rate limit.
 - **Impact:** a compromised staff account can send phishing mail from Etcher's address.
 - **Recommended fix:**
@@ -292,13 +331,13 @@ All four are fixed as described above; the text below is the original finding.
 
 | | Count |
 |---|---|
-| Fixed during this audit | 11 (F1 to F7 and C1 to C4) |
+| Fixed during this audit | 22 (F1 to F7, C1 to C4 and H1 to H11) |
 | Critical | 4 (all fixed 17 October) |
-| High | 11 |
+| High | 11 (all fixed 17 October) |
 | Medium | 17 |
 | Low | 7 |
 | Technical debt items | 7 |
-| **Total issues found** | **46**: 11 fixed, 35 open (none critical), plus 7 technical debt items |
+| **Total issues found** | **46**: 22 fixed, 24 open (none critical or high), plus 7 technical debt items |
 
 **Checked and found sound:**
 - Every button on 18 views clicked (435 controls) with no script error, and every view opens without errors.
@@ -313,19 +352,17 @@ All four are fixed as described above; the text below is the original finding.
 - Every view fits a phone screen except Client Notes (M14).
 
 **Estimated effort to resolve:**
-- Critical: 2 to 3 days.
-- High: 6 to 9 days.
+- Critical: done.
+- High: done.
 - Medium: 5 to 7 days.
 - Low: 1 to 2 days.
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
 **Recommended deployment order:**
-1. **Now:** `critical-fixes` (C1 to C4), `client-add-fix` and `notif-board-fix`. Each is isolated on `main` and tested, so they can go together or one at a time. Then apply migration `016_inactive_accounts_lose_access.sql` yourself.
-2. **Rest of the security batch:** H1, the security half of H2 (link revoke, board access) and H11. About 2 days.
-3. **Data integrity batch:** H3, H4, H5, H6, the rest of H2, and M1. About 3 days.
-4. **Forms and screens:** H7, M2, M9, M10, M13 to M17. About 2 days.
-5. **Performance:** H9, H10, M12, then plan T1 and T2.
-6. **The ISO / Retained Services release:** after its migrations and the SSO plan.
+1. **Now:** `deploy-batch` (C1 to C4, `client-add-fix` and `notif-board-fix` merged; 55 suites clean), or each of those three branches on its own. Then apply migration `016_inactive_accounts_lose_access.sql` yourself.
+2. **Then:** `high-fixes` (H1 to H11, on top of `deploy-batch`; 66 suites clean). It can go in one step with the first, or later. Apply migration `017_audit_log_signed_in_insert.sql` yourself when you want the app's own events in the permanent trail.
+3. **Medium items:** M1 to M17 (M3, M4, M5, M7, M8 are quick). Then plan T1 and T2.
+4. **The ISO / Retained Services release** (`retained-services`, which already carries everything above): after its migrations and the SSO plan.
 
 Each batch gets its own tests (each proven able to fail) and a clean full gate before it is offered for deployment.
 
