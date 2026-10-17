@@ -2993,7 +2993,31 @@ function _mergeDB(current, incoming){
     });
     return[...byClient.values()];
   }
+  // The label settings (custom statuses and priorities, recoloured built-ins) are one object, and an object used to be
+  // taken from the incoming side whole, so a label made, changed or deleted here was dropped by every merge (audit H3,
+  // 2026-10-17). Each label is merged on its own by its own updatedAt, and a delete is remembered with its time:
+  // the label survives only if it was changed after that.
+  function _mergeLabels(){
+    const cur=current.labelConfig||{},inc=incoming.labelConfig||{};
+    const gone={...(current.deletedLabels||{})};
+    for(const[k,v] of Object.entries(incoming.deletedLabels||{}))if(!gone[k]||v>gone[k])gone[k]=v;
+    const out={...inc};
+    for(const ns of['statuses','priorities']){
+      const a=cur[ns]||{},b=inc[ns]||{},m={};
+      for(const key of new Set([...Object.keys(a),...Object.keys(b)])){
+        const x=a[key],y=b[key];
+        // The newer stamp wins; two unstamped copies keep the incoming one, as before.
+        const pick=x&&y?((x.updatedAt||'')>(y.updatedAt||'')?x:y):(x||y);
+        const del=gone[ns+':'+key];
+        if(del&&!((pick.updatedAt||'')>del))continue;
+        m[key]=pick;
+      }
+      out[ns]=m;
+    }
+    return{labelConfig:out,deletedLabels:gone};
+  }
   const merged={...incoming};
+  Object.assign(merged,_mergeLabels());
   merged.tasks=mergeById(current.tasks,incoming.tasks,'updatedAt');
   merged.comments=unionById(current.comments,incoming.comments);
   merged.clientComments=unionById(current.clientComments,incoming.clientComments);
@@ -5717,12 +5741,18 @@ const BRIGHT_PRESETS=[
 function _lcSet(kind,key,preset){
   DB.labelConfig=DB.labelConfig||{statuses:{},priorities:{}};
   DB.labelConfig[kind]=DB.labelConfig[kind]||{};
-  DB.labelConfig[kind][key]={...(DB.labelConfig[kind][key]||{}),color:preset.color,bg:preset.bg,dot:preset.dot};
+  DB.labelConfig[kind][key]={...(DB.labelConfig[kind][key]||{}),color:preset.color,bg:preset.bg,dot:preset.dot,updatedAt:new Date().toISOString()};
   saveDB(DB);
   _lcRefresh();
 }
-function _lcReset(kind,key){
+// A label that is deleted or reset is remembered with the time, so another computer's older copy does not bring it back
+// (audit H3, 2026-10-17). It can still be made again later: the new one is stamped after the delete.
+function _lcForget(kind,key){
   if(DB.labelConfig?.[kind])delete DB.labelConfig[kind][key];
+  (DB.deletedLabels=DB.deletedLabels||{})[kind+':'+key]=new Date().toISOString();
+}
+function _lcReset(kind,key){
+  _lcForget(kind,key);
   saveDB(DB);_lcRefresh();
 }
 function _lcRefresh(){
@@ -25234,7 +25264,7 @@ function wsLabelColor(fieldType,key,newColor){
   const ns=fieldType==='status'?'statuses':'priorities';
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
   if(!DB.labelConfig[ns][key])DB.labelConfig[ns][key]={};
-  Object.assign(DB.labelConfig[ns][key],{color:newColor,bg:hexToRgba(newColor,0.13),dot:newColor});
+  Object.assign(DB.labelConfig[ns][key],{color:newColor,bg:hexToRgba(newColor,0.13),dot:newColor,updatedAt:new Date().toISOString()});
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
@@ -25246,6 +25276,7 @@ function wsLabelRename(fieldType,key,newLabel){
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
   if(!DB.labelConfig[ns][key])DB.labelConfig[ns][key]={};
   DB.labelConfig[ns][key].label=newLabel.trim()||key;
+  DB.labelConfig[ns][key].updatedAt=new Date().toISOString();
   saveDB(DB);
 }
 function wsAddCustomLabel(fieldType){
@@ -25259,7 +25290,7 @@ function wsAddCustomLabel(fieldType){
   const ns=isSt?'statuses':'priorities';
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
   const key=(isSt?'cst_':'cp_')+uid();
-  DB.labelConfig[ns][key]={label,color,bg:hexToRgba(color,0.13),dot:color,isCustom:true,icon:'●',cls:'prio-med'};
+  DB.labelConfig[ns][key]={label,color,bg:hexToRgba(color,0.13),dot:color,isCustom:true,icon:'●',cls:'prio-med',updatedAt:new Date().toISOString()};
   saveDB(DB);
   if(lbl)lbl.value='';
   const body=document.getElementById('ws-cell-dd-body');
@@ -25268,7 +25299,7 @@ function wsAddCustomLabel(fieldType){
 function wsDeleteCustomLabel(fieldType,key){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const ns=fieldType==='status'?'statuses':'priorities';
-  if(DB.labelConfig?.[ns])delete DB.labelConfig[ns][key];
+  _lcForget(ns,key);
   saveDB(DB);
   const body=document.getElementById('ws-cell-dd-body');
   if(body&&_wsCellTask)body.innerHTML=wsBuildDropdownHtml(_wsCellTask,_wsCellField);
