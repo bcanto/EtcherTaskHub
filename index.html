@@ -3341,6 +3341,7 @@ async function _supabaseRestoreSession(session){
     // A switched-off account (Remove staff, audit C2) gets no session. Sign it out so the stored session is
     // not tried again on every page load.
     if(profileData.active===false){try{await sb.auth.signOut();}catch(_){}return false;}
+    _idleTouch(true);   // signing in is activity (idle sign-out, SSO + HTTPS plan)
     const p=profileData;
     const isClient=p.role==='client';
     if(isClient){
@@ -4512,6 +4513,54 @@ function signInWithMicrosoft(){
   if(!window._supabase){showLoginError('Microsoft sign-in is not available right now.');return;}
   window._supabase.auth.signInWithOAuth({provider:'azure',options:{scopes:'openid email profile',redirectTo:location.origin+'/'}}).then(r=>{if(r&&r.error)showLoginError(r.error.message);});
 }
+// Signed out after a stretch without activity (SSO + HTTPS plan; audit L7: sessions never timed out, so a shared or
+// lost computer stayed signed in). SESSION_IDLE_MINUTES on the server; off when unset or 0. Activity in any tab counts
+// (it is shared through this browser's storage), a warning shows two minutes before, and a browser reopened after the
+// limit starts signed out, before any company data is loaded.
+const _IDLE_KEY='etcher_last_activity',_IDLE_NOTICE='etcher_idle_signed_out';
+let _idleWarned=false,_idleLastWrite=0;
+function _idleLimitMs(){const m=Number(window._sessionIdleMinutes)||0;return m>0?m*60000:0;}
+function _idleLast(){try{return Number(localStorage.getItem(_IDLE_KEY))||0;}catch(_){return 0;}}
+function _idleTouch(force){
+  const n=Date.now();
+  if(!force&&n-_idleLastWrite<5000)return;   // at most one write every five seconds while someone types
+  _idleLastWrite=n;_idleWarned=false;
+  try{localStorage.setItem(_IDLE_KEY,String(n));}catch(_){}
+}
+function _idleMinutesText(){const m=Number(window._sessionIdleMinutes)||0;return m===1?'1 minute':m+' minutes';}
+function _idleShowNotice(){
+  let m=null;try{m=sessionStorage.getItem(_IDLE_NOTICE);sessionStorage.removeItem(_IDLE_NOTICE);}catch(_){}
+  if(m)showLoginError('You were signed out after '+m+' without activity. Sign in again to carry on.');
+}
+function _idleSignOutNow(){
+  try{sessionStorage.setItem(_IDLE_NOTICE,_idleMinutesText());}catch(_){}
+  doLogout();
+  _idleShowNotice();   // a client portal sign-out reloads the page; the notice is shown after the reload instead
+}
+function _idleCheck(){
+  const lim=_idleLimitMs();if(!lim||!currentUser)return;
+  const left=lim-(Date.now()-_idleLast());
+  if(left<=0){_idleSignOutNow();return;}
+  if(left<=120000&&!_idleWarned){_idleWarned=true;showToast('You will be signed out in two minutes without activity.','info',8000);}
+}
+// At start-up: has this browser been left signed in past the limit? A fresh sign-in (its time is newer than the last
+// activity) never counts as idle, and with no activity on record the clock starts now: switching the limit on must
+// never sign out someone who has been working all along.
+function _idleStartupExpired(session){
+  const lim=_idleLimitMs();if(!lim)return false;
+  const recorded=_idleLast();
+  if(!recorded){_idleTouch(true);return false;}
+  const signedIn=Date.parse((session&&session.user&&session.user.last_sign_in_at)||'')||0;
+  return Date.now()-Math.max(recorded,signedIn)>lim;
+}
+async function _idleSignOutAtStartup(){
+  try{sessionStorage.setItem(_IDLE_NOTICE,_idleMinutesText());}catch(_){}
+  try{await window._supabase.auth.signOut();}catch(_){}
+  _idleShowNotice();
+}
+// Recorded even while no limit is set, so switching one on later starts from real activity.
+['mousedown','keydown','touchstart','wheel'].forEach(ev=>document.addEventListener(ev,()=>{if(currentUser)_idleTouch();},{passive:true,capture:true}));
+setInterval(_idleCheck,30000);
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;
@@ -26679,6 +26728,9 @@ document.addEventListener('keydown',e=>{
     });
     await _waitForSupabase();
     if(window._supabase){
+      // A browser left signed in past the idle limit starts signed out, before any company data is loaded.
+      {const{data:{session:_is}}=await window._supabase.auth.getSession();
+       if(_is&&_idleStartupExpired(_is)){await _idleSignOutAtStartup();_hideLoadingScreen();return;}}
       // A client-portal session must never receive app_state — it is the whole company's data
       // (every client's tasks, time entries, rates, invoices, client notes). It used to be
       // downloaded here for EVERY session and hidden only by rendering. Check the persisted
@@ -26728,6 +26780,7 @@ document.addEventListener('keydown',e=>{
       }
       // No active Supabase session — show login (don't fall back to localStorage
       // when Supabase is configured, as that would bypass server-side auth)
+      _idleShowNotice();
       _hideLoadingScreen();
       return;
     }

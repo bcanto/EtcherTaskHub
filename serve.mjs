@@ -250,6 +250,8 @@ http.createServer(async (req, res) => {
       supabaseAnonKey:  SUPABASE_ANON_KEY,
       // "Sign in with Microsoft" (Supabase Azure provider, Etcher tenant). Never offered offline.
       microsoftSignIn:  !OFFLINE && process.env.MICROSOFT_SIGNIN === '1',
+      // Sign out after this many minutes without activity (0 = never). SESSION_IDLE_MINUTES.
+      sessionIdleMinutes: Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES || '0', 10) || 0),
     });
     res.writeHead(200, {
       'Content-Type':  'application/json; charset=utf-8',

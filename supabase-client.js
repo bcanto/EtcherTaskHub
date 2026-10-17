@@ -25,6 +25,7 @@ window._supabaseReady = (async function _initSupabase() {
     }
     const cfg = await resp.json();
     window._microsoftSignIn = cfg.microsoftSignIn === true;
+    window._sessionIdleMinutes = Math.max(0, Number(cfg.sessionIdleMinutes) || 0);
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
       window._supabaseInitError = 'no Supabase credentials are configured on the server.';
