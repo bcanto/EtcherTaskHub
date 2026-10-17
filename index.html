@@ -33,7 +33,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<!-- The sign-in library, pinned (2.117.3) and served from this site with an integrity hash: the login page used to load
+     "any 2.x" from a public CDN, so a new release or a compromised CDN would have run there (SSO + HTTPS plan, 2026-10-17). -->
+<script src="vendor/supabase-js-2.117.3.umd.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R"></script>
 <!-- jsPDF loaded on-demand by _ensureJsPdf() when PDF export is triggered -->
 <style>
 /* ── Design tokens ── */
@@ -1432,6 +1434,11 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       </form>
+      <!-- Shown only when /api/config switches it on (Supabase Azure provider, Etcher tenant). -->
+      <button type="button" id="login-ms" class="login-btn login-btn-ms" style="display:none;margin-top:10px" onclick="signInWithMicrosoft()" aria-label="Sign in with Microsoft">
+        <svg width="14" height="14" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign in with Microsoft
+      </button>
       <p style="margin-top:16px;font-size:11px;color:#8da2b2;text-align:center;line-height:1.6">By accessing Etcher Task Hub, you agree to the <a href="/terms-of-use.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Terms of Use</a> and acknowledge the <a href="/privacy-policy.html" target="_blank" style="color:#97bcbd;text-decoration:underline">Privacy Policy</a>.</p>
 
     </div>
@@ -4496,6 +4503,15 @@ function _showOfflineBanner(){
 document.addEventListener('DOMContentLoaded',()=>{
   Promise.resolve(window._supabaseReady).then(()=>{if(!window._supabase)_showOfflineBanner();else _purgePwStore();});
 });
+// "Sign in with Microsoft" through the Supabase Azure provider (restricted to Etcher's tenant in the provider's own
+// settings). Shown only when /api/config switches it on and the client loaded; the password form stays as the
+// emergency path (SSO + HTTPS plan, phase A).
+function _updateMicrosoftSignIn(){const b=document.getElementById('login-ms');if(b)b.style.display=(window._microsoftSignIn&&window._supabase)?'':'none';}
+window._updateMicrosoftSignIn=_updateMicrosoftSignIn;
+function signInWithMicrosoft(){
+  if(!window._supabase){showLoginError('Microsoft sign-in is not available right now.');return;}
+  window._supabase.auth.signInWithOAuth({provider:'azure',options:{scopes:'openid email profile',redirectTo:location.origin+'/'}}).then(r=>{if(r&&r.error)showLoginError(r.error.message);});
+}
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-password').value;

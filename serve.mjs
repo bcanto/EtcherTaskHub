@@ -6,6 +6,11 @@ import { createRequire } from 'module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3001;
+// --port N runs a private instance (tests use their own); --lan also answers on every network interface, which is
+// off by default: the folder holds .env (the live service-role key), so this machine only.
+const _portArg = (() => { const i = process.argv.indexOf('--port'); return i > 0 ? parseInt(process.argv[i + 1], 10) : NaN; })();
+const LISTEN_PORT = Number.isFinite(_portArg) && _portArg > 0 ? _portArg : PORT;
+const LAN = process.argv.includes('--lan');
 
 // ── Load .env file (no npm dotenv needed) ────────────────────────────────────
 // Falls back to process.env — works in both local dev and hosted environments.
@@ -74,32 +79,21 @@ const CACHE_CONTROL = {
   '.ttf':  'public, max-age=31536000, immutable',
 };
 
-// B2: Security headers applied to every response
-// Supabase domains added to script-src (CDN), connect-src (API + realtime), img-src (storage)
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: https://placehold.co https://*.supabase.co",
-  "connect-src 'self' https://wowwiafaqzovlfwzyktj.supabase.co wss://wowwiafaqzovlfwzyktj.supabase.co",
-  "object-src 'none'",
-  // The PDF preview frames the file as a blob: URL; data: iframes are refused and
-  // without frame-src this falls back to default-src 'self' and blocks the preview.
-  "frame-src 'self' blob:",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+// Security headers: one source, security-headers.cjs. scripts/gen-vercel-headers.cjs writes the same set into
+// vercel.json for the live site, and sec-a-test checks the two are equal, so local and live cannot drift.
+const _securityHeaders = createRequire(import.meta.url)('./security-headers.cjs');
+const CSP = _securityHeaders.buildCsp();
+const SECURITY_HEADERS = _securityHeaders.securityHeaders();
 
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options':  'nosniff',
-  'X-Frame-Options':         'DENY',
-  'Referrer-Policy':         'strict-origin-when-cross-origin',
-  'X-XSS-Protection':        '1; mode=block',
-  'Permissions-Policy':      'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy': CSP,
-};
+// Never served, whatever the URL: dotfiles and dot-folders (.env holds the live service-role key; .git, .agents,
+// .vercel), data exports, and folders that are not part of the app. Checked before any file is read.
+const _BLOCKED_STATIC_PREFIXES = ['/workboard/', '/supabase/', '/docs/'];
+const _BLOCKED_STATIC_EXACT = ['/appdata.json', '/intake-queue.json', '/workboard', '/supabase', '/docs'];
+function _isBlockedStaticPath(urlPath) {
+  if (urlPath.split('/').some(seg => seg.length > 0 && seg.startsWith('.'))) return true;
+  if (_BLOCKED_STATIC_EXACT.includes(urlPath)) return true;
+  return _BLOCKED_STATIC_PREFIXES.some(p => urlPath.startsWith(p));
+}
 
 const _ROOT = path.resolve(__dirname);
 
@@ -254,6 +248,8 @@ http.createServer(async (req, res) => {
     const payload = JSON.stringify({
       supabaseUrl:      SUPABASE_URL,
       supabaseAnonKey:  SUPABASE_ANON_KEY,
+      // "Sign in with Microsoft" (Supabase Azure provider, Etcher tenant). Never offered offline.
+      microsoftSignIn:  !OFFLINE && process.env.MICROSOFT_SIGNIN === '1',
     });
     res.writeHead(200, {
       'Content-Type':  'application/json; charset=utf-8',
@@ -279,6 +275,11 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  if (_isBlockedStaticPath(urlPath)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain', ...SECURITY_HEADERS });
+    res.end('404 Not Found');
+    return;
+  }
   if (urlPath === '/') urlPath = '/index.html';
 
   const filePath = path.resolve(__dirname, '.' + urlPath);
@@ -308,7 +309,7 @@ http.createServer(async (req, res) => {
     });
     res.end(data);
   });
-}).listen(PORT, () => {
+}).listen(LISTEN_PORT, LAN ? undefined : '127.0.0.1', () => {
   console.log(`\n  Etcher Task Hub — dev server`);
-  console.log(`  http://localhost:${PORT}\n`);
+  console.log(`  http://localhost:${LISTEN_PORT}${LAN ? '  (also on this network: --lan)' : '  (this machine only)'}\n`);
 });
