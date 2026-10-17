@@ -1,5 +1,5 @@
 const { requireAdminCaller } = require('./_authAdmin');
-const { enableIfDisabled } = require('./_accountAccess');
+const { enableIfDisabled, INTERNAL_ROLES } = require('./_accountAccess');
 
 // A readable sentence from a Supabase REST/Auth error, never the raw JSON. The Add Client form used
 // to show {"code":"23503","details":...} straight from PostgREST.
@@ -213,7 +213,10 @@ module.exports = async function handler(req, res) {
       p_id: userId,
       p_name: name,
       p_email: email,
-      p_role: clientId ? 'client' : (role || 'staff'),
+      // "Restricted" is a setting on the staff record in the app, not a role the database knows (its role list
+      // is admin, pm, staff, client), so anything else becomes staff: sending it on made the profile step fail
+      // for every new Restricted person (audit H1, 2026-10-17).
+      p_role: clientId ? 'client' : (INTERNAL_ROLES.includes(role) ? role : 'staff'),
       p_display_color: color || '#7aa3a4',
       p_client_id: clientId || null,
     }),

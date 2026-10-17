@@ -1,10 +1,12 @@
 const { requireAdminCaller } = require('./_authAdmin');
-const { UUID_RE, setAccess } = require('./_accountAccess');
+const { UUID_RE, setAccess, setRole } = require('./_accountAccess');
 
 // POST { userId, password }          set a login's password
 // POST { userId, access: 'disable' } switch a login off (Remove staff), or 'enable' to switch it back on
-// Both are admin-only. Switching access lives here, not in a new endpoint, because the project is at its
-// serverless function limit (audit C2, 2026-10-17: removing a person must stop their login).
+// POST { userId, role: 'admin' }     make a login an admin, or 'staff' to make it a standard staff login
+// All are admin-only, one action per request. Access and role live here, not in new endpoints, because the
+// project is at its serverless function limit (audit C2 and H1, 2026-10-17: removing a person must stop their
+// login, and the Staff screen's role must reach the login).
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const caller = await requireAdminCaller(req, res);
@@ -14,10 +16,17 @@ module.exports = async function handler(req, res) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
     return res.status(500).json({ error: 'Server not configured' });
 
-  const { userId, password, access } = req.body || {};
+  const { userId, password, access, role } = req.body || {};
   // The id goes into a URL path below, so it must be exactly a user id and nothing else.
   if (!userId || typeof userId !== 'string' || !UUID_RE.test(userId))
     return res.status(400).json({ error: 'A valid userId is required' });
+  if ([password, access, role].filter(v => v !== undefined).length > 1)
+    return res.status(400).json({ error: 'Send one action at a time.' });
+
+  if (role !== undefined) {
+    const r = await setRole({ userId, role, callerId: caller.id });
+    return res.status(r.status).json(r.body);
+  }
 
   if (access !== undefined) {
     if (access !== 'disable' && access !== 'enable')
