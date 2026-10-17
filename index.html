@@ -157,6 +157,9 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .form-label{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;display:block}
 .form-input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-1);background:#fff;transition:border-color 0.2s var(--ease),box-shadow 0.2s var(--ease)}
 .form-input:focus{outline:none;border-color:#97bcbd;box-shadow:0 0 0 3px rgba(151,188,189,0.2)}
+.form-input[aria-invalid="true"]{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,0.12)}
+.form-err-msg{font-size:11.5px;color:#b91c1c;margin-top:4px;line-height:1.4}
+.form-err-box{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:9px 12px;border-radius:8px;font-size:12.5px;line-height:1.5}
 .form-textarea{resize:vertical;min-height:80px}
 /* ── Rich description editor ── */
 .rich-desc-wrap{border:1.5px solid #e2eaf2;border-radius:8px;overflow:hidden;transition:border-color 0.15s}
@@ -3551,6 +3554,35 @@ function showAlert(msg,title='Notice'){
   document.getElementById('generic-modal-title').textContent=title;
   document.getElementById('generic-modal-body').innerHTML=`<p style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:20px">${escHtml(msg)}</p><div style="display:flex;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-teal btn-sm">OK</button></div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
+}
+// Inline form errors (2026-10-16): a problem is shown inside the form, against its field, and the
+// form stays open. showAlert writes into the same shared modal, so it replaced the form and its OK
+// closed it, losing everything typed.
+function _formErrClear(root){
+  if(!root)return;
+  root.querySelectorAll('[aria-invalid="true"]').forEach(el=>{el.removeAttribute('aria-invalid');el.removeAttribute('aria-describedby');});
+  root.querySelectorAll('.form-err-msg').forEach(m=>m.remove());
+  root.querySelectorAll('.form-err-box').forEach(b=>{b.textContent='';b.hidden=true;});
+}
+// Marks one field (by id) with its message under it; with no field, fills the form's error box.
+function _formErr(root,fieldId,msg){
+  _formErrClear(root);
+  const el=fieldId?document.getElementById(fieldId):null;
+  if(el){
+    el.setAttribute('aria-invalid','true');
+    const m=document.createElement('div');m.className='form-err-msg';m.id=fieldId+'-err';m.setAttribute('role','alert');m.textContent=msg;
+    el.insertAdjacentElement('afterend',m);el.setAttribute('aria-describedby',m.id);el.focus();
+    return;
+  }
+  const box=root?root.querySelector('.form-err-box'):null;
+  if(box){box.textContent=msg;box.hidden=false;box.scrollIntoView({block:'nearest'});}
+  else showAlert(msg);
+}
+// Typing in a marked field clears its mark (wired with oninput on the form).
+function _formFieldEdited(e){
+  const el=e&&e.target;if(!el||el.getAttribute('aria-invalid')!=='true')return;
+  el.removeAttribute('aria-invalid');el.removeAttribute('aria-describedby');
+  document.getElementById(el.id+'-err')?.remove();
 }
 let _promptCb=null;
 function showPrompt(title,defaultVal,cb){
@@ -9916,62 +9948,70 @@ function _rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Mat
 function _cdist(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2);}
 function _hex2rgb(hex){return[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
 function _rgb2hex([r,g,b]){return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+// The logo's own colours, the one filling most of it first (2026-10-16). They used to be ranked by
+// distance from other clients' colours, so an anti-aliased edge or a small accent won over the
+// colour that fills the logo: a two-thirds red logo came out teal, a purple JPG a near-white pink.
 function _extractLogoColors(src,cb){
   const img=new Image();
   img.onload=()=>{
-    const W=80,H=80,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+    const MAX=96,w0=img.naturalWidth||MAX,h0=img.naturalHeight||MAX,sc=Math.min(1,MAX/Math.max(w0,h0));
+    const W=Math.max(1,Math.round(w0*sc)),H=Math.max(1,Math.round(h0*sc)),cv=document.createElement('canvas');cv.width=W;cv.height=H;
     const cx=cv.getContext('2d');cx.drawImage(img,0,0,W,H);
-    const d=cx.getImageData(0,0,W,H).data;
-    const freq=new Map();
+    let d;try{d=cx.getImageData(0,0,W,H).data;}catch(e){cb([]);return;}
+    // Similar pixels share a bucket that keeps their true average colour.
+    const buckets=new Map();let total=0;
     for(let i=0;i<d.length;i+=4){
-      const a=d[i+3];if(a<128)continue;
+      if(d[i+3]<128)continue;
       const r=d[i],g=d[i+1],b=d[i+2];
       const[,s,l]=_rgbToHsl(r,g,b);
-      if(l>0.90||l<0.12||s<0.18)continue;
-      const qr=Math.round(r/24)*24,qg=Math.round(g/24)*24,qb=Math.round(b/24)*24;
-      const k=`${Math.min(qr,240)},${Math.min(qg,240)},${Math.min(qb,240)}`;
-      freq.set(k,(freq.get(k)||0)+1);
+      if(l>0.88||l<0.10||s<0.18)continue; // white, black and greys are not a brand colour
+      const k=(r>>4)+','+(g>>4)+','+(b>>4);
+      const x=buckets.get(k)||{n:0,r:0,g:0,b:0};x.n++;x.r+=r;x.g+=g;x.b+=b;buckets.set(k,x);total++;
     }
-    const sorted=[...freq.entries()].sort((a,b)=>b[1]-a[1]);
-    const chosen=[];
-    for(const[k]of sorted){
-      if(chosen.length>=7)break;
-      const rgb=k.split(',').map(Number);
-      if(!chosen.some(c=>_cdist(c,rgb)<55))chosen.push(rgb);
+    // Neighbouring buckets merge into one colour, largest first; specks under 3% (edges, JPEG noise) drop out.
+    const groups=[];
+    for(const x of [...buckets.values()].sort((a,b)=>b.n-a.n)){
+      const rgb=[x.r/x.n,x.g/x.n,x.b/x.n];
+      const near=groups.find(gp=>_cdist(gp.rgb,rgb)<48);
+      if(near){const n=near.n+x.n;near.rgb=near.rgb.map((v,j)=>(v*near.n+rgb[j]*x.n)/n);near.n=n;}
+      else groups.push({rgb,n:x.n});
     }
-    cb(chosen.map(_rgb2hex));
+    const chosen=groups.filter(gp=>gp.n>=Math.max(4,total*0.03)).sort((a,b)=>b.n-a.n).slice(0,7);
+    cb(chosen.map(gp=>_rgb2hex(gp.rgb.map(v=>Math.round(v)))));
   };
   img.onerror=()=>cb([]);
   img.src=src;
 }
-function _cmApplyLogoColors(colors,editingId){
-  _cmLogoColors=colors;
-  if(!colors.length)return;
-  const existingRgb=(DB.clients||[]).filter(c=>c.id!==editingId).map(c=>c.color).filter(Boolean).map(_hex2rgb);
-  const scored=colors.map(hex=>{const rgb=_hex2rgb(hex);const d=existingRgb.length?Math.min(...existingRgb.map(e=>_cdist(rgb,e))):999;return{hex,d};}).sort((a,b)=>b.d-a.d);
-  _cmLogoColors=scored.map(s=>s.hex);
-  _cmLogoColorIdx=0;
-  _cmSetLogoColor(_cmLogoColors[0]);
+// A new logo sets the colour to its main one. Opening Edit only offers the logo's colours: the saved
+// colour stays (it used to be replaced on open, and Save then recoloured every board of the client).
+function _cmApplyLogoColors(colors,keepCurrent){
+  _cmLogoColors=colors;_cmLogoColorIdx=0;
+  if(!colors.length){_cmRenderSwatches();return;}
+  if(keepCurrent){_cmLogoColorIdx=colors.indexOf((document.getElementById('cm-color')?.value||'').toLowerCase());_cmRenderSwatches();return;}
+  _cmSetLogoColor(colors[0]);
 }
 function _cmCycleLogoColor(){if(!_cmLogoColors.length)return;_cmLogoColorIdx=(_cmLogoColorIdx+1)%_cmLogoColors.length;_cmSetLogoColor(_cmLogoColors[_cmLogoColorIdx]);}
 function _cmSetLogoColor(hex){
   const el=document.getElementById('cm-color');if(el)el.value=hex;
+  _cmRenderSwatches();
+}
+function _cmRenderSwatches(){
   const sw=document.getElementById('cm-color-swatches');
-  if(sw)sw.innerHTML=_cmLogoColors.map((c,i)=>`<div onclick="_cmLogoColorIdx=${i};_cmSetLogoColor('${c}')" title="${c}" style="width:16px;height:16px;border-radius:3px;background:${c};cursor:pointer;flex-shrink:0;outline:${i===_cmLogoColorIdx?'2px solid #0d1c33':'1px solid rgba(0,0,0,0.15)'};outline-offset:${i===_cmLogoColorIdx?'2px':'0'}"></div>`).join('');
+  if(sw)sw.innerHTML=_cmLogoColors.map((c,i)=>`<button type="button" class="cm-swatch" onclick="_cmLogoColorIdx=${i};_cmSetLogoColor('${c}')" title="${c}" aria-label="Use colour ${c}" aria-pressed="${i===_cmLogoColorIdx}" style="width:16px;height:16px;padding:0;border:none;border-radius:3px;background:${c};cursor:pointer;flex-shrink:0;outline:${i===_cmLogoColorIdx?'2px solid #0d1c33':'1px solid rgba(0,0,0,0.15)'};outline-offset:${i===_cmLogoColorIdx?'2px':'0'}"></button>`).join('');
   const btn=document.getElementById('cm-cycle-btn');
   if(btn)btn.style.display=_cmLogoColors.length>1?'flex':'none';
 }
 
 function cmLogoFileChange(el){
   const f=el.files[0];if(!f)return;
-  if(f.size>200000){showAlert('Image must be under 200 KB.','Validation');el.value='';return;}
+  if(f.size>200000){_cmErr(null,'The logo must be under 200 KB. Try a smaller PNG, JPG or SVG.');el.value='';return;}
+  _formErrClear(document.getElementById('cm-form'));
   const r=new FileReader();
   r.onload=ev=>{
     const src=ev.target.result;
     document.getElementById('cm-logo-preview').innerHTML='<img src="'+src+'" style="max-width:100%;max-height:100%;object-fit:contain"/>';
     document.getElementById('cm-logo-b64').value=src;
-    const editingId=document.getElementById('cm-save-btn')?.dataset?.clientId||'';
-    _extractLogoColors(src,colors=>_cmApplyLogoColors(colors,editingId));
+    _extractLogoColors(src,colors=>_cmApplyLogoColors(colors,false));
   };
   r.readAsDataURL(f);
 }
@@ -10015,8 +10055,8 @@ function openClientModal(id){
   _cmCodeTouched=!!id; // editing an existing client never rewrites its code
   document.getElementById('generic-modal-title').textContent=id?'Edit Client':'New Client';
   document.getElementById('generic-modal-body').innerHTML=`
-    <div style="display:grid;gap:14px">
-      <div><label class="form-label">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"${id?'':' oninput="_cmAutoCode(this.value)"'}/></div>
+    <div id="cm-form" style="display:grid;gap:14px" oninput="_formFieldEdited(event)">
+      <div><label class="form-label" for="cm-name">Client Name</label><input id="cm-name" class="form-input" value="${escHtml(c.name)}"${id?'':' oninput="_cmAutoCode(this.value)"'}/></div>
       <div><label class="form-label">Short Code${id?'':' <span style="font-weight:400;color:#94a3b8;font-size:10px">— suggested from the name, edit if you like</span>'}</label><input id="cm-code" class="form-input" value="${escHtml(c.shortCode||'')}" maxlength="4" style="text-transform:uppercase" oninput="_cmCodeTouched=true"/></div>
       <!-- Logo + Color in one unified row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -10082,10 +10122,11 @@ function openClientModal(id){
                   <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Min 8 characters"/></div>
                   <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Repeat password"/></div>
                 </div>
-                <div style="font-size:11px;color:#8da2b2">${id?'Add an email and password to grant this client portal access.':'Leave password blank to create client without portal access.'}</div>`}`;
+                <div style="font-size:11px;color:#8da2b2">${id?'Add an email and password to grant this client portal access.':'Leave the email and password blank to add the client without portal access.'}</div>`}`;
           })()}
         </div>
       </div>
+      <div id="cm-err" class="form-err-box" role="alert" hidden></div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
         <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
         <button id="cm-save-btn" data-client-id="${id||''}" onclick="saveClient('${id||''}')" class="btn btn-primary">Save</button>
@@ -10094,7 +10135,14 @@ function openClientModal(id){
   document.getElementById('generic-modal').classList.remove('hidden');
   // Pre-extract palette when editing a client that already has a logo
   _cmLogoColors=[];_cmLogoColorIdx=0;
-  if(c.logo)_extractLogoColors(c.logo,colors=>_cmApplyLogoColors(colors,id||''));
+  if(c.logo)_extractLogoColors(c.logo,colors=>_cmApplyLogoColors(colors,true));
+}
+const _CM_EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function _cmErr(fieldId,msg){_formErr(document.getElementById('cm-form'),fieldId,msg);}
+// The login API's refusal: 409 means the email is already someone else's login.
+async function _cmApiError(resp,fallback){
+  const r=await resp.json().catch(()=>({}));
+  const e=new Error(r.error||fallback);e.field=resp.status===409?'cm-email':null;return e;
 }
 async function saveClient(id){
   // Route-level guard already blocks non-admins from the Clients view (_STAFF_BLOCKED /
@@ -10102,7 +10150,7 @@ async function saveClient(id){
   // any logged-in session, and it can create real Supabase accounts and set passwords.
   try{requireAdmin(currentUser);}catch(e){showAlert(e.message);return;}
   const name=document.getElementById('cm-name').value.trim();
-  if(!name){showAlert('Client name is required.','Validation');return;}
+  if(!name){_cmErr('cm-name','Enter the client name.');return;}
   const shortCode=document.getElementById('cm-code').value.trim().toUpperCase();
   const color=document.getElementById('cm-color').value;
   if(id){
@@ -10122,33 +10170,33 @@ async function saveClient(id){
       // already has tasks/history attached and just needs portal access added later.
       const email=(document.getElementById('cm-email')?.value||'').trim();
       if(email||pw){
-        if(!email){showAlert('Enter a portal email to go with that password.','Validation');return;}
-        if(!pw){showAlert('Enter a password to go with that portal email.','Validation');return;}
-        if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
-        if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
+        if(!email){_cmErr('cm-email','Enter a portal email to go with that password.');return;}
+        if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
+        if(!pw){_cmErr('cm-pw','Enter a password to go with that portal email.');return;}
+        if(pw.length<8){_cmErr('cm-pw','Password must be at least 8 characters.');return;}
+        if(pw!==pw2){_cmErr('cm-pw2','Passwords do not match.');return;}
         const btn=document.getElementById('cm-save-btn');
         if(btn){btn.disabled=true;btn.textContent='Saving…';}
         try{
-          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:id,password:pw})});
-          const result=await resp.json();
-          if(!resp.ok)throw new Error(result.error||'Failed to create portal account');
-          newAccountResult=result;
+          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:id,shortCode,password:pw})});
+          if(!resp.ok)throw await _cmApiError(resp,'Failed to create portal account');
+          newAccountResult=await resp.json();
         }catch(e){
-          showAlert(e.message,'Portal Access Failed');
+          _cmErr(e.field||null,e.message);
           if(btn){btn.disabled=false;btn.textContent='Save';}
           return;
         }
       }
     }else if(pw){
-      if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
-      if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
+      if(pw.length<8){_cmErr('cm-pw','Password must be at least 8 characters.');return;}
+      if(pw!==pw2){_cmErr('cm-pw2','Passwords do not match.');return;}
       const btn=document.getElementById('cm-save-btn');
       if(btn){btn.disabled=true;btn.textContent='Saving…';}
       try{
         const resp=await fetch('/api/set-password',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({userId:c.supabaseUserId,password:pw})});
         if(!resp.ok){const r=await resp.json();throw new Error(r.error||'Failed to update password');}
       }catch(e){
-        showAlert(e.message,'Password Update Failed');
+        _cmErr(null,e.message);
         if(btn){btn.disabled=false;btn.textContent='Save';}
         return;
       }
@@ -10183,22 +10231,26 @@ async function saveClient(id){
     const email=(document.getElementById('cm-email')?.value||'').trim();
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
     const pw2=(document.getElementById('cm-pw2')?.value||'').trim();
-    const cid='c'+uid();
+    const _sb=document.getElementById('cm-save-btn');
+    const cid=(_sb&&_sb.dataset.newId)||'c'+uid();
     const logo=document.getElementById('cm-logo-b64')?.value||null;
-    if(email&&pw){
-      if(pw.length<8){showAlert('Password must be at least 8 characters.','Validation');return;}
-      if(pw!==pw2){showAlert('Passwords do not match.','Validation');return;}
+    if(email||pw){
+      if(!email){_cmErr('cm-email','Enter a portal email to go with that password, or clear the password.');return;}
+      if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
+      if(!pw){_cmErr('cm-pw','Enter a password to create the portal login, or clear the email.');return;}
+      if(pw.length<8){_cmErr('cm-pw','Password must be at least 8 characters.');return;}
+      if(pw!==pw2){_cmErr('cm-pw2','Passwords do not match.');return;}
       const btn=document.getElementById('cm-save-btn');
-      if(btn){btn.disabled=true;btn.textContent='Creating…';}
+      if(btn){btn.disabled=true;btn.textContent='Creating…';btn.dataset.newId=cid;}
       try{
-        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:cid,password:pw})});
+        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:cid,shortCode,password:pw})});
+        if(!resp.ok)throw await _cmApiError(resp,'Failed to create account');
         const result=await resp.json();
-        if(!resp.ok)throw new Error(result.error||'Failed to create account');
         DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
         saveDB(DB);closeGenericModal();renderView('clients');
         showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
-        showAlert(e.message,'Add Client Failed');
+        _cmErr(e.field||null,e.message);
         if(btn){btn.disabled=false;btn.textContent='Save';}
       }
     }else{
