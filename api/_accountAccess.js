@@ -79,7 +79,7 @@ async function setRole({ userId, role, callerId }) {
     const r = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, { method: 'PATCH', headers: { ...headers, Prefer: 'return=minimal' }, body: JSON.stringify({ role }) });
     if (!r.ok) { console.error('[account-access] role update failed:', r.status, (await r.text()).slice(0, 200)); return { status: 500, body: { error: 'Could not change this role. Nothing was changed; try again.' } }; }
     console.log('[account-access] role changed:', userId, profile.role, '->', role, 'by', callerId);
-    return { status: 200, body: { ok: true, role, changed: true } };
+    return { status: 200, body: { ok: true, role, changed: true }, previousRole: profile.role };
   } catch (e) {
     if (e && e.status) return { status: e.status, body: { error: e.message } };
     console.error('[account-access]', e && e.message);

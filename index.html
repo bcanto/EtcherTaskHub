@@ -3584,7 +3584,7 @@ async function _supabaseRestoreSession(session){
       _startPortalRefresh();      // replaces realtime (clients can't read app_state to subscribe to it)
       launchClientView();
     } else {
-      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,profileRole:p.role,
+      currentUser={id:p.id,name:p.name,email:p.email,role:p.role,profileRole:p.role,authUid:p.id,
         type:p.role==='admin'||p.role==='pm'?p.role:'staff',
         displayColor:p.display_color||'#64748b',color:p.display_color||'#64748b',
         initials:p.initials||getInitials(p.name),
@@ -6328,7 +6328,7 @@ const SCHEMA = Object.freeze({
 // ── Audit event writer — shape matches AuditEvent Prisma model ─
 function writeAuditEvent(entityType, entityId, action, before=null, after=null){
   if(!DB.auditLog) DB.auditLog=[];
-  DB.auditLog.push({
+  const ev={
     id:             'ae'+uid(),
     entityType,                                    // "Task" | "User" | "Board" | …
     entityId,                                      // id of the entity changed
@@ -6337,9 +6337,89 @@ function writeAuditEvent(entityType, entityId, action, before=null, after=null){
     beforeValueJson:before?JSON.stringify(before):null,
     afterValueJson: after ?JSON.stringify(after) :null,
     createdAt:      new Date().toISOString(),
-  });
+  };
+  DB.auditLog.push(ev);
   // Rolling cap: prevents unbounded growth inflating the stored JSON blob
   if(DB.auditLog.length>1000)DB.auditLog=DB.auditLog.slice(-1000);
+  _auditForward(ev);   // the permanent copy on the server (audit H8, 2026-10-17)
+  return ev;
+}
+
+// ── Audit trail: the permanent copy (audit H8, 2026-10-17) ───────────────────────────────────────
+// The log in the shared record can be rewritten by any staff login and keeps 1,000 events. Every event is also sent to
+// public.audit_log, which nobody can edit or delete (migration 017 lets a signed-in staff member add rows under their own
+// id; the server writes the account events itself). Best effort: if the table or its insert rule is not there yet, or the
+// person is offline, the local log still has the event and nothing is shown to the person.
+const _auditQueue=[];let _auditFlushTimer=null,_auditServerOff=false;
+function _auditForward(ev){
+  if(!window._supabase||_auditServerOff||!currentUser||!currentUser.authUid)return;
+  _auditQueue.push({ev,tries:0});
+  if(!_auditFlushTimer)_auditFlushTimer=setTimeout(_auditFlush,1500);
+}
+async function _auditFlush(){
+  _auditFlushTimer=null;
+  if(!window._supabase||!currentUser||!currentUser.authUid){_auditQueue.length=0;return;}
+  const batch=_auditQueue.splice(0,100);
+  if(!batch.length)return;
+  // No created_at: the database stamps the time, so a row cannot be backdated from a browser.
+  const rows=batch.map(({ev:e})=>({id:e.id,entity_type:String(e.entityType||'Unknown').slice(0,60),entity_id:e.entityId==null?null:String(e.entityId).slice(0,120),actor_id:currentUser.authUid,action:String(e.action||'unknown').slice(0,120),before_value:e.beforeValueJson?JSON.parse(e.beforeValueJson):null,after_value:e.afterValueJson?JSON.parse(e.afterValueJson):null}));
+  try{
+    const{error}=await window._supabase.from('audit_log').insert(rows);
+    // 23505: these rows are already there (an earlier try got through before the answer was lost), which is what was wanted.
+    if(error&&error.code!=='23505'){
+      // No insert rule yet (migration 017), or no table: stop trying for this session. Anything else is tried again.
+      if(/42501|PGRST205|42P01|permission|policy|row-level|does not exist|not found/i.test((error.code||'')+' '+(error.message||''))){_auditServerOff=true;_auditQueue.length=0;console.warn('[audit] the server trail is not available:',error.message);return;}
+      throw error;
+    }
+  }catch(e){
+    console.warn('[audit] not sent, will try again:',e&&e.message||e);
+    batch.forEach(b=>b.tries++);
+    _auditQueue.unshift(...batch.filter(b=>b.tries<4));
+  }
+  if(_auditQueue.length)_auditFlushTimer=setTimeout(_auditFlush,3000);
+}
+let _auditServerRows=[],_auditServerAt=0,_auditServerBusy=false;
+function _auditFromRow(r){
+  const u=allStaff().find(x=>x.supabase_uid===r.actor_id||x.id===r.actor_id);
+  return{id:r.id,entityType:r.entity_type,entityId:r.entity_id,actorId:u?u.id:r.actor_id,action:r.action,
+    beforeValueJson:r.before_value!=null?JSON.stringify(r.before_value):null,afterValueJson:r.after_value!=null?JSON.stringify(r.after_value):null,
+    createdAt:r.created_at,server:true};
+}
+// The Audit screen (admins) reads the permanent trail from the server, at most every 30 seconds, and redraws when it arrives.
+function _auditServerLoad(){
+  if(!window._supabase||_auditServerBusy||Date.now()-_auditServerAt<30000||currentUser?.role!=='admin')return;
+  _auditServerBusy=true;
+  Promise.resolve(window._supabase.from('audit_log').select('*').order('created_at',{ascending:false}).limit(500)).then(({data,error})=>{
+    _auditServerBusy=false;_auditServerAt=Date.now();
+    if(error||!Array.isArray(data))return;
+    _auditServerRows=data.map(_auditFromRow);
+    if(currentView==='audit')renderView('audit');
+  }).catch(()=>{_auditServerBusy=false;_auditServerAt=Date.now();});
+}
+// What changed, written the way the Audit screen already reads task changes (a field, its old and new value).
+function _auditShow(v){return v==null||v===''?'—':typeof v==='object'?JSON.stringify(v):String(v);}
+function _auditFieldChanges(entityType,entityId,before,after,labels){
+  for(const k of Object.keys(after)){
+    if(JSON.stringify(before[k])===JSON.stringify(after[k]))continue;
+    const label=(labels&&labels[k])||k;
+    writeAuditEvent(entityType,entityId,'updated:'+k,{field:k,label,displayValue:_auditShow(before[k])},{field:k,label,displayValue:_auditShow(after[k])});
+  }
+}
+// Deleting tasks: one event per task deleted in its own right (sub-items go with their parent and are counted on it);
+// more than ten at once become one event.
+function _auditTasksDeleted(ids){
+  const all=[...ids].map(i=>(DB.tasks||[]).find(t=>t.id===i)).filter(Boolean);
+  const roots=all.filter(t=>!ids.has(t.parentTaskId));
+  if(roots.length>10){writeAuditEvent('Task','bulk','deleted',{count:roots.length,subItems:all.length-roots.length,names:roots.slice(0,10).map(taskTitle)},null);return;}
+  roots.forEach(t=>writeAuditEvent('Task',t.id,'deleted',{name:taskTitle(t),boardId:_taskBoardId(t)||null,clientId:t.clientId||null,subItems:all.filter(x=>x.parentTaskId===t.id).length},null));
+}
+// One event for a bulk approval or rejection of hours, naming the entries (the ones this run changed carry its time).
+function _auditBulkTime(action,now,reason){
+  const key=action==='bulk_approved'?'approvedAt':'rejectedAt';
+  const hit=(DB.timeEntries||[]).filter(e=>e[key]===now);
+  if(!hit.length)return;
+  const hrs=Math.round(hit.reduce((a,e)=>a+(+e.hours||0),0)*100)/100;
+  writeAuditEvent('TimeEntry',hit[0].id,action,{displayValue:'awaiting approval'},{displayValue:action==='bulk_rejected'?'rejected: '+(reason||''):'approved',title:hit.length+' entr'+(hit.length!==1?'ies':'y')+', '+hrs+'h',count:hit.length,ids:hit.slice(0,200).map(e=>e.id)});
 }
 
 // Legacy shim — keeps existing callers working, writes to new AuditEvent shape
@@ -11363,6 +11443,7 @@ async function saveClient(id){
     // snapshot, leaving the `c` captured earlier detached from the live array — writing to it
     // would update an orphan that nothing ever saves. Re-resolve before mutating.
     c=DB.clients.find(x=>x.id===id)||c;
+    const _cBefore={name:c.name,shortCode:c.shortCode||'',color:c.color,portalEnabled:!!c.portalEnabled};
     c.name=name;c.shortCode=shortCode;
     const now=new Date().toISOString();
     if(color!==c.color){
@@ -11385,6 +11466,9 @@ async function saveClient(id){
       c.portalEnabled=true;
     }
     c.updatedAt=now;
+    _auditFieldChanges('Client',id,_cBefore,{name:c.name,shortCode:c.shortCode||'',color:c.color,portalEnabled:!!c.portalEnabled},{name:'Name',shortCode:'Short code',color:'Colour',portalEnabled:'Portal access'});
+    if(newAccountResult)writeAuditEvent('Client',id,'portal_login_created',null,{title:c.loginEmail||''});
+    else if(pw)writeAuditEvent('Client',id,'portal_password_changed',null,null);
     saveDB(DB);closeGenericModal();renderView('clients');
   }else{
     const email=(document.getElementById('cm-email')?.value||'').trim();
@@ -11397,6 +11481,7 @@ async function saveClient(id){
       if(pw||pw2){_cmErr('cm-pw',`This local copy can't create real portal logins. Leave both password boxes empty and save; the client signs in with the local preview password, ${_LOCAL_CLIENT_PASSWORD}.`);return;}
       if(email&&!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
       DB.clients.push({id:cid,name,shortCode,color,logo,active:true,loginEmail:email||undefined,portalEnabled:!!(email&&document.getElementById('cm-portal-enabled')?.checked),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      writeAuditEvent('Client',cid,'created',null,{title:name+(email?', portal email '+email:''),name,portalEnabled:!!(email&&document.getElementById('cm-portal-enabled')?.checked)});
       saveDB(DB);closeGenericModal();renderView('clients');
       return;
     }
@@ -11413,6 +11498,7 @@ async function saveClient(id){
         if(!resp.ok)throw await _cmApiError(resp,'Failed to create account');
         const result=await resp.json();
         DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+        writeAuditEvent('Client',cid,'created',null,{title:name+', portal login '+email,name,portalEnabled:true});
         saveDB(DB);closeGenericModal();renderView('clients');
         showToast(`Portal account created for ${name}`,'success',4000);
       }catch(e){
@@ -11421,6 +11507,7 @@ async function saveClient(id){
       }
     }else{
       DB.clients.push({id:cid,name,shortCode,color,logo,active:true,portalEnabled:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+      writeAuditEvent('Client',cid,'created',null,{title:name,name,portalEnabled:false});
       saveDB(DB);closeGenericModal();renderView('clients');
     }
   }
@@ -12007,6 +12094,7 @@ function saveEditTimeEntry(id){
   const staffId=currentUser.role==='admin'?(document.getElementById('ete-staff')?.value||e.staffId):e.staffId;
   const task=taskId?DB.tasks.find(t=>t.id===taskId):null;
   const resolvedClientId=task?getTaskClient(task)?.id||clientId:clientId;
+  const _eBefore={taskId:e.taskId||null,clientId:e.clientId||'',staffId:e.staffId,hours:e.hours,date:e.date,note:e.note||'',location:e.location||'remote',billable:e.billable!==false};
   e.taskId=taskId||null;
   e.clientId=resolvedClientId;
   e.staffId=staffId;
@@ -12018,6 +12106,7 @@ function saveEditTimeEntry(id){
   e.earningsRateId=earningsRateId;
   e.earningsRateName=earningsRateName;
   e.updatedAt=new Date().toISOString();
+  _auditFieldChanges('TimeEntry',e.id,_eBefore,{taskId:e.taskId||null,clientId:e.clientId||'',staffId:e.staffId,hours:e.hours,date:e.date,note:e.note||'',location:e.location||'remote',billable:e.billable!==false},{taskId:'Task',clientId:'Client',staffId:'Staff',hours:'Hours',date:'Date',note:'Note',location:'Location',billable:'Billable'});
   if(e.taskId)applyHourBudgetPct(e.taskId);
   saveDB(DB);
   closeGenericModal();
@@ -12796,9 +12885,12 @@ function tsApproveEntry(id){
   const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
   // A14: a Billing (non-admin) user cannot approve their own entries.
   if(currentUser.role!=='admin'&&e.staffId===currentUser.id){showAlert('You cannot approve your own timesheet entries.');return;}
+  const _prevSt=e.status||'draft';
   e.status='approved';e.approvedAt=new Date().toISOString();e.approvedByUserId=currentUser.id;
   delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
-  e.updatedAt=new Date().toISOString();saveDB(DB);renderView('reports');
+  e.updatedAt=new Date().toISOString();
+  writeAuditEvent('TimeEntry',id,'approved',{displayValue:_prevSt},{displayValue:'approved',hours:e.hours,staffId:e.staffId});
+  saveDB(DB);renderView('reports');
 }
 function openTsRejectModal(id){
   const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
@@ -12823,9 +12915,12 @@ function tsRejectEntry(id){
   const e=DB.timeEntries.find(t=>t.id===id);if(!e)return;
   // A14: a Billing (non-admin) user cannot reject their own entries.
   if(currentUser.role!=='admin'&&e.staffId===currentUser.id){showAlert('You cannot reject your own timesheet entries.');return;}
+  const _prevSt=e.status||'draft';
   e.status='rejected';e.rejectedAt=new Date().toISOString();e.rejectedByUserId=currentUser.id;e.rejectionReason=reason;
   delete e.approvedAt;delete e.approvedByUserId;
-  e.updatedAt=new Date().toISOString();saveDB(DB);closeGenericModal();renderView('reports');
+  e.updatedAt=new Date().toISOString();
+  writeAuditEvent('TimeEntry',id,'rejected',{displayValue:_prevSt},{displayValue:'rejected: '+reason,hours:e.hours,staffId:e.staffId});
+  saveDB(DB);closeGenericModal();renderView('reports');
 }
 function tsSubmitEntry(id){
   const e=DB.timeEntries.find(t=>t.id===id);
@@ -12866,6 +12961,7 @@ function tsBulkApprove(){
     delete e.rejectedAt;delete e.rejectedByUserId;delete e.rejectionReason;
     e.updatedAt=now;count++;
   });
+  _auditBulkTime('bulk_approved',now);
   saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
   // Never finish silently: a run that changed nothing used to look identical to one that worked.
   if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved.`+(skippedOwn?` ${skippedOwn} of your own entr${skippedOwn!==1?'ies were':'y was'} skipped.`:''),'Timesheets Approved');
@@ -12904,6 +13000,7 @@ function tsBulkReject(){
     delete e.approvedAt;delete e.approvedByUserId;
     e.updatedAt=now;count++;
   });
+  _auditBulkTime('bulk_rejected',now,reason);
   saveDB(DB);tsSelectedIds=new Set();closeGenericModal();renderView('reports');
   if(count)showAlert(`${count} entr${count!==1?'ies':'y'} rejected.`+(skippedOwn?` ${skippedOwn} of your own entr${skippedOwn!==1?'ies were':'y was'} skipped.`:''),'Timesheets Rejected');
   else if(skippedOwn)showAlert('Nothing to reject — you cannot reject your own timesheet entries.','Timesheets');
@@ -12946,6 +13043,7 @@ function tsBulkApproveForStaff(staffId,fortnightEnding){
       e.updatedAt=now;count++;
     }
   });
+  _auditBulkTime('bulk_approved',now);
   saveDB(DB);renderView('reports');
   if(count)showAlert(`${count} entr${count!==1?'ies':'y'} approved for this fortnight.`,'Timesheets Approved');
   else showAlert('Nothing to approve — this fortnight has no entries awaiting approval.','Timesheets');
@@ -12981,6 +13079,7 @@ function tsBulkRejectForStaff(staffId,fortnightEnding){
       delete e.approvedAt;delete e.approvedByUserId;e.updatedAt=now;count++;
     }
   });
+  _auditBulkTime('bulk_rejected',now,reason);
   saveDB(DB);closeGenericModal();renderView('reports');
 }
 
@@ -15909,7 +16008,11 @@ let auditDateTo='';
 function renderAudit(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
 
-  const log=[...(DB.auditLog||[])].sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
+  // The permanent trail from the server (admins), merged with the log in the shared record; where both hold an event
+  // the server's copy is the one shown (audit H8, 2026-10-17).
+  _auditServerLoad();
+  const _srvIds=new Set(_auditServerRows.map(r=>r.id));
+  const log=[...(DB.auditLog||[]).filter(a=>!_srvIds.has(a.id)),..._auditServerRows].sort((a,b)=>new Date(b.createdAt||b.at||0)-new Date(a.createdAt||a.at||0));
 
   // Derive distinct entity types + actors
   const entityTypes=[...new Set(log.map(a=>a.entityType||'Unknown'))].sort();
@@ -15932,7 +16035,7 @@ function renderAudit(){
   }).join('');
 
   // Entity-type colour coding
-  const entityColor={Task:'#3b82f6',Comment:'#6366f1',TimeEntry:'#10b981',Dependency:'#f59e0b',User:'#8b5cf6'};
+  const entityColor={Task:'#3b82f6',Comment:'#6366f1',TimeEntry:'#10b981',Dependency:'#f59e0b',User:'#8b5cf6',Client:'#0ea5e9'};
 
   const rows=filtered.slice(0,200).map(a=>{
     const actor=getStaff(a.actorId||'');
@@ -15953,6 +16056,10 @@ function renderAudit(){
       dependency_added:'Dependency Added',dependency_removed:'Dependency Removed',
       dates_locked:'Dates Locked',manual_move:'Manually Moved',dates_changed:'Dates Changed',
       client_portal_visibility_changed:'Portal Visibility Changed',
+      approved:'Approved',rejected:'Rejected',bulk_approved:'Bulk Approved',bulk_rejected:'Bulk Rejected',
+      password_changed:'Password Changed',access_disabled:'Login Switched Off',access_enabled:'Login Switched On',
+      role_changed:'Role Changed',login_created:'Login Created',portal_login_created:'Portal Login Created',
+      portal_password_changed:'Portal Password Changed',
     };
     const rawAction=a.action||'';
     let actionLabel;
@@ -15968,7 +16075,7 @@ function renderAudit(){
     if(a.entityType==='Comment'){
       const preview=after?.bodyPreview||before?.bodyPreview||'';
       changeHtml=preview?`<span style="color:#4a5568;font-style:italic">"${escHtml(preview.slice(0,80))}${preview.length>80?'…':''}"</span>`:'';
-    }else if(a.entityType==='TimeEntry'){
+    }else if(a.entityType==='TimeEntry'&&(a.action==='created'||a.action==='deleted')){
       if(a.action==='created'&&after){
         const s=getStaff(after.staffId);
         changeHtml=`<span style="color:#4a5568">${escHtml(s.name)} · ${after.hours}h · ${after.date}${after.billable?' · Billable':''}</span>`;
@@ -16000,7 +16107,7 @@ function renderAudit(){
       :(before?.taskId||after?.taskId)?DB.tasks.find(t=>t.id===(before?.taskId||after?.taskId)):null;
 
     return`<tr>
-      <td style="white-space:nowrap;font-size:11px;color:#8da2b2">${new Date(ts).toLocaleString()}</td>
+      <td style="white-space:nowrap;font-size:11px;color:#8da2b2">${a.server?'<span title="Recorded on the server. It cannot be edited or deleted." style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0d6e4e;margin-right:6px;vertical-align:middle"></span>':''}${new Date(ts).toLocaleString()}</td>
       <td><span style="font-size:10px;font-weight:700;background:${eColor}18;color:${eColor};padding:2px 7px;border-radius:8px;white-space:nowrap">${escHtml(a.entityType||'?')}</span></td>
       <td style="font-size:12px;font-weight:600;color:#0d1c33">${escHtml(actionLabel)}</td>
       <td>
@@ -17034,6 +17141,7 @@ function permanentDeleteTask(id){
     const ids=new Set();
     function collect(tid){ids.add(tid);DB.tasks.filter(x=>x.parentTaskId===tid).forEach(c=>collect(c.id));}
     collect(id);
+    _auditTasksDeleted(ids);
     _keepEntriesOfDeletedTasks(ids);
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
@@ -17047,7 +17155,7 @@ function permanentDeleteAllArchivedTasks(){
   if(!ids.size)return;
   const _allGone=()=>new Set(DB.tasks.filter(t=>ids.has(t.id)||ids.has(t.parentTaskId)).map(t=>t.id));
   openConfirm('Delete All Archived Tasks',`Permanently delete ${ids.size} archived task${ids.size!==1?'s':''} and their subitems? This CANNOT be undone.`+_keptEntriesNote(_allGone()),'Delete All Forever',()=>{
-    _keepEntriesOfDeletedTasks(_allGone());
+    {const _g=_allGone();_auditTasksDeleted(_g);_keepEntriesOfDeletedTasks(_g);}
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id)&&!ids.has(t.parentTaskId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}
     {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
@@ -17591,6 +17699,7 @@ function deleteStaff(id){
       if(btn){btn.disabled=false;btn.textContent='Remove';}
       if(err){closeConfirm();showAlert(`${err} ${s.name} has not been removed.`,'Remove Staff');return;}
     }
+    writeAuditEvent('User',id,'deleted',{title:s.name+', '+s.email+', '+(s.role||'staff'),name:s.name,email:s.email,role:s.role||'staff'},null);
     DB.tasks.forEach(t=>{
       if(t.ownerId===id)t.ownerId=null;
       if(t.currentlyWithUserId===id){t.currentlyWithUserId=null;t.currentlyWith=null;}
@@ -17673,6 +17782,7 @@ async function saveStaff(id){
     // Same detached-object hazard as saveClient: a merge during the await can rebuild DB.users,
     // so re-resolve before writing rather than mutating a copy that is no longer in the array.
     s=DB.staff.find(x=>x.id===id)||s;
+    const _sBefore={name:s.name,role:s.role||'staff',color:s.color};
     const _billingBefore=!!s.billing;
     const _billingChecked=!!document.getElementById('sm-billing')?.checked;
     const _billingAfter=role==='staff'&&_billingChecked;
@@ -17680,6 +17790,8 @@ async function saveStaff(id){
     if(_billingAfter)s.billing=true;else delete s.billing;
     if(_billingBefore!==_billingAfter)writeAuditEvent('User',id,'billing_changed',{billing:_billingBefore},{billing:_billingAfter});
     s.updatedAt=new Date().toISOString();
+    _auditFieldChanges('User',s.id,_sBefore,{name:s.name,role:s.role||'staff',color:s.color},{name:'Name',role:'Role',color:'Colour'});
+    if(pw)writeAuditEvent('User',s.id,'password_changed',null,null);
     saveDB(DB);closeGenericModal();renderView('staff');
   }else{
     // New user — create account directly (no email needed)
@@ -17696,6 +17808,7 @@ async function saveStaff(id){
       const _billingNew=role==='staff'&&!!document.getElementById('sm-billing')?.checked;
       DB.users.push({id:result.id,name,email,role,color,displayColor:color,initials,active:true,...(_billingNew?{billing:true}:{}),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
       if(_billingNew)writeAuditEvent('User',result.id,'billing_changed',{billing:false},{billing:true});
+      writeAuditEvent('User',result.id,'created',null,{title:name+', '+email+', '+role,name,email,role});
       DB.staff=DB.users;
       _savePw(result.id,pw); // persist in _pwStore so login survives page reload in localStorage mode
       saveDB(DB);closeGenericModal();renderView('staff');
@@ -18651,7 +18764,8 @@ function _keptEntriesNote(ids){
   const n=(DB.timeEntries||[]).filter(e=>ids.has(e.taskId)).length;
   return n?` Its ${n} time ${n!==1?'entries':'entry'} stay${n===1?'s':''} in Timesheets.`:'';
 }
-function _cascadeDeleteTasks(ids){
+function _cascadeDeleteTasks(ids,opts){
+  if(!opts||!opts.quiet)_auditTasksDeleted(ids);
   _keepEntriesOfDeletedTasks(ids);
   {const _before=DB.tasks;DB.tasks=(DB.tasks||[]).filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
   {const _before=DB.comments;DB.comments=(DB.comments||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.comments,'deletedCommentIds');}
@@ -18727,7 +18841,8 @@ function confirmDelete(type, id){
       // Cascade the tasks properly — this used to drop only groups/tasks, leaving every
       // comment, checklist item and time entry behind with a dangling taskId, still counted
       // by anything aggregating on clientId.
-      _cascadeDeleteTasks(ids);
+      {const _cl=DB.clients.find(c=>c.id===id);writeAuditEvent('Client',id,'deleted',{name:_cl?_cl.name:id,tasks:ids.size,groups:DB.groups.filter(g=>g.clientId===id).length},null);}
+      _cascadeDeleteTasks(ids,{quiet:true});
       {const _before=DB.groups;DB.groups=DB.groups.filter(g=>g.clientId!==id);_tombstoneRemoved(_before,DB.groups,'deletedGroupIds');}
       DB.clients=DB.clients.filter(c=>c.id!==id);
       // Track deleted client IDs so realtime merge can't restore them
@@ -23889,6 +24004,7 @@ function tpDeleteTask(){
   openConfirm('Delete Task',(hasChildren?'Delete this task and all its subitems? This cannot be undone.':'Delete this task? This cannot be undone.')+_keptEntriesNote(_collectTaskIds(id)),'Delete',()=>{
     function collectIds(tid){const ch=DB.tasks.filter(t=>t.parentTaskId===tid);return[tid,...ch.flatMap(c=>collectIds(c.id))];}
     const ids=new Set(collectIds(id));
+    _auditTasksDeleted(ids);
     _keepEntriesOfDeletedTasks(ids);
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.id));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
     {const _before=DB.checklistItems;DB.checklistItems=(DB.checklistItems||[]).filter(c=>!ids.has(c.taskId));_tombstoneRemoved(_before,DB.checklistItems,'deletedChecklistItemIds');}

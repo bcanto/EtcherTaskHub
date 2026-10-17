@@ -1,5 +1,6 @@
 const { requireAdminCaller } = require('./_authAdmin');
 const { UUID_RE, setAccess, setRole } = require('./_accountAccess');
+const { recordAudit } = require('./_audit');
 
 // POST { userId, password }          set a login's password
 // POST { userId, access: 'disable' } switch a login off (Remove staff), or 'enable' to switch it back on
@@ -23,8 +24,13 @@ module.exports = async function handler(req, res) {
   if ([password, access, role].filter(v => v !== undefined).length > 1)
     return res.status(400).json({ error: 'Send one action at a time.' });
 
+  // What an admin does to a login is written to the server-side audit trail (audit H8, 2026-10-17). A failure to write
+  // it never changes the answer.
+  const audit = (action, before, after) => recordAudit({ entityType: 'User', entityId: userId, actorId: caller.id, action, before, after });
+
   if (role !== undefined) {
     const r = await setRole({ userId, role, callerId: caller.id });
+    if (r.status === 200 && r.body.changed) await audit('role_changed', { role: r.previousRole }, { role: r.body.role });
     return res.status(r.status).json(r.body);
   }
 
@@ -32,6 +38,7 @@ module.exports = async function handler(req, res) {
     if (access !== 'disable' && access !== 'enable')
       return res.status(400).json({ error: "access must be 'disable' or 'enable'" });
     const r = await setAccess({ userId, enabled: access === 'enable', callerId: caller.id });
+    if (r.status === 200) await audit(access === 'enable' ? 'access_enabled' : 'access_disabled', null, null);
     return res.status(r.status).json(r.body);
   }
 
@@ -56,5 +63,6 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to update password' });
   }
 
+  await audit('password_changed', null, null);   // the fact, never the password
   res.json({ ok: true });
 };
