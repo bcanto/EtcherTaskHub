@@ -1927,6 +1927,17 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   </div>
 </div>
 
+<!-- MESSAGE LAYER: a notice or error raised while a form is open appears here, above it, so the form is never replaced -->
+<div id="alert-modal" class="modal-overlay hidden" style="z-index:700" role="alertdialog" aria-modal="true" aria-labelledby="alert-modal-title" aria-describedby="alert-modal-msg" onclick="if(event.target===this)closeAlert()" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeAlert();}">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header"><h3 id="alert-modal-title" style="font-family:'Jost',sans-serif;font-size:16px;font-weight:600">Notice</h3></div>
+    <div style="padding:24px 28px 28px">
+      <p id="alert-modal-msg" style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:20px"></p>
+      <div style="display:flex;justify-content:flex-end"><button id="alert-ok-btn" onclick="closeAlert()" class="btn btn-teal btn-sm">OK</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- TASK PANEL -->
 <div id="task-panel-overlay" onclick="closeTaskPanel()" style="display:none;position:fixed;inset:0;background:rgba(13,28,51,0.3);z-index:298;backdrop-filter:blur(1px)"></div>
 <div id="task-panel" style="display:none;position:fixed;right:0;top:0;width:558px;max-width:100vw;height:100vh;background:#fff;box-shadow:-8px 0 40px rgba(13,28,51,0.15);z-index:299;flex-direction:column;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1)"></div>
@@ -3863,9 +3874,27 @@ let editingTaskId=null;
 let confirmCallback=null;
 // ── Styled dialog helpers (replace native alert/confirm/prompt) ──────────────
 function showAlert(msg,title='Notice'){
+  // A form is open in the shared dialog: the message must not replace it, or the error wipes what was typed and
+  // its OK closes the form (audit H7, 2026-10-17: 13 forms). It gets a layer of its own above the form. The
+  // data-alert-msg mark tells a message already showing in the shared dialog (replaced, as before) from a form.
+  if(!document.getElementById('generic-modal').classList.contains('hidden')&&!document.querySelector('#generic-modal-body [data-alert-msg]')){_alertLayerOpen(msg,title);return;}
   document.getElementById('generic-modal-title').textContent=title;
-  document.getElementById('generic-modal-body').innerHTML=`<p style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:20px">${escHtml(msg)}</p><div style="display:flex;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-teal btn-sm">OK</button></div>`;
+  document.getElementById('generic-modal-body').innerHTML=`<p data-alert-msg style="font-size:14px;color:#4a5568;line-height:1.6;margin-bottom:20px">${escHtml(msg)}</p><div style="display:flex;justify-content:flex-end"><button onclick="closeGenericModal()" class="btn btn-teal btn-sm">OK</button></div>`;
   document.getElementById('generic-modal').classList.remove('hidden');
+}
+let _alertReturnFocus=null;
+function _alertLayerOpen(msg,title){
+  const layer=document.getElementById('alert-modal');
+  if(layer.classList.contains('hidden')){const a=document.activeElement;_alertReturnFocus=a&&a!==document.body?a:null;}
+  document.getElementById('alert-modal-title').textContent=title;
+  document.getElementById('alert-modal-msg').textContent=msg;
+  layer.classList.remove('hidden');
+  document.getElementById('alert-ok-btn').focus();
+}
+function closeAlert(){
+  document.getElementById('alert-modal').classList.add('hidden');
+  const back=_alertReturnFocus;_alertReturnFocus=null;
+  if(back&&back.isConnected){try{back.focus();}catch(_){}}
 }
 // Inline form errors (2026-10-16): a problem is shown inside the form, against its field, and the
 // form stays open. showAlert writes into the same shared modal, so it replaced the form and its OK
