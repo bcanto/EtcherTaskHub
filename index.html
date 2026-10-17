@@ -6297,6 +6297,47 @@ document.addEventListener('keydown',e=>{
   };
   if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
 })();
+// Tap targets (audit L3, 2026-10-17): on a touch screen, a clickable area under 32x32px is hard to hit. Measured at
+// runtime (so it covers every screen, not a guess from inline styles) and only ever grows an element, never shrinks
+// one. A colour swatch is left alone — its title is the hex code itself, never a human label, and a dense colour grid
+// (custom labels, board colours) is a deliberate, accepted pattern.
+function _ttIsSwatch(el){return/^#[0-9a-fA-F]{3,8}$/.test((el.getAttribute('title')||'').trim())||el.hasAttribute('data-swatch');}
+// Table cells and rows already have a decent-height click target from the row itself, and turning one into a flex
+// box would corrupt the table's layout — only their minimum height is raised, never their display or width.
+const _TT_TABLE=new Set(['TR','TD','TH']);
+function _ttEnhance(root){
+  if(!root||!root.querySelectorAll)return;
+  const cand=root.matches&&(root.matches('button,[onclick]'))?[root,...root.querySelectorAll('button,[onclick]')]:[...root.querySelectorAll('button,[onclick]')];
+  for(const el of cand){
+    if(el.hasAttribute('data-tt')||_ttIsSwatch(el))continue;
+    const r=el.getBoundingClientRect();
+    if(r.width<=0||r.height<=0)continue;   // not yet laid out or hidden; the observer will catch it once visible
+    el.setAttribute('data-tt','1');
+    if(_TT_TABLE.has(el.tagName)){
+      // Table layout does not honour min-height on a row or a cell (a long-standing browser quirk), but it does
+      // honour height as a floor: content taller than it still grows the cell, content shorter does not shrink it.
+      if(r.height<32)for(const c of(el.tagName==='TR'?el.children:[el]))c.style.height='32px';
+      continue;
+    }
+    if(r.width<32||r.height<32){
+      const cs=getComputedStyle(el);
+      if(cs.display==='inline')el.style.display='inline-flex';
+      el.style.minWidth='32px';el.style.minHeight='32px';
+      if(!/center/.test(cs.alignItems))el.style.alignItems='center';
+      if(!/center/.test(cs.justifyContent))el.style.justifyContent='center';
+    }
+  }
+}
+(function(){
+  let pending=new Set(),timer=null;
+  const flush=()=>{timer=null;const roots=[...pending];pending=new Set();roots.forEach(r=>{if(r.isConnected)_ttEnhance(r);});};
+  const start=()=>{
+    _ttEnhance(document.body);
+    new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)pending.add(n);if(pending.size&&!timer)timer=setTimeout(flush,30);})
+      .observe(document.body,{childList:true,subtree:true});
+  };
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
 const _tabBaseTitle=document.title;
 let _faviconBaseHref=null,_faviconImg=null;
 function _updateTabNotifIndicator(unread){
@@ -6890,7 +6931,7 @@ function presenceSet(userId,dateStr,type,clientId,setBy){
   saveDB(DB);renderView('schedule');
 }
 function presenceRemove(userId,dateStr){
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   if(userId!==currentUser.id&&!isAdmin)return;
   DB.presenceEntries=(DB.presenceEntries||[]).filter(p=>!(p.userId===userId&&p.date===dateStr));
   saveDB(DB);renderView('schedule');
@@ -6925,7 +6966,7 @@ function _presenceDrop(e,dateStr){
   _presenceDragType=null;
   if(!type)return;
   _presencePendingDateStr=dateStr;_presencePendingType=type;_presencePendingIsShift=e.shiftKey;
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   if(isAdmin){_presencePickUser();}
   else{_presencePendingUserId=currentUser.id;_presencePendingSetBy=null;_presenceApplyPending();}
 }
@@ -6996,7 +7037,7 @@ function _presenceSvgIcon(type,size,color){
 function _renderPresenceDots(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return entries.map(p=>{
     const user=_presenceGetUser(p.userId);
     const col=user?getUserColor(user):'#97bcbd';
@@ -7015,7 +7056,7 @@ function _renderPresenceDots(dateStr){
 function _renderPresenceChips(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return entries.map(p=>{
     const user=_presenceGetUser(p.userId);
     const col=user?getUserColor(user):'#97bcbd';
@@ -7037,7 +7078,7 @@ function _renderPresenceChips(dateStr){
 function _renderPresenceListRows(dateStr){
   const entries=(DB.presenceEntries||[]).filter(p=>p.date===dateStr);
   if(!entries.length)return'';
-  const isAdmin=currentUser.role==='admin'||currentUser.role==='director';
+  const isAdmin=currentUser.role==='admin';
   return`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
     ${entries.map(p=>{
       const user=_presenceGetUser(p.userId);
@@ -20310,7 +20351,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         ${hasChildren&&!isSubitem
           // A parent's progress is really the shape of its children — show the composition
           // rather than an average that flattens "blocked" and "not started" into one 0%.
-          ?`${statusMixBar(getTaskStatusMix(t.id),40)}<span style="font-size:11px;color:#6b8399">${effectivePct}%</span>`
+          ?`${statusMixBar(getTaskStatusMix(t.id),40)}${effectivePct===0?'<span style="font-size:12px;color:#d4dde8" title="Not started">—</span>':'<span style="font-size:11px;color:#6b8399">'+effectivePct+'%</span>'}`
           :isDone
           // The green "Completed" status chip already says this; a green bar and "100%"
           // beside it is the same fact three times.
@@ -22735,8 +22776,10 @@ function _checkRecurringTasks(){
         createdAt:_now,
         updatedAt:_now,
       };
-      if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;}
-      if(!r.copySameBoard){newTask.boardId=source.boardId||null;newTask.workboardId=source.workboardId||null;newTask.groupId=source.groupId||null;}
+      // "Same assignee"/"Same board" off used to have no real effect: assignees stayed when the owner cleared, and
+      // "not the same board" copied the source's board anyway (audit L2, 2026-10-17).
+      if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;newTask.assigneeIds=[];}
+      if(!r.copySameBoard){newTask.boardId=null;newTask.workboardId=null;newTask.groupId=null;}
       if(!r.copySamePriority)newTask.priority='med';
       if(!r.copySameDescription)newTask.description='';
       DB.tasks.push(newTask);

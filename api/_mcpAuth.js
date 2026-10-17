@@ -7,6 +7,12 @@
 // against MCP_OAUTH_SECRET, a random value set only in Vercel's env. Rotating that secret
 // instantly invalidates every token ever issued; there is nothing else to revoke.
 //
+// This is coarse: there is no table of issued tokens, so one lost device cannot be revoked on its own (audit L5,
+// 2026-10-17) — only "everyone, right now" (rotate MCP_OAUTH_SECRET in Vercel) or "this one person, going forward"
+// (remove their email from MCP_ALLOWED_EMAIL; a token they already hold still works until it expires, 1 hour or
+// less). Adding single-token revocation would mean a database table purely for this, which the rest of the
+// connector deliberately has none of. Kept simple on purpose; revisit only if a real need for finer control comes up.
+//
 // The connector is for a short, explicit allowlist of TaskHub accounts (MCP_ALLOWED_EMAIL — comma-
 // separated for more than one). Anyone can still run the OAuth dance and prove who they are via a
 // real TaskHub login, same as api/_authAdmin.js does for the rest of the app — but only an
