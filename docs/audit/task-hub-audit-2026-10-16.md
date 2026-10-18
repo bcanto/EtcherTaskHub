@@ -301,7 +301,7 @@ gate is clean.
 | M2 | Clients has search (name, code or email), sort (name, most open work, recently added) and Archive / Restore. Counts leave out finished and cancelled work. | `med-b-test` 19 checks, can-fail 18/18 |
 | M3 | A `pm` login (valid on the server, no screen knew it) signs in as staff instead of seeing nothing. | `med-a-test` |
 | M4 | Sign-in links a login to a staff record by its stored id or email only, never by display name, and never takes over a record already linked to another login. | `med-a-test` |
-| M5 | Recorded 18 October in `supabase/migrations/019_upsert_profile_server_only.sql`, exactly as live. Found on the way: the function is SECURITY DEFINER and checks nothing about its caller, so if the browser roles still have Supabase's default right to run it, any signed-in person (a client portal login included) could make themselves admin. 019 takes it from `anon` and `authenticated` (only the server calls it, with the service-role key) and fixes its search_path. The Restricted role part was already fixed in H1. Test: `m5-upsert-profile-test` 13 checks, can-fail 15/15. | migration written, to apply |
+| M5 | Recorded 18 October in `supabase/migrations/019_upsert_profile_server_only.sql`, exactly as live. Found on the way, and confirmed open on the live database: the function is SECURITY DEFINER and checks nothing about its caller, and `anon` and `authenticated` could run it, so any signed-in person (a client portal login included) could make themselves admin. 019 takes it from `anon` and `authenticated` (only the server calls it, with the service-role key) and fixes its search_path. The Restricted role part was already fixed in H1. Test: `m5-upsert-profile-test` 13 checks, can-fail 15/15. Applied by Bruna 18 October and checked: only `service_role` can run it now. No profile had changed since 16 October, so there is no sign it was used. Every other SECURITY DEFINER function in `public` is a read-only helper from 002 that the access rules need, or the sign-up trigger. | fixed 18 October |
 | M6 | Already safe: the quote number was already passed through `escHtml` and read from an input's value, never built into an inline handler. Kept covered by `med-a-test`. | `med-a-test` |
 | M7 | `api/upload-state.js`, which could overwrite the whole record with one call behind a single shared secret, is removed. Nothing called it. | — |
 | M8 | Already fixed in the critical batch (17 October, earlier): the user id is validated as a UUID and the server enforces at least 8 characters. | — |
@@ -380,13 +380,13 @@ One commit on branch `medium-fixes`, on top of the batch above.
 
 | | Count |
 |---|---|
-| Fixed during this audit | 44 (F1 to F7, C1 to C4, H1 to H11, M1 to M4 and M6 to M17, L1 to L6) |
+| Fixed during this audit | 45 (F1 to F7, C1 to C4, H1 to H11, M1 to M17, L1 to L6) |
 | Critical | 4 (all fixed 17 October) |
 | High | 11 (all fixed 17 October) |
-| Medium | 17 (16 fixed 17 October; M5 recorded 18 October as migration 019, to apply) |
+| Medium | 17 (16 fixed 17 October; M5 fixed 18 October with migration 019) |
 | Low | 7 (6 fixed 17 October; L7 live since 18 October, waiting for its switch in Vercel) |
 | Technical debt items | 7 |
-| **Total issues found** | **46**: 44 fixed, 2 waiting on a step from you (apply migration 019 for M5; set `SESSION_IDLE_MINUTES` for L7), plus 7 technical debt items |
+| **Total issues found** | **46**: 45 fixed, 1 waiting on a step from you (set `SESSION_IDLE_MINUTES` for L7), plus 7 technical debt items |
 
 **Checked and found sound:**
 - Every button on 18 views clicked (435 controls) with no script error, and every view opens without errors.
@@ -403,7 +403,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 **Estimated effort to resolve:**
 - Critical: done.
 - High: done.
-- Medium: done, except applying migration 019 (M5).
+- Medium: done (M5 with migration 019, 18 October).
 - Low: done, except switching on L7 (idle sign-out) in Vercel.
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
