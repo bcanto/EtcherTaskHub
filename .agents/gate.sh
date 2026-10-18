@@ -28,7 +28,8 @@ gantt-sticky-test three-asks-test meetings-test meetings2-test layout-test file-
 high-h11-email-test high-h1-roles-test high-h1-billing-test high-h7-alert-layer-test high-h4-hours-test high-h6-duplicate-board-test high-h6-retainer-test high-h5-recurring-test high-h2-merge-test high-h3-labels-test high-h9-performance-test high-h10-comms-files-test
 high-h8-audit-test
 med-a-test med-b-test wb-colours-test low-test
-sec-a-test sec-b-test sec-c-test sec-d-test"
+sec-a-test sec-b-test sec-c-test sec-d-test
+m5-upsert-profile-test"
 TP=0; TF=0; BAD=""
 num(){ printf '%s' "$1" | grep -oE "^$2 \([0-9]+\)" | grep -oE '[0-9]+' | tail -1; }
 for s in $SUITES; do

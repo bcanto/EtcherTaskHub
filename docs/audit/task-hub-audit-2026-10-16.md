@@ -301,7 +301,7 @@ gate is clean.
 | M2 | Clients has search (name, code or email), sort (name, most open work, recently added) and Archive / Restore. Counts leave out finished and cancelled work. | `med-b-test` 19 checks, can-fail 18/18 |
 | M3 | A `pm` login (valid on the server, no screen knew it) signs in as staff instead of seeing nothing. | `med-a-test` |
 | M4 | Sign-in links a login to a staff record by its stored id or email only, never by display name, and never takes over a record already linked to another login. | `med-a-test` |
-| M5 | Not yet done: needs a read-only `pg_get_functiondef` query from you (the Why column of the report item). | open |
+| M5 | Recorded 18 October in `supabase/migrations/019_upsert_profile_server_only.sql`, exactly as live. Found on the way: the function is SECURITY DEFINER and checks nothing about its caller, so if the browser roles still have Supabase's default right to run it, any signed-in person (a client portal login included) could make themselves admin. 019 takes it from `anon` and `authenticated` (only the server calls it, with the service-role key) and fixes its search_path. The Restricted role part was already fixed in H1. Test: `m5-upsert-profile-test` 13 checks, can-fail 15/15. | migration written, to apply |
 | M6 | Already safe: the quote number was already passed through `escHtml` and read from an input's value, never built into an inline handler. Kept covered by `med-a-test`. | `med-a-test` |
 | M7 | `api/upload-state.js`, which could overwrite the whole record with one call behind a single shared secret, is removed. Nothing called it. | — |
 | M8 | Already fixed in the critical batch (17 October, earlier): the user id is validated as a UUID and the server enforces at least 8 characters. | — |
@@ -334,7 +334,7 @@ One commit on branch `medium-fixes`, on top of the batch above.
 | L4 | "director" is not a role the server or anything else issues; the five checks for it were dead code, now removed. | `low-test` |
 | L5 | Documented rather than built: there is no database table behind the MCP connector by design, so a denylist would be a table added purely for this. `api/_mcpAuth.js` now spells out the two things that can be revoked today (the whole secret, or one person's access to new tokens) and the gap (one lost device, on its own, until its token expires). | — |
 | L6 | The production placeholder for the email intake endpoint answered 200 with an empty list forever, defeating the app's own circuit breaker (built to stop polling after one 404). It now answers 404 until the real service exists. | `low-test` |
-| L7 | Built 18 October with the sign-in work (branch `security-sso`, part B): signs out after a set time without activity, off until `SESSION_IDLE_MINUTES` is set in Vercel. See `docs/security/sso-https-plan.md`. | built, not deployed |
+| L7 | Built 18 October with the sign-in work (branch `security-sso`, part B), live since the 18 October deploy: signs out after a set time without activity, off until `SESSION_IDLE_MINUTES` is set in Vercel. See `docs/security/sso-https-plan.md`. | live, switched off |
 
 **Regression testing.** `medium-fixes`: 70 suites, 1,607 checks, 0 failures (`iso-import-test` does not apply on `main`, which has no ISO files). The full gate caught two problems in the tap-target fix, both fixed before deployment: a button in a narrow table column could be pushed past it (it now only grows taller there), and the note box's delete cross grew over the corner of the note (a button floating over other content is never grown). Deployed 18 October (`67a4b16`); the live site was checked byte for byte.
 
@@ -383,10 +383,10 @@ One commit on branch `medium-fixes`, on top of the batch above.
 | Fixed during this audit | 44 (F1 to F7, C1 to C4, H1 to H11, M1 to M4 and M6 to M17, L1 to L6) |
 | Critical | 4 (all fixed 17 October) |
 | High | 11 (all fixed 17 October) |
-| Medium | 17 (16 fixed 17 October; M5 needs one query from you) |
-| Low | 7 (6 fixed 17 October; L7 built 18 October with the sign-in work, not deployed yet) |
+| Medium | 17 (16 fixed 17 October; M5 recorded 18 October as migration 019, to apply) |
+| Low | 7 (6 fixed 17 October; L7 live since 18 October, waiting for its switch in Vercel) |
 | Technical debt items | 7 |
-| **Total issues found** | **46**: 44 fixed, 2 open (M5, L7; neither critical nor high), plus 7 technical debt items |
+| **Total issues found** | **46**: 44 fixed, 2 waiting on a step from you (apply migration 019 for M5; set `SESSION_IDLE_MINUTES` for L7), plus 7 technical debt items |
 
 **Checked and found sound:**
 - Every button on 18 views clicked (435 controls) with no script error, and every view opens without errors.
@@ -403,8 +403,8 @@ One commit on branch `medium-fixes`, on top of the batch above.
 **Estimated effort to resolve:**
 - Critical: done.
 - High: done.
-- Medium: done, except M5 (waiting on one query from you).
-- Low: done, except L7 (built with the sign-in work, waiting for that deploy).
+- Medium: done, except applying migration 019 (M5).
+- Low: done, except switching on L7 (idle sign-out) in Vercel.
 - T1 and T2 are a separate project of 3 to 6 weeks, worth planning before the data reaches H9's size.
 
 **Recommended deployment order:**
