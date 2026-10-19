@@ -29,7 +29,8 @@ high-h11-email-test high-h1-roles-test high-h1-billing-test high-h7-alert-layer-
 high-h8-audit-test
 med-a-test med-b-test wb-colours-test low-test
 sec-a-test sec-b-test sec-c-test sec-d-test
-m5-upsert-profile-test"
+m5-upsert-profile-test
+portal-audit-test"
 TP=0; TF=0; BAD=""
 num(){ printf '%s' "$1" | grep -oE "^$2 \([0-9]+\)" | grep -oE '[0-9]+' | tail -1; }
 for s in $SUITES; do
