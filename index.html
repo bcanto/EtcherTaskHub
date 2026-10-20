@@ -31,7 +31,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/iso/iso.css"/>
 <!-- Supabase JS client (UMD build — adds window.supabase). Loaded unconditionally;
      the client is only initialized when /api/config returns valid credentials. -->
 <!-- Release-1 B6.2: supabase-js pinned (2.117.3, vendored) with an integrity hash — never a floating CDN version on the login page. -->
@@ -1730,27 +1729,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
         <div id="sidebar-retained-list"></div>
       </div>
 
-      <!-- ISO (plan Phase 5.1) -->
-      <div id="nav-iso-header" style="display:none;align-items:center;padding:12px 19px 5px;justify-content:space-between">
-        <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('iso')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('iso')}">ISO<span class="nav-sec-chevron" id="nav-chev-iso">&#9662;</span></span>
-        <div style="position:relative" onclick="event.stopPropagation()">
-          <button id="iso-add-btn" onclick="toggleIsoAddMenu()" title="New ISO board or import"
-            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
-            onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
-            onmouseout="this.style.background='rgba(255,255,255,0.07)';this.style.color='#5a7a96'">+</button>
-          <div id="iso-add-menu" class="hidden" style="position:absolute;right:0;top:26px;background:#1a2940;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px;min-width:170px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,0.35)">
-            <button onclick="closeIsoAddMenu();window.ISO&&ISO.openNewBoard()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
-              <span style="font-size:14px;line-height:1">+</span> New ISO board
-            </button>
-            <button onclick="closeIsoAddMenu();window.ISO&&ISO.openImport()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:none;border:none;cursor:pointer;color:#c8dae8;font-size:12px;border-radius:5px;text-align:left" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'">
-              <span style="font-size:13px;line-height:1">⇪</span> Import workbook…
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="nav-sec-body" id="nav-section-iso">
-        <div id="sidebar-iso-list"></div>
-      </div>
 
       <div class="section-header nav-sec-toggle" id="nav-clients-section" onclick="toggleNavSection('clients')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('clients')}">Clients<span class="nav-sec-chevron" id="nav-chev-clients">&#9662;</span></div>
       <div class="nav-sec-body" id="nav-section-clients">
@@ -1794,10 +1772,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <div class="nav-item" data-view="audit" onclick="navigate('audit')" id="nav-audit-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="8.5" x2="9" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="11" x2="7.5" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
         Audit Trail
-      </div>
-      <div class="nav-item" data-view="iso-admin" onclick="navigate('iso-admin')" id="nav-iso-admin-item" style="display:none">
-        <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l5.5 2v4c0 3.5-2.2 5.9-5.5 7-3.3-1.1-5.5-3.5-5.5-7v-4l5.5-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
-        ISO library
       </div>
       <div class="nav-item" data-view="archive" onclick="navigate('archive')" id="nav-archive-item">
         <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 4l2-2.5h10L15 4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="5.5" y1="8.5" x2="10.5" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
@@ -1891,7 +1865,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
   <nav class="cp-nav" style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 32px;display:flex;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
     <div class="cp-nav-tab active" data-section="overview" onclick="cpNavigate('overview')">Overview</div>
     <div class="cp-nav-tab" data-section="retained" id="cp-tab-retained" onclick="cpNavigate('retained')" style="display:none">Retained Services</div>
-    <div class="cp-nav-tab" data-section="iso" id="cp-tab-iso" onclick="cpNavigate('iso')" style="display:none">ISO Audits</div>
     <div class="cp-nav-tab" data-section="tasks" onclick="cpNavigate('tasks')">Tasks</div>
     <!-- Named 'workboard', not 'board' — 'board' is already an internal renderView route name
          and sits in the client role's _acBlockedViews set; reusing it here would be one string
@@ -3537,8 +3510,7 @@ function _startPortalRefresh(){
       const busy=!document.getElementById('cp-task-modal')?.classList.contains('hidden')
         ||!document.getElementById('generic-modal')?.classList.contains('hidden')
         ||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
-      _cpIsoRefresh();
-      if(!busy&&!['requests','notifications','iso'].includes(cpSection))cpNavigate(cpSection);
+      if(!busy&&!['requests','notifications'].includes(cpSection))cpNavigate(cpSection);
     }).catch(e=>console.warn('[portal refresh]',e.message));
   };
   _portalRefreshTimer=setInterval(tick,60000);
@@ -3864,7 +3836,6 @@ let _mtCtx=null;
 // Same "let is invisible to window" problem as DB/currentUser (A31) — iso-core.js needs to SET
 // this (not just read it) before calling the shared _mtRenderGeneric/_mtCellClick/_mtToggleSection
 // for its own Requirements register ctx (plan Phase 6.1).
-window._isoSetMtCtx=(ctx)=>{_mtCtx=ctx;};
 // Per-ctx state bucket: {groupBy, sort, selected, expanded, collapsed, columns}. The Workboards
 // bucket ('wb') is never populated here — _mtStateFor('wb') reads/writes the existing globals
 // (wsGroupBy, wsSort, wsSelected, wsExpanded, wsCollapsed, wsColumns) directly, by reference, so
@@ -3915,14 +3886,12 @@ function uid(){return Math.random().toString(36).slice(2,10);}
 let DB=loadDB();
 // DB/currentUser are `let` bindings scoped to this inline <script> block — invisible on `window`
 // to any externally-loaded <script src> file (unlike the functions below, which are plain
-// top-level function declarations and so attach to `window` automatically). iso/iso-core.js needs
-// read access to both; these two closures are the bridge (plan Phase 5, found empirically — a
+// top-level function declarations and so attach to `window` automatically). An external script that needs
+// read access to both would need a bridge (plan Phase 5, found empirically — a
 // Puppeteer check of window.DB/window.currentUser came back `undefined` despite the bare
 // identifiers resolving fine inside this script — logged as A31).
-window._isoDB=()=>DB;
 
 let currentUser=null;
-window._isoCurrentUser=()=>currentUser;
 let currentView='dashboard';
 let selectedNoteClientId=null;
 let selectedNoteSectionId=null;
@@ -4365,7 +4334,6 @@ let tsViewMode='detailed';
 let tsStaffFilter='all';
 let tsClientFilter='all';
 let tsBoardFilter='all';
-let tsIsoFilter='all'; // 'all' | 'any_iso' | a specific isoAuditId — Phase 7b.3 (D13)
 let tsEarningsRateFilter='all';
 let tsBillableFilter='all';
 let tsInvoicedFilter='all'; // 'all' | 'invoiced' | 'not_invoiced'
@@ -5123,10 +5091,8 @@ function launchApp(){
   updateSidebarUser();
   applyRolePermissions();
   renderNav();
-  // window._isoEnabled is set inside supabase-client.js's own async init (deferred script, reads
-  // /api/config) — it may not have resolved yet on the very first call above. Re-run once it has,
-  // so the ISO nav section reflects the real flag rather than defaulting to hidden forever
-  // (plan Phase 5.1b).
+  // /api/config is read inside supabase-client.js's own async init (deferred script) and may not have
+  // resolved on the very first call above: re-run once it has, so the sidebar reflects the real flags.
   if(window._supabaseReady)window._supabaseReady.then(()=>{applyRolePermissions();renderNav();}).catch(()=>{});
   loadFilters();
   renderSidebarWorkboards();
@@ -5220,16 +5186,6 @@ function launchClientView(){
   const body=document.getElementById('cp-body');
   if(body)body.innerHTML=renderCpOverview(currentUser.clientId,tasks,boards,client);
   updateCpNotifBadge();
-  if(window.ISO&&ISO.portal&&ISO.portal._reset)ISO.portal._reset();
-  _cpIsoRefresh();
-}
-// B7: the ISO Audits tab shows only when a board is shared with this client login; its asks join the
-// Overview. ISO loads after the page (deferred scripts, /api/config), so wait for that first.
-function _cpIsoRefresh(){
-  (window._supabaseReady||Promise.resolve()).catch(()=>{}).then(()=>{
-    if(!(window._isoEnabled&&window.ISO&&ISO.portal)||currentUser?.role!=='client')return;
-    return ISO.portal.load().then(()=>{ISO.portal.syncTab();if(cpSection==='overview')_cpRefreshCurrentSection();if(cpSection==='iso'&&!ISO.portal.boardCount())cpNavigate('overview');});
-  }).catch(()=>{});
 }
 function doLogout(){
   _clearSession();
@@ -5317,27 +5273,17 @@ function applyRolePermissions(){
     document.getElementById('new-task-btn')?.classList.add('hidden');
   }
 
-  // ISO (plan Phase 5.1): the section header is admin/staff/restricted only, and only when the
-  // server has the feature enabled (offline always; live only with ISO_ENABLED=1) — window._isoEnabled
-  // is set by supabase-client.js/serve.mjs's own offline branch (Phase 5.1b) before this ever runs.
   // Retained Services: staff and admins see the section; only admins get + (plan R8).
   const navRetHeaderEl=document.getElementById('nav-retained-header');
   if(navRetHeaderEl)navRetHeaderEl.style.display=(isAdmin||isMedium)?'flex':'none';
   const retAddBtnEl=document.getElementById('retained-add-btn');
   if(retAddBtnEl)retAddBtnEl.style.display=isAdmin?'':'none';
-  const navIsoHeaderEl=document.getElementById('nav-iso-header');
-  if(navIsoHeaderEl)navIsoHeaderEl.style.display=(window._isoEnabled&&(isAdmin||isMedium||isRestricted))?'flex':'none';
-  // Restricted staff can be ISO board members (as reviewer) but cannot create boards (A13).
-  const isoAddBtnEl=document.getElementById('iso-add-btn');
-  if(isoAddBtnEl)isoAddBtnEl.style.display=isRestricted?'none':'';
-  const navIsoAdminEl=document.getElementById('nav-iso-admin-item');
-  if(navIsoAdminEl)navIsoAdminEl.style.display=(window._isoEnabled&&isAdmin)?'':'none';
 }
 
 // ═══════════════════════════════════════════════════════════
 // SIDEBAR NAV: COLLAPSIBLE SECTIONS + PINNED ITEMS
 // ═══════════════════════════════════════════════════════════
-const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',retained:'nav-retained-header',iso:'nav-iso-header',clients:'nav-clients-section',admin:'nav-admin-section'};
+const NAV_SECTION_HEADERS={overview:'nav-overview-section',workboards:'nav-workboards-header',retained:'nav-retained-header',clients:'nav-clients-section',admin:'nav-admin-section'};
 const _NAV_PIN_SVG='<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/></svg>';
 function _navCollapseState(){
   try{const s=JSON.parse(localStorage.getItem('navCollapse'));return(s&&typeof s==='object')?s:{};}catch(e){return{};}
@@ -5441,21 +5387,16 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin',iso:'ISO','iso-admin':'ISO library'};
+  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   // Inside a workboard the tab strip already shows the board name (with its colour dot and
   // actions menu), so repeating it in the page title is pure duplication.
   const _inWb=workboardViews.has(view)&&currentWorkboard;
-  // An open ISO board behaves the same way (plan Phase 5.1 "topbar client line") — its own tab
-  // strip (ISO.tabStrip) already shows the board ref/title, so this slot shows the board's client
-  // instead. ISO.currentClient() returns null on the ISO landing page ('iso' with no open board).
-  const _isoCli=view==='iso'&&window.ISO?ISO.currentClient():null;
-  const _inIso=view==='iso'&&!!_isoCli;
   const _vt=document.getElementById('view-title');
   // The board name is already in the tab strip below, so inside a board this slot shows the
   // board's client instead — one client per board, so it is the board's identity, not a repeat.
-  const _wbCli=_inWb?boardClient(currentWorkboard):(_inIso?_isoCli:null);
-  if(_inWb||_inIso){
+  const _wbCli=_inWb?boardClient(currentWorkboard):null;
+  if(_inWb){
     // Logo capped well under the 34px slim topbar so showing it costs no header height.
     const _lg=_wbCli&&_wbCli.logo
       ?`<img src="${escHtml(_wbCli.logo)}" alt="" class="vt-logo"/>`:'';
@@ -5463,7 +5404,7 @@ function navigate(view){
   }else{
     _vt.textContent=viewTitles[view]||view;
   }
-  _vt.classList.toggle('vt-client',!!(_inWb||_inIso));
+  _vt.classList.toggle('vt-client',!!_inWb);
   // Views that render their own page heading would otherwise show the same title twice.
   const _selfTitled=new Set(['quotes']);
   _vt.style.display=(_selfTitled.has(view)&&!_inWb)?'none':'';
@@ -5658,12 +5599,10 @@ function renderView(v){
       case 'time':      vc.innerHTML=renderTime();setTimeout(_teNoteInitFades,0);break;
       case 'reports':   vc.innerHTML=renderReports();setTimeout(_teNoteInitFades,0);break;
       case 'audit':     vc.innerHTML=renderAudit();break;
-      case 'archive':   vc.innerHTML=renderArchiveBin();if(window._isoEnabled&&window.ISO&&ISO.fillArchiveCard)ISO.fillArchiveCard();break;
+      case 'archive':   vc.innerHTML=renderArchiveBin();break;
       case 'notes':     renderNotes();break;
       case 'quotes':    vc.innerHTML=renderQuotes();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
-      case 'iso':       vc.innerHTML=window._isoEnabled&&window.ISO?ISO.render(vc):_render404Html('iso');break;
-      case 'iso-admin': vc.innerHTML=window._isoEnabled&&window.ISO?ISO.renderAdmin(vc):_render404Html('iso-admin');break;
       default: vc.innerHTML=_render404Html(v);break;
     }
     // Smooth enter transition — only when navigating to a different view
@@ -6811,7 +6750,7 @@ function canViewMasterCapacity(user){
 }
 
 // ── Route-level blocked-views per role ───────────────────────
-const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients','iso-admin']);
+const _STAFF_BLOCKED=new Set(['capacity','reports','audit','staff','clients']);
 // Restricted staff are further limited: no Client Notes (confidential credentials).
 const _RESTRICTED_BLOCKED=new Set([..._STAFF_BLOCKED,'notes']);
 function _acBlockedViews(user){
@@ -6821,11 +6760,9 @@ function _acBlockedViews(user){
     // 'archive' was missing here — every other internal-only view is blocked for clients,
     // but Archive & Bin (permanent delete, across every client's archived boards/tasks) was
     // reachable by calling renderView('archive') directly, bypassing the sidebar which never
-    // renders that nav item for a client in the first place. ISO (plan Phase 5.1): the client
-    // portal reaches ISO data through its own portal tab (Phase 13), never this internal 'iso'
-    // view — blocked here the same way every other internal-only view is.
+    // renders that nav item for a client in the first place.
     return new Set(['schedule','workspace','board','list','gantt',
-                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive','iso','iso-admin']);
+                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive']);
   // D16: a Billing-flagged staff member gets Reports unblocked (approve/reject/invoice access),
   // same route as an admin, without the rest of _STAFF_BLOCKED being lifted.
   if(user.role==='staff')   return _canBill(user)?new Set([..._STAFF_BLOCKED].filter(v=>v!=='reports')):_STAFF_BLOCKED;
@@ -6843,7 +6780,7 @@ function _acDeniedHtml(){
 
 function updateNotifBadge(){
   if(!currentUser)return;
-  const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length+((window._isoEnabled&&window.ISO&&ISO.notifUnread)?ISO.notifUnread():0); // + ISO 7.6
+  const unread=DB.notifications.filter(n=>n.recipientId===currentUser.id&&!n.read).length;
   const badge=document.getElementById('notif-count-badge');
   if(badge){if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}else{badge.classList.add('hidden');}}
   _updateTabNotifIndicator(unread);
@@ -7000,7 +6937,6 @@ function exitWorkboard(){
 }
 function updateSidebarWorkboard(){
   renderSidebarWorkboards();
-  if(window.ISO&&window._isoEnabled)ISO.renderSidebar();
 }
 
 // A board is "personal" only when BOTH flags are set — personalBoard alone (with visibility
@@ -7259,29 +7195,6 @@ function closeWbAddMenu(){
   if(_wbAddMenuClose){
     document.removeEventListener('click',_wbAddMenuClose,true);
     _wbAddMenuClose=null;
-  }
-}
-let _isoAddMenuClose=null;
-function toggleIsoAddMenu(){
-  const m=document.getElementById('iso-add-menu');
-  if(!m)return;
-  const isHidden=m.classList.toggle('hidden');
-  if(!isHidden){
-    _isoAddMenuClose=(e)=>{
-      if(!document.getElementById('iso-add-btn')?.contains(e.target)){
-        closeIsoAddMenu();
-      }
-    };
-    setTimeout(()=>document.addEventListener('click',_isoAddMenuClose,true),10);
-  } else {
-    closeIsoAddMenu();
-  }
-}
-function closeIsoAddMenu(){
-  document.getElementById('iso-add-menu')?.classList.add('hidden');
-  if(_isoAddMenuClose){
-    document.removeEventListener('click',_isoAddMenuClose,true);
-    _isoAddMenuClose=null;
   }
 }
 function sidebarNewWb(){
@@ -7629,7 +7542,7 @@ function _wrPrefill(r,boards){
 // R7: hours on a retained board are covered by the retainer. They stay in timesheets and payroll and
 // never reach the hourly pro forma. Worked out from the task's board, never written onto the entry.
 function _rsEntryRetained(e,task){
-  if(!e||e.isoAuditId||!task)return false;
+  if(!e||!task)return false;
   return _isRetainedBoard((DB.boards||[]).find(b=>b.id===_taskBoardId(task)));
 }
 // Request Work: the Service choices and the hint under them.
@@ -11997,33 +11910,7 @@ function tmOnPercentModeChange(mode){
 // ═══════════════════════════════════════════════════════════
 // TIMESHEETS
 // ═══════════════════════════════════════════════════════════
-let _teMode='task'; // 'task' | 'client' | 'iso' — which selector the log form shows
-// Phase 7b.2 (D12): the ISO board/action picker's own data — fetched once, lazily (the log form
-// renders synchronously; ISO.timeTargets() does not), then cached here until the next full page
-// load. null = not yet fetched, [] = fetched and empty (no ISO boards the caller can see).
-let _teIsoTargets=null,_teIsoTargetsLoading=false;
-function _teLoadIsoTargets(){
-  if(_teIsoTargetsLoading||_teIsoTargets||!(window._isoEnabled&&window.ISO&&ISO.timeTargets))return;
-  _teIsoTargetsLoading=true;
-  const draft=_teCaptureFormDraft();
-  ISO.timeTargets().then(targets=>{
-    _teIsoTargets=targets||[];
-    _teIsoTargetsLoading=false;
-    if(_teMode==='iso'){renderView('time');setTimeout(()=>_teRestoreFormDraft(draft),0);}
-  }).catch(()=>{
-    _teIsoTargets=[];_teIsoTargetsLoading=false;
-    if(_teMode==='iso')renderView('time');
-  });
-}
-// Repopulate the Action select when the ISO board changes — that list is per-board, not
-// known until a board is picked, so it cannot be baked into the initial render.
-function _teIsoBoardChanged(auditId){
-  const sel=document.getElementById('te-iso-action');
-  if(!sel)return;
-  const target=(_teIsoTargets||[]).find(t=>t.auditId===auditId);
-  const actions=target?target.actions||[]:[];
-  sel.innerHTML=`<option value="">General audit work</option>`+actions.map(a=>`<option value="${escHtml(a.id)}">${escHtml(a.ref)} — ${escHtml(a.title)}</option>`).join('');
-}
+let _teMode='task'; // 'task' | 'client' — which selector the log form shows
 let _teBillableOn=true; // billable toggle state for the log form
 let _teViewAll=false; // admin: false = My Timesheets, true = All Staff
 let _teGroupLimit=14,_teGroupSig=false; // how many days of entries the Time view lists (audit H9)
@@ -12049,9 +11936,8 @@ function _teRestoreFormDraft(draft){
 }
 function _teSetMode(mode){
   const draft=_teCaptureFormDraft();
-  _teMode=mode==='client'?'client':mode==='iso'?'iso':'task';
+  _teMode=mode==='client'?'client':'task';
   renderView('time');
-  if(_teMode==='iso')_teLoadIsoTargets();
   setTimeout(()=>_teRestoreFormDraft(draft),0);
 }
 function _teSetViewAll(v){
@@ -12132,8 +12018,7 @@ function renderTime(){
 
   const todayStr=toDateStr(new Date());
   const isAdmin=currentUser.role==='admin';
-  const mode=_teMode==='client'?'client':_teMode==='iso'&&window._isoEnabled?'iso':'task';
-  if(mode==='iso')_teLoadIsoTargets();
+  const mode=_teMode==='client'?'client':'task';
 
   const _teLoggableTasks=DB.tasks.filter(t=>!t.archived&&!_isTaskOnPersonalBoard(t));
   window._teTaskAllItems=_teLoggableTasks.map(t=>{const cl=getTaskClient(t);return{id:t.id,label:(cl?cl.name+' — ':'')+t.name};});
@@ -12146,7 +12031,7 @@ function renderTime(){
 
   const toggleBtn=(key,label)=>`<button type="button" onclick="_teSetMode('${key}')" style="border:none;cursor:pointer;padding:5px 14px;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;font-weight:700;transition:background .12s,color .12s;${mode===key?'background:#0d1c33;color:#fff;':'background:transparent;color:#6b8399;'}">${label}</button>`;
 
-  const selectorCols=mode==='iso'?(isAdmin?'1fr 1fr 0.8fr':'1fr 1fr'):(isAdmin?'1.3fr 1fr':'1.6fr');
+  const selectorCols=isAdmin?'1.3fr 1fr':'1.6fr';
   const teStyleBlock=`<style>
     #te-hours::-webkit-outer-spin-button,#te-hours::-webkit-inner-spin-button,.te-inline-hours::-webkit-outer-spin-button,.te-inline-hours::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     #te-hours,.te-inline-hours{-moz-appearance:textfield}
@@ -12161,7 +12046,7 @@ function renderTime(){
     <div style="display:flex;align-items:center;margin-bottom:16px;gap:12px">
       <h3 style="font-family:'Jost',sans-serif;font-size:15px;font-weight:700;color:#0d1c33;margin:0">Log Time</h3>
       <div style="display:inline-flex;background:#f4f7fa;border:1px solid #e2eaf2;border-radius:8px;padding:2px">
-        ${toggleBtn('task','Task')}${toggleBtn('client','Client')}${window._isoEnabled?toggleBtn('iso','ISO audit'):''}
+        ${toggleBtn('task','Task')}${toggleBtn('client','Client')}
       </div>
     </div>
     <div class="te-log-form-grid" style="display:grid;grid-template-columns:${selectorCols} 90px 130px 1.4fr 130px 140px;gap:12px;align-items:end;margin-bottom:16px">
@@ -12170,20 +12055,6 @@ function renderTime(){
         <input id="te-task-input" class="form-input" autocomplete="off" placeholder="Search task…" oninput="_teTaskFilter(this)" onfocus="_teTaskOpen(this)" onblur="_teTaskBlur()" style="cursor:text"/>
         <input type="hidden" id="te-task" value=""/>
         <div id="te-task-drop" style="display:none;position:absolute;left:0;width:200%;background:#fff;border:1px solid #d4dde8;border-radius:8px;box-shadow:0 4px 16px rgba(13,28,51,0.13);max-height:220px;overflow-y:auto;z-index:9999"></div></div>`
-        :mode==='iso'
-        ?(_teIsoTargets===null
-          ?`<div><label class="form-label">ISO board <span style="color:#ef4444">*</span></label><select class="form-input" disabled><option>Loading ISO boards…</option></select></div>
-             <div><label class="form-label">Action</label><select class="form-input" disabled><option>—</option></select></div>`
-          :(()=>{
-              const isoBoardOpts=`<option value="" disabled selected>Choose an ISO board</option>`+_teIsoTargets.map(t=>{
-                const cl=DB.clients.find(c=>c.id===t.clientId);
-                return`<option value="${escHtml(t.auditId)}">${cl?escHtml(cl.name)+' · ':''}${escHtml(t.ref)} · ${escHtml((t.standards||[]).join('/'))}</option>`;
-              }).join('');
-              return`<div><label class="form-label">ISO board <span style="color:#ef4444">*</span></label>
-              <select id="te-iso-board" class="form-input" onchange="_teIsoBoardChanged(this.value)">${isoBoardOpts}</select></div>
-              <div><label class="form-label">Action</label>
-              <select id="te-iso-action" class="form-input"><option value="">General audit work</option></select></div>`;
-            })())
         :`<div><label class="form-label">Client <span style="color:#ef4444">*</span></label>
         <select id="te-client" class="form-input">${clientOpts}</select></div>`}
       ${isAdmin?`<div><label class="form-label">Staff <span style="color:#ef4444">*</span></label>
@@ -12300,7 +12171,7 @@ function renderTime(){
     const rowBg=isSelDay?'#e8f4f4':(isApproved?'#f8fcfa':'transparent');
     // Short client badge: up to 4 uppercase chars from initials of each word
     const clientShort=client?(client.shortCode||client.name.split(/\s+/).map(w=>w[0]||'').join('').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4)||client.name.replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)):'';
-    const taskLabel=e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
+    const taskLabel=task?escHtml(task.name):client?escHtml(client.name):'<span style="color:#b0bec5;font-style:italic">—</span>';
     return`<div data-terowdate="${e.date}" class="te-row${e.note?' te-hasnote':''}" style="display:grid;grid-template-columns:auto 2fr 52px 80px 1.4fr 90px 90px 82px 28px;gap:12px;align-items:center;padding:10px 18px 10px ${isSelDay?'15px':'18px'};border-bottom:1px solid #f0f4f8;border-left:${isSelDay?'3px solid #97bcbd':'3px solid transparent'};background:${rowBg};transition:background 0.2s,opacity 0.2s;opacity:${_teSelectedDay&&!isSelDay?'0.3':'1'}">
       <div style="display:flex;align-items:center" title="${escHtml(staff?.name||'')}">${avatarHtml(staff,24)}</div>
       <div id="te-name-cell-${e.id}" class="_te-name-wrapper" onclick="${canEdit?`_teOpenTaskPicker('${e.id}',this)`:''}" style="display:flex;align-items:center;font-size:12.5px;font-weight:600;color:#0d1c33;overflow:hidden;min-width:0;${canEdit?'cursor:pointer;':''}" ${canEdit?'title="Click to change task or client"':''}><span class="_te-name-body" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLabel}</span><span class="_te-name-chev" onclick="event.stopPropagation();_teNameToggle(this.closest('._te-name-wrapper'))" style="flex-shrink:0;font-size:14px;color:#7aabac;font-weight:900;line-height:1;visibility:hidden;cursor:pointer;transition:transform 0.15s;padding:2px 0 2px 4px">▾</span></div>
@@ -12744,9 +12615,6 @@ function _tePickClient(id,clientId){
   const e=DB.timeEntries.find(x=>x.id===id);
   if(!e||e.status==='approved')return;
   e.clientId=clientId||null;   // taskId deliberately untouched
-  // Switching an ISO entry's client here moves it off ISO entirely (D12: switching *to* ISO
-  // is done by logging a new entry, not by editing an existing one in place).
-  if(e.isoAuditId){delete e.isoAuditId;delete e.isoLabel;delete e.isoActionId;delete e.isoActionRef;}
   e.updatedAt=new Date().toISOString();
   saveDB(DB);
   document.getElementById('_te-picker-pop')?.remove();
@@ -12783,9 +12651,6 @@ function _tePickerPick(id,taskId,clientId,el){
   if(!e)return;
   e.taskId=taskId||null;
   e.clientId=taskId?(DB.tasks.find(t=>t.id===taskId)?.clientId||(getTaskClient(DB.tasks.find(t=>t.id===taskId))?.id)||null):clientId||null;
-  // Switching an ISO entry to a task/client here moves it off ISO entirely (D12: switching *to*
-  // ISO is done by logging a new entry, not by editing an existing one in place).
-  if(e.isoAuditId){delete e.isoAuditId;delete e.isoLabel;delete e.isoActionId;delete e.isoActionRef;}
   e.updatedAt=new Date().toISOString();
   if(taskId)applyHourBudgetPct(taskId);
   saveDB(DB);
@@ -12852,7 +12717,7 @@ function _teTaskPick(id,el){
 // or false if a validation message was already shown.
 function _teCreateEntry(opts){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return false;}
-  const{taskId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable,isoAuditId,isoLabel,isoActionId,isoActionRef}=opts;
+  const{taskId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}=opts;
   let clientId=opts.clientId||null;
   // Every entry carries a note. A task name says what the work was attached to, not what
   // was actually done, and that is what a timesheet is read for later.
@@ -12870,25 +12735,16 @@ function _teCreateEntry(opts){
   // and never reached Pending Approval.
   const _now=new Date().toISOString();
   const entry={id:'te'+uid(),taskId:taskId||null,staffId,clientId,date,hours,note,billable,location,earningsRateId,earningsRateName,status:'submitted',submittedAt:_now,createdAt:_now,updatedAt:_now};
-  // Phase 7b.2 (D12): an ISO-mode entry carries no task at all (hours are an ordinary time
-  // entry against the ISO board, not a linked task — D12 explicitly replaces the earlier
-  // linked-task design so deleting a task/board can never take ISO hours with it). isoLabel is
-  // frozen at log time so the entry stays readable even if the board is later renamed or its
-  // ISO data becomes unreachable — the same reasoning a frozen snapshot gets anywhere else in
-  // this app (e.g. requirement imports' own `imported` field).
-  if(isoAuditId){entry.isoAuditId=isoAuditId;entry.isoLabel=isoLabel||null;entry.isoActionId=isoActionId||null;entry.isoActionRef=isoActionRef||null;}
   DB.timeEntries.push(entry);
-  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null,...(isoAuditId?{isoAuditId,isoActionId:isoActionId||null}:{})});
+  writeAuditEvent('TimeEntry',entry.id,'created',null,{taskId:entry.taskId,staffId,clientId,date,hours,billable,note:note||null});
   if(taskId)applyHourBudgetPct(taskId);
   saveDB(DB);
   return entry;
 }
 function logTime(){
-  const mode=_teMode==='client'?'client':_teMode==='iso'&&window._isoEnabled?'iso':'task';
+  const mode=_teMode==='client'?'client':'task';
   const taskId=mode==='task'?(document.getElementById('te-task')?.value||''):'';
   const selectedClientId=mode==='client'?(document.getElementById('te-client')?.value||''):'';
-  const isoAuditId=mode==='iso'?(document.getElementById('te-iso-board')?.value||''):'';
-  const isoActionId=mode==='iso'?(document.getElementById('te-iso-action')?.value||''):'';
   // Only an admin may log against another person. The Staff select is not rendered for
   // anyone else, so this held by markup alone; state it in the handler too.
   const staffId=currentUser.role==='admin'?(document.getElementById('te-staff')?.value||currentUser.id):currentUser.id;
@@ -12899,21 +12755,12 @@ function logTime(){
   const earningsRateName=(DB.earningsRates||[]).find(r=>r.id===earningsRateId)?.name||'Ordinary Hours';
   const location=document.getElementById('te-location')?.value||'remote';
   const billable=_teBillableOn;
-  // Mode-specific validation stays here: it is about the form's task/client/ISO toggle, not
+  // Mode-specific validation stays here: it is about the form's task/client toggle, not
   // about what makes an entry valid on its own.
   if(mode==='task'&&!taskId){showAlert('Please select a task, or switch to Client mode to log against a client directly.','Validation');return;}
   if(mode==='client'&&!selectedClientId){showAlert('Client is required.','Validation');return;}
-  if(mode==='iso'&&!isoAuditId){showAlert('Please select an ISO board.','Validation');return;}
-  const clientId=mode==='client'?selectedClientId:mode==='iso'?((_teIsoTargets||[]).find(t=>t.auditId===isoAuditId)?.clientId||null):null;
-  let isoLabel=null,isoActionRef=null;
-  if(mode==='iso'){
-    const target=(_teIsoTargets||[]).find(t=>t.auditId===isoAuditId);
-    isoLabel='ISO · '+(target?target.ref:isoAuditId)+' · '+(target&&target.standards&&target.standards.length?target.standards.join('/'):'');
-    const action=target&&isoActionId?target.actions.find(a=>a.id===isoActionId):null;
-    isoActionRef=action?action.ref:null;
-  }
-  if(!_teCreateEntry({taskId,clientId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable,
-    isoAuditId:mode==='iso'?isoAuditId:null,isoLabel,isoActionId:mode==='iso'?(isoActionId||null):null,isoActionRef}))return;
+  const clientId=mode==='client'?selectedClientId:null;
+  if(!_teCreateEntry({taskId,clientId,staffId,hours,date,note,earningsRateId,earningsRateName,location,billable}))return;
   renderView('time');
 }
 
@@ -12924,27 +12771,26 @@ function logTime(){
 let _teQuickPicked={taskId:null,clientId:null,label:'Select task or client…'};
 let _teQuickHours=1;
 function _teRecentTargets(){
-  // Last 5 distinct task/client/ISO-board+action combinations this person logged, most recent
-  // first — one tap replaces the search-and-type picker for routine, repeat work. An ISO
-  // combination's key includes isoAuditId so it never collides with a plain task/client one.
+  // Last 5 distinct task/client combinations this person logged, most recent first — one tap
+  // replaces the search-and-type picker for routine, repeat work.
   const mine=(DB.timeEntries||[]).filter(e=>!e.deletedAt&&e.staffId===currentUser.id)
     .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   const seen=new Set(),out=[];
   for(const e of mine){
-    const key=(e.taskId||'')+'|'+(e.clientId||'')+'|'+(e.isoAuditId||'')+'|'+(e.isoActionId||'');
-    if(seen.has(key)||(!e.taskId&&!e.clientId&&!e.isoAuditId))continue;
+    const key=(e.taskId||'')+'|'+(e.clientId||'');
+    if(seen.has(key)||(!e.taskId&&!e.clientId))continue;
     seen.add(key);
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
     const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
-    const label=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?task.name:(client?.name||'Unknown');
-    out.push({taskId:e.taskId||null,clientId:e.clientId||null,isoAuditId:e.isoAuditId||null,isoLabel:e.isoLabel||null,isoActionId:e.isoActionId||null,isoActionRef:e.isoActionRef||null,label});
+    const label=task?task.name:(client?.name||'Unknown');
+    out.push({taskId:e.taskId||null,clientId:e.clientId||null,label});
     if(out.length>=5)break;
   }
   return out;
 }
 function teQuickPick(i,recent){
   const r=recent[i];
-  _teQuickPicked={taskId:r.taskId,clientId:r.clientId,isoAuditId:r.isoAuditId||null,isoLabel:r.isoLabel||null,isoActionId:r.isoActionId||null,isoActionRef:r.isoActionRef||null,label:r.label};
+  _teQuickPicked={taskId:r.taskId,clientId:r.clientId,label:r.label};
   document.querySelectorAll('.qte-recent-chip').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
   const disp=document.getElementById('qte-picked-label');if(disp)disp.textContent=r.label;
 }
@@ -12981,11 +12827,10 @@ function teQuickLogClose(){document.getElementById('te-quicklog-wrap')?.classLis
 function teQuickLogSave(){
   const note=(document.getElementById('qte-note')?.value||'').trim();
   if(!note){document.getElementById('qte-note')?.focus();return;}
-  if(!_teQuickPicked.taskId&&!_teQuickPicked.clientId&&!_teQuickPicked.isoAuditId){showAlert('Pick a recent task or client first.','Validation');return;}
+  if(!_teQuickPicked.taskId&&!_teQuickPicked.clientId){showAlert('Pick a recent task or client first.','Validation');return;}
   const entry=_teCreateEntry({taskId:_teQuickPicked.taskId,clientId:_teQuickPicked.clientId,staffId:currentUser.id,
     hours:_teQuickHours,date:_teFmtYMD(new Date()),note,earningsRateId:'er1',earningsRateName:'Ordinary Hours',
-    location:'remote',billable:true,isoAuditId:_teQuickPicked.isoAuditId||null,isoLabel:_teQuickPicked.isoLabel||null,
-    isoActionId:_teQuickPicked.isoActionId||null,isoActionRef:_teQuickPicked.isoActionRef||null});
+    location:'remote',billable:true});
   if(!entry)return;
   teQuickLogClose();
   renderView('time');
@@ -13026,23 +12871,16 @@ function renderReports(){
   if(rptTab==='timesheet'){
     filterRow=''; // filter bar is fully embedded inside _rptTimesheetHtml()
   } else {
-    filterRow=''; // invoice management UI / ISO audits tab build their own, if any
+    filterRow=''; // the invoice management UI builds its own, if any
   }
 
-  // D13: a third tab, only when ISO is enabled — its own body is filled asynchronously
-  // (ISO.fillReportsTab needs real api() round trips: audit.list + one metric.audit per board),
-  // same pattern as ISO.renderAdmin/fillAdmin.
-  const body=rptTab==='timesheet'?_rptTimesheetHtml()
-    :rptTab==='iso'&&window._isoEnabled?`<div id="rpt-iso-body"><div class="card" style="padding:40px;text-align:center;color:#8da2b2">Loading ISO audits…</div></div>`
-    :_rptInvoiceHtml();
-  if(rptTab==='iso'&&window._isoEnabled)setTimeout(()=>{ if(window.ISO&&ISO.fillReportsTab)ISO.fillReportsTab(); },0);
+  const body=rptTab==='timesheet'?_rptTimesheetHtml():_rptInvoiceHtml();
 
   return`<div style="display:grid;grid-template-columns:minmax(0,1fr);gap:18px">
     <div class="card" style="padding:14px 20px">
       <div style="display:flex;gap:8px;margin-bottom:16px;background:#f4f7fa;border-radius:9px;padding:4px">
         <button style="${tabStyle('timesheet')}" onclick="rptTab='timesheet';renderView('reports')">Timesheet</button>
         <button style="${tabStyle('invoice')}" onclick="rptTab='invoice';renderView('reports')">Pro Forma Invoice</button>
-        ${window._isoEnabled?`<button style="${tabStyle('iso')}" onclick="rptTab='iso';renderView('reports')">ISO audits</button>`:''}
       </div>
       <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px">
         ${filterRow}
@@ -13070,7 +12908,7 @@ function timeEntryForReport(e){
     staffId:e.staffId,
     staffName:staff?.name||'Unknown',
     taskId:e.taskId,
-    taskTitle:e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||'—'),
+    taskTitle:(task?.name||task?.title||e.taskName||'—'),
     date:e.date,
     hours:e.hours,
     note:e.note||null,
@@ -13201,9 +13039,6 @@ function _tsFilterEntries(){
       const task=e.taskId&&_tsTasks.get(e.taskId);
       if(!task||(task.workboardId||task.boardId)!==tsBoardFilter) return false;
     }
-    // D13: 'any_iso' = any ISO-mode entry; a specific value = that one board's own isoAuditId.
-    if(tsIsoFilter==='any_iso'&&!e.isoAuditId) return false;
-    if(tsIsoFilter!=='all'&&tsIsoFilter!=='any_iso'&&e.isoAuditId!==tsIsoFilter) return false;
     if(tsEarningsRateFilter!=='all'&&(e.earningsRateId||'er1')!==tsEarningsRateFilter) return false;
     if(tsBillableFilter==='billable'&&e.billable===false) return false;
     if(tsBillableFilter==='nonbillable'&&e.billable!==false) return false;
@@ -13405,7 +13240,7 @@ function tsBulkReject(){
   else if(skippedOwn)showAlert('Nothing to reject — you cannot reject your own timesheet entries.','Timesheets');
 }
 function tsClearFilters(){
-  tsStaffFilter='all';tsClientFilter='all';tsBoardFilter='all';tsIsoFilter='all';tsEarningsRateFilter='all';
+  tsStaffFilter='all';tsClientFilter='all';tsBoardFilter='all';tsEarningsRateFilter='all';
   tsBillableFilter='all';tsInvoicedFilter='all';tsDateFrom='';tsDateTo='';tsSearch='';tsStatusTab='all';
   tsSelectedIds=new Set();renderView('reports');
 }
@@ -13498,7 +13333,7 @@ function tsExportCSV(){
     const parent=task?.parentTaskId?DB.tasks.find(t=>t.id===task.parentTaskId):null;
     const approvedBy=e.approvedByUserId?getStaff(e.approvedByUserId):null;
     const rejectedBy=e.rejectedByUserId?getStaff(e.rejectedByUserId):null;
-    const taskCol=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?task.name||task.title||'':'');
+    const taskCol=(task?task.name||task.title||'':'');
     rows.push([e.date,staff?.name||'',staff?.email||'',client?.name||'',board?.name||'',group?.name||'',
       parent?parent.name||parent.title||'':'',taskCol,
       e.earningsRateName||'Ordinary Hours',e.hours,e.billable!==false?'Yes':'No',e.status||'draft',
@@ -13581,7 +13416,7 @@ function tsExportPDF(){
           body:entries.map(e=>{
             const task=e.taskId?DB.tasks.find(x=>x.id===e.taskId):null;
             const client=DB.clients.find(c=>c.id===e.clientId)||(task?getTaskClient(task):null);
-            const pdfTaskCol=e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?(task.name||task.title||''):'—');
+            const pdfTaskCol=(task?(task.name||task.title||''):'—');
             return[fmtD(e.date),getStaff(e.staffId)?.name||'',client?.name||'',
               pdfTaskCol,e.earningsRateName||'Ordinary Hours',
               e.hours.toFixed(1),e.billable!==false?'Bill.':'Non-bill.',
@@ -13726,7 +13561,7 @@ function _tsDetailTable(entries,canBill){
       <td style="${tdS};white-space:nowrap;font-weight:600;color:#1a2940">${formatDate(e.date)}</td>
       <td style="${tdS}"><div style="display:flex;align-items:center;gap:6px">${avatarHtml(staff,18)}<span>${escHtml(staff?.name||'Unknown')}</span></div></td>
       <td style="${tdS}">${client?`<span style="color:${client.color};font-weight:700;background:${client.color}18;padding:2px 7px;border-radius:8px;font-size:11px">${escHtml(client.shortCode||client.name)}</span>`:'<span style="color:#c8d7e1">—</span>'}</td>
-      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||''))}">${e.isoAuditId?escHtml(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):task?escHtml(task.name||task.title||'Untitled'):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="${tdS};max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml((task?.name||task?.title||e.taskName||''))}">${task?escHtml(task.name||task.title||'Untitled'):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="${tdS};color:#6b8399;white-space:nowrap">${escHtml(e.earningsRateName||'Ordinary Hours')}</td>
       <td style="${tdS};font-weight:700;font-family:'Jost',sans-serif;text-align:right;white-space:nowrap">${e.hours.toFixed(1)}h</td>
       <td style="${tdS};text-align:center">${e.billable!==false?`<span style="font-size:9px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:8px;font-weight:700">Bill.</span>`:`<span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:8px;font-weight:700">N/B</span>`}</td>
@@ -13954,13 +13789,7 @@ function _rptTimesheetHtml(){
   const clientOpts='<option value="all">All Clients</option>'+DB.clients.map(c=>`<option value="${c.id}"${tsClientFilter===c.id?' selected':''}>${escHtml(c.name)}</option>`).join('');
   const boardOpts='<option value="all">All Boards</option>'+(DB.boards||[]).filter(b=>!b.archived&&!b.excludeFromReports).map(b=>`<option value="${b.id}"${tsBoardFilter===b.id?' selected':''}>${escHtml(b.name)}</option>`).join('');
   const erOpts='<option value="all">All Rates</option>'+(DB.earningsRates||[]).map(er=>`<option value="${er.id}"${tsEarningsRateFilter===er.id?' selected':''}>${escHtml(er.name)}</option>`).join('');
-  // D13: one option per distinct ISO board with an entry in the period (date range only — other
-  // filters don't narrow this list, so picking an ISO board doesn't make itself disappear).
-  const _isoInPeriod=(DB.timeEntries||[]).filter(e=>e.isoAuditId&&!e.deletedAt&&(!tsDateFrom||e.date>=tsDateFrom)&&(!tsDateTo||e.date<=tsDateTo));
-  const _isoBoardsInPeriod=[...new Map(_isoInPeriod.map(e=>[e.isoAuditId,e.isoLabel||e.isoAuditId])).entries()];
-  const isoOpts=window._isoEnabled?'<option value="all">All work</option><option value="any_iso"'+(tsIsoFilter==='any_iso'?' selected':'')+'>Any ISO work</option>'
-    +_isoBoardsInPeriod.map(([auditId,label])=>`<option value="${escHtml(auditId)}"${tsIsoFilter===auditId?' selected':''}>${escHtml(label)}</option>`).join(''):'';
-  const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsIsoFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsInvoicedFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
+  const anyFilter=tsStaffFilter!=='all'||tsClientFilter!=='all'||tsBoardFilter!=='all'||tsEarningsRateFilter!=='all'||tsBillableFilter!=='all'||tsInvoicedFilter!=='all'||tsDateFrom||tsDateTo||tsSearch;
 
   const filterBar=`<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:12px 14px;background:#f8fbff;border:1.5px solid #e4ecf4;border-radius:8px;margin-bottom:12px">
     <div style="position:relative">
@@ -13974,7 +13803,6 @@ function _rptTimesheetHtml(){
     ${canBill?`<div><label style="${lbSty}">Staff</label><select ${selSty} onchange="tsStaffFilter=this.value;renderView('reports')">${staffOpts}</select></div>`:''}
     <div><label style="${lbSty}">Client</label><select ${selSty} onchange="tsClientFilter=this.value;renderView('reports')">${clientOpts}</select></div>
     <div><label style="${lbSty}">Board</label><select ${selSty} onchange="tsBoardFilter=this.value;renderView('reports')">${boardOpts}</select></div>
-    ${window._isoEnabled?`<div><label style="${lbSty}">ISO board</label><select ${selSty} onchange="tsIsoFilter=this.value;renderView('reports')">${isoOpts}</select></div>`:''}
     <div><label style="${lbSty}">Earnings Rate</label><select ${selSty} onchange="tsEarningsRateFilter=this.value;renderView('reports')">${erOpts}</select></div>
     <div><label style="${lbSty}">Billable</label><select ${selSty} onchange="tsBillableFilter=this.value;renderView('reports')">
       <option value="all"${tsBillableFilter==='all'?' selected':''}>All</option>
@@ -14227,7 +14055,7 @@ function _pfiOpenImportModal(invId,candidates){
       <td style="padding:6px 8px;text-align:center"><input type="checkbox" class="pfi-import-cb" data-hours="${e.hours}" value="${e.id}" ${invoiced?'':'checked'} onchange="_pfiImportUpdateCount()" style="accent-color:#0d1c33"/></td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${formatDate(e.date)}</td>
       <td style="padding:6px 8px;font-size:12px;white-space:nowrap">${escHtml(staff?.name||'Unknown')}</td>
-      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.isoAuditId?(e.isoActionRef?e.isoActionRef+' · '+(e.isoLabel||''):(e.isoLabel||'ISO audit')):(task?.name||task?.title||e.taskName||''))}">${e.isoAuditId?escHtml(e.isoActionRef||e.isoLabel||'ISO audit'):task?escHtml(task.name||task.title):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
+      <td style="padding:6px 8px;font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml((task?.name||task?.title||e.taskName||''))}">${task?escHtml(task.name||task.title):e.taskName?escHtml(e.taskName)+' <span style="color:#8da2b2">(deleted)</span>':'<span style="color:#c8d7e1">—</span>'}</td>
       <td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:600;white-space:nowrap">${e.hours.toFixed(2)}h</td>
       <td style="padding:6px 8px 6px 4px;font-size:10px">${invoiced?`<span title="Already on ${escHtml(invoiced.number)}" style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap">⚠ ${escHtml(invoiced.number)}</span>`:''}</td>
     </tr>`;
@@ -14282,12 +14110,10 @@ function pfiConfirmImport(invId){
       id:'li'+uid(),timeEntryId:e.id,date:e.date,day:pfiDayName(e.date),
       staffId:e.staffId,staffName:staff?.name||'Unknown',
       memberCode:staff?.initials||((staff?.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,3)),
-      // D13/7b.4: an ISO-mode entry carries no task (D12) — its own ref/label stand in for the
-      // task title and project grouping instead, exactly as every other ISO display site does.
-      taskId:e.taskId||null,taskTitle:e.isoAuditId?(e.isoActionRef||'General audit work'):(task?.name||task?.title||e.taskName||'—'),
+      taskId:e.taskId||null,taskTitle:(task?.name||task?.title||e.taskName||'—'),
       activity:e.earningsRateName||'Ordinary Hours',
       activityCode:(e.earningsRateName||'ORD').replace(/[aeiou\s]/gi,'').slice(0,4).toUpperCase()||'ORD',
-      boardId:e.isoAuditId?('iso:'+e.isoAuditId):(board?.id||null),boardName:e.isoAuditId?(e.isoLabel||null):(board?.name||null),
+      boardId:board?.id||null,boardName:board?.name||null,
       clientId:client?.id||e.clientId||null,clientName:client?.name||'',
       // Was hardcoded null, so the Location column in the editor, the CSV export and the
       // Excel export — all three already existed — have been blank on every invoice since
@@ -16754,18 +16580,6 @@ function _dgGetAutoItems(clientId){
 function _dgOnClientChange(val){
   const ta=document.getElementById('dg-items');
   if(ta)ta.value=_dgGetAutoItems(val).join('\n');
-  // Phase 7b.5 (R9): append client-safe ISO progress lines, server-built from real audit/action
-  // data (digest.items) — fetched async, so guard against the user having already switched to a
-  // different client (or none) by the time it resolves; appending to the wrong client's draft
-  // would be a real, if quiet, client-safety mistake, not just a cosmetic race.
-  if(val&&window._isoEnabled&&window.ISO&&ISO.digestItems){
-    ISO.digestItems(val).then(lines=>{
-      if(!lines.length)return;
-      const stillSameClient=document.getElementById('dg-client')?.value===val;
-      const taNow=document.getElementById('dg-items');
-      if(stillSameClient&&taNow)taNow.value=(taNow.value?taNow.value+'\n':'')+lines.join('\n');
-    }).catch(()=>{});
-  }
 }
 function openCreateDigest(){
   const clientOpts=DB.clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
@@ -16852,7 +16666,6 @@ function openDigestDetail(digestId){
     <div>
       <div style="display:flex;align-items:center;gap:8px">
         <label class="form-label" style="margin-bottom:0">Items (one per line)</label>
-        ${window._isoEnabled?`<span onclick="_dgAddIsoProgress('${d.id}')" style="font-size:11px;color:#0d6e4e;cursor:pointer;font-weight:600">+ Add ISO progress</span>`:''}
       </div>
       <textarea id="dg-edit-items" class="form-input" rows="7" style="resize:vertical;font-size:12px">${escHtml((d.items||[]).map(i=>i.text).join('\n'))}</textarea>
     </div>
@@ -16878,17 +16691,6 @@ function openDigestDetail(digestId){
 // instead of on every client switch — the edit form's client select can change independently of
 // this digest's own stored clientId, so read the SELECT's current value (the one the items would
 // actually be saved against), not d.clientId, which may already be stale by the time this runs.
-function _dgAddIsoProgress(digestId){
-  const clientId=document.getElementById('dg-edit-client')?.value||'';
-  if(!clientId){showToast('Pick a client first.','error');return;}
-  if(!(window._isoEnabled&&window.ISO&&ISO.digestItems))return;
-  ISO.digestItems(clientId).then(lines=>{
-    if(!lines.length){showToast('No ISO progress to add for this client right now.');return;}
-    const stillOpen=document.getElementById('dg-edit-client')?.value===clientId;
-    const ta=document.getElementById('dg-edit-items');
-    if(stillOpen&&ta)ta.value=(ta.value?ta.value+'\n':'')+lines.join('\n');
-  }).catch(e=>showToast('Could not load ISO progress: '+e.message,'error'));
-}
 
 function updateDigest(digestId){
   const d=(DB.digests||[]).find(x=>x.id===digestId);if(!d)return;
@@ -17501,8 +17303,6 @@ function renderArchiveBin(){
         ?`<div style="${EMPTY}">No archived tasks</div>`
         :taskRows}
     </div>
-
-    ${window._isoEnabled&&window.ISO?'<div id="iso-archive-card"></div>':''}
 
   </div>`;
 }
@@ -18330,7 +18130,7 @@ let _notifLimit=100;   // the notification list shows the latest 100 (audit H9, 
 function renderNotifications(){
   const myNotifs=[...DB.notifications.filter(n=>n.recipientId===currentUser.id)]
     .sort((a,b)=>new Date(b.createdAt||b.timestamp)-new Date(a.createdAt||a.timestamp));
-  const unreadCount=myNotifs.filter(n=>!n.read).length+((window._isoEnabled&&window.ISO&&ISO.notifUnread)?ISO.notifUnread():0); // + ISO 7.6
+  const unreadCount=myNotifs.filter(n=>!n.read).length;
 
   const rowObjs=myNotifs.slice(0,_notifLimit).map(n=>{
     const task=DB.tasks.find(t=>t.id===n.taskId);
@@ -18376,10 +18176,8 @@ function renderNotifications(){
       <button onclick="event.stopPropagation();notifDismiss('${n.id}')" style="background:none;border:none;color:#c4d0db;cursor:pointer;font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px;transition:color 0.1s" title="Dismiss" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#c4d0db'">✕</button>
     </div>`};
   });
-  // ISO 7.6 hook (release-1 B5.1): ISO's own items ({at, html}) merged into the same list, newest first.
-  const isoRows=(window._isoEnabled&&window.ISO&&ISO.notifItems)?ISO.notifItems():[];
-  const allRows=rowObjs.concat(isoRows).sort((a,b)=>b.at-a.at);
-  const totalRows=myNotifs.length+isoRows.length;
+  const allRows=rowObjs.slice().sort((a,b)=>b.at-a.at);
+  const totalRows=myNotifs.length;
   const rows=allRows.slice(0,_notifLimit).map(r=>r.html).join('')
     +(totalRows>_notifLimit?`<div style="text-align:center;padding:14px"><button onclick="_notifLimit+=100;renderView('notifications')" class="btn btn-ghost btn-sm">Show older (${totalRows-_notifLimit} more)</button></div>`:'');
 
@@ -18391,7 +18189,7 @@ function renderNotifications(){
         <button onclick="clearAllNotifs()" class="btn btn-ghost btn-sm">Clear all</button>
       </div>
     </div>
-    ${myNotifs.length===0&&!isoRows.length
+    ${myNotifs.length===0
       ?`<div style="text-align:center;padding:48px 24px;color:#8da2b2">No notifications.</div>`
       :rows}
   </div>`;
@@ -18439,7 +18237,6 @@ function notifGoToTask(notifId,taskId,tab){
 }
 function notifMarkAllRead(){
   DB.notifications.filter(n=>n.recipientId===currentUser.id).forEach(n=>n.read=true);
-  if(window._isoEnabled&&window.ISO&&ISO.notifMarkAllRead)ISO.notifMarkAllRead(); // ISO 7.6
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 function notifDismiss(id){
@@ -18463,7 +18260,6 @@ function clearAllNotifs(){
   const _before=DB.notifications;
   DB.notifications=DB.notifications.filter(n=>n.recipientId!==currentUser.id);
   _tombstoneRemoved(_before,DB.notifications,'deletedNotificationIds');
-  if(window._isoEnabled&&window.ISO&&ISO.notifClearAll)ISO.notifClearAll(); // ISO 7.6
   saveDB(DB);updateNotifBadge();renderView('notifications');
 }
 
@@ -27016,7 +26812,7 @@ function getClientTasks(clientId){
 // ── Client portal notification badge ─────────────────────
 function updateCpNotifBadge(){
   if(!currentUser||currentUser.role!=='client')return;
-  const unread=(DB.notifications||[]).filter(n=>n.recipientId===currentUser.id&&!n.read).length+(window.ISO&&ISO.portal&&ISO.portal.notifUnread?ISO.portal.notifUnread():0);
+  const unread=(DB.notifications||[]).filter(n=>n.recipientId===currentUser.id&&!n.read).length;
   const badge=document.getElementById('cp-notif-badge');
   if(!badge)return;
   if(unread>0){badge.textContent=unread;badge.style.display='inline-block';}else{badge.style.display='none';}
@@ -27032,15 +26828,12 @@ function renderCpNotifications(){
   notifs.forEach(n=>n.read=true);
   if(_portalServerMode()){if(_hadUnread)_portalAction('markNotificationsRead',{},{silent:true});}
   else saveDB(DB);
-  // B7e: the client's ISO notifications join the list (each opens its board), read on this visit too.
-  const _iso=window.ISO&&ISO.portal&&ISO.portal.notifItems?ISO.portal.notifItems():[];
-  if(_iso.length)ISO.portal.notifMarkRead();
   updateCpNotifBadge();
-  if(!notifs.length&&!_iso.length)return`<div class="cp-empty"><div class="cp-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="cp-empty-title">You're all caught up</div><div class="cp-empty-text">Updates from Etcher about your tasks will appear here.</div></div>`;
+  if(!notifs.length)return`<div class="cp-empty"><div class="cp-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="cp-empty-title">You're all caught up</div><div class="cp-empty-text">Updates from Etcher about your tasks will appear here.</div></div>`;
   const typeIcon={work_request:'⊞',client_comment_reply:'↩',client_comment:icon('chat',12),client_approved:'✓',client_changes_requested:'↩',client_action_requested:'⚡'};
   const typeColor={work_request:'#f59e0b',client_comment_reply:'#0d6e4e',client_comment:'#3b82f6',client_approved:'#10b981',client_changes_requested:'#f59e0b',client_action_requested:'#b45309'};
   const _visible=new Set((DB.tasks||[]).map(t=>t.id));
-  const _rows=notifs.map(n=>({at:n.createdAt||'',n})).concat(_iso.map(x=>({at:x.at||'',html:x.html}))).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  const _rows=notifs.map(n=>({at:n.createdAt||'',n})).sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
   return`<div class="cp-list cp-notifs">
     ${_rows.map(({n,html})=>{
       if(html)return html;
@@ -27151,7 +26944,6 @@ function cpNavigate(section){
   else if(section==='tasks')        body.innerHTML=bar+renderCpTasks(clientId,ft,fb,boardIdx);
   else if(section==='workboard')    body.innerHTML=bar+renderCpBoard(clientId,ft,fb,boardIdx);
   else if(section==='retained')     body.innerHTML=renderCpRetained(clientId,tasks,rtBoard);
-  else if(section==='iso'&&window.ISO&&ISO.portal)ISO.portal.render(body);
   else if(section==='requests')     body.innerHTML=renderCpRequests(clientId);
   else if(section==='notifications')body.innerHTML=renderCpNotifications();
   else                              body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);
@@ -27181,8 +26973,7 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
   const todayStr=toDateStr(new Date());
   const activeTasks=tasks;
   const awaitingTasks=activeTasks.filter(t=>t.awaitingClient);
-  const _iso=window.ISO&&ISO.portal?ISO.portal:null,isoNeedN=_iso?_iso.needCount():0;
-  const waitingN=awaitingTasks.length+isoNeedN;
+  const waitingN=awaitingTasks.length;
   const _isDone=t=>t.status==='done'||t.status==='completed'||t.status==='completed-approved';
   const doneTasks=activeTasks.filter(_isDone);
   const overallPct=activeTasks.length?Math.round(activeTasks.reduce((s,t)=>s+t.percentComplete,0)/activeTasks.length):0;
@@ -27227,7 +27018,7 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
     }).join('');
     awaitingSection=`<section id="cp-attn" class="cp-sec">
       <div class="cp-sec-head"><h2 class="cp-sec-title">Waiting on you</h2><span class="cp-sec-count">${waitingN}</span></div>
-      <div class="cp-list">${rows}${_iso?_iso.needRowsHtml():''}</div>
+      <div class="cp-list">${rows}</div>
     </section>`;
   }
 
@@ -27257,10 +27048,9 @@ function renderCpOverview(clientId,tasks,boards,client,boardIdx=new Map()){
       <span class="cp-eng-bar"><i style="width:${pct}%;background:${b.color}"></i></span>
     </button>`;
   }).join('');
-  const isoEng=_iso?_iso.engRowHtml():'';
-  const engSection=boards.length||isoEng?`<section class="cp-sec">
-    <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length+(isoEng?1:0)}</span></div>
-    <div class="cp-list">${engRows}${isoEng}</div>
+  const engSection=boards.length?`<section class="cp-sec">
+    <div class="cp-sec-head"><h2 class="cp-sec-title">Your engagements</h2><span class="cp-sec-count">${boards.length}</span></div>
+    <div class="cp-list">${engRows}</div>
   </section>`:'';
 
   // ── Recent activity: the client's own notifications ──
@@ -28764,12 +28554,6 @@ document.addEventListener('keydown',e=>{
 <script src="/supabase-client.js" defer></script>
 <!-- Data sync layer (Supabase ↔ localStorage DB mapping; sets window._dbSync) -->
 <script src="/db-sync.js" defer></script>
-<!-- ISO Audit module (plan Phase 4-5). Self-contained window.ISO; no-op until window._isoEnabled. -->
-<script src="/iso/iso-import.js" defer></script>
-<script src="/iso/iso-charts.js" defer></script>
-<script src="/iso/iso-checks.js" defer></script>
-<script src="/iso/iso-core.js" defer></script>
-<script src="/iso/iso-portal.js" defer></script>
 
 <!-- TOAST NOTIFICATIONS ROOT -->
 <div id="app-toast-root"></div>

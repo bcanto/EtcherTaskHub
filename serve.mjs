@@ -51,12 +51,6 @@ const OFFLINE = process.argv.includes('--offline') || process.env.TASKHUB_OFFLIN
 const SUPABASE_URL      = OFFLINE ? '' : (_env.SUPABASE_URL      || process.env.SUPABASE_URL      || '');
 const SUPABASE_ANON_KEY = OFFLINE ? '' : (_env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '');
 
-// ISO Audit (api/_isoAuth.js isoOfflineMode()) trusts these two — and only these two — to
-// decide server-side offline mode, never an env var a request could influence.
-if (OFFLINE) {
-  process.env.ISO_OFFLINE = '1';
-  globalThis.__TASKHUB_SERVE_OFFLINE = true;
-}
 
 if (SUPABASE_URL) {
   console.log(`  Supabase: ${SUPABASE_URL}  ← LIVE project`);
@@ -283,7 +277,6 @@ http.createServer(async (req, res) => {
     const payload = JSON.stringify({
       supabaseUrl:      SUPABASE_URL,
       supabaseAnonKey:  SUPABASE_ANON_KEY,
-      isoEnabled:       OFFLINE || process.env.ISO_ENABLED === '1',
       // Release-1 B6.3: the "Sign in with Microsoft" button (never offline — there is no Supabase).
       microsoftSignIn:  !OFFLINE && process.env.MICROSOFT_SIGNIN === '1',
       twoStepSignIn:    !OFFLINE && process.env.TWO_STEP_SIGNIN === '1',
@@ -332,9 +325,7 @@ http.createServer(async (req, res) => {
   }
   const ext = path.extname(filePath).toLowerCase();
   const contentType  = MIME[ext]          || 'application/octet-stream';
-  // 0.3b: ISO front-end files always revalidate, so a STOP review never looks at day-old code
-  // the way it would under the default 24h cache on .js/.css.
-  const cacheControl = urlPath.startsWith('/iso/') ? 'no-cache, must-revalidate' : (CACHE_CONTROL[ext] || 'no-cache, must-revalidate');
+  const cacheControl = CACHE_CONTROL[ext] || 'no-cache, must-revalidate';
 
   fs.readFile(filePath, (err, data) => {
     if (err) {

@@ -1,7 +1,0 @@
-{
-  "_comment": "Plan D25 / 8b.3: internal guidance for ISO 45001:2018, kept apart from the requirement text. 'clauses' is keyed by clause number (e.g. \"4.1\"), 'requirements' by the library stable key. Each entry: {\"explanation\", \"auditorLooksFor\", \"status\": \"draft\"|\"approved\", \"approvedBy\", \"approvedAt\"}. Only 'approved' entries are shown to auditors, always labelled 'Internal guidance — does not replace the standard requirement'. Written and approved by Etcher; the first release ships empty and shows only the workbook's evidence examples (from the library itself).",
-  "standardCode": "45001",
-  "edition": "2018",
-  "clauses": {},
-  "requirements": {}
-}

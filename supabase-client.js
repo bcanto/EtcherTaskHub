@@ -24,10 +24,7 @@ window._supabaseReady = (async function _initSupabase() {
       return;
     }
     const cfg = await resp.json();
-    // Read before the offline early-return below, which never runs when Supabase isn't
-    // configured — ISO must still be enabled/disabled correctly in that (very common, dev)
-    // case (plan Phase 5.1b).
-    window._isoEnabled = cfg.isoEnabled === true;
+    // Read before the offline early-return below, which never runs when Supabase isn't configured.
     // "Sign in with Microsoft" (release-1 B6.3)
     window._microsoftSignIn = cfg.microsoftSignIn === true;
     window._twoStepSignIn = cfg.twoStepSignIn === true;

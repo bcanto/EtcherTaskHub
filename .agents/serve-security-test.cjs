@@ -109,23 +109,6 @@ function stopServer(proc) {
     ok(!!tag && (await statusOnly(`http://127.0.0.1:${PORT_A}/${tag[1]}`)) === 200, 'the vendored file is served');
     ok(cfg.microsoftSignIn === false, '--offline never offers Microsoft sign-in');
 
-    // 0.3b: /iso/* always revalidates, unlike the default 24h cache on .js/.css, so a STOP
-    // review never looks at day-old ISO front-end code. iso/ doesn't exist until Phase 4+, so
-    // this creates and removes its own probe file.
-    const isoDir = path.join(ROOT, 'iso');
-    const isoDirExisted = fs.existsSync(isoDir);
-    fs.mkdirSync(isoDir, { recursive: true });
-    fs.writeFileSync(path.join(isoDir, 'probe.js'), '// serve-security-test probe file, safe to delete');
-    try {
-      const r = await fetch(`http://127.0.0.1:${PORT_A}/iso/probe.js`);
-      ok(r.status === 200, `/iso/probe.js serves normally (got ${r.status})`);
-      ok(r.headers.get('cache-control') === 'no-cache, must-revalidate',
-        `/iso/*.js always revalidates instead of the default 24h .js cache (got "${r.headers.get('cache-control')}")`);
-      await r.text();
-    } finally {
-      fs.rmSync(path.join(isoDir, 'probe.js'), { force: true });
-      if (!isoDirExisted) fs.rmSync(isoDir, { recursive: true, force: true });
-    }
 
     if (!storeExisted) { fs.rmSync(realStore, { force: true }); if (!dirExisted) fs.rmSync(isoOfflineDir, { recursive: true, force: true }); }
     else {
