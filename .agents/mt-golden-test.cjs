@@ -14,7 +14,9 @@ const ok = (c, m) => (c ? pass.push(m) : fail.push(m));
 
 // Collapse whitespace between tags only (">   <" -> "><"), never inside attribute values or text
 // runs beyond that boundary — real spacing/attribute differences still fail.
-function normalize(html) { return String(html).replace(/>\s+</g, '><').trim(); }
+// The table's scroll box fits its height to the window, and that number moves by a few pixels depending on whether the
+// tap-target pass has grown the toolbar above it yet (timing, not content): that one fitted height is not compared.
+function normalize(html) { return String(html).replace(/(<div id="ws-table-scroll" style="[^"]*?)(?<![-\w])height: \d+px;/, '$1height: (fitted);').replace(/>\s+</g, '><').trim(); }
 
 function report() {
   console.log('\nPASS (' + pass.length + '):');

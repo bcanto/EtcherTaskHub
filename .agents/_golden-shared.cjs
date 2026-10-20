@@ -104,7 +104,8 @@ async function captureAll(page, { onProgress } = {}) {
                   navigate('workspace');
                 }, boardId, gb, sort, arch, search, exp, person);
                 await new Promise(r => setTimeout(r, 45));
-                const html = await page.evaluate(() => document.getElementById('ws-table-scroll').outerHTML);
+                // finish the after-draw passes (keyboard access, tap targets) first, so the capture never depends on timing
+                const html = await page.evaluate(() => (window._kbEnhance&&_kbEnhance(document.body),window._ttEnhance&&_ttEnhance(document.body),document.getElementById('ws-table-scroll').outerHTML));
                 const name = `mt_${boardId}_gb-${gb}_sort-${sortName(sort)}_arch-${arch ? 1 : 0}_search-${search ? 1 : 0}_exp-${exp ? 1 : 0}_person-${person ? 1 : 0}.html`;
                 push(name, html);
               }
@@ -129,7 +130,7 @@ async function captureAll(page, { onProgress } = {}) {
               navigate('gantt');
             }, boardId, scale, colorBy, baseline, leftCollapsed);
             await new Promise(r => setTimeout(r, 60));
-            const html = await page.evaluate(() => document.querySelector('.g2-container').outerHTML);
+            const html = await page.evaluate(() => (window._kbEnhance&&_kbEnhance(document.body),window._ttEnhance&&_ttEnhance(document.body),document.querySelector('.g2-container').outerHTML));
             const name = `gantt_${boardId}_scale-${scale}_color-${colorBy}_base-${baseline ? 1 : 0}_left-${leftCollapsed ? 1 : 0}.html`;
             push(name, html);
           }
