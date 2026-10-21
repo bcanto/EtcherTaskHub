@@ -1037,6 +1037,84 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .rs-pl-hint{margin:0;font-size:12px;color:#8da2b2}
 .rs-pl-note{min-height:70px;resize:vertical}
 .rs-pl-p{margin:0;font-size:13px;color:#4a5568}
+.rs-fee{display:flex;align-items:center;gap:6px;min-width:0}.rs-fee i{font-style:normal;font-weight:700;color:#6b8399}.rs-fee input{min-width:0}
+.rs-su-f small{font-size:11px;color:#8da2b2;line-height:1.4}
+.rs-lvl-note{grid-column:2/-1;margin:0;align-self:end;font-size:12px;line-height:1.5;color:#6b8399}.rs-lvl-note b{color:#0d1c33;font-weight:700}
+.rs-pl .rs-lvl-note{grid-column:auto}
+.rs-lvl-use{border:0;background:none;padding:0 2px;font:inherit;font-weight:700;color:#31585a;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.rs-lvl-use:hover{color:#0d1c33}.rs-lvl-use:active{color:#0d1c33;opacity:.8}.rs-lvl-use:focus-visible{outline:2px solid #31585a;outline-offset:2px;border-radius:3px}
+@media (max-width:760px){.rs-lvl-note{grid-column:1/-1}}
+.rs-fee input{height:36px}
+.rs-pl-grid .rs-su-f,.rs-su2-terms .rs-cfg{align-content:start}
+.rd{display:grid;gap:16px;max-width:1480px}
+.rd-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rd-sum{margin:0;flex:1;min-width:220px;font-size:13px;color:#3d5269;line-height:1.5}.rd-sum b{font-family:Jost,sans-serif;font-weight:700;color:#0d1c33}
+.rd-late{color:#b91c1c;font-weight:700}
+.rd-sheet{min-width:0;padding:16px 18px;border:1px solid #e4eaf3;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(13,28,51,.04),0 6px 18px rgba(13,28,51,.04)}
+.rd-sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.rd-h{margin:0;font-family:Jost,sans-serif;font-size:15px;font-weight:700;letter-spacing:-.01em;color:#0d1c33}
+.rd-n{margin-left:6px;font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:#6b8399;font-variant-numeric:tabular-nums}
+.rd-filters{display:flex;flex-wrap:wrap;gap:8px}
+.rd-f{display:grid;gap:3px}.rd-f>span{font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
+.rd-f select{width:auto;min-width:120px;height:32px;padding:0 26px 0 10px;font-size:12.5px}
+.rd-hint{max-width:96ch;margin:10px 0 0;font-size:11.5px;line-height:1.5;color:#7a96ad}
+.rd-empty{display:grid;gap:10px;justify-items:start;padding:28px}.rd-empty p{max-width:70ch;margin:0;font-size:13px;line-height:1.6;color:#3d5269}
+.rd-att ul{list-style:none;margin:8px 0 0;padding:0}
+.rd-att li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #eef2f6;font-size:13px;color:#1a2940}
+.rd-att li:first-child{border-top:0}.rd-att li>span{flex:1;min-width:0;line-height:1.45}
+.rd-att li.bad .rq-ic{color:#b91c1c}.rd-att li.warn .rq-ic{color:#b45309}
+.rq-wrap{overflow-x:auto}
+.rq-t,.rd-ct{width:100%;border-collapse:collapse;font-size:12.5px;color:#0f1929}
+.rq-t th,.rd-ct th{padding:0 12px 8px 0;border-bottom:1px solid #e4eaf3;text-align:left;white-space:nowrap;font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
+.rq-t td,.rd-ct td{padding:9px 12px 9px 0;border-bottom:1px solid #eef2f6;vertical-align:middle}
+.rq-t tbody tr:last-child td,.rd-ct tbody tr:last-child td{border-bottom:0}
+.rq-t tr.late,.rq-t tr.late td{background:#fff8f8}
+.rq-lv{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-family:Jost,sans-serif;font-size:12px;font-weight:700;color:#0d1c33}
+.rq-lv svg{width:19px;height:12px;flex-shrink:0}.rq-lv rect{fill:#d8e0ec}.rq-lv rect.on{fill:#31585a}
+.rq-cl{display:inline-flex;align-items:center;gap:7px;min-width:0}.rq-cl i{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.rq-w{display:grid;gap:2px;min-width:0;max-width:440px;padding:2px 0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.rq-w b{font-size:13px;font-weight:700;line-height:1.35;color:#0d1c33}
+.rq-w small{font-size:11.5px;line-height:1.4;color:#6b8399}
+.rq-w:hover b{color:#31585a;text-decoration:underline;text-underline-offset:2px}
+.rq-w:active b{color:#0d1c33}
+.rq-w:focus-visible{outline:2px solid #31585a;outline-offset:2px;border-radius:4px}
+.rq-d{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rq-d.late{font-weight:700;color:#b91c1c}.rq-d.today{font-weight:700;color:#8a5200}
+.rq-ic{width:11px;height:11px;flex-shrink:0}
+.rq-met{white-space:nowrap;color:#6b8399}.rq-met.late{color:#8a5200}
+.rq-na{color:#8da2b2}
+.rq-st{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.rq-none td{padding:22px 0;text-align:center;color:#6b8399}
+.rd-c-name b{font-family:Jost,sans-serif;color:#0d1c33}.rd-c-name small{display:block;margin-top:2px;font-size:11.5px;color:#6b8399}
+.rd-ms{display:flex;flex-wrap:wrap;gap:6px 16px}
+.rd-m{display:inline-grid;grid-template-columns:auto 64px auto;align-items:center;gap:6px;white-space:nowrap;font-size:11.5px;color:#3d5269}
+.rd-m i{display:block;height:5px;overflow:hidden;border-radius:3px;background:#e9eef4}.rd-m em{display:block;height:100%;border-radius:3px}
+.rd-m b{color:#0d1c33;font-variant-numeric:tabular-nums}.rd-m.near b{color:#8a5200}.rd-m.full b{color:#b91c1c}
+.rd-c-fee{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
+.rd-c-act{text-align:right;white-space:nowrap}.rd-c-act .btn+.btn{margin-left:4px}
+.rd-req>.card{padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+#generic-modal [id^="wr-sm-"]{z-index:600!important}
+.rd-nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:auto;padding:0 5px;border-radius:9px;background:#b91c1c;color:#fff;font-family:Lato,sans-serif;font-size:10px;font-weight:700}
+@media (max-width:760px){
+  .rd-sheet{padding:14px}
+  .rd-filters{width:100%}.rd-f{flex:1 1 140px}.rd-f select{width:100%;min-width:0}
+  .rq-t thead,.rd-ct thead{display:none}
+  .rq-t,.rq-t tbody,.rd-ct,.rd-ct tbody{display:block}
+  .rq-t tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid #eef2f6}
+  .rq-t tbody tr:last-child{border-bottom:0}
+  .rq-t td,.rd-ct td{padding:0;border:0}
+  .rq-t td:empty{display:none}
+  .rq-c-lv{grid-column:1}.rq-c-st{grid-column:2;grid-row:1;justify-self:end}
+  .rq-c-cl,.rq-c-w,.rq-c-own,.rq-c-due{grid-column:1/-1}
+  .rq-c-own,.rq-c-due{display:flex;gap:6px;font-size:12px}
+  .rq-c-own::before,.rq-c-due::before{content:attr(data-l);flex-shrink:0;width:76px;padding-top:2px;font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
+  .rq-w{max-width:none}
+  .rq-none{display:block!important}
+  .rd-ct tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:12px 0;border-bottom:1px solid #eef2f6}
+  .rd-ct tbody tr:last-child{border-bottom:0}
+  .rd-c-m,.rd-c-fee,.rd-c-reg,.rd-c-act{grid-column:1/-1}
+  .rd-c-act{display:flex;flex-wrap:wrap;gap:6px;text-align:left;white-space:normal}.rd-c-act .btn+.btn{margin-left:0}
+}
 @media (max-width:700px){.rs-su-top,.rs-su-cfg,.rs-pl-grid{grid-template-columns:minmax(0,1fr)}.rs-su-cfg{padding-left:14px}}
 /* Labels column — the cell fills with the chosen label's colour, Monday-style. */
 .lbl-cell{display:flex;align-items:center;justify-content:center;height:38px;margin:0 -10px;color:#fff;
@@ -5387,7 +5465,7 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
-  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin'};
+  const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin',retained:'Retained Services'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   // Inside a workboard the tab strip already shows the board name (with its colour dot and
   // actions menu), so repeating it in the page title is pure duplication.
@@ -5602,6 +5680,7 @@ function renderView(v){
       case 'archive':   vc.innerHTML=renderArchiveBin();break;
       case 'notes':     renderNotes();break;
       case 'quotes':    vc.innerHTML=renderQuotes();break;
+      case 'retained':  vc.innerHTML=renderRetainedDash();break;
       case 'notifications': vc.innerHTML=renderNotifications();break;
       default: vc.innerHTML=_render404Html(v);break;
     }
@@ -6762,7 +6841,7 @@ function _acBlockedViews(user){
     // reachable by calling renderView('archive') directly, bypassing the sidebar which never
     // renders that nav item for a client in the first place.
     return new Set(['schedule','workspace','board','list','gantt',
-                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive']);
+                    'capacity','clients','time','reports','notes','staff','audit','notifications','archive','retained']);
   // D16: a Billing-flagged staff member gets Reports unblocked (approve/reject/invoice access),
   // same route as an admin, without the rest of _STAFF_BLOCKED being lifted.
   if(user.role==='staff')   return _canBill(user)?new Set([..._STAFF_BLOCKED].filter(v=>v!=='reports')):_STAFF_BLOCKED;
@@ -7095,8 +7174,13 @@ function renderSidebarWorkboards(){
   // Retained Services: its own section (#nav-retained-header), built from the boards' retainer object,
   // not a wbFolders record, so it cannot be renamed, deleted or lost in sync. Same rows as workboards.
   const retList=document.getElementById('sidebar-retained-list');
-  if(retList)retList.innerHTML=retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join('')
-    :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?', click +':''}</div>`;
+  const rdLate=retainedWbs.length?_rqLateCount():0;
+  const rdRow=`<div class="nav-item${currentView==='retained'?' active':''}" data-view="retained" id="nav-retained-dash" role="button" tabindex="0" onclick="navigate('retained')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('retained')}" style="padding-left:14px">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="3" y="8.5" width="2.2" height="3" rx=".5" fill="currentColor"/><rect x="6.9" y="6" width="2.2" height="5.5" rx=".5" fill="currentColor"/><rect x="10.8" y="3.5" width="2.2" height="8" rx=".5" fill="currentColor"/></svg></span>
+      <span style="flex:1">Dashboard</span>${rdLate?`<span class="rd-nav-badge" title="${rdLate} late in the queue" aria-label="${rdLate} late in the queue">${rdLate}</span>`:''}
+    </div>`;
+  if(retList)retList.innerHTML=rdRow+(retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join('')
+    :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?', click +':''}</div>`);
 
   container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
 }
@@ -7280,6 +7364,63 @@ function _retainerBundle(keys){
   const core=keys.filter(k=>(_rsCat(k)||{}).kind==='core').length,add=keys.length-core;
   return[core?`${core} Core`:'',add?`${add} Add-on${add>1?'s':''}`:''].filter(Boolean).join(' and ');
 }
+// Service levels: the client's SLA, kept on the retainer only (task priorities on every board stay as they are).
+// resp and del are business days, Monday to Friday; 0 is the same business day; null has no clock, so the level
+// just sorts first in the Retained Services queue. Top to bottom matches the bundles, Light to Embedded.
+const RETAINER_LEVELS=[
+  {key:'Standard', bundle:'Light',   rank:1,resp:2,   del:5,   respText:'2 business days',delText:'5 business days'},
+  {key:'Priority', bundle:'Core',    rank:2,resp:1,   del:3,   respText:'1 business day', delText:'3 business days'},
+  {key:'Priority+',bundle:'Ops',     rank:3,resp:0,   del:2,   respText:'Same day',       delText:'1 to 2 business days'},
+  {key:'High',     bundle:'Plus',    rank:4,resp:0,   del:null,respText:'Same day',       delText:'Accelerated'},
+  {key:'Highest',  bundle:'Embedded',rank:5,resp:null,del:null,respText:'Priority queue', delText:'Surge support included'},
+];
+// The bundles on the website, by their service mix: [core services, add-ons].
+const RETAINER_BUNDLES=[
+  {key:'Light',mix:[[1,0],[0,1]]},{key:'Core',mix:[[2,0]]},{key:'Ops',mix:[[1,1]]},{key:'Plus',mix:[[1,2]]},{key:'Embedded',mix:[[2,3]]},
+];
+function _rsLevel(key){return RETAINER_LEVELS.find(l=>l.key===key)||null;}
+function _rsBundleName(keys){
+  const core=keys.filter(k=>(_rsCat(k)||{}).kind==='core').length,add=keys.length-core;
+  const b=RETAINER_BUNDLES.find(x=>x.mix.some(([c,a])=>c===core&&a===add));return b?b.key:null;
+}
+function _rsSuggestedLevel(keys){const b=_rsBundleName(keys),l=b&&RETAINER_LEVELS.find(x=>x.bundle===b);return l?l.key:null;}
+// "reply within 1 business day, deliver within 3 business days." (follows "Priority: ")
+function _rsLevelLine(key){
+  const l=_rsLevel(key);if(!l)return'';
+  if(l.resp==null)return`${l.respText.toLowerCase()}, ${l.delText.toLowerCase()}.`;
+  return`${l.resp===0?'reply the same business day':'reply within '+l.respText}, ${l.del==null?'delivery accelerated':'deliver within '+l.delText}.`;
+}
+// An unknown saved value stays selectable, so opening the plan never changes it by itself.
+function _rsLevelOptions(cur){
+  const ks=RETAINER_LEVELS.map(l=>l.key);
+  return(cur&&!ks.includes(cur)?[cur]:[]).concat(ks).map(k=>`<option value="${escHtml(k)}"${k===cur?' selected':''}>${escHtml(k)}</option>`).join('');
+}
+// Under the level: the bundle the services make, what the level promises, and the suggested level when it differs.
+function _rsLevelNote(keys,level,useCall){
+  const b=_rsBundleName(keys),sug=_rsSuggestedLevel(keys);
+  const head=!keys.length?'':b?`<b>${b} bundle.</b> `:'<b>Custom mix.</b> No bundle matches, so pick the level. ';
+  const use=sug&&sug!==level?` The ${b} bundle suggests ${sug}.${useCall?` <button type="button" class="rs-lvl-use" data-rs-use="${sug}" onclick="${useCall(sug)}">Use ${sug}</button>`:''}`:'';
+  return head+(_rsLevel(level)?`${escHtml(level)}: ${_rsLevelLine(level)}`:'')+use;
+}
+// The fixed monthly fee, typed by an admin. Staff only: the portal slice never carries it (api/_portal.js).
+// A change applies from the month it is made (or the start month), so an earlier month keeps the fee it had.
+function _rsFeeParse(v){const s=String(v==null?'':v).replace(/[$,\s]/g,'');if(s==='')return null;const n=Math.round(Math.min(1e7,Math.max(0,parseFloat(s)||0))*100)/100;return n>0?n:null;}
+function _rsFeeEntry(r,ym){let best=null;((r&&r.fees)||[]).forEach(f=>{if(f&&f.from<=ym&&(!best||f.from>=best.from))best=f;});return best;}
+function _rsFeeFor(r,ym){const e=_rsFeeEntry(r,ym);return e&&e.amount>0?e.amount:null;}
+function _rsMoney(n){return Number(n||0).toLocaleString('en-AU',{style:'currency',currency:'AUD'});}
+function _rsMonthYear(ym){return new Date(ym+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'});}
+function _rsNextYm(ym){const d=new Date(ym+'-01T12:00:00');d.setMonth(d.getMonth()+1);return _rsYm(d);}
+function _rsFeeSince(r,ym){
+  const e=_rsFeeEntry(r,ym);if(!e)return'Applies from this month once typed.';
+  const prev=_rsFeeEntry(r,_rsPrevYm(e.from)),was=prev&&prev.amount>0&&prev.amount!==e.amount?` Was ${_rsMoney(prev.amount)} before.`:'';
+  return`From ${_rsMonthYear(e.from)}.${was}`;
+}
+function _rsPlanFeeHtml(b,admin){
+  const r=b.retainer,ym=_rsYm(),from=r.startMonth&&r.startMonth>ym?r.startMonth:ym,cur=_rsFeeFor(r,from);
+  if(admin)return`<label class="rs-su-f"><span>Monthly fee</span><span class="rs-fee"><i>$</i><input type="number" min="0" step="0.01" class="form-input" id="rs-pl-fee" value="${cur!=null?cur:''}" placeholder="Not set" onchange="_rsPlanSet('${b.id}','fee',null,this.value)" aria-label="Monthly fee in dollars"></span><small>${_rsFeeSince(r,from)}</small></label>`;
+  if(_canBill(currentUser))return`<div class="rs-su-f"><span>Monthly fee</span><b>${cur!=null?_rsMoney(cur):'Not set'}</b><small>${_rsFeeSince(r,from)}</small></div>`;
+  return'<div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b></div>';
+}
 // R4: per service group, per calendar month. A top-level task with subitems counts its subitems
 // finished that month; one without subitems counts 1 once it is finished that month. Only work the
 // client can see counts (a hidden task, or a subitem of one, never uses the allowance).
@@ -7318,19 +7459,27 @@ function openRetainerSetup(){
   const staff=_rsStaff();
   const lead=staff.some(u=>u.id===currentUser.id)?currentUser.id:((staff[0]||{}).id||null);
   const d=new Date();
-  _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'High',svc:{}};
+  _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,fee:null,svc:{}};
   RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:s.kind==='core',allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true)};});
+  _rsSetupFollowLevel();
   _rsSetupRender();
+}
+// The level follows the bundle the ticked services make, until the admin picks a level themselves.
+function _rsSetupFollowLevel(){
+  const m=_rsSetup;if(!m||m.levelSet)return;
+  const s=_rsSuggestedLevel(RETAINER_CATALOGUE.filter(x=>m.svc[x.key].on).map(x=>x.key));if(s)m.priority=s;
 }
 function _rsSet(field,key,val,i){
   const m=_rsSetup;if(!m)return;
   if(key){
     const v=m.svc[key];if(!v)return;
-    if(field==='on')v.on=!!val;
+    if(field==='on'){v.on=!!val;_rsSetupFollowLevel();}
     else if(field==='allowance')v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner')v.ownerId=val||null;
     else if(field==='mt')v.mt[i]=!!val;
-  }else if(['clientId','leadId','startMonth','priority'].includes(field))m[field]=val;
+  }else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
+  else if(field==='fee')m.fee=_rsFeeParse(val);
+  else if(['clientId','leadId','startMonth'].includes(field))m[field]=val;
   _rsSetupRender();
 }
 function _rsSetupRender(){
@@ -7357,7 +7506,9 @@ function _rsSetupRender(){
       <label class="rs-cfg"><span>Client</span><select class="form-input" id="rs-su-client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
       <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
       <label class="rs-cfg"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
-      <label class="rs-cfg"><span>Priority</span><select class="form-input" onchange="_rsSet('priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===m.priority?' selected':''}>${p}</option>`).join('')}</select></label>
+      <label class="rs-cfg"><span>Service level</span><select class="form-input" id="rs-su-level" onchange="_rsSet('priority',null,this.value)">${_rsLevelOptions(m.priority)}</select></label>
+      <label class="rs-cfg"><span>Monthly fee</span><span class="rs-fee"><i>$</i><input type="number" min="0" step="0.01" class="form-input" id="rs-su-fee" value="${m.fee!=null?m.fee:''}" placeholder="Not set" onchange="_rsSet('fee',null,this.value)" aria-label="Monthly fee in dollars"></span></label>
+      <p class="rs-lvl-note" id="rs-su-lvlnote">${_rsLevelNote(picks.map(s=>s.key),m.priority,lv=>`_rsSet('priority',null,'${lv}')`)}</p>
     </div>
     <div class="rs-su2-h">Services</div>
     <div class="rs-cards">${RETAINER_CATALOGUE.map(card).join('')}</div>
@@ -7375,7 +7526,8 @@ function retainerCreate(){
   const now=new Date().toISOString(),boardId=uid(),first=m.startMonth+'-01';
   const board={id:boardId,name:c.name,color:c.color||'#7c3aed',visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,
     ownerId:currentUser.id,description:'Retained services',archived:false,excludeFromReports:false,createdAt:now,updatedAt:now,
-    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:m.priority||'High',months:{},endedAt:null}};
+    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:_rsLevel(m.priority)?m.priority:'Standard',months:{},endedAt:null,
+      fees:m.fee>0?[{from:m.startMonth,amount:m.fee,at:now,by:currentUser.id}]:[]}};
   DB.workboards.push(board);
   let made=0;
   picks.forEach((s,i)=>{
@@ -7420,9 +7572,10 @@ function openRetainerPlan(boardId){
     <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>Started ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
     <div class="rs-pl-grid">
       <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
-      <label class="rs-su-f"><span>Priority</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${['Standard','High','Highest'].map(p=>`<option${p===r.priority?' selected':''}>${p}</option>`).join('')}</select>`:`<b>${escHtml(r.priority||'')}</b>`}</label>
-      <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b></div>
+      <label class="rs-su-f"><span>Service level</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(r.priority||'')}</b>`}</label>
+      ${_rsPlanFeeHtml(b,admin)}
     </div>
+    <p class="rs-lvl-note" id="rs-pl-lvlnote">${_rsLevelNote((r.services||[]).map(s=>s.key),r.priority,admin?lv=>`_rsPlanSet('${b.id}','priority',null,'${lv}')`:null)}</p>
     <h4 class="rs-pl-h">Services and allowances</h4>
     <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Monthly allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
     ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
@@ -7445,6 +7598,7 @@ function retainerEnd(boardId){
   const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
   closeGenericModal();
   openConfirm('End this retainer?',`${b.name}'s retained board moves to Archive & Bin and the Retained Services tab leaves their portal. Its jobs and history stay, and an admin can restore it.`,'End retainer',()=>{
+    b.retainer.endMonth=_rsYm();
     b.archived=true;b.updatedAt=new Date().toISOString();saveDB(DB);closeConfirm();
     if(currentWorkboard&&currentWorkboard.id===boardId){exitWorkboard();return;}
     renderSidebarWorkboards();
@@ -7466,7 +7620,11 @@ function _rsPlanSet(boardId,field,key,val){
     if(field==='allowance'&&s)s.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner'&&s)s.ownerId=val||null;
     else if(field==='lead')r.leadId=val||null;
-    else if(field==='priority'&&['Standard','High','Highest'].includes(val))r.priority=val;
+    else if(field==='priority'&&_rsLevel(val))r.priority=val;
+    else if(field==='fee'){
+      const from=r.startMonth&&r.startMonth>ym?r.startMonth:ym;
+      r.fees=(r.fees||[]).filter(f=>f.from!==from).concat({from,amount:_rsFeeParse(val)||0,at:new Date().toISOString(),by:currentUser.id});
+    }
     else if(field==='removeService'){
       const gone=(r.services||[]).find(x=>x.key===key);if(!gone)return;
       r.services=r.services.filter(x=>x.key!==key);
@@ -7488,6 +7646,206 @@ function _rsPlanSet(boardId,field,key,val){
   openRetainerPlan(boardId);
   if(currentView==='workspace')renderView('workspace');
   if(field==='note')showToast('Note saved.','success');
+}
+
+// ── Retained Services dashboard (Etcher side): the queue by service level, allowances near their limit, each client ──
+// Business days are Monday to Friday (public holidays are not skipped, by choice). A clock that starts on a weekend
+// starts on the Monday; n business days later is the nth working day after the start day; 0 is the start day itself.
+function _bdIsWork(d){const w=d.getDay();return w>0&&w<6;}
+function _bdDue(startIso,n){
+  if(n==null||!startIso)return null;
+  const d=new Date(toDateStr(new Date(startIso))+'T12:00:00');
+  while(!_bdIsWork(d))d.setDate(d.getDate()+1);
+  for(let k=n;k>0;){d.setDate(d.getDate()+1);if(_bdIsWork(d))k--;}
+  return toDateStr(d);
+}
+// The reply clock stops at the first reply or action: a status change, a note to the client, or Add to Workboard.
+// A request answered before that time was recorded counts as replied, time unknown.
+function _wrReplied(r){return !!(r.respondedAt||r.status!=='pending'||r.adminNote||r.linkedItemId);}
+// Delivered: done, or sent to the client for approval. Either stops the delivery clock and leaves the queue.
+function _rqTaskDelivered(t){return !!t&&(_rsDone(t)||(!!t.awaitingClient&&_cpIsApprovalAsk(t)));}
+const _RQ_REQ_STATUS={pending:{label:'New',bg:'#f1f5f9',color:'#475569'},reviewing:{label:'Reviewing',bg:'#dbeafe',color:'#1d4ed8'},scoped:{label:'In Scope',bg:'#dcfce7',color:'#15803d'}};
+function _rdBoards(){return(DB.workboards||[]).filter(b=>!b.archived&&_isRetainedBoard(b)&&canViewBoard(currentUser,b));}
+// Every open request from a retained client and every open job on a retained board, with its clocks worked out.
+// A job added from a request is one row: the request's clocks, the job's owner and status.
+function _rqQueue(){
+  const today=toDateStr(new Date()),rows=[],boards=_rdBoards(),byClient=new Map(boards.map(b=>[b.clientId,b])),taken=new Set();
+  const lvOf=b=>_rsLevel(b.retainer.priority)||_rsLevel('Standard');
+  (DB.clientWorkRequests||[]).forEach(r=>{
+    const b=byClient.get(r.clientId);if(!b||r.status==='declined')return;
+    let task=null;
+    if(r.linkedItemType==='task'&&r.linkedItemId){task=(DB.tasks||[]).find(x=>x.id===r.linkedItemId)||null;if(!task||task.archived)return;taken.add(task.id);if(_rqTaskDelivered(task))return;}
+    if(r.linkedItemType==='group'&&r.linkedItemId){
+      if(!(DB.groups||[]).some(g=>g.id===r.linkedItemId))return;
+      const ts=(DB.tasks||[]).filter(x=>x.groupId===r.linkedItemId&&!x.parentTaskId&&!x.archived);
+      ts.forEach(x=>taken.add(x.id));
+      if(ts.length&&ts.every(_rqTaskDelivered))return;
+    }
+    const lv=lvOf(b);
+    const ownerId=task?(task.ownerId||null):(_wrPrefill(r,(DB.boards||[]).filter(x=>!x.archived&&x.clientId===r.clientId)).ownerId||b.retainer.leadId||null);
+    rows.push({kind:'request',id:r.id,board:b,lv,title:r.title||'Request',sub:_wrServiceLabel(r),received:r.submittedAt||null,neededBy:r.neededBy||null,task,ownerId,
+      reply:{due:_bdDue(r.submittedAt,lv.resp),done:_wrReplied(r),at:r.respondedAt||null},deliver:{due:_bdDue(r.submittedAt,lv.del),done:false},
+      status:task?getStatusMeta(task.status):(_RQ_REQ_STATUS[r.status]||_RQ_REQ_STATUS.pending)});
+  });
+  (DB.tasks||[]).forEach(t=>{
+    if(t.archived||t.parentTaskId||taken.has(t.id))return;
+    const b=boards.find(x=>x.id===(t.boardId||t.workboardId));if(!b||_rqTaskDelivered(t)||!canViewTask(currentUser,t))return;
+    const g=(DB.groups||[]).find(x=>x.id===t.groupId);
+    rows.push({kind:'task',id:t.id,board:b,lv:lvOf(b),title:t.name||t.title||'Task',sub:g?g.name:'',received:t.createdAt||null,neededBy:null,task:t,ownerId:t.ownerId||null,
+      reply:null,deliver:{due:t.endDate||null,done:false},status:getStatusMeta(t.status)});
+  });
+  const st=c=>!c||!c.due?null:c.done?(c.at&&toDateStr(new Date(c.at))>c.due?'metlate':'met'):(today>c.due?'late':today===c.due?'today':'open');
+  rows.forEach(x=>{
+    x.replyState=st(x.reply);x.deliverState=st(x.deliver);
+    x.late=x.replyState==='late'||x.deliverState==='late';
+    x.next=[x.reply&&!x.reply.done?x.reply.due:null,x.deliver&&!x.deliver.done?x.deliver.due:null].filter(Boolean).sort()[0]||null;
+    // A request with no clock left (Highest's priority queue, or High once replied) is due now: it sorts by when it came in.
+    x.key=x.next||(x.kind==='request'&&x.received?toDateStr(new Date(x.received)):null);
+  });
+  return rows;
+}
+// By level: the client's service level first (Highest on top), then the nearest due date, then the oldest.
+// By due date: the nearest due date first, then the level.
+function _rqSort(rows,order){
+  const byDue=(a,b)=>(a.key?0:1)-(b.key?0:1)||String(a.key||'').localeCompare(String(b.key||''))||(a.kind===b.kind?0:a.kind==='request'?-1:1)||String(a.received||'').localeCompare(String(b.received||''));
+  return rows.slice().sort(order==='due'?(a,b)=>byDue(a,b)||b.lv.rank-a.lv.rank:(a,b)=>b.lv.rank-a.lv.rank||byDue(a,b));
+}
+function _rqLateCount(){try{return _rqQueue().filter(r=>r.late).length;}catch(e){return 0;}}
+// This month's use of each service, for the meters and the near-limit warnings (80% and over).
+function _rdUsage(boards,ym){
+  const out=[];
+  boards.forEach(b=>(b.retainer.services||[]).forEach(s=>{
+    const used=_retainerUsed(b.id,s.groupId,ym),cat=_rsCat(s.key)||{name:s.key,short:s.key,color:'#8da2b2'};
+    out.push({board:b,s,cat,used,allowance:s.allowance,ratio:s.allowance?used/s.allowance:0});
+  }));
+  return out;
+}
+
+// Filters are per viewer and stay on this device.
+let _rdQ=(()=>{const d={client:'',level:'',owner:'',show:'soon',order:'level'};try{return Object.assign(d,JSON.parse(localStorage.getItem('rd-queue')||'{}'));}catch(e){return d;}})();
+function _rdSetQ(k,v){_rdQ[k]=v;try{localStorage.setItem('rd-queue',JSON.stringify(_rdQ));}catch(e){}renderView('retained');}
+// "soon": every open request, plus other work that is late or due within the next seven days.
+function _rdFilter(rows){
+  const q=_rdQ,d=new Date();d.setDate(d.getDate()+7);const soon=toDateStr(d);
+  return rows.filter(r=>(q.show!=='soon'||r.kind==='request'||r.late||(r.next&&r.next<=soon))&&(!q.client||r.board.clientId===q.client)&&(!q.level||r.lv.key===q.level)
+    &&(!q.owner||(q.owner==='me'?r.ownerId===currentUser.id:r.ownerId===q.owner))
+    &&(q.show!=='requests'||r.kind==='request')&&(q.show!=='late'||r.late));
+}
+const _RD_SVG={
+  late:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.2 11.4 10.8H.6z" fill="currentColor"/></svg>',
+  soon:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8 11.2 6 6 11.2.8 6z" fill="currentColor"/></svg>',
+  ok:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.2" fill="currentColor"/></svg>',
+};
+// The level as bars, one to five, with its name: shape and words together.
+function _rdLevelHtml(lv){
+  const bars=[0,1,2,3,4].map(i=>`<rect x="${i*4}" y="${10-i*2.2}" width="2.6" height="${2+i*2.2}" rx=".6"${i<lv.rank?' class="on"':''}/>`).join('');
+  return`<span class="rq-lv" title="${escHtml(lv.key)}: ${escHtml(_rsLevelLine(lv.key))}"><svg viewBox="0 0 19 12" aria-hidden="true">${bars}</svg><span>${escHtml(lv.key)}</span></span>`;
+}
+function _rdShort(d){return new Date(d+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});}
+// One clock: met (muted), late (red triangle), due today (amber diamond), or the date it is due.
+function _rdClockHtml(c,state,none,metWord){
+  if(!c)return'';
+  if(!c.due)return c.done?`<span class="rq-met">${metWord}</span>`:`<span class="rq-na">${none}</span>`;
+  if(c.done)return`<span class="rq-met${state==='metlate'?' late':''}">${state==='metlate'?metWord+' late':metWord}${c.at?' '+_rdShort(toDateStr(new Date(c.at))).replace(/^\w+,? /,''):''}</span>`;
+  if(state==='late')return`<span class="rq-d late">${_RD_SVG.late}Late, ${_rdShort(c.due)}</span>`;
+  if(state==='today')return`<span class="rq-d today">${_RD_SVG.soon}Today</span>`;
+  return`<span class="rq-d">${_rdShort(c.due)}</span>`;
+}
+function _rdOpen(kind,id){
+  if(kind==='task'){openTaskPanel(id);return;}
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===id);if(!r)return;
+  if(r.linkedItemType==='task'&&r.linkedItemId&&(DB.tasks||[]).some(t=>t.id===r.linkedItemId)){openTaskPanel(r.linkedItemId);return;}
+  _rdOpenRequest(id);
+}
+// A request not yet on a board opens here, with the same card Client Manager shows (status, note to client, Add to Workboard).
+let _rdReqOpen=null;
+function _rdOpenRequest(id){
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===id);if(!r)return;
+  _rdReqOpen=id;
+  openGenericModal('Work request',`<div class="rd-req">${renderWorkRequestCard(r)}</div>`,'760px');
+}
+// After a request changes, redraw where it was changed from: Client Manager, or the queue and its open request.
+function _wrRedraw(id){
+  if(currentView==='retained'){
+    renderView('retained');
+    const m=document.getElementById('generic-modal');
+    if(id&&_rdReqOpen===id&&m&&!m.classList.contains('hidden'))_rdOpenRequest(id);
+    return;
+  }
+  renderView('clients');
+}
+function renderRetainedDash(){
+  try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
+  const ym=_rsYm(),boards=_rdBoards(),admin=currentUser.role==='admin',bill=_canBill(currentUser);
+  const cName=id=>((DB.clients||[]).find(c=>c.id===id)||{}).name||'Client';
+  const cColor=id=>_safeCss(((DB.clients||[]).find(c=>c.id===id)||{}).color,'#8da2b2');
+  const newBtn=admin?'<button class="btn btn-primary btn-sm" id="rd-new" onclick="openRetainerSetup()">+ New retained board</button>':'';
+  if(!boards.length)return`<div class="rd"><div class="rd-sheet rd-empty"><h2 class="rd-h">No retained clients yet</h2><p>A retained client gets one board under Retained Services, a group per service, and the monthly tasks you keep. Their requests, allowances and registers then come together here.</p>${newBtn}</div></div>`;
+  const all=_rqQueue(),rows=_rqSort(_rdFilter(all),_rdQ.order),usage=_rdUsage(boards,ym),month=_rsMonthName(ym);
+  const lateR=all.filter(r=>r.replyState==='late').length,lateD=all.filter(r=>r.deliverState==='late').length,lateN=all.filter(r=>r.late).length;
+  // Needs attention: late clocks, then allowances at 80% or more.
+  const att=[];
+  if(lateN){
+    const parts=[lateR?`${lateR} past the reply time`:'',lateD?`${lateD} past the delivery date`:''].filter(Boolean);
+    att.push({tone:'bad',id:'rd-att-late',text:`${lateN} item${lateN===1?' is':'s are'} late: ${parts.join(', ')}.`,act:"_rdSetQ('show','late')",btn:'Show late'});
+  }
+  usage.filter(u=>u.allowance&&u.ratio>=0.8).sort((a,b)=>b.ratio-a.ratio).forEach(u=>{
+    const over=u.used>u.allowance,at=u.used===u.allowance;
+    att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key,
+      text:`${escHtml(cName(u.board.clientId))}, ${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}${over?', over the allowance':at?', the allowance is used up':''}.`,
+      act:`openRetainerPlan('${u.board.id}')`,btn:'Plan'});
+  });
+  if(typeof _regAttention==='function')_regAttention(boards).forEach(a=>att.push(a));
+  const attHtml=att.length?`<section class="rd-sheet rd-att" aria-labelledby="rd-att-h"><h2 class="rd-h" id="rd-att-h">Needs attention</h2><ul>${att.map(a=>`<li class="${a.tone}"${a.id?` id="${a.id}"`:''}>${a.tone==='bad'?_RD_SVG.late:_RD_SVG.soon}<span>${a.text}</span><button class="btn btn-ghost btn-sm" onclick="${a.act}">${a.btn}</button></li>`).join('')}</ul></section>`:'';
+  // Queue
+  const owners=[...new Set(all.map(r=>r.ownerId).filter(Boolean))].map(id=>getStaff(id)).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
+  const sel=(k,label,opts)=>`<label class="rd-f"><span>${label}</span><select class="form-input" data-rd-q="${k}" onchange="_rdSetQ('${k}',this.value)">${opts.map(([v,l])=>`<option value="${escHtml(v)}"${_rdQ[k]===v?' selected':''}>${escHtml(l)}</option>`).join('')}</select></label>`;
+  const filters=sel('client','Client',[['','All clients']].concat(boards.map(b=>[b.clientId,cName(b.clientId)])))
+    +sel('level','Level',[['','All levels']].concat(RETAINER_LEVELS.slice().reverse().map(l=>[l.key,l.key])))
+    +sel('owner','Owner',[['','Anyone'],['me','Me']].concat(owners.filter(u=>u.id!==currentUser.id).map(u=>[u.id,u.name])))
+    +sel('show','Show',[['soon','Requests and work due soon'],['requests','Requests only'],['all','All open work'],['late','Late only']])
+    +sel('order','Order',[['level','By level'],['due','By due date']]);
+  const qRow=r=>{
+    const own=r.ownerId?getStaff(r.ownerId):null,lvNone=r.lv.resp==null;
+    const sub=[escHtml(r.sub||''),r.kind==='request'?`Request, received ${escHtml(_rdShort(toDateStr(new Date(r.received))))}`:'Task',r.neededBy?`Client needs it by ${escHtml(_rdShort(r.neededBy))}`:''].filter(Boolean).join('. ');
+    return`<tr class="${r.late?'late':''}" data-rq="${r.kind}:${r.id}">
+      <td class="rq-c-lv">${_rdLevelHtml(r.lv)}</td>
+      <td class="rq-c-cl"><span class="rq-cl"><i style="background:${cColor(r.board.clientId)}"></i>${escHtml(cName(r.board.clientId))}</span></td>
+      <td class="rq-c-w"><button type="button" class="rq-w" onclick="_rdOpen('${r.kind}','${r.id}')"><b>${escHtml(r.title)}</b><small>${sub}</small></button></td>
+      <td class="rq-c-own" data-l="Owner">${own?escHtml(own.name):'<span class="rq-na">Unassigned</span>'}</td>
+      <td class="rq-c-due" data-l="Reply by">${_rdClockHtml(r.reply,r.replyState,lvNone?'Priority queue':'No clock','Replied')}</td>
+      <td class="rq-c-due" data-l="Deliver by">${_rdClockHtml(r.deliver,r.deliverState,r.kind==='task'?'No due date':lvNone?'Surge support':'Accelerated','Delivered')}</td>
+      <td class="rq-c-st"><span class="rq-st" style="background:${_safeCss(r.status.bg,'#f1f5f9')};color:${_safeCss(r.status.color,'#475569')}">${escHtml(r.status.label||'')}</span></td>
+    </tr>`;
+  };
+  const qBody=rows.length?rows.map(qRow).join(''):`<tr class="rq-none"><td colspan="7">${all.length?'Nothing matches these filters.':'Nothing open. New requests from retained clients land here with their reply and delivery dates.'}</td></tr>`;
+  const queue=`<section class="rd-sheet" aria-labelledby="rd-q-h">
+    <div class="rd-sheet-head"><h2 class="rd-h" id="rd-q-h">Queue <span class="rd-n">${rows.length}${rows.length!==all.length?' of '+all.length:''}</span></h2><div class="rd-filters">${filters}</div></div>
+    <div class="rq-wrap"><table class="rq-t" id="rd-queue"><thead><tr><th>Level</th><th>Client</th><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
+    <p class="rd-hint">Ordered by the client's service level, then the nearest date. Reply and delivery dates count business days, Monday to Friday, from the day the request came in. The reply clock stops at the first reply or action; delivery stops when the work is done or sent for approval.</p>
+  </section>`;
+  // Clients
+  const regCol=typeof _regClientSummary==='function'&&boards.some(b=>_regClientSummary(b.clientId));
+  const cRow=b=>{
+    const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null,fee=_rsFeeFor(r,ym);
+    const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const pct=Math.min(100,Math.round(u.ratio*100)),cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
+      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}"><span>${escHtml(u.cat.short)}</span><i><em style="width:${pct}%;background:${u.cat.color}"></em></i><b>${u.used}/${u.allowance}</b></span>`;}).join('');
+    const reg=regCol?_regClientSummary(b.clientId):'';
+    return`<tr data-rd-client="${b.clientId}">
+      <td class="rd-c-name"><span class="rq-cl"><i style="background:${cColor(b.clientId)}"></i><b>${escHtml(cName(b.clientId))}</b></span><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
+      <td class="rd-c-lv">${_rdLevelHtml(lv)}</td>
+      <td class="rd-c-m"><div class="rd-ms">${meters||'<span class="rq-na">No services</span>'}</div></td>
+      ${bill?`<td class="rd-c-fee">${fee!=null?_rsMoney(fee):'<span class="rq-na">Not set</span>'}</td>`:''}
+      ${regCol?`<td class="rd-c-reg">${reg||'<span class="rq-na">None yet</span>'}</td>`:''}
+      <td class="rd-c-act"><button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" onclick="openWorkboard('${b.id}')">Board</button>${typeof openMonthReport==='function'?`<button class="btn btn-ghost btn-sm" data-rd-report="${b.id}" onclick="openMonthReport('${b.id}')">Month report</button>`:''}${typeof openRegisters==='function'?`<button class="btn btn-ghost btn-sm" data-rd-reg="${b.clientId}" onclick="openRegisters('${b.clientId}')">Registers</button>`:''}</td>
+    </tr>`;
+  };
+  const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
+    <div class="rd-sheet-head"><h2 class="rd-h" id="rd-c-h">Clients <span class="rd-n">${boards.length}</span></h2></div>
+    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Level</th><th>${month} allowances</th>${bill?'<th>Monthly fee</th>':''}${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
+  </section>`;
+  const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
+  return`<div class="rd"><div class="rd-top">${sum}${newBtn}</div>${attHtml}${queue}${clients}</div>`;
 }
 
 // ── Retained Services in the portal and in requests (plan R2, R3, R6, R7, R11) ──
@@ -11297,6 +11655,7 @@ function deleteWorkRequest(id){
     (DB.deletedWorkRequestIds=DB.deletedWorkRequestIds||[]).push(id);
     writeAuditEvent('ClientWorkRequest',id,'deleted',{title:r.title,clientId:r.clientId},null);
     _flushDB();
+    if(_rdReqOpen===id){_rdReqOpen=null;closeGenericModal();}
     closeConfirm();updateClientReqBadge();renderView(currentView);
   },true);
 }
@@ -11309,6 +11668,8 @@ function wrUpdateStatus(requestId, status, note){
   const prevNote=r.adminNote||'';
   if(status!==null)r.status=status;
   if(note!==null)r.adminNote=note.trim()||null;
+  // The Retained Services queue's reply clock stops at the first reply or action.
+  if(!r.respondedAt&&((status!==null&&status!==prevStatus)||(note!==null&&r.adminNote&&r.adminNote!==prevNote))){r.respondedAt=new Date().toISOString();r.respondedBy=currentUser.id;}
   r.updatedAt=new Date().toISOString();   // stamped so the change wins the merge (audit H2, 2026-10-17)
   // Client logins never live in DB.users — see _clientRecipientId.
   const _rcp=_clientRecipientId(r.clientId);
@@ -11333,7 +11694,7 @@ function wrUpdateStatus(requestId, status, note){
     DB.notifications.push({id:'n'+uid(),recipientId:_clientUser.id,taskId:null,type:'work_request',read:false,message:`Etcher left a note on your request "${r.title}"`,createdAt:new Date().toISOString()});
   }
   saveDB(DB);updateClientReqBadge();
-  renderView('clients');
+  _wrRedraw(r.id);
 }
 
 function wrOpenAddModal(requestId){
@@ -11450,11 +11811,12 @@ function wrDoAddToWorkboard(requestId){
 
   r.status='scoped';
   r.updatedAt=now;   // or a colleague's save puts it back to pending and it can be scoped a second time (audit H2)
+  if(!r.respondedAt){r.respondedAt=now;r.respondedBy=currentUser.id;}
   if((r.serviceRef||'adhoc')==='adhoc'&&client&&!_isRetainedBoard((DB.boards||[]).find(b=>b.id===boardId)))client.adhocBoardId=boardId;
   saveDB(DB);
   closeGenericModal();
   renderSidebarWorkboards();
-  renderView('clients');
+  _wrRedraw(r.id);
 }
 
 function _wrCreateTask(r,client,boardId,groupId,name,ownerId,now){
@@ -13896,7 +14258,41 @@ function pfiCalcTotals(inv){
     const billed=l.billable?l.hours:0;
     return s+(source-billed);
   },0);
-  return{totalHrs,writeOff};
+  const feeTotal=(inv.feeLines||[]).filter(f=>f.billable).reduce((s,f)=>s+(Number(f.amount)||0),0);
+  return{totalHrs,writeOff,feeTotal};
+}
+// Fixed-fee months this invoice can bill: each month of its period in which the client's retainer was on and had a
+// fee (plan R7: the fee covers the retained hours). A month already on this invoice is left out.
+function _pfiFeeCandidates(inv){
+  const out=[];if(!inv||!inv.clientId||!inv.dateFrom||!inv.dateTo||inv.dateFrom>inv.dateTo)return out;
+  const have=new Set((inv.feeLines||[]).map(f=>f.boardId+'|'+f.month));
+  (DB.workboards||[]).filter(b=>b.clientId===inv.clientId&&b.retainer).forEach(b=>{
+    const r=b.retainer,end=b.archived?(r.endMonth||_rsYm(new Date(b.updatedAt||Date.now()))):null;
+    for(let ym=inv.dateFrom.slice(0,7),n=0;ym<=inv.dateTo.slice(0,7)&&n<120;ym=_rsNextYm(ym),n++){
+      if((r.startMonth&&ym<r.startMonth)||(end&&ym>end)||have.has(b.id+'|'+ym))continue;
+      const amount=_rsFeeFor(r,ym);if(!amount)continue;
+      out.push({boardId:b.id,month:ym,amount,label:'Retained Services fixed monthly fee, '+_rsMonthYear(ym)});
+    }
+  });
+  return out;
+}
+// Every fee month already on ANY invoice (except excludeInvoiceId): "boardId|YYYY-MM" to the invoice.
+function pfiInvoicedFeeMap(excludeInvoiceId){
+  const m=new Map();
+  (DB.proFormaInvoices||[]).forEach(inv=>{if(inv.id!==excludeInvoiceId)(inv.feeLines||[]).forEach(f=>m.set(f.boardId+'|'+f.month,{invoiceId:inv.id,number:inv.number}));});
+  return m;
+}
+// A fee line edited here is a billing decision for this invoice only: it never writes back to the retainer.
+function pfiSaveFeeLine(invId,flId,field,val){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const inv=(DB.proFormaInvoices||[]).find(i=>i.id===invId),f=inv&&(inv.feeLines||[]).find(x=>x.id===flId);if(!f)return;
+  if(field==='remove')inv.feeLines=inv.feeLines.filter(x=>x.id!==flId);
+  else if(field==='billable')f.billable=!!val;
+  else if(field==='amount'){f.amount=Math.round(Math.max(0,Math.min(1e7,parseFloat(val)||0))*100)/100;f.edited=true;}
+  else return;
+  inv.updatedAt=new Date().toISOString();
+  (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:field==='remove'?'fee_line_removed':field==='billable'?'fee_line_billable':'fee_line_edited',flId,actorId:currentUser.id,at:inv.updatedAt});
+  saveDB(DB);_pfiRerenderPreserveScroll();
 }
 // Every time entry already claimed by a line item on ANY invoice (except excludeInvoiceId).
 // → Map<timeEntryId, {invoiceId, number, status}>. Used to flag double-billing.
@@ -14025,28 +14421,35 @@ function pfiImportEntries(id){
     const t=e.taskId&&DB.tasks.find(x=>x.id===e.taskId);
     return t?(getTaskClient(t)?.id||null):null;
   };
-  const approvedForClient=(DB.timeEntries||[]).filter(e=>
+  const approvedAll=(DB.timeEntries||[]).filter(e=>
     !e.deletedAt&&e.status==='approved'&&entryClientId(e)===inv.clientId);
+  // Hours on a retained board are covered by its fixed monthly fee (plan R7), so they are never imported here.
+  const approvedForClient=approvedAll.filter(e=>!_rsEntryRetained(e,e.taskId?DB.tasks.find(t=>t.id===e.taskId):null));
+  const inPeriod=e=>e.date>=inv.dateFrom&&e.date<=inv.dateTo;
+  const retainedN=approvedAll.filter(e=>inPeriod(e)&&!approvedForClient.includes(e)).length;
+  const fees=_pfiFeeCandidates(inv);
   const candidates=approvedForClient.filter(e=>{
     if(existing.has(e.id))return false;
     if(e.date<inv.dateFrom||e.date>inv.dateTo)return false;
     return true;
   }).sort((a,b)=>a.date.localeCompare(b.date)||(getStaff(a.staffId)?.name||'').localeCompare(getStaff(b.staffId)?.name||''));
-  if(!candidates.length){
+  if(!candidates.length&&!fees.length){
     // Say why nothing matched, so the fix is obvious.
     const outside=approvedForClient.filter(e=>!existing.has(e.id)&&(e.date<inv.dateFrom||e.date>inv.dateTo)).length;
     const alreadyOn=approvedForClient.filter(e=>existing.has(e.id)).length;
     let msg;
-    if(!approvedForClient.length)msg='No approved time entries exist for this client. Approve the timesheet entries in Timesheets first.';
+    if(retainedN&&!approvedForClient.some(inPeriod))msg=`The ${retainedN} approved ${retainedN===1?'entry':'entries'} in this period ${retainedN===1?'is':'are'} on the client's retained board, covered by the fixed monthly fee, so ${retainedN===1?'it is':'they are'} not imported here. ${(inv.feeLines||[]).length?'The fee for this period is already on this invoice.':'No fee is set for these months: type it in the board\'s Retainer plan.'}`;
+    else if(!approvedForClient.length)msg='No approved time entries exist for this client. Approve the timesheet entries in Timesheets first.';
     else if(outside)msg=`This client has ${approvedForClient.length} approved ${approvedForClient.length===1?'entry':'entries'}, but ${outside===approvedForClient.length?'all are':`${outside} fall`} outside ${formatDate(inv.dateFrom)} – ${formatDate(inv.dateTo)}. Widen the invoice date range.`;
     else if(alreadyOn===approvedForClient.length)msg='Every approved entry for this client and date range is already on this invoice.';
     else msg='No approved time entries found for this client and date range.';
     showAlert(msg);return;
   }
-  _pfiOpenImportModal(id,candidates);
+  _pfiOpenImportModal(id,candidates,fees,retainedN);
 }
-function _pfiOpenImportModal(invId,candidates){
-  const invoicedMap=pfiInvoicedEntryMap(invId);
+function _pfiOpenImportModal(invId,candidates,fees,retainedN){
+  const invoicedMap=pfiInvoicedEntryMap(invId),feeMap=pfiInvoicedFeeMap(invId);
+  fees=fees||[];
   const rows=candidates.map(e=>{
     const staff=getStaff(e.staffId);
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
@@ -14060,13 +14463,17 @@ function _pfiOpenImportModal(invId,candidates){
       <td style="padding:6px 8px 6px 4px;font-size:10px">${invoiced?`<span title="Already on ${escHtml(invoiced.number)}" style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap">⚠ ${escHtml(invoiced.number)}</span>`:''}</td>
     </tr>`;
   }).join('');
-  document.getElementById('generic-modal-title').textContent='Import Time Entries';
-  document.getElementById('generic-modal-body').innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+  const feeRows=fees.map(f=>{const on=feeMap.get(f.boardId+'|'+f.month);
+    return`<tr style="${on?'background:#fffbeb':''}"><td style="padding:6px 8px;text-align:center"><input type="checkbox" class="pfi-import-fee" value="${escHtml(f.boardId+'|'+f.month)}" ${on?'':'checked'} aria-label="Import ${escHtml(f.label)}" style="accent-color:#0d1c33"/></td><td style="padding:6px 8px;font-size:12px">${escHtml(f.label)}</td><td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:700;white-space:nowrap">${_rsMoney(f.amount)}</td><td style="padding:6px 8px 6px 4px;font-size:10px">${on?`<span style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap">On ${escHtml(on.number)}</span>`:''}</td></tr>`;}).join('');
+  const feeBlock=fees.length?`<div id="pfi-import-fees" style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em;margin:0 2px 6px">Fixed fees</div><div style="border:1.5px solid #e2eaf2;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><tbody>${feeRows}</tbody></table></div></div>`:'';
+  const retNote=retainedN?`<p id="pfi-import-retnote" style="font-size:11px;color:#8da2b2;margin:0 2px 10px">${retainedN} approved ${retainedN===1?'entry':'entries'} in this period ${retainedN===1?'is':'are'} on the retained board, covered by the fixed fee, so ${retainedN===1?'it is':'they are'} not listed.</p>`:'';
+  document.getElementById('generic-modal-title').textContent=fees.length?'Import Time and Fees':'Import Time Entries';
+  document.getElementById('generic-modal-body').innerHTML=feeBlock+retNote+(candidates.length?'':'<p style="font-size:12px;color:#6b8399;margin:0 2px 4px">No hourly time entries to import for this period.</p>')+`
+    <div style="display:${candidates.length?'flex':'none'};align-items:center;gap:10px;margin-bottom:10px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#4a5568"><input type="checkbox" id="pfi-import-all" checked onchange="document.querySelectorAll('.pfi-import-cb').forEach(cb=>cb.checked=this.checked);_pfiImportUpdateCount()" style="accent-color:#0d1c33"/> Select all</label>
       <span id="pfi-import-count" style="margin-left:auto;font-size:12px;font-weight:700;color:#0d1c33"></span>
     </div>
-    <div style="max-height:360px;overflow-y:auto;border:1.5px solid #e2eaf2;border-radius:8px">
+    <div style="max-height:360px;overflow-y:auto;border:1.5px solid #e2eaf2;border-radius:8px;display:${candidates.length?'block':'none'}">
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#f8fbff">
           <th style="padding:6px 8px"></th>
@@ -14079,7 +14486,7 @@ function _pfiOpenImportModal(invId,candidates){
         <tbody>${rows}</tbody>
       </table>
     </div>
-    <p style="font-size:11px;color:#8da2b2;margin:8px 2px 0">Rows marked ⚠ are already on another invoice — left unchecked by default. Tick them only if you mean to bill the same hours again.</p>
+    <p style="font-size:11px;color:#8da2b2;margin:8px 2px 0;display:${candidates.length?'block':'none'}">Rows marked ⚠ are already on another invoice — left unchecked by default. Tick them only if you mean to bill the same hours again.</p>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
       <button onclick="closeGenericModal()" class="btn btn-ghost">Cancel</button>
       <button onclick="pfiConfirmImport('${invId}')" class="btn btn-teal">Import Selected</button>
@@ -14099,7 +14506,11 @@ function _pfiImportUpdateCount(){
 function pfiConfirmImport(invId){
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===invId);if(!inv)return;
   const selectedIds=new Set(Array.from(document.querySelectorAll('.pfi-import-cb:checked')).map(cb=>cb.value));
-  if(!selectedIds.size){showAlert('Select at least one entry to import.');return;}
+  const feeKeys=new Set(Array.from(document.querySelectorAll('.pfi-import-fee:checked')).map(cb=>cb.value));
+  if(!selectedIds.size&&!feeKeys.size){showAlert('Select at least one entry to import.');return;}
+  const feeIn=_pfiFeeCandidates(inv).filter(f=>feeKeys.has(f.boardId+'|'+f.month));
+  feeIn.forEach(f=>(inv.feeLines=inv.feeLines||[]).push({id:'fl'+uid(),kind:'retainer',boardId:f.boardId,month:f.month,label:f.label,amount:f.amount,sourceAmount:f.amount,billable:true}));
+  if(feeIn.length)(inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'fees_imported',actorId:currentUser.id,at:new Date().toISOString(),detail:{count:feeIn.length}});
   const toImport=(DB.timeEntries||[]).filter(e=>selectedIds.has(e.id));
   toImport.forEach(e=>{
     const task=e.taskId?DB.tasks.find(t=>t.id===e.taskId):null;
@@ -14124,7 +14535,7 @@ function pfiConfirmImport(invId){
     });
   });
   inv.updatedAt=new Date().toISOString();
-  (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'entries_imported',actorId:currentUser.id,at:new Date().toISOString(),detail:{count:toImport.length}});
+  if(toImport.length)(inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'entries_imported',actorId:currentUser.id,at:new Date().toISOString(),detail:{count:toImport.length}});
   saveDB(DB);
   closeGenericModal();
   renderView('reports');
@@ -14241,12 +14652,14 @@ function pfiValidate(inv){
   const issues=[];
   if(!inv.clientId)issues.push('Client not selected');
   if(!inv.dateFrom||!inv.dateTo)issues.push('Date range not set');
-  if(!(inv.lineItems||[]).filter(l=>l.billable).length)issues.push('No line items included');
+  if(!(inv.lineItems||[]).filter(l=>l.billable).length&&!(inv.feeLines||[]).filter(f=>f.billable).length)issues.push('No line items included');
   const{unapproved}=pfiDiffAgainstSource(inv);
   if(unapproved.length)issues.push(`${unapproved.length} line${unapproved.length!==1?'s':''} no longer approved on the source timesheet`);
   const invoicedMap=pfiInvoicedEntryMap(inv.id);
   const dupes=(inv.lineItems||[]).filter(l=>l.timeEntryId&&invoicedMap.has(l.timeEntryId));
   if(dupes.length)issues.push(`${dupes.length} line${dupes.length!==1?'s':''} already billed on another invoice`);
+  const feeMap=pfiInvoicedFeeMap(inv.id),feeDupes=(inv.feeLines||[]).filter(f=>f.billable&&feeMap.has(f.boardId+'|'+f.month));
+  if(feeDupes.length)issues.push(`${feeDupes.length} fixed fee${feeDupes.length!==1?'s':''} already on another invoice`);
   return issues;
 }
 
@@ -14281,6 +14694,12 @@ function pfiExportCSV(id){
   if(lastDate){const dbl=sorted.filter(l=>l.date===lastDate&&l.billable);rows.push(['','Daily Total','','','','','','','','',dbl.reduce((s,l)=>s+l.hours,0).toFixed(2),'','']);}
   rows.push(['','','','','','','','','','','','','']);
   rows.push(['','','','Total Hours','','','','','','',t.totalHrs.toFixed(2),'','']);
+  if((inv.feeLines||[]).length){
+    rows.push(['','','','','','','','','','','','','']);
+    rows.push(['Fixed Fee','Month','','','','','','','','','Amount','Included','']);
+    (inv.feeLines||[]).forEach(f=>rows.push([f.label||'Fixed fee',_rsMonthYear(f.month),'','','','','','','','',(Number(f.amount)||0).toFixed(2),f.billable?'Yes':'No','']));
+    rows.push(['','','','Total Fixed Fees','','','','','','',t.feeTotal.toFixed(2),'','']);
+  }
   const csv=rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
   const _csvUrl=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
   const a=document.createElement('a');a.href=_csvUrl;
@@ -14317,6 +14736,10 @@ ${inv.clientNotes?`<tr><td colspan="3" style="padding:4px 8px;font-weight:bold">
 ${dataRows}
 <tr><td colspan="13" style="height:8px"></td></tr>
 <tr><td colspan="9" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL HOURS</td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">${t.totalHrs.toFixed(2)}</td><td colspan="3" style="background:#0d1c33"></td></tr>
+${(inv.feeLines||[]).length?`<tr><td colspan="13" style="height:8px"></td></tr>
+<tr>${h('Fixed Fee')}${h('Month')}<th colspan="8" style="background:#0d1c33"></th>${h('Amount')}${h('Included')}<th style="background:#0d1c33"></th></tr>
+${(inv.feeLines||[]).map(f=>`<tr style="${f.billable?'':'background:#fef2f2;color:#9ca3af'}">${d(f.label||'Fixed fee',true)}${d(_rsMonthYear(f.month))}<td colspan="8"></td>${d((Number(f.amount)||0).toFixed(2),false,'right')}${d(f.billable?'Yes':'No')}<td></td></tr>`).join('')}
+<tr><td colspan="10" style="padding:6px 8px;font-weight:bold;font-size:13px;background:#0d1c33;color:#fff">TOTAL FIXED FEES</td><td style="text-align:right;font-weight:bold;font-size:13px;padding:6px 8px;background:#0d1c33;color:#fff">${t.feeTotal.toFixed(2)}</td><td colspan="2" style="background:#0d1c33"></td></tr>`:''}
 </table></body></html>`;
   const _xlsUrl=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8;'}));
   const a=document.createElement('a');a.href=_xlsUrl;
@@ -14346,8 +14769,8 @@ function pfiExportPDF(id){
       const t=pfiCalcTotals(inv);
       // The client's document shows only what is being charged. A non-billable line is
       // excluded work, not a zero-value line, so it is omitted rather than shown as a dash.
-      const billableLines=sorted.filter(li=>li.billable);
-      if(!billableLines.length){showAlert('This invoice has no billable lines to export.','Nothing to Export');return;}
+      const billableLines=sorted.filter(li=>li.billable),billableFees=(inv.feeLines||[]).filter(f=>f.billable);
+      if(!billableLines.length&&!billableFees.length){showAlert('This invoice has no billable lines to export.','Nothing to Export');return;}
       if(!window.jspdf)throw new Error('PDF library not loaded.');
       const{jsPDF}=window.jspdf;
       const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -14381,8 +14804,7 @@ function pfiExportPDF(id){
         const ln=doc.splitTextToSize(_pfiReadableWrap(inv.clientNotes),W-mX*2);doc.text(ln,mX,y);y+=ln.length*4+2;
       }
       doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);doc.line(mX,y+=2,W-mX,y);y+=7;
-      doc.autoTable({
-        startY:y,
+      const pdfTheme={
         styles:{fontSize:8.5,cellPadding:2.5,font:'helvetica',textColor:[30,30,30],overflow:'linebreak'},
         headStyles:{fillColor:DARK,textColor:[255,255,255],fontStyle:'bold',lineColor:BORDER,lineWidth:0.3},
         footStyles:{fillColor:[240,244,248],textColor:DARK,fontStyle:'bold'},
@@ -14390,16 +14812,31 @@ function pfiExportPDF(id){
         alternateRowStyles:{fillColor:[250,251,253]},
         margin:{left:mX,right:mX},tableLineColor:BORDER,tableLineWidth:0.3,
         showHead:'everyPage',showFoot:'lastPage',
-        head:[['Date','Day','Team Member','Activity','Project','Location','Hours','Notes']],
-        body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),_pfiReadableWrap(li.description||li.note||'')]),
-        foot:[['','','','','','Total Hours',t.totalHrs.toFixed(2),'']],
-        columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:26},6:{halign:'right',cellWidth:14},7:{cellWidth:'auto'}},
-      });
-      const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=16;
-      doc.setFillColor(248,251,255);doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);
-      doc.roundedRect(bX,tY,bW,bH,2,2,'FD');
-      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
-      doc.text('TOTAL HOURS',bX+4,tY+10);doc.text(t.totalHrs.toFixed(2),bX+bW-4,tY+10,{align:'right'});
+      };
+      if(billableLines.length){
+        doc.autoTable({
+          ...pdfTheme,startY:y,
+          head:[['Date','Day','Team Member','Activity','Project','Location','Hours','Notes']],
+          body:billableLines.map(li=>[pfiFmtDate(li.date),li.day?.slice(0,3)||pfiShortDay(li.date).slice(0,3),li.staffName,li.activity||'',li.boardName||'',pfiLocationLabel(pfiEffectiveLocation(li)),li.hours.toFixed(2),_pfiReadableWrap(li.description||li.note||'')]),
+          foot:[['','','','','','Total Hours',t.totalHrs.toFixed(2),'']],
+          columnStyles:{0:{cellWidth:22},1:{cellWidth:14},2:{cellWidth:34},3:{cellWidth:22},4:{cellWidth:22},5:{cellWidth:26},6:{halign:'right',cellWidth:14},7:{cellWidth:'auto'}},
+        });
+        const tY=doc.lastAutoTable.finalY+6,bW=68,bX=W-mX-bW,bH=16;
+        doc.setFillColor(248,251,255);doc.setDrawColor(...BORDER);doc.setLineWidth(0.3);
+        doc.roundedRect(bX,tY,bW,bH,2,2,'FD');
+        doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...TEAL);
+        doc.text('TOTAL HOURS',bX+4,tY+10);doc.text(t.totalHrs.toFixed(2),bX+bW-4,tY+10,{align:'right'});
+        y=tY+bH+6;
+      }
+      if(billableFees.length){
+        doc.autoTable({
+          ...pdfTheme,startY:y,
+          head:[['Fixed fee','Month','Amount']],
+          body:billableFees.map(f=>[f.label||'Fixed fee',_rsMonthYear(f.month),_rsMoney(f.amount)]),
+          foot:[['','Total fixed fees',_rsMoney(t.feeTotal)]],
+          columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:38},2:{halign:'right',cellWidth:34}},
+        });
+      }
       const tp=doc.internal.getNumberOfPages();
       for(let pg=1;pg<=tp;pg++){
         doc.setPage(pg);doc.setDrawColor(...BORDER);doc.setLineWidth(0.2);doc.line(mX,H-13,W-mX,H-13);
@@ -14482,6 +14919,7 @@ function _pfiEditorHtml(inv){
         <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Total Hours</div>
         <div style="font-family:'Jost',sans-serif;font-size:36px;font-weight:700;color:#178082;line-height:1">${t.totalHrs.toFixed(2)}<span style="font-size:16px;font-weight:500;color:#8da2b2;margin-left:3px">h</span></div>
         <div style="font-size:11px;color:#8da2b2;margin-top:3px">${(inv.lineItems||[]).filter(l=>l.billable).length} of ${(inv.lineItems||[]).length} entries included</div>
+        ${(inv.feeLines||[]).length?`<div id="pfi-fee-sum" style="font-size:12px;font-weight:700;color:#0d1c33;margin-top:4px">Plus ${_rsMoney(t.feeTotal)} in fixed fees</div>`:''}
       </div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:14px;padding-top:16px;border-top:1.5px solid #f4f6fa">
@@ -14616,6 +15054,17 @@ function _pfiEditorHtml(inv){
       <tbody>${lineRows}</tbody>
     </table></div></div>`;
 
+  const feeLines=inv.feeLines||[];
+  const feeTable=feeLines.length?`<div class="card" id="pfi-fees" style="padding:0;overflow:hidden;margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:560px">
+      <thead><tr><th style="${thS2}">Fixed fee</th><th style="${thS2}">Month</th><th style="${thS2};text-align:right">Amount</th><th style="${thS2};text-align:center">Incl.</th><th style="${thS2}"></th></tr></thead>
+      <tbody>${feeLines.map(f=>`<tr style="${f.billable?'':'background:#fef2f2;color:#9ca3af'}">
+        <td style="${tdS2}">${escHtml(f.label||'Fixed fee')}</td>
+        <td style="${tdS2};white-space:nowrap">${escHtml(_rsMonthYear(f.month))}</td>
+        <td style="${tdS2};text-align:right"><input type="number" min="0" step="0.01" value="${Number(f.amount)||0}" data-pfi-fee="${f.id}" aria-label="Amount for ${escHtml(f.label||'fixed fee')}" onchange="pfiSaveFeeLine('${inv.id}','${f.id}','amount',this.value)" style="width:110px;height:26px;text-align:right;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 8px;font-size:12px;font-weight:700;color:#0d1c33"/></td>
+        <td style="${tdS2};text-align:center"><input type="checkbox" ${f.billable?'checked':''} aria-label="Include this fee" onchange="pfiSaveFeeLine('${inv.id}','${f.id}','billable',this.checked)" style="accent-color:#0d1c33"/></td>
+        <td style="${tdS2}"><button onclick="pfiSaveFeeLine('${inv.id}','${f.id}','remove')" aria-label="Remove this fee" title="Remove" style="padding:0 7px;height:22px;border-radius:4px;font-size:10px;cursor:pointer;border:none;background:#fee2e2;color:#b91c1c">✕</button></td>
+      </tr>`).join('')}</tbody></table></div></div>`:'';
+  const feeRow=feeLines.length?`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #eef2f6"><span style="font-size:12px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33;letter-spacing:0.04em">FIXED FEES</span><span id="pfi-fee-total" style="font-size:18px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">${_rsMoney(t.feeTotal)}</span></div>`:'';
   // Internal-only figure — what was approved for payroll but is not being charged to this
   // client. Never render this on a client-facing export (PDF/Excel), only here in the editor.
   const writeOffRow=t.writeOff>0.004?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0"><span style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:0.04em">Not charged</span><span style="font-size:13px;font-weight:700;color:#b45309">${t.writeOff.toFixed(2)}h</span></div>`:'';
@@ -14624,6 +15073,7 @@ function _pfiEditorHtml(inv){
       <div style="min-width:220px">
         ${writeOffRow}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:2px solid #e4ecf4"><span style="font-size:15px;font-weight:700;font-family:'Jost',sans-serif;color:#0d1c33">TOTAL HOURS</span><span style="font-size:28px;font-weight:700;font-family:'Jost',sans-serif;color:#178082">${t.totalHrs.toFixed(2)}<span style="font-size:14px;font-weight:500;color:#8da2b2">h</span></span></div>
+        ${feeRow}
       </div>
     </div>
   </div>`;
@@ -14643,7 +15093,7 @@ function _pfiEditorHtml(inv){
 
   const auditRows=(inv.auditEvents||[]).slice().reverse().slice(0,15).map(a=>{
     const actor=getStaff(a.actorId);
-    const labels={created:'Invoice created',duplicated:'Duplicated from another invoice',field_changed:'Field updated: '+a.field,entries_imported:((a.detail?.count||0)+' time entries imported'),entries_synced:`Synced with source timesheet (${a.detail?.staleCount||0} updated, ${a.detail?.removedCount||0} removed)`,line_billable:'Line item billable toggled',line_removed:'Line item removed',line_added_manual:'Manual line item added',line_edited:'Line item edited: '+a.field,lines_bulk_billable:`${a.count||0} line item${a.count!==1?'s':''} set ${a.billable?'included':'excluded'}`,lines_bulk_removed:`${a.count||0} line item${a.count!==1?'s':''} removed`,status_changed:'Status changed: '+pfiStatusMeta(a.prev).label+' → '+pfiStatusMeta(a.next).label,pdf_exported:'PDF exported'};
+    const labels={created:'Invoice created',duplicated:'Duplicated from another invoice',field_changed:'Field updated: '+a.field,entries_imported:((a.detail?.count||0)+' time entries imported'),entries_synced:`Synced with source timesheet (${a.detail?.staleCount||0} updated, ${a.detail?.removedCount||0} removed)`,line_billable:'Line item billable toggled',line_removed:'Line item removed',line_added_manual:'Manual line item added',line_edited:'Line item edited: '+a.field,lines_bulk_billable:`${a.count||0} line item${a.count!==1?'s':''} set ${a.billable?'included':'excluded'}`,lines_bulk_removed:`${a.count||0} line item${a.count!==1?'s':''} removed`,status_changed:'Status changed: '+pfiStatusMeta(a.prev).label+' → '+pfiStatusMeta(a.next).label,pdf_exported:'PDF exported',fees_imported:((a.detail?.count||0)+' fixed fee'+((a.detail?.count||0)!==1?'s':'')+' imported'),fee_line_removed:'Fixed fee removed',fee_line_billable:'Fixed fee included or excluded',fee_line_edited:'Fixed fee amount edited'};
     return`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f4f6fa;font-size:11px">${avatarHtml(actor,16)}<div style="flex:1;color:#4a5568">${escHtml(labels[a.event]||a.event)}</div><div style="color:#b0bec5;white-space:nowrap">${actor?escHtml(actor.name.split(' ')[0]):'?'} · ${new Date(a.at||'').toLocaleDateString('en-AU')}</div></div>`;
   }).join('');
   const auditCard=`<div class="card" style="padding:16px 20px;margin-bottom:12px">
@@ -14651,7 +15101,7 @@ function _pfiEditorHtml(inv){
     ${auditRows||'<div style="color:#b0bec5;font-size:11px">No events recorded.</div>'}
   </div>`;
 
-  return header+notesCard+validationBar+syncBanner+importBar+bulkBar+lineTable+totalsCard+commentsCard+auditCard;
+  return header+notesCard+validationBar+syncBanner+importBar+bulkBar+lineTable+feeTable+totalsCard+commentsCard+auditCard;
 }
 
 function _rptInvoiceHtml(){
