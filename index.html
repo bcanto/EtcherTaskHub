@@ -8074,7 +8074,20 @@ function _mrData(b,ym){
   return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority||'',levelLine:_rsLevelLine(r.priority),
     bundle:(bn?bn+' bundle, ':'')+_retainerBundle(keys),lead:lead?lead.name:'',
     services:(r.services||[]).map(s=>({name:(_rsCat(s.key)||{name:s.key}).name,unit:s.unit,allowance:s.allowance,used:_retainerUsed(b.id,s.groupId,ym)})),
-    delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date())};
+    delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date()),regs:_mrRegs(b,ym)};
+}
+// What the registers say for the report: reviews and renewals finished that month, and where things stand today.
+// People are counted, never named.
+function _mrRegs(b,ym){
+  const today=_regToday(),docs=(DB.registerDocs||[]).filter(d=>d.clientId===b.clientId&&!d.archived),people=(DB.registerPeople||[]).filter(p=>p.clientId===b.clientId&&!p.archived);
+  if(!docs.length&&!people.length)return null;
+  const inM=t=>_rsDone(t)&&t.completedAt&&_rsYm(new Date(t.completedAt))===ym;
+  const reviewed=(DB.tasks||[]).filter(t=>!t.archived&&t.registerDocId&&inM(t)).map(t=>{const d=docs.find(x=>x.id===t.registerDocId);return d?{name:(d.code?d.code+' ':'')+(d.title||d.name),at:t.completedAt}:null;}).filter(Boolean);
+  const renewed=(DB.tasks||[]).filter(t=>!t.archived&&t.registerPersonId&&inM(t)&&people.some(p=>p.id===t.registerPersonId)).length;
+  let over=0,d30=0,exp=0,t30=0;
+  docs.forEach(d=>{const k=_regDocState(d,today).k;if(k==='over')over++;else if(k==='d30')d30++;});
+  people.forEach(p=>Object.values(p.quals||{}).forEach(q=>{const s=_regQualState(q,today);if(s&&s.k==='exp')exp++;else if(s&&s.k==='d30')t30++;}));
+  return{docs:docs.length,reviewed,over,d30,people:people.length,renewed,exp,t30};
 }
 function _mrSummaryHtml(d){
   const svc=d.services.map(s=>`<li><span>${escHtml(s.name)}</span><b>${s.used} of ${s.allowance}</b><small>${escHtml(s.unit)}</small></li>`).join('');
@@ -8172,6 +8185,16 @@ function _mrPdf(d,logo){
     body:d.requests.length?d.requests.map(x=>[x.title,date(x.at),x.state]):[['No requests this month.','','']],
     columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:28},2:{cellWidth:44}}});
   y=doc.lastAutoTable.finalY+9;
+  if(d.regs){
+    const g=d.regs,mn=_rsMonthName(d.month),lines=[];
+    y=head('Document control and training',y)+2;
+    if(g.docs)lines.push(`${g.reviewed.length} document review${g.reviewed.length===1?'':'s'} completed in ${mn}. Today ${g.over} of ${g.docs} document${g.docs===1?' is':'s are'} overdue for review and ${g.d30} ${g.d30===1?'is':'are'} due within 30 days.`);
+    if(g.people)lines.push(`${g.renewed} training renewal${g.renewed===1?'':'s'} completed in ${mn}. Today ${g.exp} training record${g.exp===1?' has':'s have'} expired and ${g.t30} expire${g.t30===1?'s':''} within 30 days, across ${g.people} ${g.people===1?'person':'people'}.`);
+    doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...INK);
+    lines.forEach(l=>{const ln=doc.splitTextToSize(l,W-M*2);if(y+ln.length*4.6>H-24){doc.addPage();y=20;}doc.text(ln,M,y+3);y+=ln.length*4.6+2;});
+    if(g.reviewed.length){doc.autoTable({...theme,startY:y+2,head:[['Document reviewed','Finished']],body:g.reviewed.map(x=>[x.name,date(x.at)]),columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:28}}});y=doc.lastAutoTable.finalY;}
+    y+=9;
+  }
   if(d.focus.length){
     y=head(`${_rsMonthName(d.month)} focus`,y);
     doc.autoTable({...theme,startY:y,head:[['Task','Where it stands']],body:d.focus.map(x=>[x.name,x.state]),columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:44}}});
@@ -8405,9 +8428,9 @@ function _regQualState(q,today){
     label:days<0?'Expired':days<=30?'Expires within 30 days':days<=60?'Expires within 60 days':days<=90?'Expires within 90 days':'Current'};
 }
 function _regCounts(clientId){
-  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0,dNeed:0,dNeedOver:0};
+  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0,dNeed:0,dNeedOver:0,tNeed:0,tNeedExp:0};
   (DB.registerDocs||[]).forEach(d=>{if(d.clientId!==clientId||d.archived)return;n.docs++;const k=_regDocState(d,today).k;if(k==='over')n.dOver++;else if(k==='d30')n.d30++;if((k==='over'||k==='d30')&&!_regDocInHand(d)){n.dNeed++;if(k==='over')n.dNeedOver++;}});
-  (DB.registerPeople||[]).forEach(p=>{if(p.clientId!==clientId||p.archived)return;n.people++;
+  (DB.registerPeople||[]).forEach(p=>{if(p.clientId!==clientId||p.archived)return;n.people++;if(_regPersonNeedsTask(p,today)){n.tNeed++;if(_regPersonDue(p,today).some(x=>x.s.k==='exp'))n.tNeedExp++;}
     Object.values(p.quals||{}).forEach(q=>{const s=_regQualState(q,today);if(s&&s.k==='exp')n.tExp++;else if(s&&s.k==='d30')n.t30++;});});
   return n;
 }
@@ -8418,8 +8441,8 @@ function _regAttention(boards){
     const n=_regCounts(b.clientId),cn=escHtml(((DB.clients||[]).find(c=>c.id===b.clientId)||{}).name||'Client');
     if(n.dNeed)out.push({tone:n.dNeedOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
       text:`${cn}: ${n.dNeed} document${n.dNeed===1?' is':'s are'} due for review with no task yet${n.dNeedOver?` (${n.dNeedOver} overdue)`:''}.`});
-    if(n.tExp||n.t30)out.push({tone:n.tExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRegisters('${b.clientId}','training')`,btn:'Open',
-      text:`${cn}: ${[n.tExp?`${n.tExp} training record${n.tExp===1?' has':'s have'} expired`:'',n.t30?`${n.t30} expire${n.t30===1?'s':''} within 30 days`:''].filter(Boolean).join(', ')}.`});
+    if(n.tNeed)out.push({tone:n.tNeedExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+      text:`${cn}: ${n.tNeed} ${n.tNeed===1?'person has':'people have'} training expired or expiring with no renewal task yet${n.tNeedExp?` (${n.tNeedExp} with expired training)`:''}.`});
   });
   return out;
 }
@@ -8595,7 +8618,7 @@ function _regDrawerRender(){
     clientId=p.clientId;
     head=`${p.ref?`<span class="reg-dr-code">${escHtml(p.ref)}</span>`:''}<h3 id="reg-dr-title">${escHtml(_regPersonName(p))}</h3><p class="reg-dr-sub">${escHtml([p.position,p.location,p.company,p.employment].filter(Boolean).join(', '))}</p>`;
     const qs=Object.entries(p.quals||{}).map(([name,q])=>({name,q,s:_regQualState(q,today)})).sort((a,b)=>(a.s.days==null?1e9:a.s.days)-(b.s.days==null?1e9:b.s.days)||a.name.localeCompare(b.name));
-    info=`${p.note?`<p class="reg-dr-note">${escHtml(p.note)}</p>`:''}<ul class="reg-ql">${qs.map(x=>`<li class="${dr.qual===x.name?'on':''}"><span>${escHtml(x.name)}</span><span class="reg-st ${x.s.k}">${_regIcon(x.s.k)}${x.q.d&&x.s.k!=='noexp'?_regDate(x.q.d):escHtml(x.s.label)}</span></li>`).join('')}</ul>`;
+    info=`${p.note?`<p class="reg-dr-note">${escHtml(p.note)}</p>`:''}<ul class="reg-ql">${qs.map(x=>`<li class="${dr.qual===x.name?'on':''}"><span>${escHtml(x.name)}</span><span class="reg-st ${x.s.k}">${_regIcon(x.s.k)}${x.q.d&&x.s.k!=='noexp'?_regDate(x.q.d):escHtml(x.s.label)}</span></li>`).join('')}</ul><p class="reg-dr-note">Renewal task: ${_regRenewCell(p,_regTrnTarget(p.clientId))||'none needed'}</p>`;
     about=`<label class="rd-f"><span>About</span><select class="form-input" id="reg-cm-about"><option value="">${escHtml(_regPersonName(p))} in general</option>${qs.map(x=>`<option value="${escHtml(x.name)}"${dr.qual===x.name?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>`;
     list=_regComments('person',p.id);
   }
@@ -8825,9 +8848,66 @@ function _rcTrainingHtml(c,people,today){
   const items=[];let exp=0,d30=0,recs=0;
   people.forEach(p=>Object.entries(p.quals||{}).forEach(([name,q])=>{recs++;const s=_regQualState(q,today);if(!s)return;if(s.k==='exp')exp++;else if(s.k==='d30')d30++;if(s.k==='exp'||s.k==='d30')items.push({p,name,q,s});}));
   items.sort((a,z)=>a.s.days-z.s.days);
-  const list=items.slice(0,8).map(({p,name,q,s})=>`<li class="${s.k}"><button type="button" class="rq-w" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml(name)}</small></button><span class="reg-num">${_regDate(q.d)}</span><span class="reg-st ${s.k}">${_regIcon(s.k)}${s.k==='exp'?'Expired':'Within 30 days'}</span></li>`).join('');
-  return`<section class="rd-sheet rc-trn" aria-labelledby="rc-trn-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-trn-h">Training and tickets <span class="rd-n">${people.length} ${people.length===1?'person':'people'}</span></h3><button type="button" class="rs-lvl-use" onclick="_regSet('tab','training')">Full matrix</button></div>
-    <p class="rc-sum">${recs} record${recs===1?'':'s'}: ${exp?`<b class="bad">${exp} expired</b>, `:''}${d30?`<b class="warn">${d30} expire within 30 days</b>, `:''}the rest current or held.</p>${list?`<ul class="rc-list">${list}</ul>${items.length>8?`<p class="rd-hint">And ${items.length-8} more in the matrix.</p>`:''}`:''}</section>`;
+  const tg=_regTrnTarget(c.id),need=people.filter(p=>_regPersonNeedsTask(p,today)),N=need.length;
+  const sugg=!N?'':tg
+    ?`<div class="rc-sugg" id="rc-sugg-trn"><p><b>${N} ${N===1?'person has':'people have'} training expired or expiring with no renewal task yet.</b> Add a renewal task for ${N===1?'them':'each'} in ${escHtml((_rsCat(tg.service.key)||{}).name||'the plan')}, listing what needs renewing, due on the first expiry.</p><button class="btn btn-primary btn-sm" id="rc-add-renewals" onclick="_regAddRenewals('${c.id}','due')">Add ${N} renewal task${N===1?'':'s'}</button></div>`
+    :`<div class="rc-sugg" id="rc-sugg-trn"><p><b>${N} ${N===1?'person has':'people have'} training expired or expiring.</b> Add Mobilisation and Contractor Compliance (or HSEQ) to the plan to turn renewals into tasks.</p></div>`;
+  const seen=new Set();
+  const list=items.slice(0,8).map(({p,name,q,s})=>{const first=!seen.has(p.id);seen.add(p.id);return`<li class="${s.k}"><button type="button" class="rq-w" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml(name)}, <span class="reg-st ${s.k}">${s.k==='exp'?'expired':'within 30 days'} ${_regDate(q.d)}</span></small></button>${first?_regRenewCell(p,tg):'<span></span>'}</li>`;}).join('');
+  return`<section class="rd-sheet rc-trn rc-docs" aria-labelledby="rc-trn-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-trn-h">Training and tickets <span class="rd-n">${people.length} ${people.length===1?'person':'people'}</span></h3><button type="button" class="rs-lvl-use" onclick="_regSet('tab','training')">Full matrix</button></div>
+    <p class="rc-sum">${recs} record${recs===1?'':'s'}: ${exp?`<b class="bad">${exp} expired</b>, `:''}${d30?`<b class="warn">${d30} expire within 30 days</b>, `:''}the rest current or held.</p>${sugg}${list?`<ul class="rc-list">${list}</ul>${items.length>8?`<p class="rd-hint">And ${items.length-8} more in the matrix.</p>`:''}`:''}</section>`;
+}
+// ── Training renewals as work: one task per person, in Mobilisation and Contractor Compliance (else HSEQ) ──
+function _regTrnTarget(clientId){
+  const b=(DB.workboards||[]).find(w=>w.clientId===clientId&&!w.archived&&_isRetainedBoard(w));
+  const ss=b?(b.retainer.services||[]):[],s=ss.find(x=>x.key==='mob')||ss.find(x=>x.key==='hseq');
+  return s?{board:b,service:s}:null;
+}
+function _regPersonDue(p,today){return Object.entries(p.quals||{}).map(([name,q])=>({name,q,s:_regQualState(q,today)})).filter(x=>x.s&&(x.s.k==='exp'||x.s.k==='d30')).sort((a,z)=>a.s.days-z.s.days);}
+function _regPersonTask(p){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerPersonId===p.id).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
+// In hand: a renewal task is open, or one was finished in the last 30 days (the matrix waits for its next import).
+function _regPersonInHand(p){
+  const t=_regPersonTask(p);if(!t)return false;if(!_rsDone(t))return true;
+  const at=String(t.completedAt||t.updatedAt||'').slice(0,10);return !!at&&_regDays(at,_regToday())<=30;
+}
+function _regPersonNeedsTask(p,today){return _regPersonDue(p,today).length>0&&!_regPersonInHand(p);}
+function regAddRenewalTasks(clientId,ids){
+  try{requireInternalUser(currentUser);}catch(e){return 0;}
+  const tg=_regTrnTarget(clientId);if(!tg)return 0;
+  const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
+  let n=0,order=(DB.tasks||[]).filter(t=>t.groupId===tg.service.groupId&&!t.parentTaskId).length;
+  ids.forEach(id=>{
+    const p=(DB.registerPeople||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!p||_regPersonInHand(p))return;
+    const due=_regPersonDue(p,today);if(!due.length)return;
+    const name=(`Renew tickets: ${_regPersonName(p)} (${due.map(x=>x.name).join(', ')})`).slice(0,200);
+    const first=due[0].q.d;
+    DB.tasks.push({id:'t'+uid(),name,title:name,clientId,boardId:tg.board.id,workboardId:tg.board.id,groupId:tg.service.groupId,parentTaskId:null,
+      status:'todo',priority:'med',ownerId:owner,currentlyWith:owner,currentlyWithType:owner?'staff':'none',currentlyWithUserId:owner,
+      startDate:today,endDate:first&&first>today?first:today,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:order++,
+      description:'From the training matrix: '+due.map(x=>`${x.name} ${x.s.k==='exp'?'expired':'expires'} ${_regDate(x.q.d)}`).join('; ')+'. Once renewed, update the client\'s matrix and import it again.',
+      dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,registerPersonId:p.id,registerQuals:due.map(x=>x.name)});
+    n++;
+  });
+  if(n){
+    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} training renewal task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
+    saveDB(DB);
+  }
+  return n;
+}
+function _regRenewCell(p,tg){
+  const t=_regPersonTask(p);
+  if(t&&!_rsDone(t)){const sm=getStatusMeta(t.status);return`<button type="button" class="reg-task" data-reg-task="${t.id}" onclick="openTaskPanel('${t.id}')" title="Open the renewal task">${escHtml(sm.label||'Open')}${t.endDate?`, due ${escHtml(_rdShort(t.endDate).replace(/^\w+,? /,''))}`:''}</button>`;}
+  if(t&&_regPersonInHand(p))return`<span class="reg-task done" data-reg-task="${t.id}">Renewed ${escHtml(_rdShort(String(t.completedAt||t.updatedAt).slice(0,10)).replace(/^\w+,? /,''))}, update the matrix</span>`;
+  if(tg&&_regPersonDue(p,_regToday()).length)return`<button type="button" class="btn btn-ghost btn-sm reg-add-task" data-reg-renew="${p.id}" onclick="_regAddRenewals('${p.clientId}','${p.id}')">Add renewal task</button>`;
+  return'';
+}
+function _regAddRenewals(clientId,which){
+  const today=_regToday();
+  const ids=which==='due'?(DB.registerPeople||[]).filter(p=>p.clientId===clientId&&!p.archived&&_regPersonNeedsTask(p,today)).map(p=>p.id):[which];
+  const n=regAddRenewalTasks(clientId,ids);
+  if(n){showToast(`${n} renewal task${n===1?'':'s'} added.`,'success');renderSidebarWorkboards();}
+  if(_regDr&&_regDr.kind==='person')_regDrawerRender();
+  _regRerender();
 }
 // ── Document reviews as work: a review task in the client's IMS and Document Control group, linked to its document ──
 function _regImsTarget(clientId){
