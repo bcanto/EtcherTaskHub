@@ -13,7 +13,7 @@ module.exports = [
   { id: 'mtc-sub-row', suite: 'mt-cols-test', file: 'index.html', note: 'subitem cells for added columns stay at the end',
     find: "    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class=\"ws-editable\" onclick=\"event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)\"", replace: "    ${[...visSub.map(c=>({c,key:c.key})),...subCust.map(cc=>({cc,key:cc.id}))].map(m=>m.cc?`<td class=\"ws-editable\" onclick=\"event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)\"" },
   { id: 'mtc-month-native', suite: 'mt-cols-test', file: 'index.html', note: 'Starts is the browser\'s month picker again',
-    find: "<select class=\"form-input\" id=\"rs-su-start\" onchange=\"_rsSet('startMonth',null,this.value)\">${_rsStartMonthOptions(m.startMonth)}</select>", replace: "<input type=\"month\" class=\"form-input\" id=\"rs-su-start\" value=\"${m.startMonth}\" onchange=\"_rsSet('startMonth',null,this.value)\">" },
+    find: "<select class=\"form-input\" id=\"rs-su-start\" data-f=\"start\" onchange=\"_rsSet('startMonth',null,this.value)\">${_rsStartMonthOptions(m.startMonth)}</select>", replace: "<input type=\"month\" class=\"form-input\" id=\"rs-su-start\" value=\"${m.startMonth}\" onchange=\"_rsSet('startMonth',null,this.value)\">" },
   { id: 'mtc-month-blank', suite: 'mt-cols-test', file: 'index.html', note: 'an empty start month is accepted',
     find: "  else if(field==='startMonth'){if(/^[0-9]{4}-[0-9]{2}$/.test(String(val||'')))m.startMonth=val;}", replace: "  else if(field==='startMonth'){m.startMonth=val;}" },
   { id: 'mtc-cap', suite: 'mt-cols-test', file: 'index.html', note: 'the dashboard stops at 1480px again',

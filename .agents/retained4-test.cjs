@@ -34,20 +34,23 @@ H.run('retained4-test', 3264, async (t) => {
   // ── Set-up: the level follows the services until the admin picks one; the fee is typed ──
   const labelsBefore = await ev(() => JSON.stringify(Object.keys((DB.labelConfig || {}).priorities || {})) + '|' + (typeof getPrioMeta === 'function' ? getPrioMeta('high').label : ''));
   await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); }); await t.sleep(300);
-  const su1 = await ev(() => ({ level: document.getElementById('rs-su-level').value, opts: [...document.querySelectorAll('#rs-su-level option')].map(o => o.value), note: document.getElementById('rs-su-lvlnote').textContent, fee: !!document.getElementById('rs-su-fee') }));
-  t.ok(su1.level === 'Priority' && su1.opts.length === 5 && /Core bundle/.test(su1.note) && !su1.fee, `set-up opens on two core services, the Core bundle, so Priority, and asks for no fee (got ${su1.level}, "${su1.note}")`);
-  const su2 = await ev(() => { _rsSet('on', 'hseq', false); _rsSet('on', 'mob', true); return { level: document.getElementById('rs-su-level').value, note: document.getElementById('rs-su-lvlnote').textContent }; });
-  t.ok(su2.level === 'Priority+' && /Ops bundle/.test(su2.note), `one core and one add-on is the Ops bundle, so the level follows to Priority+ (got ${su2.level})`);
-  const su3 = await ev(() => { _rsSet('on', 'hseq', true); return { level: document.getElementById('rs-su-level').value, note: document.getElementById('rs-su-lvlnote').textContent }; });
-  t.ok(su3.level === 'Priority+' && /Custom mix/.test(su3.note), `two core and one add-on is no bundle: the level stays and the note says custom mix (got ${su3.level}, "${su3.note}")`);
+  const su0 = await ev(() => ({ level: document.getElementById('rs-su-level').value, opts: [...document.querySelectorAll('#rs-su-level option')].map(o => o.value), on: [...document.querySelectorAll('[data-rs-svc]:checked')].length, create: document.getElementById('rs-su-create').disabled, guide: (document.getElementById('rs-su-guide') || {}).textContent || '', fee: !!document.getElementById('rs-su-fee') }));
+  t.ok(su0.opts.length === 5 && su0.on === 0 && su0.create && /Choose a bundle/.test(su0.guide) && !su0.fee, `set-up opens bundle first: five tiers, nothing ticked, Create waits, and no fee (got ${JSON.stringify(su0)})`);
+  const su1 = await ev(() => { _rsSet('bundle', null, 'Core'); return { level: document.getElementById('rs-su-level').value, note: document.getElementById('rs-su-lvlnote').textContent, on: [...document.querySelectorAll('[data-rs-svc]:checked')].map(i => i.dataset.rsSvc) }; });
+  t.ok(su1.level === 'Priority' && /Core bundle/.test(su1.note) && JSON.stringify(su1.on) === '["ims","hseq"]', `the Core bundle ticks both core services and comes with Priority (got ${su1.level}, "${su1.note}")`);
+  const su2 = await ev(() => { _rsSet('bundle', null, 'Ops'); return { level: document.getElementById('rs-su-level').value, note: document.getElementById('rs-su-lvlnote').textContent, on: _rsSetupKeys(_rsSetup) }; });
+  t.ok(su2.level === 'Priority+' && /Ops bundle/.test(su2.note) && JSON.stringify(su2.on) === '["ims","mob"]', `the Ops bundle keeps one core, adds one add-on, and the tier follows to Priority+ (got ${su2.level}, ${JSON.stringify(su2.on)})`);
+  const su3 = await ev(() => { _rsSet('on', 'hseq', true); return { level: document.getElementById('rs-su-level').value, on: _rsSetupKeys(_rsSetup) }; });
+  t.ok(su3.level === 'Priority+' && JSON.stringify(su3.on) === '["hseq","mob"]', `ticking the other core service in Ops swaps it, so the mix stays a bundle (got ${su3.level}, ${JSON.stringify(su3.on)})`);
   const su4 = await ev(() => {
-    _rsSet('priority', null, 'Standard'); _rsSet('on', 'hseq', false);
-    const lvl = document.getElementById('rs-su-level').value, use = document.querySelector('#rs-su-lvlnote [data-rs-use]');
-    const offered = use ? use.dataset.rsUse : null; if (use) use.click();
-    return { lvl, offered, after: document.getElementById('rs-su-level').value };
+    _rsSet('priority', null, 'Standard'); _rsSet('bundle', null, 'Plus');
+    const lvl = document.getElementById('rs-su-level').value, offeredPlus = (document.querySelector('#rs-su-lvlnote [data-rs-use]') || {}).dataset;
+    _rsSet('bundle', null, 'Ops');
+    const use = document.querySelector('#rs-su-lvlnote [data-rs-use]'), offered = use ? use.dataset.rsUse : null; if (use) use.click();
+    return { lvl, plus: offeredPlus ? offeredPlus.rsUse : null, offered, after: document.getElementById('rs-su-level').value };
   });
-  t.ok(su4.lvl === 'Standard' && su4.offered === 'Priority+' && su4.after === 'Priority+', `a level the admin picked stays when services change, with the suggestion one click away (got ${JSON.stringify(su4)})`);
-  t.ok(await ev(() => { _rsSet('priority', null, 'Urgent'); return _rsSetup.priority === 'Priority+'; }), 'an unknown level is refused');
+  t.ok(su4.lvl === 'Standard' && su4.plus === 'High' && su4.offered === 'Priority+' && su4.after === 'Priority+', `a tier the admin picked stays when the bundle changes, with the bundle's tier one click away (got ${JSON.stringify(su4)})`);
+  t.ok(await ev(() => { _rsSet('priority', null, 'Urgent'); return _rsSetup.priority === 'Priority+'; }), 'an unknown tier is refused');
   const shotSu = await ui.shot('retained4-setup');
   t.eq(shotSu.phone, 0, 'the set-up with its level fits a phone');
   const made = await ev(() => {

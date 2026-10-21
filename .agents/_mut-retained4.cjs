@@ -1,9 +1,9 @@
 // Can-fail mutations for Retained Services next features batch 1 (node .agents/_canfail.cjs .agents/_mut-retained4.cjs --green).
 module.exports = [
   { id: 'rt4-bundle', suite: 'retained4-test', file: 'index.html', note: 'the Ops bundle is matched on the wrong mix',
-    find: "{key:'Ops',mix:[[1,1]]}", replace: "{key:'Ops',mix:[[1,2]]}" },
+    find: "{key:'Ops',     mix:[[1,1]],", replace: "{key:'Ops',     mix:[[1,2]]," },
   { id: 'rt4-follow', suite: 'retained4-test', file: 'index.html', note: 'the set-up level no longer follows the services',
-    find: "    if(field==='on'){v.on=!!val;_rsSetupFollowLevel();}", replace: "    if(field==='on'){v.on=!!val;}" },
+    find: "fill(RETAINER_CATALOGUE.filter(s=>s.kind==='addon'),b.pick.addon);}\n  _rsSetupFollowLevel();", replace: "fill(RETAINER_CATALOGUE.filter(s=>s.kind==='addon'),b.pick.addon);}" },
   { id: 'rt4-levelset', suite: 'retained4-test', file: 'index.html', note: 'a level the admin picked is overwritten by the next service change',
     find: "{if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}", replace: "{if(_rsLevel(val)){m.priority=val;}}" },
   { id: 'rt4-slice-fee', suite: 'retained4-test', file: 'api/_portal.js', note: 'the portal slice carries the fee',

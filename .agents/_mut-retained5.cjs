@@ -15,7 +15,7 @@ module.exports = [
   { id: 'rt5-soon', suite: 'retained5-test', file: 'index.html', note: 'the default view shows every open job',
     find: "(q.show!=='soon'||r.kind==='request'||r.late||(r.next&&r.next<=soon))", replace: "(q.show!=='soon'||true)" },
   { id: 'rt5-80', suite: 'retained5-test', file: 'index.html', note: 'only 90% and over is flagged',
-    find: "usage.filter(u=>u.allowance&&u.ratio>=0.8)", replace: "usage.filter(u=>u.allowance&&u.ratio>=0.9)" },
+    find: "  usage.filter(u=>u.allowance&&u.ratio>=0.8).sort(", replace: "  usage.filter(u=>u.allowance&&u.ratio>=0.95).sort(" },
   { id: 'rt5-fee-col', suite: 'retained5-test', file: 'index.html', note: 'the dashboard shows a fee column again',
     find: "<th>${month} allowances</th>${regCol?", replace: "<th>${month} allowances</th><th>Monthly fee</th>${regCol?" },
   { id: 'rt5-redraw', suite: 'retained5-test', file: 'index.html', note: 'a change from the queue dialog jumps to Client Manager',

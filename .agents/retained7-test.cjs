@@ -22,7 +22,7 @@ H.run('retained7-test', 3267, async (t) => {
     return ev(() => (document.getElementById('reg-imp-out') || {}).textContent.replace(/\s+/g, ' '));
   };
 
-  await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); retainerCreate(); closeGenericModal(); navigate('retained'); });
+  await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); _rsSet('bundle', null, 'Core'); retainerCreate(); closeGenericModal(); navigate('retained'); });
   await t.sleep(400);
   t.ok(await ev(() => !!document.querySelector('[data-rd-reg="c1"]')), 'each retained client has an Open button on the dashboard');
   await ev(() => { document.querySelector('[data-rd-reg="c1"]').click(); _regSet('tab', 'docs'); }); await t.sleep(300);

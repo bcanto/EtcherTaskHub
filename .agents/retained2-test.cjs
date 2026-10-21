@@ -54,7 +54,7 @@ H.run('retained2-test', 3178, async (t) => {
   const ui = await t.browser();
   const ev = (fn, ...a) => ui.eval(fn, ...a);
   const ids = await ev(() => {
-    openRetainerSetup(); _rsSet('clientId', null, 'c1'); retainerCreate();
+    openRetainerSetup(); _rsSet('clientId', null, 'c1'); _rsSet('bundle', null, 'Core'); retainerCreate();
     const b = DB.workboards.find(w => w.retainer && w.clientId === 'c1');
     const ims = b.retainer.services.find(s => s.key === 'ims');
     const now = new Date().toISOString();

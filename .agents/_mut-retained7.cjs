@@ -36,5 +36,5 @@ module.exports = [
   { id: 'rt7-scroll', suite: 'retained7-test', file: 'index.html', note: 'adding a comment throws the matrix back to the start',
     find: "  dr.qual=qual;_regDrawerRender();\n  _regRerender();", replace: "  dr.qual=qual;_regDrawerRender();\n  renderView('retained');" },
   { id: 'rt7-order', suite: 'retained7-test', file: 'index.html', note: 'the matrix sorts its columns instead of keeping the sheet order',
-    find: "  const order=(((meta||{}).training||{}).quals||[]).filter(k=>used.has(k)),inOrder=new Set(order);", replace: "  const order=[],inOrder=new Set(order);" },
+    find: "  const order=(((meta||{}).training||{}).quals||[]).filter(k=>used.has(k)||added.has(k)),inOrder=new Set(order);", replace: "  const order=[],inOrder=new Set(order);" },
 ];

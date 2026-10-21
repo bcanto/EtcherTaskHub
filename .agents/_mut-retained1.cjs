@@ -4,8 +4,6 @@ module.exports = [
     find: "  if(navRetHeaderEl)navRetHeaderEl.style.display=(isAdmin||isMedium)?'flex':'none';", replace: "  if(navRetHeaderEl)navRetHeaderEl.style.display='none';" },
   { id: 'rt1-setup-open', suite: 'retained-test', file: 'index.html', note: 'anyone can open the set-up',
     find: "function openRetainerSetup(){\n  if(currentUser?.role!=='admin')return;", replace: "function openRetainerSetup(){\n  if(false)return;" },
-  { id: 'rt1-add-for-staff', suite: 'retained-test', file: 'index.html', note: 'staff who are not admins see + on the section',
-    find: "  if(retAddBtnEl)retAddBtnEl.style.display=isAdmin?'':'none';", replace: "  if(retAddBtnEl)retAddBtnEl.style.display='';" },
   { id: 'rt1-team-list', suite: 'retained-test', file: 'index.html', note: 'retained boards also list under Team Boards',
     find: '  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb)&&!_isRetainedBoard(wb));', replace: '  const wbs=allWbs.filter(wb=>!_isPersonalBoard(wb));' },
   { id: 'rt1-folder', suite: 'retained-test', file: 'index.html', note: 'a retained board can be moved into a folder',

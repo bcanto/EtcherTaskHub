@@ -21,7 +21,7 @@ H.run('retained3-test', 3179, async (t) => {
   // "+ New WorkBoard" were 12px too wide at 390 (found while testing batch 1).
   const dash = await ui.shot('dashboard-header');
   t.eq(dash.phone, 0, 'the staff Dashboard fits a phone');
-  const id = await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); retainerCreate(); return DB.workboards.find(w => w.retainer && w.clientId === 'c1').id; });
+  const id = await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); _rsSet('bundle', null, 'Core'); retainerCreate(); return DB.workboards.find(w => w.retainer && w.clientId === 'c1').id; });
   await ev(b => openRetainerPlan(b), id); await t.sleep(300);
   t.ok(await ev(() => !!document.getElementById('rs-pl-addsvc') && !!document.querySelector('[data-rs-remove="ims"]') && !!document.getElementById('rs-pl-end')), 'an admin can add or remove services and end the retainer from the plan');
 

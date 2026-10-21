@@ -73,6 +73,25 @@ H.run('mt-cols-test', 3273, async (t) => {
   }, fx.cc, fx.parent);
   t.ok(sub.before.drag === 'true' && sub.after.h === 2 && sub.after.h === sub.after.c && sub.after.first === 'cc', `in the subitem grid the added column moves first, its cells with it (got ${JSON.stringify(sub)})`);
 
+  // The Excel export uses the board's order, added columns included.
+  const xl = await ev(() => new Promise(res => {
+    _ensureExcelJs(() => {
+      const keep = URL.createObjectURL, click = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function () {};
+      URL.createObjectURL = b => {
+        URL.createObjectURL = keep; HTMLAnchorElement.prototype.click = click;
+        b.arrayBuffer().then(buf => { const wb = new ExcelJS.Workbook(); return wb.xlsx.load(buf).then(() => wb); }).then(wb => {
+          let head = null; wb.worksheets[0].eachRow(r => { const v = (r.values || []).map(x => String(x == null ? '' : (x.richText ? x.richText.map(p => p.text).join('') : x))); if (!head && v.includes('Site Note')) head = v; });
+          res(head);
+        });
+        return 'blob:x';
+      };
+      wsMtExport();
+    });
+  }));
+  const at = k => (xl || []).findIndex(v => String(v || '').trim() === k);
+  t.ok(xl && at('Priority') < at('Site Note') && at('Site Note') < at('Status') && at('Priority') > -1, `the Excel export lists the columns in the board's order (got ${JSON.stringify(xl)})`);
+
   // ── Retained Services: Starts is a list of months ──
   const st = await ev(() => {
     openRetainerSetup(); _rsSet('clientId', null, 'c1');
@@ -91,7 +110,7 @@ H.run('mt-cols-test', 3273, async (t) => {
   await ui.size(2200, 1000);
   const wide = await ev(async () => {
     const wait = ms => new Promise(x => setTimeout(x, ms));
-    openRetainerSetup(); _rsSet('clientId', null, 'c1'); retainerCreate(); closeGenericModal();
+    openRetainerSetup(); _rsSet('clientId', null, 'c1'); _rsSet('bundle', null, 'Core'); retainerCreate(); closeGenericModal(); if (!DB.workboards.some(w => w.retainer && w.clientId === 'c1')) return { dash: [0, 1], mast: [0, 1] };
     const inner = () => { const vc = document.getElementById('view-container'), cs = getComputedStyle(vc); return Math.round(vc.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)); };
     navigate('retained'); await wait(400); const dash = [Math.round(document.querySelector('.rd').getBoundingClientRect().width), inner()];
     openRetainedClient('c1'); await wait(400); const mast = [Math.round(document.querySelector('.rc-mast').getBoundingClientRect().width), inner()];

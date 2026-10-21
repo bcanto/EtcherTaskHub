@@ -22,7 +22,7 @@ H.run('retained-test', 3177, async (t) => {
   }));
   t.eq(su.title, 'New retained board', 'the + opens the New retained board set-up');
   t.ok(su.clients.length && !su.clients.includes('c0'), 'the client list leaves out Etcher itself');
-  t.eq(su.on, ['ims', 'hseq'], 'the two core services start ticked');
+  t.eq(su.on, [], 'bundle first: no service is ticked until a bundle is chosen');
   await ui.shot('retained-setup');
   // Measured on the dialog itself: the dashboard behind it already overflows by 12px at 390 (a
   // teal button there, not part of this feature).
@@ -30,7 +30,7 @@ H.run('retained-test', 3177, async (t) => {
   const suWide = await ev(() => [...document.querySelectorAll('#generic-modal *')].filter(e => e.getBoundingClientRect().right > document.documentElement.clientWidth + 1).length);
   await ui.size(1440, 1000);
   t.eq(suWide, 0, 'the set-up dialog fits a phone');
-  await ev(() => { _rsSet('clientId', null, 'c2'); _rsSet('on', 'mob', true); _rsSet('allowance', 'ims', '12'); _rsSet('mt', 'hseq', false, 1); });
+  await ev(() => { _rsSet('clientId', null, 'c2'); _rsSet('bundle', null, 'Plus'); _rsSet('allowance', 'ims', '12'); _rsSet('mt', 'ims', false, 1); });
   await ev(() => document.getElementById('rs-su-create').click()); await t.sleep(800);
   const made = await ev(() => {
     const b = DB.workboards.find(w => w.retainer && w.clientId === 'c2');
@@ -41,9 +41,9 @@ H.run('retained-test', 3177, async (t) => {
       tasks: tasks.length, recur: tasks.every(x => x.recurrence && x.recurrence.freq === 'monthly' && x.recurrence.nextDue > x.startDate), owners: tasks.every(x => !!x.ownerId), start: b.retainer.startMonth, id: b.id };
   });
   t.ok(made && made.client === 'c2' && made.name === 'Daltech' && made.folder === null, 'Create makes a board named after the client and linked to it');
-  t.eq(made && made.svc, ['ims:12', 'hseq:8', 'mob:15'], 'the board carries each ticked service with its allowance');
+  t.eq(made && made.svc, ['ims:12', 'mob:15', 'ci:4'], 'the board carries each service of the bundle with its allowance (Plus: IMS, Mobilisation, Improvement)');
   t.ok(made && made.groups === 3 && made.groupsOk, 'one group per service, each tied to its service');
-  t.eq(made && made.tasks, 4, 'the monthly tasks kept ticked are created (2 + 1 + 1)');
+  t.eq(made && made.tasks, 3, 'the monthly tasks kept ticked are created (1 + 1 + 1)');
   t.ok(made && made.recur && made.owners, 'monthly tasks repeat monthly from the start month and have the service owner');
   const side = await ev(id => ({ inSection: !!document.querySelector(`#sidebar-retained-list [data-wb-row="${id}"]`), elsewhere: [...document.querySelectorAll(`[data-wb-row="${id}"]`)].filter(r => !r.closest('#sidebar-retained-list')).length }), made.id);
   t.ok(side.inSection && side.elsewhere === 0, 'the board sits in Retained Services, not under Team Boards or a folder');
