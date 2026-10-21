@@ -107,7 +107,7 @@ H.run('retained7-test', 3267, async (t) => {
     _regSet('qual', ''); _regSet('win', '90'); _regSet('mode', 'matrix');
     const mx = document.getElementById('reg-matrix');
     out.cols = [...mx.querySelectorAll('thead th')].map(th => th.textContent.trim());
-    out.cells = mx.querySelectorAll('.reg-c').length; out.expCells = mx.querySelectorAll('.reg-c.exp').length; out.expShape = mx.querySelectorAll('.reg-c.exp .rq-ic').length;
+    out.cells = mx.querySelectorAll('.reg-c:not(.empty)').length; out.empty = mx.querySelectorAll('button.reg-c.empty').length; out.expCells = mx.querySelectorAll('.reg-c.exp').length; out.expShape = mx.querySelectorAll('.reg-c.exp .rq-ic').length;
     _regSet('dueOnly', true); out.due = [...document.querySelectorAll('#reg-matrix thead th')].map(th => th.textContent.trim());
     _regSet('dueOnly', false);
     return out;
@@ -117,7 +117,7 @@ H.run('retained7-test', 3267, async (t) => {
   t.ok(tr.kar, 'filter by location');
   t.ok(tr.wc.length === 2 && tr.wc.every(r => /White Card/.test(r)), 'filter by training');
   t.eq(tr.cols, ['Person', 'DL', 'HRWL', 'Site Essentials 12345', 'Isolation Theory: Lock Holder', 'Heat Stress Prevention Measures', 'Working at Heights Gap Training', 'White Card', '4WD'], 'the matrix keeps the spreadsheet\'s column order');
-  t.ok(tr.cells === 15 && tr.expCells === 4 && tr.expShape === 4, `each record is a cell; expired cells carry the triangle as well as the colour (got ${tr.cells}, ${tr.expCells}, ${tr.expShape})`);
+  t.ok(tr.cells === 15 && tr.empty === 17 && tr.expCells === 4 && tr.expShape === 4, `each record is a cell; expired cells carry the triangle as well as the colour (got ${tr.cells}, ${tr.expCells}, ${tr.expShape})`);
   t.ok(!tr.due.includes('Isolation Theory: Lock Holder') && !tr.due.includes('Heat Stress Prevention Measures') && tr.due.includes('White Card'), 'Only training due within 90 days narrows the columns');
   const shotMx = await ui.shot('retained7-matrix');
   t.eq(shotMx.phone, 0, 'the matrix scrolls inside its own box on a phone');
