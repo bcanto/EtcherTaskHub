@@ -1113,7 +1113,7 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .rs-pl-p{margin:0;font-size:13px;color:#4a5568}
 .rs-fee{display:flex;align-items:center;gap:6px;min-width:0}.rs-fee i{font-style:normal;font-weight:700;color:#6b8399}.rs-fee input{min-width:0}
 .rs-su-f small{font-size:11px;color:#8da2b2;line-height:1.4}
-.rs-lvl-note{grid-column:2/-1;margin:0;align-self:end;font-size:12px;line-height:1.5;color:#6b8399}.rs-lvl-note b{color:#0d1c33;font-weight:700}
+.rs-lvl-note{grid-column:1/-1;margin:0;align-self:end;font-size:12px;line-height:1.5;color:#6b8399}.rs-lvl-note b{color:#0d1c33;font-weight:700}
 .rs-pl .rs-lvl-note{grid-column:auto}
 .rs-lvl-use{border:0;background:none;padding:0 2px;font:inherit;font-weight:700;color:#31585a;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .rs-lvl-use:hover{color:#0d1c33}.rs-lvl-use:active{color:#0d1c33;opacity:.8}.rs-lvl-use:focus-visible{outline:2px solid #31585a;outline-offset:2px;border-radius:3px}
@@ -1241,6 +1241,10 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .reg-ql{list-style:none;margin:0;padding:0;border-top:1px solid #eef2f6}
 .reg-ql li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eef2f6;font-size:12.5px;color:#1a2940}
 .reg-ql li.on{margin:0 -8px;padding:6px 8px;border-radius:6px;background:#f2f7f7}
+.reg-ql li{display:grid;grid-template-columns:minmax(0,1fr) auto 132px;align-items:center}
+.reg-qd{height:30px;padding:0 6px;font-size:12px}
+.reg-add-rec{display:grid;grid-template-columns:minmax(0,1fr) 140px auto;align-items:end;gap:8px;padding:10px 0;border-bottom:1px solid #eef2f6}
+.reg-c.empty .reg-ct{opacity:0;font-size:11px;color:#31585a;transition:opacity .15s}.reg-c.empty:hover .reg-ct,.reg-c.empty:focus-visible .reg-ct{opacity:1}
 .reg-dr-note{margin:0;font-size:12.5px;color:#3d5269}
 .reg-dr-h{margin-top:4px;font-size:13px}
 .reg-cms{display:grid;gap:10px;list-style:none;margin:0;padding:0}
@@ -7605,12 +7609,6 @@ function _rsFeeSince(r,ym){
   const prev=_rsFeeEntry(r,_rsPrevYm(e.from)),was=prev&&prev.amount>0&&prev.amount!==e.amount?` Was ${_rsMoney(prev.amount)} before.`:'';
   return`From ${_rsMonthYear(e.from)}.${was}`;
 }
-function _rsPlanFeeHtml(b,admin){
-  const r=b.retainer,ym=_rsYm(),from=r.startMonth&&r.startMonth>ym?r.startMonth:ym,cur=_rsFeeFor(r,from);
-  if(admin)return`<label class="rs-su-f"><span>Monthly fee</span><span class="rs-fee"><i>$</i><input type="number" min="0" step="0.01" class="form-input" id="rs-pl-fee" value="${cur!=null?cur:''}" placeholder="Not set" onchange="_rsPlanSet('${b.id}','fee',null,this.value)" aria-label="Monthly fee in dollars"></span><small>${_rsFeeSince(r,from)}</small></label>`;
-  if(_canBill(currentUser))return`<div class="rs-su-f"><span>Monthly fee</span><b>${cur!=null?_rsMoney(cur):'Not set'}</b><small>${_rsFeeSince(r,from)}</small></div>`;
-  return'<div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b></div>';
-}
 // R4: per service group, per calendar month. A top-level task with subitems counts its subitems
 // finished that month; one without subitems counts 1 once it is finished that month. Only work the
 // client can see counts (a hidden task, or a subitem of one, never uses the allowance).
@@ -7698,7 +7696,6 @@ function _rsSetupRender(){
       <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
       <label class="rs-cfg"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
       <label class="rs-cfg"><span>Service level</span><select class="form-input" id="rs-su-level" onchange="_rsSet('priority',null,this.value)">${_rsLevelOptions(m.priority)}</select></label>
-      <label class="rs-cfg"><span>Monthly fee</span><span class="rs-fee"><i>$</i><input type="number" min="0" step="0.01" class="form-input" id="rs-su-fee" value="${m.fee!=null?m.fee:''}" placeholder="Not set" onchange="_rsSet('fee',null,this.value)" aria-label="Monthly fee in dollars"></span></label>
       <p class="rs-lvl-note" id="rs-su-lvlnote">${_rsLevelNote(picks.map(s=>s.key),m.priority,lv=>`_rsSet('priority',null,'${lv}')`)}</p>
     </div>
     <div class="rs-su2-h">Services</div>
@@ -7760,11 +7757,11 @@ function openRetainerPlan(boardId){
       <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td>${admin?`<td><button class="btn btn-ghost btn-sm" data-rs-remove="${s.key}" onclick="_rsPlanSet('${b.id}','removeService','${s.key}')" aria-label="Remove ${escHtml(cat.name)} from the plan">Remove</button></td>`:''}</tr>`;
   }).join('');
   const body=`<div class="rs-pl">
-    <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>Started ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
+    <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>${r.startMonth&&r.startMonth>_rsYm()?'Starts':'Started'} ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
     <div class="rs-pl-grid">
       <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
       <label class="rs-su-f"><span>Service level</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(r.priority||'')}</b>`}</label>
-      ${_rsPlanFeeHtml(b,admin)}
+      <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b><small>Set on the pro forma invoice</small></div>
     </div>
     <p class="rs-lvl-note" id="rs-pl-lvlnote">${_rsLevelNote((r.services||[]).map(s=>s.key),r.priority,admin?lv=>`_rsPlanSet('${b.id}','priority',null,'${lv}')`:null)}</p>
     <h4 class="rs-pl-h">Services and allowances</h4>
@@ -7840,9 +7837,31 @@ function _rsPlanSet(boardId,field,key,val){
 }
 
 // ── Retained Services dashboard (Etcher side): the queue by service level, allowances near their limit, each client ──
-// Business days are Monday to Friday (public holidays are not skipped, by choice). A clock that starts on a weekend
+// Business days are Monday to Friday, less WA public holidays. A clock that starts on a weekend
 // starts on the Monday; n business days later is the nth working day after the start day; 0 is the start day itself.
-function _bdIsWork(d){const w=d.getDay();return w>0&&w<6;}
+function _bdIsWork(d){const w=d.getDay();return w>0&&w<6&&!_waHolidays(d.getFullYear()).has(toDateStr(d));}
+// Western Australian public holidays, worked out per year: New Year's Day, Australia Day, Labour Day (first Monday in
+// March), Good Friday, Easter Monday, Anzac Day, WA Day (first Monday in June), King's Birthday (last Monday in
+// September), Christmas and Boxing Day. A holiday on a weekend moves to the next weekday (Anzac Day included, as in WA).
+const _WA_HOL={};
+function _waHolidays(y){
+  if(_WA_HOL[y])return _WA_HOL[y];
+  const set=new Set(),ds=(m,d)=>toDateStr(new Date(y,m-1,d,12)),add=s=>set.add(s);
+  const nth=(m,wd,n)=>{const d=new Date(y,m-1,1,12);while(d.getDay()!==wd)d.setDate(d.getDate()+1);d.setDate(d.getDate()+7*(n-1));return toDateStr(d);};
+  const lastMon=m=>{const d=new Date(y,m,0,12);while(d.getDay()!==1)d.setDate(d.getDate()-1);return toDateStr(d);};
+  // Easter Sunday (anonymous Gregorian algorithm)
+  const a=y%19,b=Math.floor(y/100),c=y%100,dd=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-dd-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  const em=Math.floor((h+l-7*m+114)/31),ed=((h+l-7*m+114)%31)+1,easter=new Date(y,em-1,ed,12);
+  const off=n=>{const d=new Date(easter);d.setDate(d.getDate()+n);return toDateStr(d);};
+  add(off(-2));add(off(1));add(nth(3,1,1));add(nth(6,1,1));add(lastMon(9));
+  // Fixed dates; on a weekend the next free weekday is the holiday as well.
+  [[1,1],[1,26],[4,25],[12,25],[12,26]].forEach(([mo,da])=>{add(ds(mo,da));});
+  [[1,1],[1,26],[4,25],[12,25],[12,26]].forEach(([mo,da])=>{
+    const d=new Date(y,mo-1,da,12);if(d.getDay()!==0&&d.getDay()!==6)return;
+    const n=new Date(d);do{n.setDate(n.getDate()+1);}while(n.getDay()===0||n.getDay()===6||set.has(toDateStr(n)));add(toDateStr(n));
+  });
+  return(_WA_HOL[y]=set);
+}
 function _bdDue(startIso,n){
   if(n==null||!startIso)return null;
   const d=new Date(toDateStr(new Date(startIso))+'T12:00:00');
@@ -8027,14 +8046,13 @@ function renderRetainedDash(){
       <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),34)}<b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
       <td class="rd-c-lv">${_rdLevelHtml(lv)}</td>
       <td class="rd-c-m"><div class="rd-ms">${meters||'<span class="rq-na">No services</span>'}</div></td>
-      ${bill?`<td class="rd-c-fee">${fee!=null?_rsMoney(fee):'<span class="rq-na">Not set</span>'}</td>`:''}
       ${regCol?`<td class="rd-c-reg">${reg||'<span class="rq-na">None yet</span>'}</td>`:''}
       <td class="rd-c-act"><button class="btn btn-ghost btn-sm" data-rd-reg="${b.clientId}" onclick="openRetainedClient('${b.clientId}')" aria-label="Open ${escHtml(cName(b.clientId))}">Open</button></td>
     </tr>`;
   };
   const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
     <div class="rd-sheet-head"><h2 class="rd-h" id="rd-c-h">Clients <span class="rd-n">${boards.length}</span></h2></div>
-    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Level</th><th>${month} allowances</th>${bill?'<th>Monthly fee</th>':''}${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
+    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Level</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
   </section>`;
   const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
   return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}${queue}${clients}</div>`;
@@ -8377,6 +8395,7 @@ const _REG_FIELDS={docs:['name','code','title','issueDate','reviewMonths','nextR
 function _regPlan(clientId,parsed){
   const kind=parsed.kind,coll=kind==='docs'?'registerDocs':'registerPeople';
   const mine=(DB[coll]||[]).filter(x=>x.clientId===clientId),prim=new Map(),byName=new Map(),hit=new Set();
+  const appCols=new Set(((((DB.registers||[]).find(r=>r.clientId===clientId)||{}).training||{}).added||[]).filter(k=>!(parsed.quals||[]).includes(k)));
   mine.forEach(x=>{const k=(x.keys||[x.key])[0];if(!k)return;if(!prim.has(k))prim.set(k,x);if(k.startsWith('n:')&&!byName.has(k))byName.set(k,x);});
   const seen=new Set(),plan=[];let added=0,updated=0,same=0,dupes=0;
   parsed.rows.forEach(p=>{
@@ -8386,6 +8405,8 @@ function _regPlan(clientId,parsed){
     let ex=prim.get(keys[0])||(keys[1]&&byName.get(keys[1]))||null;
     if(ex&&hit.has(ex.id))ex=null;
     const fields={};_REG_FIELDS[kind].forEach(f=>{fields[f]=p[f]==null?null:p[f];});
+    // Columns added in Task Hub are not in the sheet: an import keeps their records.
+    if(kind==='training'&&ex&&appCols.size){fields.quals=Object.assign({},fields.quals||{});Object.entries(ex.quals||{}).forEach(([k,q])=>{if(appCols.has(k)&&!(k in fields.quals))fields.quals[k]=q;});}
     if(!ex){plan.push({p,ex:null,fields,keys});added++;return;}
     hit.add(ex.id);
     const changed=ex.archived||_REG_FIELDS[kind].some(f=>JSON.stringify(ex[f]==null?null:ex[f])!==JSON.stringify(fields[f]));
@@ -8406,7 +8427,7 @@ function _regApply(clientId,parsed,archiveMissing,fileName){
   if(archiveMissing)pl.missing.forEach(x=>{x.archived=true;x.updatedAt=now;archived++;});
   const regs=DB.registers=DB.registers||[];let meta=regs.find(r=>r.clientId===clientId);
   if(!meta){meta={id:'reg-'+clientId,clientId,createdAt:now};regs.push(meta);}
-  meta[kind]=Object.assign({file:String(fileName||'').slice(0,160),at:now,by:currentUser.id,rows:parsed.rows.length},kind==='training'?{quals:parsed.quals.slice(0,300)}:{});
+  meta[kind]=Object.assign({file:String(fileName||'').slice(0,160),at:now,by:currentUser.id,rows:parsed.rows.length},kind==='training'?(()=>{const old=meta.training||{},added=(old.added||[]).filter(k=>!parsed.quals.includes(k));return{quals:parsed.quals.concat(added).slice(0,300),added};})():{});
   meta.updatedAt=now;
   saveDB(DB);
   return{added:pl.added,updated:pl.updated,same:pl.same,archived,dupes:pl.dupes};
@@ -8531,7 +8552,8 @@ function _regDocsHtml(c,docs){
 }
 function _regQualsOrder(people,meta){
   const used=new Set();people.forEach(p=>Object.keys(p.quals||{}).forEach(k=>used.add(k)));
-  const order=(((meta||{}).training||{}).quals||[]).filter(k=>used.has(k)),inOrder=new Set(order);
+  const added=new Set((((meta||{}).training||{}).added)||[]);
+  const order=(((meta||{}).training||{}).quals||[]).filter(k=>used.has(k)||added.has(k)),inOrder=new Set(order);
   return order.concat([...used].filter(k=>!inOrder.has(k)).sort());
 }
 function _regTrainingHtml(c,people,meta){
@@ -8547,7 +8569,7 @@ function _regTrainingHtml(c,people,meta){
     +`<label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or ID" oninput="_regSearch(this.value)"></label>`;
   const modeBtn=(k,l)=>`<button type="button" class="${v.mode===k?'on':''}" aria-pressed="${v.mode===k}" data-reg-mode="${k}" onclick="_regSet('mode','${k}')">${l}</button>`;
   const win=`<label class="rd-f"><span>Window</span><select class="form-input" id="reg-win" onchange="_regSet('win',this.value)">${[['exp','Expired only'],['30','Expired or within 30 days'],['60','Expired or within 60 days'],['90','Expired or within 90 days'],['all','Every dated record']].map(([k,l])=>`<option value="${k}"${v.win===k?' selected':''}>${l}</option>`).join('')}</select></label>`;
-  const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label>`;
+  const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label><button type="button" class="btn btn-ghost btn-sm" id="reg-add-col" onclick="_regAddColumnDialog('${c.id}')">+ Training column</button>`;
   return`<section class="rd-sheet">${_regIoBar(c,'training')}<div class="reg-bar"><div class="reg-seg" role="group" aria-label="View">${modeBtn('expiring','Expiring')}${modeBtn('matrix','Matrix')}</div><div class="reg-fl">${v.mode==='matrix'?due:win}${filters}</div></div>
     ${v.mode==='matrix'?_regMatrixHtml(ppl,quals,cm,today):_regExpiringHtml(ppl,cm,today)}</section>`;
 }
@@ -8578,7 +8600,7 @@ function _regMatrixHtml(ppl,quals,cm,today){
   const th=cols.map(n=>`<th scope="col"><span title="${escHtml(n)}">${escHtml(n)}</span></th>`).join('');
   const rows=ppl.map(p=>{
     const cells=cols.map(name=>{
-      const q=(p.quals||{})[name];if(!q)return'<td></td>';
+      const q=(p.quals||{})[name];if(!q)return`<td><button type="button" class="reg-c empty" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" aria-label="Add ${escHtml(name)} for ${escHtml(_regPersonName(p))}"><span class="reg-ct">Add</span></button></td>`;
       const s=_regQualState(q,today),n=cm.get(p.id+'|'+name)||0,txt=s.k==='noexp'?'No expiry':q.d?short(q.d):`<span class="reg-ct">${escHtml(String(q.t))}</span>`;
       return`<td><button type="button" class="reg-c ${s.k}" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" title="${escHtml(name)}: ${escHtml(s.label)}${q.d?', '+_regDate(q.d):''}">${['exp','d30','d60','d90'].includes(s.k)?_regIcon(s.k):''}${txt}${n?'<i class="reg-dot" aria-hidden="true"></i>':''}</button></td>`;
     }).join('');
@@ -8618,7 +8640,7 @@ function _regDrawerRender(){
     clientId=p.clientId;
     head=`${p.ref?`<span class="reg-dr-code">${escHtml(p.ref)}</span>`:''}<h3 id="reg-dr-title">${escHtml(_regPersonName(p))}</h3><p class="reg-dr-sub">${escHtml([p.position,p.location,p.company,p.employment].filter(Boolean).join(', '))}</p>`;
     const qs=Object.entries(p.quals||{}).map(([name,q])=>({name,q,s:_regQualState(q,today)})).sort((a,b)=>(a.s.days==null?1e9:a.s.days)-(b.s.days==null?1e9:b.s.days)||a.name.localeCompare(b.name));
-    info=`${p.note?`<p class="reg-dr-note">${escHtml(p.note)}</p>`:''}<ul class="reg-ql">${qs.map(x=>`<li class="${dr.qual===x.name?'on':''}"><span>${escHtml(x.name)}</span><span class="reg-st ${x.s.k}">${_regIcon(x.s.k)}${x.q.d&&x.s.k!=='noexp'?_regDate(x.q.d):escHtml(x.s.label)}</span></li>`).join('')}</ul><p class="reg-dr-note">Renewal task: ${_regRenewCell(p,_regTrnTarget(p.clientId))||'none needed'}</p>`;
+    info=`${p.note?`<p class="reg-dr-note">${escHtml(p.note)}</p>`:''}<ul class="reg-ql">${qs.map(x=>`<li class="${dr.qual===x.name?'on':''}"><span>${escHtml(x.name)}</span><span class="reg-st ${x.s.k}">${_regIcon(x.s.k)}${escHtml(x.s.label)}</span><input type="date" class="form-input reg-qd" value="${x.q.d||''}" data-q="${escHtml(x.name)}" aria-label="Expiry for ${escHtml(x.name)}" onchange="_regSetQualInput('${p.id}',this)"></li>`).join('')}</ul>${_regAddRecordHtml(p,dr.qual)}<p class="reg-dr-note">Renewal task: ${_regRenewCell(p,_regTrnTarget(p.clientId))||'none needed'}</p>`;
     about=`<label class="rd-f"><span>About</span><select class="form-input" id="reg-cm-about"><option value="">${escHtml(_regPersonName(p))} in general</option>${qs.map(x=>`<option value="${escHtml(x.name)}"${dr.qual===x.name?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>`;
     list=_regComments('person',p.id);
   }
@@ -8642,6 +8664,47 @@ function _regRerender(){
   if(w2){w2.scrollTop=s[0];w2.scrollLeft=s[1];}
   if(vc2)vc2.scrollTop=s[2];
   window.scrollTo(0,s[3]);
+}
+// Records typed in Task Hub: a date for any column, new or from the sheet. The next import of the sheet sets the
+// sheet's own columns again; columns added in Task Hub keep what was typed.
+function regSetQual(personId,name,date){
+  try{requireInternalUser(currentUser);}catch(e){return false;}
+  const p=(DB.registerPeople||[]).find(x=>x.id===personId);name=String(name||'').trim();if(!p||!name||/^(__proto__|constructor|prototype)$/i.test(name))return false;
+  const d=date?_regParseDateText(date):null;if(date&&!d)return false;
+  p.quals=Object.assign({},p.quals||{});if(d)p.quals[name]={d};else delete p.quals[name];
+  p.updatedAt=new Date().toISOString();saveDB(DB);return true;
+}
+function regAddQualColumn(clientId,name){
+  try{requireInternalUser(currentUser);}catch(e){return false;}
+  name=String(name||'').replace(/\s+/g,' ').trim().slice(0,80);if(!name||/^(__proto__|constructor|prototype)$/i.test(name))return false;
+  const regs=DB.registers=DB.registers||[],now=new Date().toISOString();let meta=regs.find(r=>r.clientId===clientId);
+  if(!meta){meta={id:'reg-'+clientId,clientId,createdAt:now};regs.push(meta);}
+  const t=meta.training=Object.assign({quals:[],added:[]},meta.training||{});t.quals=(t.quals||[]).slice();t.added=(t.added||[]).slice();
+  if(t.quals.some(q=>q.toLowerCase()===name.toLowerCase()))return false;
+  t.quals.push(name);t.added.push(name);meta.updatedAt=now;saveDB(DB);return true;
+}
+function _regAddColumnDialog(clientId){
+  openGenericModal('New training column',`<div class="reg-imp"><p class="rs-su2-intro">A column for a training, ticket or licence the spreadsheet does not have yet. Add each person's expiry from the matrix or their panel. Imports keep this column.</p>
+    <label class="rd-f"><span>Name</span><input type="text" class="form-input" id="reg-col-name" maxlength="80" placeholder="For example: Confined Space Entry"></label>
+    <div class="rs-su2-foot"><span class="rs-su2-sum"></span><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="reg-col-save" onclick="_regAddColumnSave('${clientId}')">Add column</button></div></div>`,'480px');
+  setTimeout(()=>{const i=document.getElementById('reg-col-name');if(i)i.focus();},50);
+}
+function _regAddColumnSave(clientId){
+  const i=document.getElementById('reg-col-name'),name=i?i.value:'';
+  if(!regAddQualColumn(clientId,name)){showToast(String(name).trim()?'That column already exists.':'Type a name for the column.','error');if(i)i.focus();return;}
+  closeGenericModal();if(_regView){_regView.mode='matrix';}renderView('retained');showToast('Training column added.','success');
+}
+function _regSetQualInput(personId,el){if(regSetQual(personId,el.dataset.q,el.value)){_regDrawerRender();_regRerender();}}
+function _regAddRecordHtml(p,qual){
+  const meta=(DB.registers||[]).find(r=>r.clientId===p.clientId)||{},people=(DB.registerPeople||[]).filter(x=>x.clientId===p.clientId&&!x.archived);
+  const cols=_regQualsOrder(people,meta).filter(k=>!(p.quals||{})[k]);
+  if(!cols.length)return'';
+  return`<div class="reg-add-rec"><label class="rd-f"><span>Add a record</span><select class="form-input" id="reg-rec-q">${cols.map(k=>`<option value="${escHtml(k)}"${k===qual?' selected':''}>${escHtml(k)}</option>`).join('')}</select></label><label class="rd-f"><span>Expiry</span><input type="date" class="form-input" id="reg-rec-d"></label><button type="button" class="btn btn-ghost btn-sm" id="reg-rec-add" onclick="_regAddRecord('${p.id}')">Add</button></div>`;
+}
+function _regAddRecord(personId){
+  const q=document.getElementById('reg-rec-q'),d=document.getElementById('reg-rec-d');
+  if(!q||!d||!d.value){if(d)d.focus();return;}
+  if(regSetQual(personId,q.value,d.value)){_regDr.qual=q.value;_regDrawerRender();_regRerender();showToast('Record added.','success');}
 }
 function _regCommentSubmit(clientId){
   const dr=_regDr;if(!dr)return;
@@ -8885,7 +8948,7 @@ function regAddRenewalTasks(clientId,ids){
       status:'todo',priority:'med',ownerId:owner,currentlyWith:owner,currentlyWithType:owner?'staff':'none',currentlyWithUserId:owner,
       startDate:today,endDate:first&&first>today?first:today,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:order++,
       description:'From the training matrix: '+due.map(x=>`${x.name} ${x.s.k==='exp'?'expired':'expires'} ${_regDate(x.q.d)}`).join('; ')+'. Once renewed, update the client\'s matrix and import it again.',
-      dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,registerPersonId:p.id,registerQuals:due.map(x=>x.name)});
+      dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,registerPersonId:p.id,registerQuals:due.map(x=>x.name),clientHidden:true});
     n++;
   });
   if(n){
@@ -8980,7 +9043,7 @@ function _rcMastHtml(c,b,active){
   const go=k=>onBoard?`_rcTabFromBoard('${c.id}','${k}')`:`_rcGo('${k}')`;
   const r=b&&b.retainer,lv=r?(_rsLevel(r.priority)||_rsLevel('Standard')):null,keys=r?(r.services||[]).map(s=>s.key):[],bn=_rsBundleName(keys);
   const lead=r&&r.leadId?getStaff(r.leadId):null,fee=r?_rsFeeFor(r,ym):null;
-  const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:'',_canBill(currentUser)&&fee!=null?`<span>${_rsMoney(fee)} a month</span>`:''].filter(Boolean).join('')
+  const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:''].filter(Boolean).join('')
     :'<span>No active retainer</span>';
   const docs=(DB.registerDocs||[]).filter(d=>d.clientId===c.id&&!d.archived),people=(DB.registerPeople||[]).filter(p=>p.clientId===c.id&&!p.archived);
   const q=b?_rqQueue().filter(x=>x.board.clientId===c.id):[],reqs=q.filter(x=>x.kind==='request').length,late=q.filter(x=>x.late).length;
@@ -9110,7 +9173,7 @@ function renderCpRetained(clientId,tasks,b){
     <div class="cp-stat-card cp-rt-head${focus.length?'':' solo'}">
       <div><div class="cp-section-title">Your retainer</div><dl class="cp-rt-terms">
         <dt>Bundle</dt><dd>${escHtml(_retainerBundle((rt.services||[]).map(s=>s.key)))}</dd>
-        ${rt.priority?`<dt>Priority</dt><dd>${escHtml(rt.priority)}</dd>`:''}<dt>Fee</dt><dd>Fixed monthly fee</dd>${started?`<dt>Started</dt><dd>${escHtml(started)}</dd>`:''}
+        ${rt.priority?`<dt>Priority</dt><dd>${escHtml(rt.priority)}</dd>`:''}<dt>Fee</dt><dd>Fixed monthly fee</dd>${started?`<dt>${rt.startMonth>rt.month?'Starts':'Started'}</dt><dd>${escHtml(started)}</dd>`:''}
         ${team.size?`<dt>Your team</dt><dd>${[...team].map(([n,roles])=>`${escHtml(n)} <span>${escHtml(roles.join(', '))}</span>`).join('<br>')}</dd>`:''}</dl></div>
       ${focus.length?`<div><div class="cp-section-title">${_rsMonthName(rt.month)} focus${rt.leadName?` <span class="cp-rt-by">set by ${escHtml(rt.leadName)}</span>`:''}</div><ul class="cp-rt-focus">${focus.map(t=>{const p=Math.max(0,Math.min(100,t.percentComplete||0)),s=steps(t);return`<li><b>${escHtml(t.title)}</b><span>${p}%</span><i><em style="width:${p}%"></em></i>${s?`<small>${s}</small>`:''}</li>`;}).join('')}</ul></div>`:''}
     </div>
@@ -15428,17 +15491,8 @@ function pfiCalcTotals(inv){
 // Fixed-fee months this invoice can bill: each month of its period in which the client's retainer was on and had a
 // fee (plan R7: the fee covers the retained hours). A month already on this invoice is left out.
 function _pfiFeeCandidates(inv){
-  const out=[];if(!inv||!inv.clientId||!inv.dateFrom||!inv.dateTo||inv.dateFrom>inv.dateTo)return out;
-  const have=new Set((inv.feeLines||[]).map(f=>f.boardId+'|'+f.month));
-  (DB.workboards||[]).filter(b=>b.clientId===inv.clientId&&b.retainer).forEach(b=>{
-    const r=b.retainer,end=b.archived?(r.endMonth||_rsYm(new Date(b.updatedAt||Date.now()))):null;
-    for(let ym=inv.dateFrom.slice(0,7),n=0;ym<=inv.dateTo.slice(0,7)&&n<120;ym=_rsNextYm(ym),n++){
-      if((r.startMonth&&ym<r.startMonth)||(end&&ym>end)||have.has(b.id+'|'+ym))continue;
-      const amount=_rsFeeFor(r,ym);if(!amount)continue;
-      out.push({boardId:b.id,month:ym,amount,label:'Retained Services fixed monthly fee, '+_rsMonthYear(ym)});
-    }
-  });
-  return out;
+  // The fixed fee is typed on the invoice by whoever bills (pfiAddFeeLine), never read from the retainer (2026-10-21).
+  return[];
 }
 // Every fee month already on ANY invoice (except excludeInvoiceId): "boardId|YYYY-MM" to the invoice.
 function pfiInvoicedFeeMap(excludeInvoiceId){
@@ -15446,13 +15500,32 @@ function pfiInvoicedFeeMap(excludeInvoiceId){
   (DB.proFormaInvoices||[]).forEach(inv=>{if(inv.id!==excludeInvoiceId)(inv.feeLines||[]).forEach(f=>m.set(f.boardId+'|'+f.month,{invoiceId:inv.id,number:inv.number}));});
   return m;
 }
+// A fixed fee typed on the invoice by whoever bills: per client, named and priced here, one per client and month.
+function pfiAddFeeLine(invId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  if(!_canBill(currentUser))return;
+  const inv=(DB.proFormaInvoices||[]).find(i=>i.id===invId);if(!inv)return;
+  if(!inv.clientId){showAlert('Please select a client first.');return;}
+  const rb=(DB.workboards||[]).find(w=>w.clientId===inv.clientId&&w.retainer);
+  const key=rb?rb.id:'client:'+inv.clientId;
+  const first=(inv.dateFrom||toDateStr(new Date())).slice(0,7),last=(inv.dateTo||'').slice(0,7)>=first?inv.dateTo.slice(0,7):first;
+  let ym=null;
+  for(let m=first,i=0;m<=last&&i<36;m=_rsNextYm(m),i++){if(!(inv.feeLines||[]).some(f=>f.boardId===key&&f.month===m)){ym=m;break;}}
+  if(!ym){showAlert('Every month of this invoice already has a fixed fee. Change its amount in the table.');return;}
+  (inv.feeLines=inv.feeLines||[]).push({id:'fl'+uid(),kind:rb?'retainer':'fixed',boardId:key,month:ym,label:(rb?'Retained Services fixed monthly fee, ':'Fixed fee, ')+_rsMonthYear(ym),amount:0,billable:true,manual:true});
+  inv.updatedAt=new Date().toISOString();
+  (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:'fee_line_added',actorId:currentUser.id,at:inv.updatedAt});
+  saveDB(DB);_pfiRerenderPreserveScroll();
+}
 // A fee line edited here is a billing decision for this invoice only: it never writes back to the retainer.
 function pfiSaveFeeLine(invId,flId,field,val){
   try{requireInternalUser(currentUser);}catch(e){return;}
+  if(!_canBill(currentUser))return;
   const inv=(DB.proFormaInvoices||[]).find(i=>i.id===invId),f=inv&&(inv.feeLines||[]).find(x=>x.id===flId);if(!f)return;
   if(field==='remove')inv.feeLines=inv.feeLines.filter(x=>x.id!==flId);
   else if(field==='billable')f.billable=!!val;
   else if(field==='amount'){f.amount=Math.round(Math.max(0,Math.min(1e7,parseFloat(val)||0))*100)/100;f.edited=true;}
+  else if(field==='label'){f.label=String(val||'').trim().slice(0,160)||'Fixed fee';}
   else return;
   inv.updatedAt=new Date().toISOString();
   (inv.auditEvents=inv.auditEvents||[]).push({id:'ae'+uid(),event:field==='remove'?'fee_line_removed':field==='billable'?'fee_line_billable':'fee_line_edited',flId,actorId:currentUser.id,at:inv.updatedAt});
@@ -15602,7 +15675,7 @@ function pfiImportEntries(id){
     const outside=approvedForClient.filter(e=>!existing.has(e.id)&&(e.date<inv.dateFrom||e.date>inv.dateTo)).length;
     const alreadyOn=approvedForClient.filter(e=>existing.has(e.id)).length;
     let msg;
-    if(retainedN&&!approvedForClient.some(inPeriod))msg=`The ${retainedN} approved ${retainedN===1?'entry':'entries'} in this period ${retainedN===1?'is':'are'} on the client's retained board, covered by the fixed monthly fee, so ${retainedN===1?'it is':'they are'} not imported here. ${(inv.feeLines||[]).length?'The fee for this period is already on this invoice.':'No fee is set for these months: type it in the board\'s Retainer plan.'}`;
+    if(retainedN&&!approvedForClient.some(inPeriod))msg=`The ${retainedN} approved ${retainedN===1?'entry':'entries'} in this period ${retainedN===1?'is':'are'} on the client's retained board, covered by the fixed monthly fee, so ${retainedN===1?'it is':'they are'} not imported here. ${(inv.feeLines||[]).length?'The fee for this period is already on this invoice.':'Add the fixed fee to this invoice with + Fixed fee.'}`;
     else if(!approvedForClient.length)msg='No approved time entries exist for this client. Approve the timesheet entries in Timesheets first.';
     else if(outside)msg=`This client has ${approvedForClient.length} approved ${approvedForClient.length===1?'entry':'entries'}, but ${outside===approvedForClient.length?'all are':`${outside} fall`} outside ${formatDate(inv.dateFrom)} – ${formatDate(inv.dateTo)}. Widen the invoice date range.`;
     else if(alreadyOn===approvedForClient.length)msg='Every approved entry for this client and date range is already on this invoice.';
@@ -15823,6 +15896,8 @@ function pfiValidate(inv){
   const dupes=(inv.lineItems||[]).filter(l=>l.timeEntryId&&invoicedMap.has(l.timeEntryId));
   if(dupes.length)issues.push(`${dupes.length} line${dupes.length!==1?'s':''} already billed on another invoice`);
   const feeMap=pfiInvoicedFeeMap(inv.id),feeDupes=(inv.feeLines||[]).filter(f=>f.billable&&feeMap.has(f.boardId+'|'+f.month));
+  const feeZero=(inv.feeLines||[]).filter(f=>f.billable&&!(Number(f.amount)>0));
+  if(feeZero.length)issues.push(`${feeZero.length} fixed fee${feeZero.length!==1?'s have':' has'} no amount`);
   if(feeDupes.length)issues.push(`${feeDupes.length} fixed fee${feeDupes.length!==1?'s':''} already on another invoice`);
   return issues;
 }
@@ -16127,6 +16202,7 @@ function _pfiEditorHtml(inv){
   const importBar=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
     <button onclick="pfiImportEntries('${inv.id}')" class="btn btn-teal btn-sm">↓ Import Time Entries</button>
     <button onclick="pfiAddManualLine('${inv.id}')" class="btn btn-ghost btn-sm">+ Manual Line</button>
+    <button onclick="pfiAddFeeLine('${inv.id}')" class="btn btn-ghost btn-sm" id="pfi-add-fee-${inv.id}">+ Fixed fee</button>
     <span style="font-size:11px;color:#8da2b2">${inv.lineItems?.length||0} line item${(inv.lineItems?.length||0)!==1?'s':''} · ${(inv.lineItems||[]).filter(l=>l.billable).length} included</span>
     <div style="display:flex;border:1.5px solid #e2eaf2;border-radius:7px;overflow:hidden">
       ${groupByBtn('day','Day')}${groupByBtn('staff','Staff')}${groupByBtn('task','Task')}
@@ -16222,7 +16298,7 @@ function _pfiEditorHtml(inv){
   const feeTable=feeLines.length?`<div class="card" id="pfi-fees" style="padding:0;overflow:hidden;margin-bottom:12px"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:560px">
       <thead><tr><th style="${thS2}">Fixed fee</th><th style="${thS2}">Month</th><th style="${thS2};text-align:right">Amount</th><th style="${thS2};text-align:center">Incl.</th><th style="${thS2}"></th></tr></thead>
       <tbody>${feeLines.map(f=>`<tr style="${f.billable?'':'background:#fef2f2;color:#9ca3af'}">
-        <td style="${tdS2}">${escHtml(f.label||'Fixed fee')}</td>
+        <td style="${tdS2}"><input type="text" value="${escHtml(f.label||'')}" maxlength="160" data-pfi-fee-label="${f.id}" aria-label="Fixed fee description" onchange="pfiSaveFeeLine('${inv.id}','${f.id}','label',this.value)" style="width:100%;min-width:220px;height:26px;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 8px;font-size:12px;color:#0d1c33"/></td>
         <td style="${tdS2};white-space:nowrap">${escHtml(_rsMonthYear(f.month))}</td>
         <td style="${tdS2};text-align:right"><input type="number" min="0" step="0.01" value="${Number(f.amount)||0}" data-pfi-fee="${f.id}" aria-label="Amount for ${escHtml(f.label||'fixed fee')}" onchange="pfiSaveFeeLine('${inv.id}','${f.id}','amount',this.value)" style="width:110px;height:26px;text-align:right;border:1.5px solid #e2eaf2;border-radius:6px;padding:0 8px;font-size:12px;font-weight:700;color:#0d1c33"/></td>
         <td style="${tdS2};text-align:center"><input type="checkbox" ${f.billable?'checked':''} aria-label="Include this fee" onchange="pfiSaveFeeLine('${inv.id}','${f.id}','billable',this.checked)" style="accent-color:#0d1c33"/></td>
@@ -16257,7 +16333,7 @@ function _pfiEditorHtml(inv){
 
   const auditRows=(inv.auditEvents||[]).slice().reverse().slice(0,15).map(a=>{
     const actor=getStaff(a.actorId);
-    const labels={created:'Invoice created',duplicated:'Duplicated from another invoice',field_changed:'Field updated: '+a.field,entries_imported:((a.detail?.count||0)+' time entries imported'),entries_synced:`Synced with source timesheet (${a.detail?.staleCount||0} updated, ${a.detail?.removedCount||0} removed)`,line_billable:'Line item billable toggled',line_removed:'Line item removed',line_added_manual:'Manual line item added',line_edited:'Line item edited: '+a.field,lines_bulk_billable:`${a.count||0} line item${a.count!==1?'s':''} set ${a.billable?'included':'excluded'}`,lines_bulk_removed:`${a.count||0} line item${a.count!==1?'s':''} removed`,status_changed:'Status changed: '+pfiStatusMeta(a.prev).label+' → '+pfiStatusMeta(a.next).label,pdf_exported:'PDF exported',fees_imported:((a.detail?.count||0)+' fixed fee'+((a.detail?.count||0)!==1?'s':'')+' imported'),fee_line_removed:'Fixed fee removed',fee_line_billable:'Fixed fee included or excluded',fee_line_edited:'Fixed fee amount edited'};
+    const labels={created:'Invoice created',duplicated:'Duplicated from another invoice',field_changed:'Field updated: '+a.field,entries_imported:((a.detail?.count||0)+' time entries imported'),entries_synced:`Synced with source timesheet (${a.detail?.staleCount||0} updated, ${a.detail?.removedCount||0} removed)`,line_billable:'Line item billable toggled',line_removed:'Line item removed',line_added_manual:'Manual line item added',line_edited:'Line item edited: '+a.field,lines_bulk_billable:`${a.count||0} line item${a.count!==1?'s':''} set ${a.billable?'included':'excluded'}`,lines_bulk_removed:`${a.count||0} line item${a.count!==1?'s':''} removed`,status_changed:'Status changed: '+pfiStatusMeta(a.prev).label+' → '+pfiStatusMeta(a.next).label,pdf_exported:'PDF exported',fees_imported:((a.detail?.count||0)+' fixed fee'+((a.detail?.count||0)!==1?'s':'')+' imported'),fee_line_removed:'Fixed fee removed',fee_line_billable:'Fixed fee included or excluded',fee_line_edited:'Fixed fee edited',fee_line_added:'Fixed fee added'};
     return`<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f4f6fa;font-size:11px">${avatarHtml(actor,16)}<div style="flex:1;color:#4a5568">${escHtml(labels[a.event]||a.event)}</div><div style="color:#b0bec5;white-space:nowrap">${actor?escHtml(actor.name.split(' ')[0]):'?'} · ${new Date(a.at||'').toLocaleDateString('en-AU')}</div></div>`;
   }).join('');
   const auditCard=`<div class="card" style="padding:16px 20px;margin-bottom:12px">

@@ -173,17 +173,17 @@ H.run('retained5-test', 3265, async (t) => {
   const vis = await ev(() => {
     const keep = Object.assign({}, currentUser), out = {};
     currentUser.role = 'staff'; currentUser.billing = false; renderView('retained');
-    out.staff = { queue: !!document.getElementById('rd-queue'), fee: /Monthly fee/.test(document.getElementById('rd-clients').textContent), newBtn: !!document.getElementById('rd-new') };
+    out.staff = { queue: !!document.getElementById('rd-queue'), fee: /Monthly fee|\$\d/.test(document.getElementById('rd-clients').textContent), newBtn: !!document.getElementById('rd-new') };
     currentUser.billing = true; renderView('retained');
-    out.bill = /Monthly fee/.test(document.getElementById('rd-clients').textContent);
+    out.bill = /Monthly fee|\$\d/.test(document.getElementById('rd-clients').textContent);
     currentUser.role = 'client'; currentUser.clientId = 'rq-c0'; renderView('retained');
     out.client = !document.getElementById('rd-queue') && /Access Restricted/.test(document.getElementById('view-container').textContent);
     Object.keys(currentUser).forEach(k => delete currentUser[k]); Object.assign(currentUser, keep); renderView('retained');
-    out.admin = !!document.getElementById('rd-new') && /Monthly fee/.test(document.getElementById('rd-clients').textContent);
+    out.admin = { newBtn: !!document.getElementById('rd-new'), fee: /Monthly fee|\$\d/.test(document.getElementById('rd-clients').textContent) };
     return out;
   });
   t.ok(vis.staff.queue && !vis.staff.fee && !vis.staff.newBtn, 'staff see the queue, without fees or the new-board button');
-  t.ok(vis.bill, 'billing staff see the monthly fee column');
+  t.ok(!vis.bill, 'billing staff see no fee here either: the director sets it on the pro forma');
   t.ok(vis.client, 'a client never reaches the dashboard');
-  t.ok(vis.admin, 'admins see fees and can add a retained board');
+  t.ok(vis.admin.newBtn && !vis.admin.fee, 'admins can add a retained board, and see no fee column');
 });

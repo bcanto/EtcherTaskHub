@@ -3,7 +3,7 @@
 // internal-user check), so removing either one alone is caught by neither test by design.
 module.exports = [
   { id: 'rt5-weekend', suite: 'retained5-test', file: 'index.html', note: 'weekends count as business days',
-    find: "function _bdIsWork(d){const w=d.getDay();return w>0&&w<6;}", replace: "function _bdIsWork(d){return true;}" },
+    find: "function _bdIsWork(d){const w=d.getDay();return w>0&&w<6&&", replace: "function _bdIsWork(d){const w=d.getDay();return true||" },
   { id: 'rt5-reply-stop', suite: 'retained5-test', file: 'index.html', note: 'a reply never stops the reply clock',
     find: "function _wrReplied(r){return !!(r.respondedAt||r.status!=='pending'||r.adminNote||r.linkedItemId);}", replace: "function _wrReplied(r){return false;}" },
   { id: 'rt5-approval-stays', suite: 'retained5-test', file: 'index.html', note: 'work sent for approval stays in the queue',
@@ -16,8 +16,8 @@ module.exports = [
     find: "(q.show!=='soon'||r.kind==='request'||r.late||(r.next&&r.next<=soon))", replace: "(q.show!=='soon'||true)" },
   { id: 'rt5-80', suite: 'retained5-test', file: 'index.html', note: 'only 90% and over is flagged',
     find: "usage.filter(u=>u.allowance&&u.ratio>=0.8)", replace: "usage.filter(u=>u.allowance&&u.ratio>=0.9)" },
-  { id: 'rt5-fee-col', suite: 'retained5-test', file: 'index.html', note: 'every staff member sees the fee column',
-    find: "${bill?'<th>Monthly fee</th>':''}", replace: "${true?'<th>Monthly fee</th>':''}" },
+  { id: 'rt5-fee-col', suite: 'retained5-test', file: 'index.html', note: 'the dashboard shows a fee column again',
+    find: "<th>${month} allowances</th>${regCol?", replace: "<th>${month} allowances</th><th>Monthly fee</th>${regCol?" },
   { id: 'rt5-redraw', suite: 'retained5-test', file: 'index.html', note: 'a change from the queue dialog jumps to Client Manager',
     find: "function _wrRedraw(id){\n  if(currentView==='retained'){", replace: "function _wrRedraw(id){\n  if(false){" },
   { id: 'rt5-linked-one-row', suite: 'retained5-test', file: 'index.html', note: 'a job added from a request shows twice',
