@@ -995,6 +995,72 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .rs-mt:focus-within{box-shadow:0 0 0 2px #31585a}
 .rs-su2-foot{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid #eef2f6}
 .rs-su2-sum{flex:1;margin:0;font-size:12.5px;color:#6b8399}.rs-su2-sum b{color:#0d1c33}
+/* New retained board: the configurator (bundle, services, support tier, live summary) */
+.rcf-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;border-radius:10px;background:#f6f8fb}
+.rcf{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:start}
+.rcf-main{display:grid;gap:22px;min-width:0}
+.rcf-step{display:flex;align-items:center;gap:9px;margin:0 0 10px;font:600 14.5px/1.3 Jost,sans-serif;color:#0d1c33;letter-spacing:-.01em}
+.rcf-step>i{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#0d1c33;color:#fff;font:600 11.5px/1 Jost,sans-serif;font-style:normal;flex-shrink:0}
+.rcf-step-n{margin-left:auto;font:400 12px Lato,sans-serif;letter-spacing:0}
+.rcf-bundles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.rcf-b{display:grid;gap:4px;align-content:start;text-align:left;padding:11px 12px 12px;border:1.5px solid #e2eaf2;border-radius:10px;background:#fff;color:#1a2940;font:inherit;cursor:pointer;transition:border-color .15s,background-color .15s,transform .18s cubic-bezier(.2,.8,.2,1)}
+.rcf-b b{font:600 15px/1.2 Jost,sans-serif;color:#0d1c33;letter-spacing:-.01em}
+.rcf-b span{font-size:12px;line-height:1.4;color:#4a5f75}
+.rcf-b small{font-size:11.5px;line-height:1.35;color:#8da2b2}
+.rcf-b:hover{border-color:#97bcbd;background:#fbfcfd}
+.rcf-b:active{transform:scale(.98)}
+.rcf-b:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.rcf-b.on{border-color:#0d1c33;background:#f4f7fa;box-shadow:inset 0 0 0 1px #0d1c33}
+.rcf-b.on small{color:#31585a;font-weight:700}
+.rcf-bs{margin-top:12px;padding:15px 18px 16px;border-radius:12px;background:#0d1c33;color:#e8eef5;box-shadow:0 1px 2px rgba(13,28,51,.12),0 12px 28px -16px rgba(13,28,51,.55)}
+.rcf-bs-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:10px}
+.rcf-bs-h b{font:600 18px/1.2 Jost,sans-serif;color:#fff;letter-spacing:-.02em}
+.rcf-bs-h span{font-size:12.5px;color:#9fb3c6}
+.rcf-ticks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 18px;margin:0;padding:0;list-style:none;font-size:13px;line-height:1.4}
+.rcf-ticks li{display:flex;gap:7px;align-items:flex-start}
+.rcf-ticks .rcf-i{color:#97bcbd;margin-top:2px}
+.rcf-bs-empty,.rcf-wait{margin:12px 0 0;padding:12px 14px;border-radius:10px;border:1px dashed #cfd9e4;font-size:12.5px;line-height:1.55;color:#6b8399}
+.rcf-wait{margin:0 0 12px}
+.rcf-i{width:14px;height:14px;flex-shrink:0}
+.rcf-grp{display:grid;gap:8px}.rcf-grp .rs-cards{align-items:start}.rcf-grp+.rcf-grp{margin-top:16px}
+.rcf-grp-h{display:flex;align-items:baseline;gap:10px;font:700 11px Jost,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#0d1c33}
+.rcf-grp.addon .rcf-grp-h{color:#6b8399}
+.rcf-prog{display:inline-flex;align-items:center;gap:4px;margin-left:auto;font:600 12px Lato,sans-serif;letter-spacing:0;text-transform:none;color:#9a5b0c}
+.rcf-prog.ok{color:#0d6e4e}
+.rcf-svc .rs-card-top{align-items:center}
+.rcf-svc.core{box-shadow:inset 4px 0 0 var(--rs-c)}
+.rcf-svc.core.on{box-shadow:inset 4px 0 0 var(--rs-c),0 1px 3px rgba(13,28,51,.05),0 6px 16px rgba(13,28,51,.06)}
+.rcf-svc.core .rs-card-top{padding-left:18px}
+.rcf-svc.core .rs-card-name b{font-size:14px}
+.rcf-svc.addon .rs-card-name b{font-size:13px;font-weight:600}
+.rcf-svc .rs-card-name small{font-size:11.5px}
+.rcf-st{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding-left:8px;font-size:11.5px;font-weight:700;color:#6b8399;text-align:right;line-height:1.3}
+.rcf-svc.st-fixed .rcf-st,.rcf-svc.st-on .rcf-st{color:#0d6e4e}
+.rcf-svc.st-na{background:#f6f8fb;border-style:dashed;box-shadow:none}
+.rcf-svc.st-na .rs-card-name b,.rcf-svc.st-na .rs-card-name small,.rcf-svc.st-na .rcf-st{color:#a3b1bf}
+.rcf-svc.st-full .rs-card-name b{color:#4a5f75}
+.rcf-svc.st-na .rs-card-top,.rcf-svc.st-full .rs-card-top,.rcf-svc.st-wait .rs-card-top,.rcf-svc.st-fixed .rs-card-top{cursor:default}
+.rcf-svc.st-wait{opacity:.6}
+.rcf-tier{display:grid;grid-template-columns:240px minmax(0,1fr);gap:14px;align-items:end}
+.rcf-tier .rs-lvl-note{grid-column:auto;align-self:center}
+.rcf-aside{position:sticky;top:0;display:grid;gap:12px;padding:16px 16px 18px;border-radius:12px;background:#f6f8fb;box-shadow:inset 0 0 0 1px #e6ecf2}
+.rcf-aside h4{margin:0;font:600 15px/1.3 Jost,sans-serif;color:#0d1c33;letter-spacing:-.01em}
+.rcf-dl{display:grid;gap:11px;margin:0}
+.rcf-dl dt{font:700 10.5px Jost,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#8da2b2}
+.rcf-dl dd{margin:3px 0 0;font-size:13px;line-height:1.45;color:#1a2940}
+.rcf-none{color:#a3b1bf}
+.rcf-list{display:grid;gap:3px;margin:0;padding:0;list-style:none}
+.rcf-list li{display:flex;gap:6px;align-items:flex-start}
+.rcf-list .rcf-i{margin-top:2px}.rcf-list .rcf-i.ok{color:#0d6e4e}
+.rcf-list li.off{color:#a3b1bf}
+.rcf-acts li{justify-content:space-between;gap:10px}.rcf-acts b{font-variant-numeric:tabular-nums;color:#0d1c33}
+.rcf-acts .rcf-total{margin-top:3px;padding-top:5px;border-top:1px solid #dde5ee;font-weight:700}
+.rcf-foot{flex-wrap:wrap}
+.rcf-val{flex:1;display:flex;flex-wrap:wrap;gap:4px 18px;margin:0;padding:0;list-style:none;font-size:13px;font-weight:600;color:#1a2940}
+.rcf-val li{display:inline-flex;align-items:center;gap:5px}.rcf-val .rcf-i{color:#0d6e4e}
+.rcf-guide{flex:1;margin:0;font-size:12.5px;line-height:1.45;color:#9a5b0c}
+@media (max-width:900px){.rcf{grid-template-columns:minmax(0,1fr)}.rcf-aside{position:static}.rcf-bundles{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}}
+@media (max-width:640px){.rcf-top{grid-template-columns:minmax(0,1fr)}.rcf-tier{grid-template-columns:minmax(0,1fr)}.rcf-st{font-size:11px}}
 @media (max-width:760px){.rs-su2-terms{grid-template-columns:repeat(2,minmax(0,1fr))}.rs-cards{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:440px){.rs-su2-terms,.rs-cfg-row{grid-template-columns:minmax(0,1fr)}.rs-su2-foot{flex-wrap:wrap}.rs-su2-sum{flex-basis:100%}}
 .ws-grp-meter.full{color:#b45309;font-weight:700}
@@ -1031,7 +1097,7 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;margin:0}
 .rc-btabs{margin:-24px -24px 0;padding:4px 24px 0;overflow-x:auto;background:#edf0f5}.rc-btabs .reg-tab{flex-shrink:0}
 @media (max-width:640px){.reg-tab{padding:9px 9px;gap:6px}.reg-tab[data-short] .rt-l{display:none}.reg-tab[data-short]::before{content:attr(data-short)}}
-.rc-mast{max-width:1480px;overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(13,28,51,.07),0 1px 2px rgba(13,28,51,.04),0 10px 28px -18px rgba(13,28,51,.2)}
+.rc-mast{overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(13,28,51,.07),0 1px 2px rgba(13,28,51,.04),0 10px 28px -18px rgba(13,28,51,.2)}
 .rc-mast-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px 0}
 .rc-crumb{display:inline-flex;align-items:center;gap:6px;margin-left:-6px;padding:4px 8px 4px 6px;border:0;border-radius:6px;background:none;font:500 12.5px Jost,sans-serif;color:#5c6b80;cursor:pointer;transition:background-color .15s,color .15s}
 .rc-crumb:hover{background:#f2f6f9;color:#0d1c33}.rc-crumb:active{background:#e8eef3}.rc-crumb:focus-visible{outline:2px solid #31585a;outline-offset:1px}
@@ -1120,7 +1186,7 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 @media (max-width:760px){.rs-lvl-note{grid-column:1/-1}}
 .rs-fee input{height:36px}
 .rs-pl-grid .rs-su-f,.rs-su2-terms .rs-cfg{align-content:start}
-.rd{display:grid;gap:16px;max-width:1480px}
+.rd{display:grid;gap:16px;min-width:0}
 .rd-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .rd-sum{margin:0;flex:1;min-width:220px;font-size:13px;color:#3d5269;line-height:1.5}.rd-sum b{font-family:Jost,sans-serif;font-weight:700;color:#0d1c33}
 .rd-late{color:#b91c1c;font-weight:700}
@@ -7560,10 +7626,27 @@ const RETAINER_LEVELS=[
   {key:'High',     bundle:'Plus',    rank:4,resp:0,   del:null,respText:'Same day',       delText:'Accelerated'},
   {key:'Highest',  bundle:'Embedded',rank:5,resp:null,del:null,respText:'Priority queue', delText:'Surge support included'},
 ];
-// The bundles on the website, by their service mix: [core services, add-ons].
+// Support tiers are shown by these names; the stored value is the key.
+RETAINER_LEVELS.forEach(l=>{l.label=({High:'High Priority',Highest:'Highest Priority'})[l.key]||l.key;});
+function _rsTier(key){const l=RETAINER_LEVELS.find(x=>x.key===key);return l?l.label:String(key||'');}
+// What a tier promises, as two short lines.
+function _rsTierPromises(key){
+  const l=RETAINER_LEVELS.find(x=>x.key===key);if(!l)return[];
+  if(l.resp==null)return[l.respText,l.delText];
+  return[l.resp===0?'Reply the same business day':'Reply within '+l.respText,l.del==null?'Accelerated delivery':'Delivery within '+l.delText];
+}
+// The bundles on the website, by their service mix: [core services, add-ons]. pick is what the set-up lets you
+// choose: so many core and add-on services, or (Light) one service of either kind.
 const RETAINER_BUNDLES=[
-  {key:'Light',mix:[[1,0],[0,1]]},{key:'Core',mix:[[2,0]]},{key:'Ops',mix:[[1,1]]},{key:'Plus',mix:[[1,2]]},{key:'Embedded',mix:[[2,3]]},
+  {key:'Light',   mix:[[1,0],[0,1]],pick:{any:1},       text:'1 core or 1 add-on service'},
+  {key:'Core',    mix:[[2,0]],      pick:{core:2,addon:0},text:'2 core services'},
+  {key:'Ops',     mix:[[1,1]],      pick:{core:1,addon:1},text:'1 core and 1 add-on service'},
+  {key:'Plus',    mix:[[1,2]],      pick:{core:1,addon:2},text:'1 core and 2 add-on services'},
+  {key:'Embedded',mix:[[2,3]],      pick:{core:2,addon:3},text:'2 core and 3 add-on services'},
 ];
+function _rsBundle(key){return RETAINER_BUNDLES.find(b=>b.key===key)||null;}
+// The area of the client's business each service covers.
+const RETAINER_COVERAGE=[['ims','Governance'],['hseq','Compliance'],['mob','Mobilisation'],['sys','Systems and data'],['ci','Continuous improvement']];
 function _rsLevel(key){return RETAINER_LEVELS.find(l=>l.key===key)||null;}
 // The allowance as squares, one per unit, filled as it is used (the client portal's meter, staff side). Use beyond the
 // allowance follows as amber outlined squares. Over 60 units (or the cap given) the squares give way to the words.
@@ -7572,6 +7655,13 @@ function _rsSquares(used,allowance,color,cls,cap){
   const on=Math.min(used,allowance),extra=Math.min(Math.max(0,used-allowance),cap-allowance>12?12:Math.max(0,cap-allowance));
   let h='';for(let i=0;i<allowance;i++)h+=i<on?'<i class="on"></i>':'<i></i>';for(let i=0;i<extra;i++)h+='<i class="x"></i>';
   return`<span class="rs-sq${cls?' '+cls:''}" style="--sq-c:${_safeCss(color,'#31585a')}" aria-hidden="true">${h}</span>`;
+}
+// Months a retainer can start in: two years back (a client already on a retainer) to a year ahead.
+function _rsStartMonthOptions(sel){
+  const now=_rsYm();let ym=now;for(let i=0;i<24;i++)ym=_rsPrevYm(ym);
+  const list=[];for(let i=0;i<37;i++){list.push(ym);ym=_rsNextYm(ym);}
+  if(sel&&/^\d{4}-\d{2}$/.test(sel)&&!list.includes(sel))list.push(sel),list.sort();
+  return list.map(x=>`<option value="${x}"${x===sel?' selected':''}>${escHtml(_rsMonthYear(x))}${x===now?' (this month)':''}</option>`).join('');
 }
 function _rsBundleName(keys){
   const core=keys.filter(k=>(_rsCat(k)||{}).kind==='core').length,add=keys.length-core;
@@ -7587,14 +7677,14 @@ function _rsLevelLine(key){
 // An unknown saved value stays selectable, so opening the plan never changes it by itself.
 function _rsLevelOptions(cur){
   const ks=RETAINER_LEVELS.map(l=>l.key);
-  return(cur&&!ks.includes(cur)?[cur]:[]).concat(ks).map(k=>`<option value="${escHtml(k)}"${k===cur?' selected':''}>${escHtml(k)}</option>`).join('');
+  return(cur&&!ks.includes(cur)?[cur]:[]).concat(ks).map(k=>`<option value="${escHtml(k)}"${k===cur?' selected':''}>${escHtml(_rsTier(k))}</option>`).join('');
 }
 // Under the level: the bundle the services make, what the level promises, and the suggested level when it differs.
 function _rsLevelNote(keys,level,useCall){
   const b=_rsBundleName(keys),sug=_rsSuggestedLevel(keys);
-  const head=!keys.length?'':b?`<b>${b} bundle.</b> `:'<b>Custom mix.</b> No bundle matches, so pick the level. ';
-  const use=sug&&sug!==level?` The ${b} bundle suggests ${sug}.${useCall?` <button type="button" class="rs-lvl-use" data-rs-use="${sug}" onclick="${useCall(sug)}">Use ${sug}</button>`:''}`:'';
-  return head+(_rsLevel(level)?`${escHtml(level)}: ${_rsLevelLine(level)}`:'')+use;
+  const head=!keys.length?'':b?`<b>${b} bundle.</b> `:'<b>Custom mix.</b> No bundle matches, so pick the support tier. ';
+  const use=sug&&sug!==level?` The ${b} bundle comes with ${escHtml(_rsTier(sug))} support.${useCall?` <button type="button" class="rs-lvl-use" data-rs-use="${sug}" onclick="${useCall(sug)}">Use ${escHtml(_rsTier(sug))}</button>`:''}`:'';
+  return head+(_rsLevel(level)?`${escHtml(_rsTier(level))}: ${_rsLevelLine(level)}`:'')+use;
 }
 // The fixed monthly fee, typed by an admin. Staff only: the portal slice never carries it (api/_portal.js).
 // A change applies from the month it is made (or the start month), so an earlier month keeps the fee it had.
@@ -7648,74 +7738,200 @@ function openRetainerSetup(){
   const staff=_rsStaff();
   const lead=staff.some(u=>u.id===currentUser.id)?currentUser.id:((staff[0]||{}).id||null);
   const d=new Date();
-  _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,fee:null,svc:{}};
-  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:s.kind==='core',allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true)};});
+  _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,bundle:null,svc:{}};
+  // Bundle first: nothing is ticked until a bundle is chosen.
+  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true)};});
   _rsSetupFollowLevel();
   _rsSetupRender();
 }
-// The level follows the bundle the ticked services make, until the admin picks a level themselves.
+// The support tier follows the bundle, until the admin picks a tier themselves.
 function _rsSetupFollowLevel(){
   const m=_rsSetup;if(!m||m.levelSet)return;
-  const s=_rsSuggestedLevel(RETAINER_CATALOGUE.filter(x=>m.svc[x.key].on).map(x=>x.key));if(s)m.priority=s;
+  const b=_rsSetupBundle(m),l=b&&RETAINER_LEVELS.find(x=>x.bundle===b.key);if(l)m.priority=l.key;
+}
+function _rsSetupKeys(m){return RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on).map(s=>s.key);}
+// The bundle being built: the one chosen, else the one the ticked services make.
+function _rsSetupBundle(m){return _rsBundle(m.bundle)||_rsBundle(_rsBundleName(_rsSetupKeys(m)));}
+// How many services of this kind the bundle takes, and from which pool (Light: one of any kind).
+function _rsSlot(b,kind){
+  if(b.pick.any!=null)return{n:b.pick.any,pool:RETAINER_CATALOGUE};
+  return{n:b.pick[kind]||0,pool:RETAINER_CATALOGUE.filter(s=>s.kind===kind)};
+}
+// A service under the chosen bundle: 'fixed' (included, always on), 'on' (picked), 'open' (can be picked),
+// 'full' (the bundle's room for this kind is taken: untick one to swap), 'na' (not in this bundle),
+// 'wait' (no bundle chosen yet).
+function _rsSvcState(m,key){
+  const b=_rsBundle(m.bundle),v=m.svc[key];
+  if(!b)return v.on?'on':(_rsSetupKeys(m).length?'open':'wait');
+  const sl=_rsSlot(b,(_rsCat(key)||{}).kind);
+  if(sl.n===0)return'na';
+  if(sl.n>=sl.pool.length)return'fixed';
+  if(v.on)return'on';
+  return sl.n>1&&sl.pool.filter(s=>m.svc[s.key].on).length>=sl.n?'full':'open';
+}
+// Choosing a bundle fills in its services: what it includes, and for what it leaves open the services already
+// picked of that kind (then the first ones) up to the number it takes.
+function _rsSetupBundlePick(m,key){
+  const b=_rsBundle(key);if(!b)return;
+  m.bundle=b.key;
+  const fill=(pool,n)=>{const keep=pool.filter(s=>m.svc[s.key].on).slice(0,n);const pick=keep.concat(pool.filter(s=>!keep.includes(s)).slice(0,Math.max(0,n-keep.length)));pool.forEach(s=>{m.svc[s.key].on=pick.includes(s);});};
+  if(b.pick.any!=null)fill(RETAINER_CATALOGUE,b.pick.any);
+  else{fill(RETAINER_CATALOGUE.filter(s=>s.kind==='core'),b.pick.core);fill(RETAINER_CATALOGUE.filter(s=>s.kind==='addon'),b.pick.addon);}
+  _rsSetupFollowLevel();
+}
+// Ticking a service: never more than the bundle allows. Where it takes one of a kind, ticking another swaps.
+function _rsSetupToggle(m,key,on){
+  const v=m.svc[key],b=_rsBundle(m.bundle);
+  if(!b){v.on=on;_rsSetupFollowLevel();return;}
+  const st=_rsSvcState(m,key);
+  if(st==='na'||st==='fixed'||st==='wait')return;
+  if(!on){v.on=false;return;}
+  if(st==='full')return;
+  const sl=_rsSlot(b,(_rsCat(key)||{}).kind);
+  if(sl.n===1)sl.pool.forEach(s=>{m.svc[s.key].on=false;});
+  v.on=true;
+}
+// Picked against required, per kind, for the progress line and the checks.
+function _rsSetupProgress(m,b){
+  if(!b)return[];
+  const row=(label,kind,pool,n)=>({label,kind,have:pool.filter(s=>m.svc[s.key].on).length,n});
+  if(b.pick.any!=null)return[row('Services','any',RETAINER_CATALOGUE,b.pick.any)];
+  return[row('Core services','core',RETAINER_CATALOGUE.filter(s=>s.kind==='core'),b.pick.core),row('Add-on services','addon',RETAINER_CATALOGUE.filter(s=>s.kind==='addon'),b.pick.addon)];
+}
+// What still stands between the set-up and a board, as guidance (empty when it can be created).
+function _rsSetupIssues(m){
+  const out=[],b=_rsSetupBundle(m),keys=_rsSetupKeys(m);
+  if(!(DB.clients||[]).some(c=>c.id===m.clientId))out.push('Choose the client.');
+  if(!b){out.push(keys.length?'These services make no bundle. Choose a bundle and its services fill in.':'Choose a bundle to start. Its services fill in for you.');return out;}
+  _rsSetupProgress(m,b).forEach(r=>{
+    const word=r.kind==='core'?'core service':r.kind==='addon'?'add-on service':'service';
+    if(r.have<r.n){const k=r.n-r.have;out.push(r.kind==='any'?`Pick the service for the ${b.key} bundle.`:`Pick ${k} more ${word}${k>1?'s':''} for the ${b.key} bundle.`);}
+    else if(r.have>r.n)out.push(`The ${b.key} bundle takes ${r.n} ${word}${r.n>1?'s':''}. Untick ${r.have-r.n}.`);
+  });
+  if(!m.leadId)out.push('Choose the retainer lead.');
+  keys.forEach(k=>{if(!m.svc[k].ownerId)out.push(`Choose an owner for ${_rsCat(k).name}.`);});
+  if(!/^[0-9]{4}-[0-9]{2}$/.test(String(m.startMonth||'')))out.push('Choose the month it starts.');
+  return out;
 }
 function _rsSet(field,key,val,i){
   const m=_rsSetup;if(!m)return;
   if(key){
     const v=m.svc[key];if(!v)return;
-    if(field==='on'){v.on=!!val;_rsSetupFollowLevel();}
+    if(field==='on')_rsSetupToggle(m,key,!!val);
     else if(field==='allowance')v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner')v.ownerId=val||null;
     else if(field==='mt')v.mt[i]=!!val;
-  }else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
+  }else if(field==='bundle')_rsSetupBundlePick(m,val);
+  else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
   else if(field==='fee')m.fee=_rsFeeParse(val);
-  else if(['clientId','leadId','startMonth'].includes(field))m[field]=val;
+  else if(field==='startMonth'){if(/^[0-9]{4}-[0-9]{2}$/.test(String(val||'')))m.startMonth=val;}
+  else if(['clientId','leadId'].includes(field))m[field]=val;
   _rsSetupRender();
 }
 function _rsSetupRender(){
   const m=_rsSetup;if(!m)return;
-  const picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
+  const b=_rsSetupBundle(m),picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
+  const core=picks.filter(s=>s.kind==='core'),adds=picks.filter(s=>s.kind!=='core');
   const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
+  const acts=picks.reduce((n,s)=>n+(m.svc[s.key].allowance||0),0);
+  const issues=_rsSetupIssues(m),lead=m.leadId?getStaff(m.leadId):null;
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
+  const tier=_rsTier(m.priority),bTier=b?RETAINER_LEVELS.find(x=>x.bundle===b.key):null;
   const staffOpts=v=>_rsStaff().map(u=>`<option value="${u.id}"${u.id===v?' selected':''}>${escHtml(u.name)}</option>`).join('');
-  const card=s=>{const v=m.svc[s.key];return`<div class="rs-card${v.on?' on':''}" style="--rs-c:${s.color}">
-      <label class="rs-card-top"><input type="checkbox" class="rs-check" data-rs-svc="${s.key}"${v.on?' checked':''} onchange="_rsSet('on','${s.key}',this.checked)">
-        <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${s.kind==='core'?'Core service':'Add-on'}</small></span></label>
+  const IC={
+    ok:'<svg class="rcf-i ok" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    open:'<svg class="rcf-i open" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    no:'<svg class="rcf-i no" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 5l6 6M11 5l-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  };
+  const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+  // 1. Bundles
+  const bundles=RETAINER_BUNDLES.map(x=>{const on=!!(b&&b.key===x.key),l=RETAINER_LEVELS.find(y=>y.bundle===x.key);
+    return`<button type="button" class="rcf-b${on?' on':''}" data-rs-bundle="${x.key}" data-f="b-${x.key}" aria-pressed="${on}" onclick="_rsSet('bundle',null,'${x.key}')"><b>${x.key}</b><span>${escHtml(x.text)}</span><small>${l?escHtml(l.label)+' support':''}</small></button>`;}).join('');
+  const bsum=b?`<div class="rcf-bs" id="rs-su-bsum"><div class="rcf-bs-h"><b>${b.key} bundle</b><span>${escHtml(b.text)}</span></div><ul class="rcf-ticks">${[
+      ...(b.pick.any!=null?['1 service, core or add-on']:[b.pick.core?plural(b.pick.core,'core service'):'',b.pick.addon?plural(b.pick.addon,'add-on service'):'']),
+      tier+' support',..._rsTierPromises(m.priority)].filter(Boolean).map(t=>`<li>${IC.ok}${escHtml(t)}</li>`).join('')}</ul></div>`
+    :'<p class="rcf-bs-empty">Each bundle sets how many core and add-on services the client has and the support that comes with them. Choose one and its services fill in below.</p>';
+  // 2. Services
+  const badge=(st,s)=>{
+    if(st==='fixed')return`<span class="rcf-st">${IC.ok}Included</span>`;
+    if(st==='on')return`<span class="rcf-st">${IC.ok}Selected</span>`;
+    if(st==='open')return`<span class="rcf-st">${IC.open}Optional</span>`;
+    if(st==='full'){const n=_rsSlot(b,s.kind).n;return`<span class="rcf-st">${IC.open}${b.key} takes ${n}: untick one to swap</span>`;}
+    if(st==='na')return`<span class="rcf-st">${IC.no}Not in ${b.key}</span>`;
+    return'';
+  };
+  const card=s=>{const v=m.svc[s.key],st=_rsSvcState(m,s.key),lock=st==='fixed'||st==='na'||st==='full'||st==='wait';
+    return`<div class="rs-card rcf-svc ${s.kind} st-${st}${v.on?' on':''}" style="--rs-c:${s.color}" data-rs-state="${st}" data-rs-card="${s.key}">
+      <label class="rs-card-top"><input type="checkbox" class="rs-check" data-rs-svc="${s.key}" data-f="svc-${s.key}"${v.on?' checked':''}${lock?' disabled':''} onchange="_rsSet('on','${s.key}',this.checked)">
+        <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</small></span>${badge(st,s)}</label>
       ${v.on?`<div class="rs-card-cfg">
         <div class="rs-cfg-row">
-          <label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>
-          <label class="rs-cfg"><span>Owner</span><select class="form-input" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
+          <label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" data-f="al-${s.key}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>
+          <label class="rs-cfg"><span>Owner</span><select class="form-input" data-f="ow-${s.key}" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
         </div>
-        <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
-      </div>`:`<div class="rs-card-off">${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</div>`}
+        <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox" data-f="mt-${s.key}-${i}"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
+      </div>`:''}
     </div>`;};
-  const sum=picks.length?`<b>${escHtml(_retainerBundle(picks.map(s=>s.key)))}</b>, ${nTasks} monthly task${nTasks===1?'':'s'}.${c&&!c.portalEnabled?' Their portal is off, so they see the tab once it is on.':''}`:'Tick at least one service.';
-  const body=`<div class="rs-su2">
-    <p class="rs-su2-intro">One board for this client under Retained Services, with a group per service and the monthly tasks you keep. The client then sees a Retained Services tab in their portal.</p>
-    <div class="rs-su2-terms">
-      <label class="rs-cfg"><span>Client</span><select class="form-input" id="rs-su-client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
-      <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
-      <label class="rs-cfg"><span>Starts</span><input type="month" class="form-input" value="${m.startMonth}" onchange="_rsSet('startMonth',null,this.value)"></label>
-      <label class="rs-cfg"><span>Service level</span><select class="form-input" id="rs-su-level" onchange="_rsSet('priority',null,this.value)">${_rsLevelOptions(m.priority)}</select></label>
-      <p class="rs-lvl-note" id="rs-su-lvlnote">${_rsLevelNote(picks.map(s=>s.key),m.priority,lv=>`_rsSet('priority',null,'${lv}')`)}</p>
+  const prog=_rsSetupProgress(m,b),pr=k=>{const r=prog.find(x=>x.kind===k);return r?`<span class="rcf-prog${r.have>=r.n?' ok':''}">${r.have} of ${r.n} selected${r.have>=r.n?IC.ok:''}</span>`:'';};
+  const light=b&&b.pick.any!=null;
+  const group=(kind,title)=>`<section class="rcf-grp ${kind}"><div class="rcf-grp-h"><b>${title}</b>${light?'':pr(kind)}</div><div class="rs-cards">${RETAINER_CATALOGUE.filter(s=>s.kind===kind).map(card).join('')}</div></section>`;
+  // 3. Support tier
+  const tierNote=(b&&bTier?(bTier.key===m.priority?`Comes with the ${b.key} bundle. `:`The ${b.key} bundle comes with ${escHtml(bTier.label)} support. <button type="button" class="rs-lvl-use" data-rs-use="${bTier.key}" onclick="_rsSet('priority',null,'${bTier.key}')">Use ${escHtml(bTier.label)}</button> `):'')
+    +(_rsLevel(m.priority)?`<b>${escHtml(tier)}:</b> ${escHtml(_rsLevelLine(m.priority))}`:'');
+  // Summary
+  const li=(on,t)=>`<li class="${on?'':'off'}">${on?IC.ok:IC.open}<span>${escHtml(t)}</span></li>`;
+  const aside=`<aside class="rcf-aside" id="rs-su-summary" aria-label="Retainer summary">
+    <h4>Retainer summary</h4>
+    <dl class="rcf-dl">
+      <div><dt>Bundle</dt><dd>${b?escHtml(b.key):'<span class="rcf-none">Not chosen yet</span>'}</dd></div>
+      <div><dt>Support tier</dt><dd>${escHtml(tier)}</dd></div>
+      <div><dt>Core services</dt><dd>${core.length?`<ul class="rcf-list">${core.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
+      <div><dt>Add-on services</dt><dd>${adds.length?`<ul class="rcf-list">${adds.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
+      <div><dt>Monthly activities</dt><dd>${picks.length?`<ul class="rcf-list rcf-acts">${picks.map(s=>`<li><span>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}</span><b>${m.svc[s.key].allowance}</b></li>`).join('')}<li class="rcf-total"><span>Total</span><b id="rs-su-acts">${acts}</b></li></ul>`:'<span class="rcf-none">None</span>'}</dd></div>
+      <div><dt>Monthly tasks</dt><dd id="rs-su-tasks">${nTasks}</dd></div>
+      <div><dt>Coverage</dt><dd><ul class="rcf-list" id="rs-su-cover">${RETAINER_COVERAGE.map(([k,t])=>li(m.svc[k]&&m.svc[k].on,t)).join('')}</ul></dd></div>
+      <div><dt>Retainer lead</dt><dd>${lead?escHtml(lead.name):'<span class="rcf-none">Not chosen</span>'}</dd></div>
+      <div><dt>Starts</dt><dd>${/^[0-9]{4}-[0-9]{2}$/.test(m.startMonth||'')?escHtml(_rsMonthYear(m.startMonth)):'<span class="rcf-none">Not chosen</span>'}</dd></div>
+    </dl>
+  </aside>`;
+  const foot=issues.length
+    ?`<p class="rcf-guide" id="rs-su-guide">${escHtml(issues[0])}</p>`
+    :`<ul class="rcf-val" id="rs-su-value"><li>${IC.ok}${plural(picks.length,'service')} included</li><li>${IC.ok}${plural(nTasks,'monthly task')}</li><li>${IC.ok}${escHtml(tier)} support</li></ul>`;
+  const body=`<div class="rs-su2 rcf-wrap">
+    <p class="rs-su2-intro">One board for this client under Retained Services, with a group per service and the monthly tasks you keep. The client then sees a Retained Services tab in their portal.${c&&!c.portalEnabled?' Their portal is off, so they see it once it is on.':''}</p>
+    <div class="rcf-top">
+      <label class="rs-cfg"><span>Client</span><select class="form-input" id="rs-su-client" data-f="client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
+      <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" id="rs-su-lead" data-f="lead" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
+      <label class="rs-cfg"><span>Starts</span><select class="form-input" id="rs-su-start" data-f="start" onchange="_rsSet('startMonth',null,this.value)">${_rsStartMonthOptions(m.startMonth)}</select></label>
     </div>
-    <div class="rs-su2-h">Services</div>
-    <div class="rs-cards">${RETAINER_CATALOGUE.map(card).join('')}</div>
-    <div class="rs-su2-foot"><p class="rs-su2-sum">${sum}</p><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="rs-su-create" onclick="retainerCreate()"${picks.length?'':' disabled'}>Create board</button></div>
+    <div class="rcf">
+      <div class="rcf-main">
+        <section><h3 class="rcf-step"><i>1</i>Choose a bundle</h3><div class="rcf-bundles" role="group" aria-label="Bundle">${bundles}</div>${bsum}</section>
+        <section><h3 class="rcf-step"><i>2</i>Services${light?`<span class="rcf-step-n">${pr('any')}</span>`:''}</h3>${group('core','Core services')}${group('addon','Add-on services')}</section>
+        <section><h3 class="rcf-step"><i>3</i>Support tier</h3><div class="rcf-tier"><label class="rs-cfg"><span>Support tier</span><select class="form-input" id="rs-su-level" data-f="tier" onchange="_rsSet('priority',null,this.value)">${_rsLevelOptions(m.priority)}</select></label><p class="rs-lvl-note" id="rs-su-lvlnote">${tierNote}</p></div></section>
+      </div>
+      ${aside}
+    </div>
+    <div class="rs-su2-foot rcf-foot">${foot}<button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="rs-su-create" onclick="retainerCreate()"${issues.length?' disabled':''}>Create board</button></div>
   </div>`;
-  openGenericModal('New retained board',body,'820px');
+  // Redrawn on every choice: keep the scroll position and the focus where they were.
+  const box=document.querySelector('#generic-modal .modal-box'),bodyEl=document.getElementById('generic-modal-body');
+  const keep=[box?box.scrollTop:0,bodyEl?bodyEl.scrollTop:0],f=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.f:null;
+  openGenericModal('New retained board',body,'1120px');
+  if(box)box.scrollTop=keep[0];if(bodyEl)bodyEl.scrollTop=keep[1];
+  if(f){const el=document.querySelector(`#generic-modal [data-f="${f}"]`);if(el&&!el.disabled)try{el.focus({preventScroll:true});}catch(e){}}
 }
 function retainerCreate(){
   if(currentUser?.role!=='admin')return;
   const m=_rsSetup;if(!m)return;
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
   const picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
-  if(!c||!picks.length||!/^\d{4}-\d{2}$/.test(m.startMonth||''))return;
+  if(!c||!picks.length||_rsSetupIssues(m).length)return;
   if(!_rsSetupClients().some(x=>x.id===c.id)){showToast(`${c.name} already has a retained board.`,'error');return;}
   const now=new Date().toISOString(),boardId=uid(),first=m.startMonth+'-01';
   const board={id:boardId,name:c.name,color:c.color||'#7c3aed',visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,
     ownerId:currentUser.id,description:'Retained services',archived:false,excludeFromReports:false,createdAt:now,updatedAt:now,
-    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:_rsLevel(m.priority)?m.priority:'Standard',months:{},endedAt:null,
-      fees:m.fee>0?[{from:m.startMonth,amount:m.fee,at:now,by:currentUser.id}]:[]}};
+    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:_rsLevel(m.priority)?m.priority:'Standard',bundle:(_rsSetupBundle(m)||{}).key||null,months:{},endedAt:null,fees:[]}};
   DB.workboards.push(board);
   let made=0;
   picks.forEach((s,i)=>{
@@ -7760,7 +7976,7 @@ function openRetainerPlan(boardId){
     <div class="rs-pl-meta"><span class="rs-chip">Retainer</span><span>${escHtml(_retainerBundle((r.services||[]).map(s=>s.key)))}</span><span>${r.startMonth&&r.startMonth>_rsYm()?'Starts':'Started'} ${escHtml(r.startMonth?new Date(r.startMonth+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long',year:'numeric'}):'')}</span></div>
     <div class="rs-pl-grid">
       <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
-      <label class="rs-su-f"><span>Service level</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(r.priority||'')}</b>`}</label>
+      <label class="rs-su-f"><span>Support tier</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(_rsTier(r.priority))}</b>`}</label>
       <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b><small>Set on the pro forma invoice</small></div>
     </div>
     <p class="rs-lvl-note" id="rs-pl-lvlnote">${_rsLevelNote((r.services||[]).map(s=>s.key),r.priority,admin?lv=>`_rsPlanSet('${b.id}','priority',null,'${lv}')`:null)}</p>
@@ -7949,7 +8165,7 @@ const _RD_SVG={
 // The level as bars, one to five, with its name: shape and words together.
 function _rdLevelHtml(lv){
   const bars=[0,1,2,3,4].map(i=>`<rect x="${i*4}" y="${10-i*2.2}" width="2.6" height="${2+i*2.2}" rx=".6"${i<lv.rank?' class="on"':''}/>`).join('');
-  return`<span class="rq-lv" title="${escHtml(lv.key)}: ${escHtml(_rsLevelLine(lv.key))}"><svg viewBox="0 0 19 12" aria-hidden="true">${bars}</svg><span>${escHtml(lv.key)}</span></span>`;
+  return`<span class="rq-lv" title="${escHtml(_rsTier(lv.key))} support: ${escHtml(_rsLevelLine(lv.key))}"><svg viewBox="0 0 19 12" aria-hidden="true">${bars}</svg><span>${escHtml(_rsTier(lv.key))}</span></span>`;
 }
 function _rdShort(d){return new Date(d+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});}
 // One clock: met (muted), late (red triangle), due today (amber diamond), or the date it is due.
@@ -8012,7 +8228,7 @@ function renderRetainedDash(){
   const owners=[...new Set(all.map(r=>r.ownerId).filter(Boolean))].map(id=>getStaff(id)).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
   const sel=(k,label,opts)=>`<label class="rd-f"><span>${label}</span><select class="form-input" data-rd-q="${k}" onchange="_rdSetQ('${k}',this.value)">${opts.map(([v,l])=>`<option value="${escHtml(v)}"${_rdQ[k]===v?' selected':''}>${escHtml(l)}</option>`).join('')}</select></label>`;
   const filters=sel('client','Client',[['','All clients']].concat(boards.map(b=>[b.clientId,cName(b.clientId)])))
-    +sel('level','Level',[['','All levels']].concat(RETAINER_LEVELS.slice().reverse().map(l=>[l.key,l.key])))
+    +sel('level','Support tier',[['','All tiers']].concat(RETAINER_LEVELS.slice().reverse().map(l=>[l.key,l.label])))
     +sel('owner','Owner',[['','Anyone'],['me','Me']].concat(owners.filter(u=>u.id!==currentUser.id).map(u=>[u.id,u.name])))
     +sel('show','Show',[['soon','Requests and work due soon'],['requests','Requests only'],['all','All open work'],['late','Late only']])
     +sel('order','Order',[['level','By level'],['due','By due date']]);
@@ -8032,7 +8248,7 @@ function renderRetainedDash(){
   const qBody=rows.length?rows.map(qRow).join(''):`<tr class="rq-none"><td colspan="7">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`No open requests, and nothing late or due within a week. <button type="button" class="rs-lvl-use" id="rd-show-all" onclick="_rdSetQ('show','all')">Show all ${all.length} open item${all.length===1?'':'s'}</button>`:'Nothing matches these filters.'}</td></tr>`;
   const queue=`<section class="rd-sheet" aria-labelledby="rd-q-h">
     <div class="rd-sheet-head"><h2 class="rd-h" id="rd-q-h">Queue <span class="rd-n">${rows.length}${rows.length!==all.length?' of '+all.length:''}</span></h2><div class="rd-filters">${filters}</div></div>
-    <div class="rq-wrap"><table class="rq-t" id="rd-queue"><thead><tr><th>Level</th><th>Client</th><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
+    <div class="rq-wrap"><table class="rq-t" id="rd-queue"><thead><tr><th>Tier</th><th>Client</th><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
     <p class="rd-hint">Ordered by the client's service level, then the nearest date. Reply and delivery dates count business days, Monday to Friday, from the day the request came in. The reply clock stops at the first reply or action; delivery stops when the work is done or sent for approval.</p>
   </section>`;
   // Clients
@@ -8052,7 +8268,7 @@ function renderRetainedDash(){
   };
   const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
     <div class="rd-sheet-head"><h2 class="rd-h" id="rd-c-h">Clients <span class="rd-n">${boards.length}</span></h2></div>
-    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Level</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
+    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Support tier</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
   </section>`;
   const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
   return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}${queue}${clients}</div>`;
@@ -8089,7 +8305,7 @@ function _mrData(b,ym){
   const focus=((months[ym]||{}).focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean)
     .map(t=>({name:t.name||t.title||'',state:_rsDone(t)?'Done':`${getEffectiveTaskPct(t.id)}% complete`}));
   const lead=r.leadId?getStaff(r.leadId):null,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys);
-  return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority||'',levelLine:_rsLevelLine(r.priority),
+  return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority?_rsTier(r.priority):'',levelLine:_rsLevelLine(r.priority),
     bundle:(bn?bn+' bundle, ':'')+_retainerBundle(keys),lead:lead?lead.name:'',
     services:(r.services||[]).map(s=>({name:(_rsCat(s.key)||{name:s.key}).name,unit:s.unit,allowance:s.allowance,used:_retainerUsed(b.id,s.groupId,ym)})),
     delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date()),regs:_mrRegs(b,ym)};
@@ -8169,7 +8385,7 @@ function _mrPdf(d,logo){
     doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...INK);const ln=doc.splitTextToSize(val||'',w);doc.text(ln,x,yy+4.6);return ln.length;};
   const cW=(W-M*2)/2-4;
   let a=pair('Client',d.client,M,y,cW),b2=pair('Month',d.monthLabel,M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
-  a=pair('Service level',d.level+(d.levelLine?': '+d.levelLine:''),M,y,cW);b2=pair('Bundle',d.bundle,M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
+  a=pair('Support tier',d.level+(d.levelLine?': '+d.levelLine:''),M,y,cW);b2=pair('Bundle',d.bundle,M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
   a=pair('Retainer lead',d.lead,M,y,cW);b2=pair('Prepared',date(d.prepared),M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
   // The month in figures: one ruled row, three cells.
   y+=2;doc.setDrawColor(...RULE);doc.setLineWidth(0.3);
@@ -9173,7 +9389,7 @@ function renderCpRetained(clientId,tasks,b){
     <div class="cp-stat-card cp-rt-head${focus.length?'':' solo'}">
       <div><div class="cp-section-title">Your retainer</div><dl class="cp-rt-terms">
         <dt>Bundle</dt><dd>${escHtml(_retainerBundle((rt.services||[]).map(s=>s.key)))}</dd>
-        ${rt.priority?`<dt>Priority</dt><dd>${escHtml(rt.priority)}</dd>`:''}<dt>Fee</dt><dd>Fixed monthly fee</dd>${started?`<dt>${rt.startMonth>rt.month?'Starts':'Started'}</dt><dd>${escHtml(started)}</dd>`:''}
+        ${rt.priority?`<dt>Support tier</dt><dd>${escHtml(_rsTier(rt.priority))}</dd>`:''}<dt>Fee</dt><dd>Fixed monthly fee</dd>${started?`<dt>${rt.startMonth>rt.month?'Starts':'Started'}</dt><dd>${escHtml(started)}</dd>`:''}
         ${team.size?`<dt>Your team</dt><dd>${[...team].map(([n,roles])=>`${escHtml(n)} <span>${escHtml(roles.join(', '))}</span>`).join('<br>')}</dd>`:''}</dl></div>
       ${focus.length?`<div><div class="cp-section-title">${_rsMonthName(rt.month)} focus${rt.leadName?` <span class="cp-rt-by">set by ${escHtml(rt.leadName)}</span>`:''}</div><ul class="cp-rt-focus">${focus.map(t=>{const p=Math.max(0,Math.min(100,t.percentComplete||0)),s=steps(t);return`<li><b>${escHtml(t.title)}</b><span>${p}%</span><i><em style="width:${p}%"></em></i>${s?`<small>${s}</small>`:''}</li>`;}).join('')}</ul></div>`:''}
     </div>
@@ -22577,12 +22793,35 @@ function _wsSetColOrder(grid,order){
   _wsColOrderMap[bid]=next;
   try{localStorage.setItem('etcher_ws_col_order',JSON.stringify(_wsColOrderMap));}catch(e){}
 }
+// Built-in and added columns share one order per grid, so an added column moves like the others. A key the saved
+// order does not name keeps its default place: built-in columns first, added columns after them in their own order.
+function _wsMixCols(grid,vis,custs){
+  const saved=_wsGetColOrder(grid)||[],idx=new Map(saved.map((k,i)=>[k,i]));
+  const all=[...(vis||[]).map(c=>({key:c.key,c})),...(custs||[]).map(cc=>({key:cc.id,cc}))];
+  return all.map((x,i)=>({x,s:idx.has(x.key)?idx.get(x.key):1000+i})).sort((a,b)=>a.s-b.s).map(o=>o.x);
+}
+// An added column's header: drag to move, edge to resize, double-click to rename, menu for options.
+function _wsCustTh(grid,cc){
+  const sub=grid==='sub',id=escHtml(cc.id);
+  const lvl=(!sub&&cc.level&&cc.level!=='both')?(cc.level==='subitem'?' (subitems only)':' (items only)'):'';
+  return`<th class="ws-col-draggable" draggable="true"
+    ondragstart="_wsColDragStart(event,'${grid}','${id}')" ondragover="_wsColDragOver(event,'${grid}','${id}')"
+    ondragleave="_wsColDragLeave(event)" ondrop="_wsColDrop(event,'${grid}','${id}')" ondragend="_wsColDragEnd(event)"
+    data-cc="${id}" style="width:${wsColWidth(grid,cc.id,sub?'110px':'120px')};min-width:70px">
+    <div style="display:flex;align-items:center;gap:3px${sub?';justify-content:center':''}">
+      ${sub?'':'<svg class="ws-col-grip" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><circle cx="2" cy="1.5" r="1.1"/><circle cx="6" cy="1.5" r="1.1"/><circle cx="2" cy="5" r="1.1"/><circle cx="6" cy="5" r="1.1"/><circle cx="2" cy="8.5" r="1.1"/><circle cx="6" cy="8.5" r="1.1"/></svg>'}
+      <span class="col-label"${sub?'':' style="flex:1"'} onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'${grid}','${id}',true)" title="${escHtml(cc.name)}${lvl}. Double-click to rename, drag to move">${escHtml(cc.name)}</span>
+      <button class="mt-col-menu-btn" onclick="event.stopPropagation();mtColMenu('${id}',event)" title="Column options">▾</button>
+    </div>
+    <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'${grid}','${id}')" title="Drag to resize"></span>
+  </th>`;
+}
 function _wsColDragStart(e,grid,key){_wsDragCol={grid,key};e.dataTransfer.effectAllowed='move';e.target.closest('th').style.opacity='0.5';}
 function _wsColDragOver(e,grid,key){if(!_wsDragCol||_wsDragCol.grid!==grid||_wsDragCol.key===key)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));e.target.closest('th')?.classList.add('ws-col-drop-target');}
 function _wsColDragLeave(e){const th=e.target.closest('th');if(th&&!th.contains(e.relatedTarget))th.classList.remove('ws-col-drop-target');}
 const _WS_DEFAULT_COL_ORDER=['status','priority','owner','cwith','duedate','progress','hours','client','tags','attachments','deps'];
 const _WS_DEFAULT_SUB_COL_ORDER=['ref','status','owner','cwith','duedate','progress','deps'];
-function _wsColDrop(e,grid,targetKey){e.preventDefault();document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));if(!_wsDragCol||_wsDragCol.grid!==grid||_wsDragCol.key===targetKey){_wsDragCol=null;return;}const base=grid==='sub'?_WS_DEFAULT_SUB_COL_ORDER:_WS_DEFAULT_COL_ORDER;const order=[...(_wsGetColOrder(grid)||base)];const fi=order.indexOf(_wsDragCol.key),ti=order.indexOf(targetKey);if(fi===-1||ti===-1){_wsDragCol=null;return;}order.splice(fi,1);order.splice(ti,0,_wsDragCol.key);_wsSetColOrder(grid,order);_wsDragCol=null;renderView('workspace');}
+function _wsColDrop(e,grid,targetKey){e.preventDefault();document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));if(!_wsDragCol||_wsDragCol.grid!==grid||_wsDragCol.key===targetKey){_wsDragCol=null;return;}const base=grid==='sub'?_WS_DEFAULT_SUB_COL_ORDER:_WS_DEFAULT_COL_ORDER;const order=[...(_wsGetColOrder(grid)||base)];[...(grid==='sub'?SUB_COL_DEFS:WS_COL_DEFS).map(c=>c.key),...mtGetBoardCustomCols().filter(cc=>grid!=='sub'||mtColAppliesTo(cc,true)).map(cc=>cc.id)].forEach(k=>{if(!order.includes(k))order.push(k);});const fi=order.indexOf(_wsDragCol.key),ti=order.indexOf(targetKey);if(fi===-1||ti===-1){_wsDragCol=null;return;}order.splice(fi,1);order.splice(ti,0,_wsDragCol.key);_wsSetColOrder(grid,order);_wsDragCol=null;renderView('workspace');}
 function _wsColDragEnd(e){document.querySelectorAll('.ws-col-drop-target').forEach(el=>el.classList.remove('ws-col-drop-target'));e.target.closest('th').style.opacity='';_wsDragCol=null;}
 
 // ── Task row drag-and-drop reordering ──────────────────────────
@@ -23254,7 +23493,7 @@ function renderWorkspace(ctx){
             <span class="col-label" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','name',false)" title="Double-click to rename">${escHtml(wsColLabel('item','name','Task Name'))}</span>${sortIcon('name')}
             <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'item','name')" title="Drag to resize"></span>
           </th>
-          ${visCols.map(c=>`<th class="ws-sort-hdr ws-col-draggable" draggable="true"
+          ${_wsMixCols('item',visCols,custCols).map(m=>m.cc?_wsCustTh('item',m.cc):(c=>`<th class="ws-sort-hdr ws-col-draggable" draggable="true"
             ondragstart="_wsColDragStart(event,'item','${c.key}')"
             ondragover="_wsColDragOver(event,'item','${c.key}')"
             ondragleave="_wsColDragLeave(event)"
@@ -23266,13 +23505,7 @@ function renderWorkspace(ctx){
               <span class="col-label" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','${c.key}',false)" title="Double-click to rename">${escHtml(wsColLabel('item',c.key,c.label))}</span>${sortIcon(c.key)}
             </div>
             <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'item','${c.key}')" title="Drag to resize"></span>
-          </th>`).join('')}
-          ${custCols.map(cc=>`<th style="width:${wsColWidth('item',cc.id,'120px')};min-width:70px">
-            <div style="display:flex;align-items:center;gap:3px">
-              <span class="col-label" style="flex:1" onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'item','${cc.id}',true)" title="${escHtml(cc.name)}${(cc.level&&cc.level!=='both')?' — '+(cc.level==='subitem'?'subitems only':'items only'):''} · double-click to rename">${escHtml(cc.name)}</span>
-              <button class="mt-col-menu-btn" onclick="event.stopPropagation();mtColMenu('${cc.id}',event)" title="Column options">▾</button>
-            </div>
-          </th>`).join('')}
+          </th>`)(m.c)).join('')}
           <th style="width:36px;padding:0;text-align:center">
             <button class="mt-addcol-btn" onclick="event.stopPropagation();mtOpenAddColModal('parent')" title="Add an item column">+</button>
           </th>
@@ -23433,7 +23666,7 @@ function renderSubitemGrid(parent,childTasks,custCols,groupColor){
         <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','name',false)" title="Double-click to rename">${escHtml(wsColLabel('sub','name','Subitem'))}</span>
         <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','name')" title="Drag to resize"></span>
       </th>
-      ${visSub.map(c=>`<th class="ws-col-draggable" draggable="true"
+      ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?_wsCustTh('sub',m.cc):(c=>`<th class="ws-col-draggable" draggable="true"
         ondragstart="_wsColDragStart(event,'sub','${c.key}')"
         ondragover="_wsColDragOver(event,'sub','${c.key}')"
         ondragleave="_wsColDragLeave(event)"
@@ -23442,14 +23675,7 @@ function renderSubitemGrid(parent,childTasks,custCols,groupColor){
         style="width:${wsColWidth('sub',c.key,c.w)}">
         <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','${c.key}',false)" title="Double-click to rename">${escHtml(wsColLabel('sub',c.key,c.label))}</span>
         <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','${c.key}')" title="Drag to resize"></span>
-      </th>`).join('')}
-      ${subCust.map(cc=>`<th style="width:${wsColWidth('sub',cc.id,'110px')};min-width:70px">
-        <div style="display:flex;align-items:center;gap:3px;justify-content:center">
-          <span class="col-label" onclick="event.stopPropagation()" ondblclick="wsRenameColInline(this,'sub','${cc.id}',true)" title="${escHtml(cc.name)} · double-click to rename">${escHtml(cc.name)}</span>
-          <button class="mt-col-menu-btn" onclick="event.stopPropagation();mtColMenu('${cc.id}',event)" title="Column options">▾</button>
-        </div>
-        <span class="col-resize" onclick="event.stopPropagation()" onmousedown="wsStartColResize(event,'sub','${cc.id}')" title="Drag to resize"></span>
-      </th>`).join('')}
+      </th>`)(m.c)).join('')}
       <th style="width:34px;padding:0;text-align:center">
         <button class="mt-addcol-btn" onclick="event.stopPropagation();mtOpenAddColModal('subitem')" title="Add a subitem column">+</button>
       </th>
@@ -23497,7 +23723,7 @@ function renderSubRow(t,visSub,subCust){
         ${t.clientHidden?`<span title="Hidden from the client portal" style="flex-shrink:0;color:#b45309;display:inline-flex"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>`:''}
       </div>
     </td>
-    ${visSub.map(c=>{
+    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)" title="${escHtml(m.cc.name)}">${renderCustomColCell(t.id,m.cc)}</td>`:(c=>{
       if(c.key==='ref')return`<td style="text-align:center"><span class="ws-ref" title="Click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`;
       if(c.key==='status')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" style="background:${sm.bg};text-align:center"><span style="font-size:11px;font-weight:700;color:${sm.color}">${sm.label}</span></td>`;
       if(c.key==='owner')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="text-align:center">${owner?avatarHtml(owner,22):'<span style="color:#d4dde8">○</span>'}</td>`;
@@ -23506,8 +23732,7 @@ function renderSubRow(t,visSub,subCust){
       if(c.key==='progress')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">${isDone?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`:pct===0?`<span style="font-size:12px;color:#d4dde8">—</span>`:`<div class="progress-bar" style="width:32px"><div class="progress-fill" style="width:${pct}%;background:#97bcbd"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span>`}</div></td>`;
       if(c.key==='deps')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','deps',event)" style="text-align:center">${myDeps.length?`<span style="background:#f0f4ff;border:1px solid #c7d4f8;color:#4361c2;border-radius:12px;padding:1px 7px;font-size:11px;font-weight:700">⛓ ${myDeps.length}</span>`:'<span style="color:#c8d5e0;font-size:11px">+ add</span>'}</td>`;
       return'<td></td>';
-    }).join('')}
-    ${subCust.map(cc=>`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">${renderCustomColCell(t.id,cc)}</td>`).join('')}
+    })(m.c)).join('')}
     <td></td><td class="ws-col-filler"></td>
     <td onclick="event.stopPropagation()" style="width:52px">
       <div class="ws-actions">
@@ -23530,15 +23755,14 @@ function renderSubInlineAdd(parent,visSub,subCust,width){
         onkeydown="if(event.key==='Enter'){event.preventDefault();wsSaveInlineSubitem();}"/>
       </div>
     </td>
-    ${visSub.map(c=>{
+    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?'<td></td>':(c=>{
       if(c.key==='status')return`<td style="padding:0 4px"><select id="ws-inline-subtask-status" class="ws-inline-select" style="height:26px" onchange="wsInlineStatusChanged(this.value,'ws-inline-subtask-hours')">${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select></td>`;
       if(c.key==='owner')return`<td style="padding:0 4px"><select id="ws-inline-subtask-owner" class="ws-inline-select" style="height:26px"><option value="">— Owner —</option>${DB.staff.map(s=>`<option value="${s.id}">${escHtml(s.name.split(' ')[0])}</option>`).join('')}</select></td>`;
       if(c.key==='cwith')return`<td style="padding:0 4px"><select id="ws-inline-subtask-cwith" class="ws-inline-select" style="height:26px"><option value="internal">Internal</option><option value="client">Client</option></select></td>`;
       if(c.key==='duedate')return`<td class="ws-editable" style="text-align:center;cursor:pointer" title="Click to set a start and end date" onclick="event.stopPropagation();wsInlineSubTLOpen(event)"><span id="ws-inline-subtask-tl" style="font-size:11px;color:#c8d5e0">+ dates</span></td>`;
       if(c.key==='progress')return`<td style="padding:0 4px"><input id="ws-inline-subtask-pct" type="number" min="0" max="100" placeholder="0" style="width:44px;border:1px solid #e2eaf2;border-radius:5px;font-size:11px;padding:2px 4px"/></td>`;
       return'<td></td>';
-    }).join('')}
-    ${subCust.map(()=>'<td></td>').join('')}
+    })(m.c)).join('')}
     <td></td><td class="ws-col-filler"></td>
     <td style="padding:0 4px;white-space:nowrap">
       <button onclick="wsSaveInlineSubitem()" class="btn btn-teal btn-sm" style="font-size:11px;padding:2px 8px">↵</button>
@@ -23615,36 +23839,39 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         ${deps?`<span style="font-size:10px;color:#97bcbd;flex-shrink:0" title="${deps} dependenc${deps===1?'y':'ies'}">⛓${deps}</span>`:''}
       </div>
     </td>
-    ${cols.ref?`<td style="text-align:center"><span class="ws-ref" title="Task reference — click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`:''}
-    ${cols.status?`<td class="ws-editable ws-status-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" title="Change status" style="background:${sm.bg}">
+    ${(()=>{
+      // Cells by column; written out in the header's order (built-in and added columns share it).
+      const _cells={
+      ref:(cols.ref?`<td style="text-align:center"><span class="ws-ref" title="Task reference — click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`:''),
+      status:(cols.status?`<td class="ws-editable ws-status-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" title="Change status" style="background:${sm.bg}">
       <div style="display:flex;align-items:center;justify-content:center;height:38px;gap:3px;padding:0 8px">
         <span style="font-size:11px;font-weight:700;color:${sm.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sm.label}</span>
         <span class="ws-cell-caret" style="color:${sm.color}">▾</span>
       </div>
-    </td>`:''}
-    ${cols.priority?`<td class="ws-editable ws-prio-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','priority',event)" title="Change priority" style="background:${pm.bg}">
+    </td>`:''),
+      priority:(cols.priority?`<td class="ws-editable ws-prio-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','priority',event)" title="Change priority" style="background:${pm.bg}">
       <div style="display:flex;align-items:center;justify-content:center;height:38px;gap:3px;padding:0 8px">
         <span style="font-size:11px;font-weight:700;color:${pm.color};white-space:nowrap">${pm.icon} ${pm.label}</span>
         <span class="ws-cell-caret" style="color:${pm.color}">▾</span>
       </div>
-    </td>`:''}
-    ${cols.owner?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px;text-align:center" title="${owner?escHtml(assigneeTitleAttr(t)):'Unassigned'} — Owner">
+    </td>`:''),
+      owner:(cols.owner?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px;text-align:center" title="${owner?escHtml(assigneeTitleAttr(t)):'Unassigned'} — Owner">
       <div style="display:flex;align-items:center;justify-content:center;gap:4px">
         ${owner?assigneeStackHtml(t,24):'<span style="font-size:18px;color:#d4dde8">○</span>'}
         <span class="ws-cell-caret">▾</span>
       </div>
-    </td>`:''}
-    ${cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
+    </td>`:''),
+      cwith:(cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px">${cw?avatarHtml(cw,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cw?.name?.split(' ')[0]||''}</span><span class="ws-cell-caret">▾</span></div>
-    </td>`:''}
-    ${cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="${escHtml(tlFull)}${due.chip?' · '+due.chip:''} — click to change" style="text-align:center">
+    </td>`:''),
+      duedate:(cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="${escHtml(tlFull)}${due.chip?' · '+due.chip:''} — click to change" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:4px">
         <span style="font-size:11px;white-space:nowrap;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>
         ${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}
         <span class="ws-cell-caret">▾</span>
       </div>
-    </td>`:''}
-    ${cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
+    </td>`:''),
+      progress:(cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px">
         ${hasChildren&&!isSubitem
           // A parent's progress is really the shape of its children — show the composition
@@ -23662,16 +23889,16 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
         ${cr&&cr.total?`<span style="font-size:10px;color:#8da2b2;flex-shrink:0" title="${cr.done}/${cr.total} subitems done">${cr.done}/${cr.total}</span>`:''}
         ${hasChildren&&!isSubitem?'':'<span class="ws-cell-caret">▾</span>'}
       </div>
-    </td>`:''}
-    ${cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''}
-    ${cols.client?`<td>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${escHtml(client.shortCode)}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''}
-    ${cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''}
-    ${cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
+    </td>`:''),
+      hours:(cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''),
+      client:(cols.client?`<td>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${escHtml(client.shortCode)}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''),
+      tags:(cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''),
+      attachments:(cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
       <div style="display:inline-flex;align-items:center;gap:3px">
         ${attachCount?`<span style="background:#e8f0f8;color:#4d6275;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${attachCount}</span>`:`<span class="ws-clip-empty" style="color:#c8d5e0;display:inline-flex;align-items:center" title="Add attachment"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>`}
       </div>
-    </td>`:''}
-    ${cols.deps?(()=>{
+    </td>`:''),
+      deps:(cols.deps?(()=>{
       const myDeps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id);
       return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','deps',event)" title="Dependencies — click to edit">
         <div style="display:inline-flex;align-items:center;gap:3px;padding:0 6px;min-width:36px">
@@ -23681,14 +23908,17 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
           <span class="ws-cell-caret" style="color:#b0bec5">▾</span>
         </div>
       </td>`;
-    })():''}
-    ${custCols.map(cc=>mtColAppliesTo(cc,isSubitem)
+    })():''),
+      };
+      const _cc=cc=>mtColAppliesTo(cc,isSubitem)
       ?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
       ${renderCustomColCell(t.id,cc)}
     </td>`
       // Column exists in the shared grid but carries no data at this tier — leave the cell
       // blank rather than inviting an edit that would never be shown.
-      :`<td class="ws-col-na" title="${escHtml(cc.name)} applies to ${cc.level==='subitem'?'subitems':'items'} only"></td>`).join('')}
+      :`<td class="ws-col-na" title="${escHtml(cc.name)} applies to ${cc.level==='subitem'?'subitems':'items'} only"></td>`;
+      return _wsMixCols('item',visCols,custCols).map(m=>m.cc?_cc(m.cc):(_cells[m.key]||'')).join('');
+    })()}
     <td style="width:36px"></td>
     <td class="ws-col-filler"></td>
     <td onclick="event.stopPropagation()">
@@ -27901,7 +28131,8 @@ function _wsMtExportNow(){
   // wants the full text without opening every task, so it always goes out with the export
   // regardless of which columns are currently shown on screen.
   const DESC_COL={key:'description',label:'Description'};
-  const itemCols=[{key:'name',label:'Name'},...vis,...custCols.map(c=>({key:'cc_'+c.id,label:c.name,cc:c})),DESC_COL];
+  const _xlMix=(grid,v,cs)=>_wsMixCols(grid,v,cs).map(m=>m.cc?{key:'cc_'+m.cc.id,label:m.cc.name,cc:m.cc}:m.c);
+  const itemCols=[{key:'name',label:'Name'},..._xlMix('item',vis,custCols),DESC_COL];
 
   const subOrder=_wsGetColOrder('sub')||_WS_DEFAULT_SUB_COL_ORDER;
   const subDefs=[...SUB_COL_DEFS].sort((a,b)=>{
@@ -27909,7 +28140,7 @@ function _wsMtExportNow(){
     return(ai===-1?999:ai)-(bi===-1?999:bi);});
   const subVis=subDefs.filter(c=>wsSubColumns[c.key]);
   const subCust=custCols.filter(cc=>mtColAppliesTo(cc,true));
-  const subCols=[{key:'name',label:'Name'},...subVis,...subCust.map(c=>({key:'cc_'+c.id,label:c.name,cc:c})),DESC_COL];
+  const subCols=[{key:'name',label:'Name'},..._xlMix('sub',subVis,subCust),DESC_COL];
 
   const val=(t,c)=>c.cc?{v:mtGetCustomVal(t.id,c.cc.id)||''}:_xlCell(t,c.key);
 
