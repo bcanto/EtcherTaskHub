@@ -1031,6 +1031,42 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;margin:0}
 .rc-btabs{margin:-24px -24px 0;padding:4px 24px 0;overflow-x:auto;background:#edf0f5}.rc-btabs .reg-tab{flex-shrink:0}
 @media (max-width:640px){.reg-tab{padding:9px 9px;gap:6px}.reg-tab[data-short] .rt-l{display:none}.reg-tab[data-short]::before{content:attr(data-short)}}
+.rc-mast{max-width:1480px;overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(13,28,51,.07),0 1px 2px rgba(13,28,51,.04),0 10px 28px -18px rgba(13,28,51,.2)}
+.rc-mast-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px 0}
+.rc-crumb{display:inline-flex;align-items:center;gap:6px;margin-left:-6px;padding:4px 8px 4px 6px;border:0;border-radius:6px;background:none;font:500 12.5px Jost,sans-serif;color:#5c6b80;cursor:pointer;transition:background-color .15s,color .15s}
+.rc-crumb:hover{background:#f2f6f9;color:#0d1c33}.rc-crumb:active{background:#e8eef3}.rc-crumb:focus-visible{outline:2px solid #31585a;outline-offset:1px}
+.rc-month{white-space:nowrap;font:500 12.5px Jost,sans-serif;color:#5c6b80}
+.rc-mast-id{display:flex;flex-wrap:wrap;align-items:center;gap:14px 16px;padding:12px 20px 14px}
+.rd-mast .rc-mast-id{padding-top:18px}
+.rc-logo{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e4eaf3;border-radius:12px;background:#fff}
+.rc-logo img{display:block;max-width:84%;max-height:84%;object-fit:contain}
+.rc-logo-i{border-color:transparent;background:color-mix(in srgb,var(--lc) 13%,#fff);font-family:Jost,sans-serif;font-weight:700;color:var(--lc)}
+.rc-name{display:grid;flex:1;gap:6px;min-width:200px}
+.rc-name h1{margin:0;font:600 24px/1.15 Jost,sans-serif;letter-spacing:-.02em;color:#0d1c33}
+.rc-acts{display:flex;flex-wrap:wrap;gap:8px}
+.rc-act{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border:1px solid #d8e0ec;border-radius:8px;background:#fff;font:600 12.5px Jost,sans-serif;color:#0d1c33;cursor:pointer;transition:border-color .15s,background-color .15s}
+.rc-act svg{color:#31585a}.rc-act:hover{border-color:#97bcbd;background:#f6fafa}.rc-act:active{background:#ecf3f3}.rc-act:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.rc-line{height:4px;margin:0 20px 14px;overflow:hidden;border-radius:2px;background:#e6ecf2}.rc-line i{display:block;height:100%;border-radius:2px;background:#31585a}
+.rc-band{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #e4eaf3}
+.rc-cell{display:flex;align-items:baseline;gap:8px;min-width:0;padding:12px 20px;border:0;border-left:1px solid #e4eaf3;background:none;font:inherit;color:inherit;text-align:left}
+.rc-cell:first-child{border-left:0}
+.rc-cell b{font:600 20px/1 Jost,sans-serif;color:#0d1c33;font-variant-numeric:tabular-nums}
+.rc-cell span{font-size:12.5px;line-height:1.35;color:#5c6b80}
+.rc-cell.warn b{color:#b45309}.rc-cell.bad b{color:#b91c1c}
+button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:hover{background:#f7f9fc}button.rc-cell:active{background:#eef2f7}button.rc-cell:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+.rc-tabs{display:flex;padding:0 8px;overflow-x:auto;border-top:1px solid #e4eaf3;scrollbar-width:none}
+.rc-tab{display:inline-flex;flex-shrink:0;align-items:center;gap:7px;padding:13px 14px 11px;border:0;border-bottom:2px solid transparent;background:none;white-space:nowrap;font:500 13px Jost,sans-serif;color:#5c6b80;cursor:pointer;transition:color .15s,border-color .15s}
+.rc-tab:hover{color:#0d1c33;border-bottom-color:#d8e0ec}.rc-tab:active{color:#0d1c33}
+.rc-tab.on{font-weight:600;color:#0d1c33;border-bottom-color:#0d1c33;cursor:default}
+.rc-tab:focus-visible{outline:2px solid #31585a;outline-offset:-4px;border-radius:6px}
+.rt-n{padding:2px 6px;border-radius:9px;background:#eef2f6;font:700 11px/1.2 Lato,sans-serif;color:#5c6b80;font-variant-numeric:tabular-nums}
+.rc-tab.on .rt-n{background:#0d1c33;color:#fff}
+.rc-mast-board{margin-bottom:16px}
+.rd-cl-id{display:inline-flex;align-items:center;gap:10px}.rd-cl-id b{font-family:Jost,sans-serif;font-size:13.5px;color:#0d1c33}
+.rq-cl .rc-logo{border-radius:5px}
+@media (max-width:760px){.rc-band{grid-template-columns:repeat(2,minmax(0,1fr))}.rc-cell:nth-child(3){border-left:0}.rc-cell:nth-child(n+3){border-top:1px solid #e4eaf3}
+  .rc-mast-top{padding:10px 16px 0}.rc-mast-id{padding:10px 16px 12px}.rc-line{margin:0 16px 12px}.rc-cell{padding:11px 16px}.rc-name h1{font-size:21px}}
+@media (max-width:640px){.rc-tabs{padding:0 4px}.rc-tab{padding:12px 7px 10px;gap:5px}.rc-tab[data-short] .rt-l{display:none}.rc-tab[data-short]::before{content:attr(data-short)}}
 .rc-q td{vertical-align:middle}
 @media (max-width:1100px){.rc-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){.rc-q .rq-c-w{grid-column:1;grid-row:1}.rc-q .rq-c-st{grid-column:2;grid-row:1}}
@@ -7966,7 +8002,7 @@ function renderRetainedDash(){
     const sub=[escHtml(r.sub||''),r.kind==='request'?`Request, received ${escHtml(_rdShort(toDateStr(new Date(r.received))))}`:'Task',r.neededBy?`Client needs it by ${escHtml(_rdShort(r.neededBy))}`:''].filter(Boolean).join('. ');
     return`<tr class="${r.late?'late':''}" data-rq="${r.kind}:${r.id}">
       <td class="rq-c-lv">${_rdLevelHtml(r.lv)}</td>
-      <td class="rq-c-cl"><span class="rq-cl"><i style="background:${cColor(r.board.clientId)}"></i>${escHtml(cName(r.board.clientId))}</span></td>
+      <td class="rq-c-cl"><span class="rq-cl">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===r.board.clientId),22)}${escHtml(cName(r.board.clientId))}</span></td>
       <td class="rq-c-w"><button type="button" class="rq-w" onclick="_rdOpen('${r.kind}','${r.id}')"><b>${escHtml(r.title)}</b><small>${sub}</small></button></td>
       <td class="rq-c-own" data-l="Owner">${own?escHtml(own.name):'<span class="rq-na">Unassigned</span>'}</td>
       <td class="rq-c-due" data-l="Reply by">${_rdClockHtml(r.reply,r.replyState,lvNone?'Priority queue':'No clock','Replied')}</td>
@@ -7988,7 +8024,7 @@ function renderRetainedDash(){
       return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}"><span>${escHtml(u.cat.short)}</span>${_rsSquares(u.used,u.allowance,u.cat.color)||'<i class="rd-m-none"></i>'}<b>${u.used}/${u.allowance}</b></span>`;}).join('');
     const reg=regCol?_regClientSummary(b.clientId):'';
     return`<tr data-rd-client="${b.clientId}">
-      <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rq-cl"><i style="background:${cColor(b.clientId)}"></i><b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
+      <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),34)}<b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
       <td class="rd-c-lv">${_rdLevelHtml(lv)}</td>
       <td class="rd-c-m"><div class="rd-ms">${meters||'<span class="rq-na">No services</span>'}</div></td>
       ${bill?`<td class="rd-c-fee">${fee!=null?_rsMoney(fee):'<span class="rq-na">Not set</span>'}</td>`:''}
@@ -8001,7 +8037,7 @@ function renderRetainedDash(){
     <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Level</th><th>${month} allowances</th>${bill?'<th>Monthly fee</th>':''}${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
   </section>`;
   const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
-  return`<div class="rd"><div class="rd-top">${sum}${newBtn}</div>${attHtml}${queue}${clients}</div>`;
+  return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}${queue}${clients}</div>`;
 }
 
 // ── Month-end report (PDF): the month in review for the client, from the same figures the portal shows ──
@@ -8718,14 +8754,6 @@ function _regTemplateBuild(kind){
 
 // ── A page per retained client: Overview (the month, requests and work, document control, training), then the registers ──
 function openRetainedClient(clientId){openRegisters(clientId,'overview');}
-// The client's tabs, the same on its page and on its retained board: Overview, Board, Document register, Training matrix.
-function _rcTabsHtml(c,b,active,nDocs,nPeople){
-  const onBoard=active==='board';
-  const go=k=>onBoard?`_rcTabFromBoard('${c.id}','${k}')`:`_regSet('tab','${k}')`;
-  const tab=(k,label,n,click,id,short)=>`<button type="button" role="tab" class="reg-tab${active===k?' on':''}" aria-selected="${active===k}" id="${id||'reg-tab-'+k}"${short?` data-short="${short}" aria-label="${label}"`:''} ${active===k?'':`onclick="${click}"`}>${short?`<span class="rt-l">${label}</span>`:label}${n!=null?`<span>${n}</span>`:''}</button>`;
-  const open=b?(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_rsDone(t)).length:0;
-  return`<div class="reg-tabs${onBoard?' rc-btabs':''}" role="tablist" aria-label="${escHtml(c.name)}">${tab('overview','Overview',null,go('overview'))}${b?tab('board','Board',open,`_rdOpenBoard('${b.id}')`,'rc-board'):''}${tab('docs','Document register',nDocs,go('docs'),null,'Documents')}${tab('training','Training matrix',nPeople,go('training'),null,'Training')}</div>`;
-}
 // From the board to one of the client's other tabs: the board is left the way exitWorkboard leaves it.
 function _rcTabFromBoard(clientId,tab){
   currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;
@@ -8745,20 +8773,8 @@ function renderRegisters(){
   const docs=(DB.registerDocs||[]).filter(d=>d.clientId===v.clientId&&!d.archived);
   const people=(DB.registerPeople||[]).filter(p=>p.clientId===v.clientId&&!p.archived);
   const meta=(DB.registers||[]).find(r=>r.clientId===v.clientId)||{};
-  const tab=(k,label,n)=>`<button type="button" role="tab" class="reg-tab${v.tab===k?' on':''}" aria-selected="${v.tab===k}" id="reg-tab-${k}" onclick="_regSet('tab','${k}')">${label}${n!=null?`<span>${n}</span>`:''}</button>`;
-  const r=b&&b.retainer,lv=r?(_rsLevel(r.priority)||_rsLevel('Standard')):null,keys=r?(r.services||[]).map(s=>s.key):[],bn=_rsBundleName(keys);
-  const lead=r&&r.leadId?getStaff(r.leadId):null,fee=r?_rsFeeFor(r,_rsYm()):null;
-  const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:'',_canBill(currentUser)&&fee!=null?`<span>${_rsMoney(fee)} a month</span>`:''].filter(Boolean).join('')
-    :'<span>No active retainer</span>';
-  const acts=b?`<button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" id="rc-report" onclick="openMonthReport('${b.id}')">Month report</button>`:'';
   const body=v.tab==='docs'?_regDocsHtml(c,docs):v.tab==='training'?_regTrainingHtml(c,people,meta):_rcOverviewHtml(c,b,docs,people);
-  return`<div class="rd reg">
-    <div class="reg-top"><button type="button" class="btn btn-ghost btn-sm" id="reg-back" onclick="_rdHome()">‹ Retained Services</button>
-      <div class="rc-id"><h2 class="reg-h">${escHtml(c.name)}</h2><div class="rc-facts">${facts}</div></div>
-      <div class="reg-acts">${acts}</div></div>
-    ${_rcTabsHtml(c,b,'overview'===v.tab?'overview':v.tab,docs.length,people.length)}
-    ${body}
-  </div>`;
+  return`<div class="rd reg">${_rcMastHtml(c,b,v.tab)}${body}</div>`;
 }
 function _rcQueueRow(r){
   const own=r.ownerId?getStaff(r.ownerId):null,lvNone=r.lv.resp==null;
@@ -8864,6 +8880,56 @@ function _regAddTasks(clientId,which){
   if(n){showToast(`${n} review task${n===1?'':'s'} added to IMS and Document Control.`,'success');renderSidebarWorkboards();}
   if(_regDr&&_regDr.kind==='doc')_regDrawerRender();
   _regRerender();
+}
+
+// ── The client's header (portal look): one component on every tab, the board included, so nothing moves between tabs ──
+function _rcLogoHtml(c,size){
+  const s=size||44,col=_safeCss(c&&c.color,'#31585a');
+  return c&&c.logo?`<span class="rc-logo" style="width:${s}px;height:${s}px"><img src="${escHtml(c.logo)}" alt=""></span>`
+    :`<span class="rc-logo rc-logo-i" style="width:${s}px;height:${s}px;--lc:${col};font-size:${Math.round(s*0.42)}px" aria-hidden="true">${escHtml(((c&&c.name)||'?').trim().charAt(0).toUpperCase())}</span>`;
+}
+const _RC_ICON={
+  plan:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="4" r="1.7" fill="#fff" stroke="currentColor" stroke-width="1.5"/><circle cx="10.5" cy="8" r="1.7" fill="#fff" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="12" r="1.7" fill="#fff" stroke="currentColor" stroke-width="1.5"/></svg>',
+  report:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 1.8h5.2L12.5 5v9.2H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 1.8V5h3.5M6.3 8.3h3.9M6.3 10.8h3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  back:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+function _rcMonthLine(){const now=new Date(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),day=now.getDate();return{day,dim,html:`<div class="rc-line" role="img" aria-label="${Math.round(day/dim*100)}% of the month gone"><i style="width:${(day/dim*100).toFixed(1)}%"></i></div>`};}
+function _rcCell(n,label,tone,click,id){return`<${click?`button type="button" onclick="${click}"`:'div'}${id?` id="${id}"`:''} class="rc-cell${tone?' '+tone:''}"><b>${n}</b><span>${label}</span></${click?'button':'div'}>`;}
+function _rcMastHtml(c,b,active){
+  const onBoard=active==='board',ym=_rsYm(),today=_regToday(),ml=_rcMonthLine();
+  const go=k=>onBoard?`_rcTabFromBoard('${c.id}','${k}')`:`_rcGo('${k}')`;
+  const r=b&&b.retainer,lv=r?(_rsLevel(r.priority)||_rsLevel('Standard')):null,keys=r?(r.services||[]).map(s=>s.key):[],bn=_rsBundleName(keys);
+  const lead=r&&r.leadId?getStaff(r.leadId):null,fee=r?_rsFeeFor(r,ym):null;
+  const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:'',_canBill(currentUser)&&fee!=null?`<span>${_rsMoney(fee)} a month</span>`:''].filter(Boolean).join('')
+    :'<span>No active retainer</span>';
+  const docs=(DB.registerDocs||[]).filter(d=>d.clientId===c.id&&!d.archived),people=(DB.registerPeople||[]).filter(p=>p.clientId===c.id&&!p.archived);
+  const q=b?_rqQueue().filter(x=>x.board.clientId===c.id):[],reqs=q.filter(x=>x.kind==='request').length,late=q.filter(x=>x.late).length;
+  const top=b?(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id):[];
+  const delivered=top.filter(t=>!_cpTaskHidden(t)&&_rsDone(t)&&_rsDoneYm(t)===ym).length,open=top.filter(t=>!_rsDone(t)).length;
+  const needDocs=docs.filter(d=>_regNeedsTask(d,today)).length;
+  let exp=0;people.forEach(p=>Object.values(p.quals||{}).forEach(x=>{const s=_regQualState(x,today);if(s&&(s.k==='exp'||s.k==='d30'))exp++;}));
+  const band=`<div class="rc-band">${_rcCell(delivered,`delivered in ${_rsMonthName(ym)}`,'',null)}${_rcCell(reqs,`open request${reqs===1?'':'s'}${late?`, ${late} late`:''}`,late?'bad':'',go('overview'),'rc-cell-req')}${_rcCell(needDocs,`document${needDocs===1?'':'s'} to review`,needDocs?'warn':'',go('docs'),'rc-cell-docs')}${_rcCell(exp,'training expired or expiring',exp?'warn':'',go('training'),'rc-cell-trn')}</div>`;
+  const tab=(k,label,n,click,id,short)=>{const on=active===k;return`<button type="button" role="tab" class="rc-tab${on?' on':''}" aria-selected="${on}" id="${id||'reg-tab-'+k}"${short?` data-short="${short}" aria-label="${label}"`:''}${on?'':` onclick="${click}"`}><span class="rt-l">${label}</span>${n!=null?`<span class="rt-n">${n}</span>`:''}</button>`;};
+  const tabs=`<div class="rc-tabs" role="tablist" aria-label="${escHtml(c.name)}">${tab('overview','Overview',null,go('overview'))}${b?tab('board','Board',open,`_rdOpenBoard('${b.id}')`,'rc-board'):''}${tab('docs','Document register',docs.length,go('docs'),null,'Documents')}${tab('training','Training matrix',people.length,go('training'),null,'Training')}</div>`;
+  const acts=b?`<div class="rc-acts"><button type="button" class="rc-act" onclick="openRetainerPlan('${b.id}')">${_RC_ICON.plan}Plan</button><button type="button" class="rc-act" id="rc-report" onclick="openMonthReport('${b.id}')">${_RC_ICON.report}Month report</button></div>`:'';
+  return`<section class="rc-mast" aria-label="${escHtml(c.name)}">
+    <div class="rc-mast-top"><button type="button" class="rc-crumb" id="reg-back" onclick="${onBoard?'_rcHomeFromBoard()':'_rdHome()'}">${_RC_ICON.back}Retained Services</button><span class="rc-month">${escHtml(_rsMonthYear(ym))}, day ${ml.day} of ${ml.dim}</span></div>
+    <div class="rc-mast-id">${_rcLogoHtml(c,52)}<div class="rc-name"><h1>${escHtml(c.name)}</h1><div class="rc-facts">${facts}</div></div>${acts}</div>
+    ${ml.html}${band}${tabs}
+  </section>`;
+}
+function _rcGo(tab){if(!_regView)return;_regView.tab=tab;if(tab==='training'){_regView.mode='expiring';_regView.win='30';}renderView('retained');}
+function _rcHomeFromBoard(){currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;renderSidebarWorkboards();_rdHome();}
+// The dashboard's own header, the same card: the month, and the four things that need Etcher's eye.
+function _rdMastHtml(boards,all,lateN,usage,newBtn){
+  const ml=_rcMonthLine(),ym=_rsYm();
+  const near=usage.filter(u=>u.allowance&&u.ratio>=0.8).length;
+  const docs=boards.reduce((n,b)=>n+_regCounts(b.clientId).dNeed,0);
+  return`<section class="rc-mast rd-mast" aria-label="Retained Services, ${escHtml(_rsMonthYear(ym))}">
+    <div class="rc-mast-id"><div class="rc-name"><h1>${escHtml(_rsMonthYear(ym))}</h1><div class="rc-facts"><span>${boards.length} retained client${boards.length===1?'':'s'}</span><span>Day ${ml.day} of ${ml.dim}</span></div></div>${newBtn?`<div class="rc-acts">${newBtn}</div>`:''}</div>
+    ${ml.html}
+    <div class="rc-band">${_rcCell(all.length,'open in the queue','',"_rdSetQ('show','all')",'rd-cell-all')}${_rcCell(lateN,'late',lateN?'bad':'',"_rdSetQ('show','late')",'rd-cell-late')}${_rcCell(near,`allowance${near===1?'':'s'} at 80% or more`,near?'warn':'',null)}${_rcCell(docs,`document${docs===1?'':'s'} to review`,docs?'warn':'',null)}</div>
+  </section>`;
 }
 
 // ── Retained Services in the portal and in requests (plan R2, R3, R6, R7, R11) ──
@@ -20678,12 +20744,12 @@ function renderWbTabs(activeView){
     {v:'capacity', icon:'◫',label:'Capacity'},
   ];
   const _rcB=_isRetainedBoard(wb)?(DB.clients||[]).find(x=>x.id===wb.clientId):null;
-  return`${_rcB?_rcTabsHtml(_rcB,wb,'board',(DB.registerDocs||[]).filter(d=>d.clientId===_rcB.id&&!d.archived).length,(DB.registerPeople||[]).filter(p=>p.clientId===_rcB.id&&!p.archived).length):''}
+  return`${_rcB?`<div class="rc-mast-board">${_rcMastHtml(_rcB,wb,'board')}</div>`:''}
   <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:${_rcB?'0':'-24px'} -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6" class="ws-tabstrip">
-    <button onclick="exitWorkboard()" style="display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 16px;border:none;border-right:1px solid #e2eaf2;background:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;color:#8da2b2;white-space:nowrap;flex-shrink:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'">
+    ${_rcB?'':`    <button onclick="exitWorkboard()" style="display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 16px;border:none;border-right:1px solid #e2eaf2;background:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;color:#8da2b2;white-space:nowrap;flex-shrink:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'">
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      ${_isRetainedBoard(wb)?'Retained Services':'Boards'}
-    </button>
+      Boards
+    </button>`}
     <div style="display:flex;align-items:center;gap:3px;padding:0 6px;border-right:1px solid #e2eaf2">
       <div style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0"></div>
       <span style="font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#0d1c33;padding:0 6px 0 4px;white-space:nowrap">${escHtml(wb.name)}</span>
