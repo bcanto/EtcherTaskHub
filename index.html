@@ -1029,6 +1029,8 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .reg-task.done{padding-left:0;border-color:transparent;background:none;font-weight:600;color:#15803d;cursor:default}
 .reg-add-task{white-space:nowrap}
 .reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;margin:0}
+.rc-btabs{margin:-24px -24px 0;padding:4px 24px 0;overflow-x:auto;background:#edf0f5}.rc-btabs .reg-tab{flex-shrink:0}
+@media (max-width:640px){.reg-tab{padding:9px 9px;gap:6px}.reg-tab[data-short] .rt-l{display:none}.reg-tab[data-short]::before{content:attr(data-short)}}
 .rc-q td{vertical-align:middle}
 @media (max-width:1100px){.rc-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){.rc-q .rq-c-w{grid-column:1;grid-row:1}.rc-q .rq-c-st{grid-column:2;grid-row:1}}
@@ -1141,8 +1143,8 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .reg-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .reg-h{flex:1;min-width:200px;margin:0;font-family:Jost,sans-serif;font-size:18px;font-weight:700;letter-spacing:-.01em;color:#0d1c33}
 .reg-acts{display:flex;flex-wrap:wrap;gap:8px}
-.reg-tabs{display:flex;gap:4px;border-bottom:1px solid #d8e0ec}
-.reg-tab{display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;padding:9px 14px;border:0;border-bottom:2px solid transparent;background:none;font-family:Jost,sans-serif;font-size:13px;font-weight:700;color:#6b8399;cursor:pointer}
+.reg-tabs{display:flex;gap:4px;overflow-x:auto;box-shadow:inset 0 -1px 0 #d8e0ec;scrollbar-width:none}
+.reg-tab{display:inline-flex;flex-shrink:0;align-items:center;gap:8px;padding:9px 14px;border:0;border-bottom:2px solid transparent;background:none;font-family:Jost,sans-serif;font-size:13px;font-weight:700;color:#6b8399;cursor:pointer}
 .reg-tab span{font-family:Lato,sans-serif;font-size:11.5px;color:#7a96ad;font-variant-numeric:tabular-nums}
 .reg-tab:hover{color:#0d1c33}.reg-tab:active{opacity:.8}.reg-tab.on{border-bottom-color:#31585a;color:#0d1c33}
 .reg-tab:focus-visible{outline:2px solid #31585a;outline-offset:-2px;border-radius:4px}
@@ -8716,6 +8718,19 @@ function _regTemplateBuild(kind){
 
 // ── A page per retained client: Overview (the month, requests and work, document control, training), then the registers ──
 function openRetainedClient(clientId){openRegisters(clientId,'overview');}
+// The client's tabs, the same on its page and on its retained board: Overview, Board, Document register, Training matrix.
+function _rcTabsHtml(c,b,active,nDocs,nPeople){
+  const onBoard=active==='board';
+  const go=k=>onBoard?`_rcTabFromBoard('${c.id}','${k}')`:`_regSet('tab','${k}')`;
+  const tab=(k,label,n,click,id,short)=>`<button type="button" role="tab" class="reg-tab${active===k?' on':''}" aria-selected="${active===k}" id="${id||'reg-tab-'+k}"${short?` data-short="${short}" aria-label="${label}"`:''} ${active===k?'':`onclick="${click}"`}>${short?`<span class="rt-l">${label}</span>`:label}${n!=null?`<span>${n}</span>`:''}</button>`;
+  const open=b?(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_rsDone(t)).length:0;
+  return`<div class="reg-tabs${onBoard?' rc-btabs':''}" role="tablist" aria-label="${escHtml(c.name)}">${tab('overview','Overview',null,go('overview'))}${b?tab('board','Board',open,`_rdOpenBoard('${b.id}')`,'rc-board'):''}${tab('docs','Document register',nDocs,go('docs'),null,'Documents')}${tab('training','Training matrix',nPeople,go('training'),null,'Training')}</div>`;
+}
+// From the board to one of the client's other tabs: the board is left the way exitWorkboard leaves it.
+function _rcTabFromBoard(clientId,tab){
+  currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;
+  renderSidebarWorkboards();openRegisters(clientId,tab);
+}
 function _regLastImport(c,kind){
   const meta=(DB.registers||[]).find(r=>r.clientId===c.id)||{},last=meta[kind],by=last&&last.by?getStaff(last.by):null;
   return last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'Not imported yet.';
@@ -8735,13 +8750,13 @@ function renderRegisters(){
   const lead=r&&r.leadId?getStaff(r.leadId):null,fee=r?_rsFeeFor(r,_rsYm()):null;
   const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:'',_canBill(currentUser)&&fee!=null?`<span>${_rsMoney(fee)} a month</span>`:''].filter(Boolean).join('')
     :'<span>No active retainer</span>';
-  const acts=b?`<button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" id="rc-board" onclick="_rdOpenBoard('${b.id}')">Board</button><button class="btn btn-ghost btn-sm" id="rc-report" onclick="openMonthReport('${b.id}')">Month report</button>`:'';
+  const acts=b?`<button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" id="rc-report" onclick="openMonthReport('${b.id}')">Month report</button>`:'';
   const body=v.tab==='docs'?_regDocsHtml(c,docs):v.tab==='training'?_regTrainingHtml(c,people,meta):_rcOverviewHtml(c,b,docs,people);
   return`<div class="rd reg">
     <div class="reg-top"><button type="button" class="btn btn-ghost btn-sm" id="reg-back" onclick="_rdHome()">‹ Retained Services</button>
       <div class="rc-id"><h2 class="reg-h">${escHtml(c.name)}</h2><div class="rc-facts">${facts}</div></div>
       <div class="reg-acts">${acts}</div></div>
-    <div class="reg-tabs" role="tablist" aria-label="${escHtml(c.name)}">${tab('overview','Overview',null)}${tab('docs','Document register',docs.length)}${tab('training','Training matrix',people.length)}</div>
+    ${_rcTabsHtml(c,b,'overview'===v.tab?'overview':v.tab,docs.length,people.length)}
     ${body}
   </div>`;
 }
@@ -20662,8 +20677,9 @@ function renderWbTabs(activeView){
     {v:'gantt',    icon:'▬',label:'Gantt'},
     {v:'capacity', icon:'◫',label:'Capacity'},
   ];
-  return`
-  <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:-24px -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6" class="ws-tabstrip">
+  const _rcB=_isRetainedBoard(wb)?(DB.clients||[]).find(x=>x.id===wb.clientId):null;
+  return`${_rcB?_rcTabsHtml(_rcB,wb,'board',(DB.registerDocs||[]).filter(d=>d.clientId===_rcB.id&&!d.archived).length,(DB.registerPeople||[]).filter(p=>p.clientId===_rcB.id&&!p.archived).length):''}
+  <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:${_rcB?'0':'-24px'} -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6" class="ws-tabstrip">
     <button onclick="exitWorkboard()" style="display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 16px;border:none;border-right:1px solid #e2eaf2;background:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;color:#8da2b2;white-space:nowrap;flex-shrink:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'">
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       ${_isRetainedBoard(wb)?'Retained Services':'Boards'}

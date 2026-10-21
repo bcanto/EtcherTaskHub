@@ -56,6 +56,17 @@ H.run('retained8-test', 3269, async (t) => {
   t.ok(back1.view === 'retained' && back1.dash && !back1.page, 'leaving a retained board opened from the sidebar goes to the Retained Services dashboard');
   const back2 = await ev(() => { openRetainedClient('c2'); document.getElementById('rc-board').click(); const inBoard = currentView === 'workspace' && !!currentWorkboard; document.querySelector('.ws-tabstrip button').click(); return { inBoard, view: currentView, page: !!document.querySelector('.rc-grid'), name: (document.querySelector('.rc-id .reg-h') || {}).textContent }; });
   t.ok(back2.inBoard && back2.view === 'retained' && back2.page && back2.name === 'Daltech', 'opened from the client\'s page, it goes back to that page');
+  // On the board: the client's tabs sit above the board's own view tabs, and lead straight to the other tabs.
+  const btabs = await ev(() => {
+    document.getElementById('rc-board').click();
+    const row = document.querySelector('.rc-btabs'), tabs = row ? [...row.querySelectorAll('.reg-tab')] : [];
+    const out = { tabs: tabs.map(b => b.textContent.replace(/\d+/g, '').trim()), on: row ? (row.querySelector('.reg-tab.on') || {}).textContent : '', strip: !!document.querySelector('.ws-tabstrip') };
+    const reg = tabs.find(b => /Document register/.test(b.textContent)); if (reg) reg.click();
+    out.after = { view: currentView, tab: _regView && _regView.tab, board: !!currentWorkboard };
+    return out;
+  });
+  t.ok(JSON.stringify(btabs.tabs) === '["Overview","Board","Document register","Training matrix"]' && /Board/.test(btabs.on) && btabs.strip, `a retained board shows the client's tabs, Board selected, above its own view tabs (got ${JSON.stringify(btabs.tabs)})`);
+  t.ok(btabs.after.view === 'retained' && btabs.after.tab === 'docs' && !btabs.after.board, 'and they go straight to the register, leaving the board properly');
   const back3 = await ev(() => { const other = DB.workboards.find(w => !w.retainer && !w.archived && !_isPersonalBoard(w)); openWorkboard(other.id); const label = document.querySelector('.ws-tabstrip button').textContent.trim(); exitWorkboard(); return { label, view: currentView }; });
   t.ok(back3.label === 'Boards' && back3.view === 'dashboard', 'any other board still goes back to Boards');
 
@@ -68,10 +79,10 @@ H.run('retained8-test', 3269, async (t) => {
     return { tabs: [...document.querySelectorAll('.reg-tab')].map(b => b.textContent.replace(/\d+/g, '').trim()), sq: svc ? svc.querySelectorAll('.rs-sq i').length : 0, on: svc ? svc.querySelectorAll('.rs-sq i.on').length : 0,
       work: (document.getElementById('rc-queue') || {}).textContent || '', sugg: (document.getElementById('rc-sugg') || {}).textContent || '', facts: document.querySelector('.rc-facts').textContent, acts: [...document.querySelectorAll('.reg-top .reg-acts button')].map(b => b.textContent) };
   });
-  t.eq(ov.tabs, ['Overview', 'Document register', 'Training matrix'], 'the page has Overview, Document register and Training matrix');
+  t.eq(ov.tabs, ['Overview', 'Board', 'Document register', 'Training matrix'], 'the page has Overview, Board, Document register and Training matrix, in that order');
   t.ok(ov.sq === 20 && ov.on === 4, 'the month shows each service as squares');
   t.ok(/Update the induction pack/.test(ov.work), 'its requests and work are listed');
-  t.ok(/Embedded bundle/.test(ov.facts) && JSON.stringify(ov.acts) === '["Plan","Board","Month report"]', 'the header carries the level, bundle and lead, with Plan, Board and Month report');
+  t.ok(/Embedded bundle/.test(ov.facts) && JSON.stringify(ov.acts) === '["Plan","Month report"]', 'the header carries the level, bundle and lead, with Plan and Month report (Board is a tab)');
   t.ok(/3 documents are due for review with no task yet/.test(ov.sugg), `three documents (two overdue, one due within 30 days) are suggested as review tasks (got "${ov.sugg.trim().slice(0, 90)}")`);
   const shotOv = await ui.shot('retained8-client');
   t.eq(shotOv.phone, 0, 'the client\'s page fits a phone');
