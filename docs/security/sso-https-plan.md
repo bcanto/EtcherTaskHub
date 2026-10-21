@@ -6,6 +6,9 @@ deployed yet**, and nothing changes how anyone signs in until you switch it on.
 This replaces the earlier draft (`docs/iso-audit/sso-https-plan.md` on `retained-services`), now for Task Hub itself.
 The ISO site has its own copy in its handover.
 
+On `retained-services` the same parts are ported (part A was already there from ISO release B6), with the same switches,
+all off. That branch is not deployed on its own; this copy keeps it in step with `security-sso`.
+
 ## What is built (each part tested, every check proven able to fail)
 
 | Part | What it does | Switch | Commit |

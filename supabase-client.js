@@ -24,6 +24,8 @@ window._supabaseReady = (async function _initSupabase() {
       return;
     }
     const cfg = await resp.json();
+    // Read before the offline early-return below, which never runs when Supabase isn't configured.
+    // "Sign in with Microsoft" (release-1 B6.3)
     window._microsoftSignIn = cfg.microsoftSignIn === true;
     window._twoStepSignIn = cfg.twoStepSignIn === true;
     window._sessionIdleMinutes = Math.max(0, Number(cfg.sessionIdleMinutes) || 0);
@@ -52,7 +54,7 @@ window._supabaseReady = (async function _initSupabase() {
       },
     });
 
-    if (typeof window._updateMicrosoftSignIn === 'function') window._updateMicrosoftSignIn();
+    if (typeof window._updateMicrosoftSignIn === 'function') window._updateMicrosoftSignIn(); // release-1 B6.3
 
     // Listen for auth state changes so the app reacts to token refresh / sign-out
     window._supabase.auth.onAuthStateChange(async (event, session) => {

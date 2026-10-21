@@ -4,7 +4,7 @@ module.exports = function handler(req, res) {
   res.status(200).json({
     supabaseUrl:     process.env.SUPABASE_URL      || '',
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
-    // "Sign in with Microsoft" (Supabase Azure provider, Etcher tenant): MICROSOFT_SIGNIN=1 once it is set up.
+    // Release-1 B6.3: shows "Sign in with Microsoft" once the Supabase Azure provider is set up.
     microsoftSignIn: process.env.MICROSOFT_SIGNIN === '1',
     // Offer two-step sign-in (authenticator app) to password logins: TWO_STEP_SIGNIN=1.
     twoStepSignIn: process.env.TWO_STEP_SIGNIN === '1',
