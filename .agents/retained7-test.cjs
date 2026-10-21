@@ -24,8 +24,8 @@ H.run('retained7-test', 3267, async (t) => {
 
   await ev(() => { openRetainerSetup(); _rsSet('clientId', null, 'c1'); retainerCreate(); closeGenericModal(); navigate('retained'); });
   await t.sleep(400);
-  t.ok(await ev(() => !!document.querySelector('[data-rd-reg="c1"]')), 'each retained client has a Registers button on the dashboard');
-  await ev(() => document.querySelector('[data-rd-reg="c1"]').click()); await t.sleep(300);
+  t.ok(await ev(() => !!document.querySelector('[data-rd-reg="c1"]')), 'each retained client has an Open button on the dashboard');
+  await ev(() => { document.querySelector('[data-rd-reg="c1"]').click(); _regSet('tab', 'docs'); }); await t.sleep(300);
   t.ok(await ev(() => !!document.getElementById('reg-empty') && /No document register yet/.test(document.getElementById('reg-empty').textContent)), 'an empty register explains what to import');
 
   // ── Document register ──
@@ -189,9 +189,9 @@ H.run('retained7-test', 3267, async (t) => {
     const li = id => (document.getElementById(id) || {}).textContent || '';
     return { d: li('rd-att-regd-c1').replace(/\s+/g, ' '), t: li('rd-att-regt-c1').replace(/\s+/g, ' '), col: (document.querySelector('#rd-clients tr[data-rd-client="c1"] .rd-c-reg') || {}).textContent || '' };
   });
-  t.ok(/1 document is overdue for review, 1 due within 30 days/.test(dash.d), `the dashboard flags overdue and due documents (got "${dash.d}")`);
+  t.ok(/2 documents are due for review with no task yet \(1 overdue\)/.test(dash.d), `the dashboard flags documents due for review with no task (got "${dash.d}")`);
   t.ok(/training records? (has|have) expired/.test(dash.t) && /within 30 days/.test(dash.t), `and expired or expiring training (got "${dash.t}")`);
-  t.ok(/Documents: 1 overdue/.test(dash.col) && /Training: \d+ expired/.test(dash.col), 'the Clients sheet shows each register\'s state');
+  t.ok(/Documents: 2 need a review task/.test(dash.col) && /Training: \d+ expired/.test(dash.col), 'the Clients sheet shows each register\'s state');
   const blob = await ev(() => ({ users: DB.users, clients: DB.clients, boards: DB.workboards, groups: DB.groups, tasks: DB.tasks, registerDocs: DB.registerDocs, registerPeople: DB.registerPeople, registerComments: DB.registerComments, registers: DB.registers }));
   const slice = JSON.stringify(P.sliceForClient(blob, 'c1', 'cu1'));
   t.ok(slice.length > 200 && !/registerDocs|registerPeople|registerComments|Quality Policy|White Card course|Sent to the client for review|9000001|FIFO - PERTH/.test(slice), 'the client portal slice carries none of it');

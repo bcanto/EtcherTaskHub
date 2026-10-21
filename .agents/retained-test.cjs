@@ -8,10 +8,10 @@ H.run('retained-test', 3177, async (t) => {
   const ev = (fn, ...a) => ui.eval(fn, ...a);
 
   // Section: always there for an admin, with +, even before any retained board exists.
-  const sec0 = await ev(() => { const h = document.getElementById('nav-retained-header'), l = document.getElementById('sidebar-retained-list'), a = document.getElementById('retained-add-btn'); return h && l ? { shown: getComputedStyle(h).display !== 'none', text: h.textContent + ' ' + l.textContent, add: !!a && getComputedStyle(a).display !== 'none', sameAsWb: !!a && a.classList.contains('nav-add-btn') && h.querySelector('.section-header.nav-sec-toggle') !== null } : null; });
+  const sec0 = await ev(() => { const h = document.getElementById('nav-retained-header'), l = document.getElementById('sidebar-retained-list'), a = document.getElementById('retained-add-btn'); return h && l ? { shown: getComputedStyle(h).display !== 'none', text: h.textContent + ' ' + l.textContent, add: !!a && getComputedStyle(a).display !== 'none', sameAsHeader: h.querySelector('.section-header.nav-sec-toggle') !== null } : null; });
   t.ok(sec0 && sec0.shown && /Retained Services/.test(sec0.text) && /No retained boards yet/.test(sec0.text), 'the sidebar has a permanent Retained Services section, empty to start');
-  t.ok(sec0 && sec0.add, 'an admin sees + on the section');
-  t.ok(sec0 && sec0.sameAsWb, 'the section is built like WorkBoards and ISO (same header and + button)');
+  t.ok(sec0 && !sec0.add && /Add one from the Dashboard/.test(sec0.text), 'the section has no + of its own: new retained boards start from the Dashboard');
+  t.ok(sec0 && sec0.sameAsHeader, 'the section header is built like WorkBoards');
 
   // Set-up.
   await ev(() => openRetainerSetup()); await t.sleep(300);

@@ -966,7 +966,7 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .ws-grp-bar{width:64px;flex-shrink:0;margin-left:10px}
 .ws-grp-pct{width:38px;flex-shrink:0;text-align:right;font-size:10px;color:#8da2b2}
 /* Retained Services (.agents/PLAN-retained-services.md) */
-.ws-grp-meter{flex-shrink:0;margin-left:12px;font-size:11px;color:#6b8399;white-space:nowrap}
+.ws-grp-meter{display:inline-flex;align-items:center;gap:10px;flex-shrink:0;margin-left:6px;font-size:11px;color:#6b8399;white-space:nowrap}
 .nav-add-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;flex-shrink:0;padding:0;transition:background .15s,color .15s}
 .nav-add-btn:hover{background:rgba(151,188,189,0.2);color:#97bcbd}
 .nav-add-btn:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
@@ -998,6 +998,42 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 @media (max-width:760px){.rs-su2-terms{grid-template-columns:repeat(2,minmax(0,1fr))}.rs-cards{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:440px){.rs-su2-terms,.rs-cfg-row{grid-template-columns:minmax(0,1fr)}.rs-su2-foot{flex-wrap:wrap}.rs-su2-sum{flex-basis:100%}}
 .ws-grp-meter.full{color:#b45309;font-weight:700}
+.rs-sq{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px;max-width:100%;vertical-align:middle}
+.rs-sq i{flex-shrink:0;width:7px;height:7px;border-radius:1.5px;background:#e3e9f0}
+.rs-sq i.on{background:var(--sq-c)}
+.rs-sq i.x{background:none;box-shadow:inset 0 0 0 1.5px #b45309}
+.rs-sq.lg{gap:3px}.rs-sq.lg i{width:10px;height:10px;border-radius:2px}
+.ws-grp-meter .rs-sq{flex-wrap:nowrap}
+.rc-id{display:grid;flex:1;gap:4px;min-width:220px}.rc-id .reg-h{flex:none}
+.rc-facts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:12px;color:#3d5269}
+.rc-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start;gap:16px}
+.rc-col{display:grid;gap:16px;min-width:0}
+.rc-svc{list-style:none;margin:10px 0 0;padding:0}
+.rc-svc li{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) auto;align-items:center;gap:6px 16px;padding:10px 0;border-top:1px solid #eef2f6}
+.rc-svc li>.rs-sq{justify-self:start}
+.rc-svc li:first-child{border-top:0}
+.rc-svc-n b{display:block;font-size:12.5px;color:#0d1c33}.rc-svc-n small{font-size:11px;color:#7a96ad}
+.rc-svc-u{white-space:nowrap;font-size:12px;color:#3d5269}.rc-svc-u b{color:#0d1c33;font-variant-numeric:tabular-nums}
+.rc-svc li.near .rc-svc-u b{color:#8a5200}.rc-svc li.full .rc-svc-u b{color:#b91c1c}
+.rc-figs{display:flex;flex-wrap:wrap;gap:6px 20px;margin:10px 0 0;padding-top:10px;border-top:1px solid #e4eaf3;font-size:12.5px;color:#3d5269}
+.rc-figs b{margin-right:5px;font-family:Jost,sans-serif;font-size:15px;color:#0d1c33;font-variant-numeric:tabular-nums}.rc-figs .bad b{color:#b91c1c}
+.rc-sum{margin:0 0 10px;font-size:12.5px;line-height:1.5;color:#3d5269}.rc-sum .bad{color:#b91c1c}.rc-sum .warn{color:#8a5200}
+.rc-sugg{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 12px;padding:12px 14px;border-radius:8px;background:#f2f7f7}
+.rc-sugg p{flex:1;min-width:220px;margin:0;font-size:12.5px;line-height:1.5;color:#1a2940}
+.rc-list{list-style:none;margin:0;padding:0}
+.rc-list li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px 12px;padding:8px 0;border-top:1px solid #eef2f6}
+.rc-docs .rc-list li{grid-template-columns:minmax(0,1fr) auto}
+.rc-list .reg-st{font-size:11.5px}.rc-list small .reg-st{font-size:11px;font-weight:700}
+.reg-task{display:inline-flex;align-items:center;padding:3px 9px;border:1px solid #c9dfe0;border-radius:20px;background:#f2f7f7;white-space:nowrap;font-size:11px;font-weight:700;color:#31585a;cursor:pointer}
+.reg-task:hover{border-color:#31585a}.reg-task:active{opacity:.85}.reg-task:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.reg-task.done{padding-left:0;border-color:transparent;background:none;font-weight:600;color:#15803d;cursor:default}
+.reg-add-task{white-space:nowrap}
+.reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;margin:0}
+.rc-q td{vertical-align:middle}
+@media (max-width:1100px){.rc-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.rc-q .rq-c-w{grid-column:1;grid-row:1}.rc-q .rq-c-st{grid-column:2;grid-row:1}}
+@media (max-width:640px){.rc-svc li{grid-template-columns:minmax(0,1fr) auto}.rc-svc li>.rs-sq{grid-column:1/-1;order:3}
+  .rc-list li{grid-template-columns:minmax(0,1fr) auto}.rc-docs .rc-list li>.reg-task,.rc-docs .rc-list li>.reg-add-task{grid-column:1/-1;justify-self:start}}
 .sb-ret-add{width:18px;height:18px;border:1px solid #3e5c75;border-radius:5px;background:none;color:#97bcbd;font-size:12px;line-height:1;padding:0;cursor:pointer;flex-shrink:0}
 .sb-ret-add:hover{border-color:#97bcbd;color:#fff;background:rgba(151,188,189,.12)}
 .sb-ret-add:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
@@ -1087,8 +1123,9 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .rq-none td{padding:22px 0;text-align:center;color:#6b8399}
 .rd-c-name b{font-family:Jost,sans-serif;color:#0d1c33}.rd-c-name small{display:block;margin-top:2px;font-size:11.5px;color:#6b8399}
 .rd-ms{display:flex;flex-wrap:wrap;gap:6px 16px}
-.rd-m{display:inline-grid;grid-template-columns:auto 64px auto;align-items:center;gap:6px;white-space:nowrap;font-size:11.5px;color:#3d5269}
-.rd-m i{display:block;height:5px;overflow:hidden;border-radius:3px;background:#e9eef4}.rd-m em{display:block;height:100%;border-radius:3px}
+.rd-m{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-size:11.5px;color:#3d5269}
+.rd-m .rs-sq{flex-wrap:nowrap}.rd-m-none{display:inline-block;width:24px;height:1px;background:#d8e0ec}
+.rd-cl-open{max-width:none}.rd-cl-open:hover b{color:#31585a}
 .rd-m b{color:#0d1c33;font-variant-numeric:tabular-nums}.rd-m.near b{color:#8a5200}.rd-m.full b{color:#b91c1c}
 .rd-c-fee{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
 .rd-c-act{text-align:right;white-space:nowrap}.rd-c-act .btn+.btn{margin-left:4px}
@@ -1901,7 +1938,6 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <!-- Retained Services (.agents/PLAN-retained-services.md): a section of its own, styled like WorkBoards -->
       <div id="nav-retained-header" style="display:none;align-items:center;padding:12px 19px 5px;justify-content:space-between">
         <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('retained')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('retained')}">Retained Services<span class="nav-sec-chevron" id="nav-chev-retained">&#9662;</span></span>
-        <button id="retained-add-btn" class="nav-add-btn" onclick="openRetainerSetup()" title="New retained board" aria-label="New retained board">+</button>
       </div>
       <div class="nav-sec-body" id="nav-section-retained">
         <div id="sidebar-retained-list"></div>
@@ -5455,8 +5491,6 @@ function applyRolePermissions(){
   // Retained Services: staff and admins see the section; only admins get + (plan R8).
   const navRetHeaderEl=document.getElementById('nav-retained-header');
   if(navRetHeaderEl)navRetHeaderEl.style.display=(isAdmin||isMedium)?'flex':'none';
-  const retAddBtnEl=document.getElementById('retained-add-btn');
-  if(retAddBtnEl)retAddBtnEl.style.display=isAdmin?'':'none';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -7111,9 +7145,17 @@ function openWorkboard(id){
   renderSidebarWorkboards();
   navigate('workspace');
 }
+// A retained board goes back to Retained Services: to the client's page when it was opened from there, else the dashboard.
+let _rdBack=null;
+function _rdOpenBoard(boardId){_rdBack={boardId};openWorkboard(boardId);}
 function exitWorkboard(){
+  const wb=currentWorkboard,retained=_isRetainedBoard(wb);
   currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];
   renderSidebarWorkboards();
+  if(retained){
+    if(!(_rdBack&&wb&&_rdBack.boardId===wb.id))_regView=null;
+    _rdBack=null;navigate('retained');return;
+  }
   navigate('dashboard');
 }
 function updateSidebarWorkboard(){
@@ -7282,7 +7324,7 @@ function renderSidebarWorkboards(){
       <span style="flex:1">Dashboard</span>${rdLate?`<span class="rd-nav-badge" title="${rdLate} late in the queue" aria-label="${rdLate} late in the queue">${rdLate}</span>`:''}
     </div>`;
   if(retList)retList.innerHTML=rdRow+(retainedWbs.length?retainedWbs.map(wb=>wbRow(wb,14)).join('')
-    :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?', click +':''}</div>`);
+    :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?'. Add one from the Dashboard.':''}</div>`);
 
   container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
 }
@@ -7481,6 +7523,14 @@ const RETAINER_BUNDLES=[
   {key:'Light',mix:[[1,0],[0,1]]},{key:'Core',mix:[[2,0]]},{key:'Ops',mix:[[1,1]]},{key:'Plus',mix:[[1,2]]},{key:'Embedded',mix:[[2,3]]},
 ];
 function _rsLevel(key){return RETAINER_LEVELS.find(l=>l.key===key)||null;}
+// The allowance as squares, one per unit, filled as it is used (the client portal's meter, staff side). Use beyond the
+// allowance follows as amber outlined squares. Over 60 units (or the cap given) the squares give way to the words.
+function _rsSquares(used,allowance,color,cls,cap){
+  cap=cap||60;if(!allowance||allowance>cap)return'';
+  const on=Math.min(used,allowance),extra=Math.min(Math.max(0,used-allowance),cap-allowance>12?12:Math.max(0,cap-allowance));
+  let h='';for(let i=0;i<allowance;i++)h+=i<on?'<i class="on"></i>':'<i></i>';for(let i=0;i<extra;i++)h+='<i class="x"></i>';
+  return`<span class="rs-sq${cls?' '+cls:''}" style="--sq-c:${_safeCss(color,'#31585a')}" aria-hidden="true">${h}</span>`;
+}
 function _rsBundleName(keys){
   const core=keys.filter(k=>(_rsCat(k)||{}).kind==='core').length,add=keys.length-core;
   const b=RETAINER_BUNDLES.find(x=>x.mix.some(([c,a])=>c===core&&a===add));return b?b.key:null;
@@ -7541,7 +7591,8 @@ function _retainerMeterHtml(sec){
   if(wsGroupBy!=='group'||!_isRetainedBoard(wb))return'';
   const s=(wb.retainer.services||[]).find(x=>x.groupId===sec.id);if(!s)return'';
   const ym=_rsYm(),used=_retainerUsed(wb.id,s.groupId,ym);
-  return`<span class="ws-grp-meter${used>=s.allowance?' full':''}" title="Finished subitems on work the client can see, this month. Resets on the 1st.">${used} of ${s.allowance} ${escHtml(s.unit)} used in ${_rsMonthName(ym)}</span>`;
+  const cat=_rsCat(s.key)||{color:'#31585a'};
+  return`<span class="ws-grp-meter${used>=s.allowance?' full':''}" title="Finished subitems on work the client can see, this month. Resets on the 1st.">${_rsSquares(used,s.allowance,cat.color,'',40)}<span>${used} of ${s.allowance} ${escHtml(s.unit)} used in ${_rsMonthName(ym)}</span></span>`;
 }
 
 // ── Sidebar section (collapse is per viewer, like Personal Boards) ──
@@ -7931,16 +7982,16 @@ function renderRetainedDash(){
   const regCol=typeof _regClientSummary==='function'&&boards.some(b=>_regClientSummary(b.clientId));
   const cRow=b=>{
     const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null,fee=_rsFeeFor(r,ym);
-    const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const pct=Math.min(100,Math.round(u.ratio*100)),cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
-      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}"><span>${escHtml(u.cat.short)}</span><i><em style="width:${pct}%;background:${u.cat.color}"></em></i><b>${u.used}/${u.allowance}</b></span>`;}).join('');
+    const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
+      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}"><span>${escHtml(u.cat.short)}</span>${_rsSquares(u.used,u.allowance,u.cat.color)||'<i class="rd-m-none"></i>'}<b>${u.used}/${u.allowance}</b></span>`;}).join('');
     const reg=regCol?_regClientSummary(b.clientId):'';
     return`<tr data-rd-client="${b.clientId}">
-      <td class="rd-c-name"><span class="rq-cl"><i style="background:${cColor(b.clientId)}"></i><b>${escHtml(cName(b.clientId))}</b></span><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
+      <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rq-cl"><i style="background:${cColor(b.clientId)}"></i><b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
       <td class="rd-c-lv">${_rdLevelHtml(lv)}</td>
       <td class="rd-c-m"><div class="rd-ms">${meters||'<span class="rq-na">No services</span>'}</div></td>
       ${bill?`<td class="rd-c-fee">${fee!=null?_rsMoney(fee):'<span class="rq-na">Not set</span>'}</td>`:''}
       ${regCol?`<td class="rd-c-reg">${reg||'<span class="rq-na">None yet</span>'}</td>`:''}
-      <td class="rd-c-act"><button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" onclick="openWorkboard('${b.id}')">Board</button>${typeof openMonthReport==='function'?`<button class="btn btn-ghost btn-sm" data-rd-report="${b.id}" onclick="openMonthReport('${b.id}')">Month report</button>`:''}${typeof openRegisters==='function'?`<button class="btn btn-ghost btn-sm" data-rd-reg="${b.clientId}" onclick="openRegisters('${b.clientId}')">Registers</button>`:''}</td>
+      <td class="rd-c-act"><button class="btn btn-ghost btn-sm" data-rd-reg="${b.clientId}" onclick="openRetainedClient('${b.clientId}')" aria-label="Open ${escHtml(cName(b.clientId))}">Open</button></td>
     </tr>`;
   };
   const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
@@ -8316,8 +8367,8 @@ function _regQualState(q,today){
     label:days<0?'Expired':days<=30?'Expires within 30 days':days<=60?'Expires within 60 days':days<=90?'Expires within 90 days':'Current'};
 }
 function _regCounts(clientId){
-  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0};
-  (DB.registerDocs||[]).forEach(d=>{if(d.clientId!==clientId||d.archived)return;n.docs++;const k=_regDocState(d,today).k;if(k==='over')n.dOver++;else if(k==='d30')n.d30++;});
+  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0,dNeed:0,dNeedOver:0};
+  (DB.registerDocs||[]).forEach(d=>{if(d.clientId!==clientId||d.archived)return;n.docs++;const k=_regDocState(d,today).k;if(k==='over')n.dOver++;else if(k==='d30')n.d30++;if((k==='over'||k==='d30')&&!_regDocInHand(d)){n.dNeed++;if(k==='over')n.dNeedOver++;}});
   (DB.registerPeople||[]).forEach(p=>{if(p.clientId!==clientId||p.archived)return;n.people++;
     Object.values(p.quals||{}).forEach(q=>{const s=_regQualState(q,today);if(s&&s.k==='exp')n.tExp++;else if(s&&s.k==='d30')n.t30++;});});
   return n;
@@ -8327,17 +8378,18 @@ function _regAttention(boards){
   const out=[];
   boards.forEach(b=>{
     const n=_regCounts(b.clientId),cn=escHtml(((DB.clients||[]).find(c=>c.id===b.clientId)||{}).name||'Client');
-    if(n.dOver||n.d30)out.push({tone:n.dOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,act:`openRegisters('${b.clientId}','docs')`,btn:'Registers',
-      text:`${cn}: ${[n.dOver?`${n.dOver} document${n.dOver===1?' is':'s are'} overdue for review`:'',n.d30?`${n.d30} due within 30 days`:''].filter(Boolean).join(', ')}.`});
-    if(n.tExp||n.t30)out.push({tone:n.tExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRegisters('${b.clientId}','training')`,btn:'Registers',
+    if(n.dNeed)out.push({tone:n.dNeedOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+      text:`${cn}: ${n.dNeed} document${n.dNeed===1?' is':'s are'} due for review with no task yet${n.dNeedOver?` (${n.dNeedOver} overdue)`:''}.`});
+    if(n.tExp||n.t30)out.push({tone:n.tExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRegisters('${b.clientId}','training')`,btn:'Open',
       text:`${cn}: ${[n.tExp?`${n.tExp} training record${n.tExp===1?' has':'s have'} expired`:'',n.t30?`${n.t30} expire${n.t30===1?'s':''} within 30 days`:''].filter(Boolean).join(', ')}.`});
   });
   return out;
 }
 function _regClientSummary(clientId){
   const n=_regCounts(clientId);if(!n.docs&&!n.people)return'';
-  const part=(label,total,bad,warn,bw,ww)=>total?`<span class="rd-reg${bad?' bad':warn?' warn':''}">${label}: ${bad?bad+' '+bw:warn?warn+' '+ww:'up to date'}</span>`:'';
-  return part('Documents',n.docs,n.dOver,n.d30,'overdue','due soon')+part('Training',n.people,n.tExp,n.t30,'expired','expiring soon');
+  const doc=n.docs?`<span class="rd-reg${n.dNeedOver?' bad':n.dNeed?' warn':''}">Documents: ${n.dNeed?n.dNeed+' need a review task':n.dOver||n.d30?'reviews in hand':'up to date'}</span>`:'';
+  const trn=n.people?`<span class="rd-reg${n.tExp?' bad':n.t30?' warn':''}">Training: ${n.tExp?n.tExp+' expired':n.t30?n.t30+' expiring soon':'up to date'}</span>`:'';
+  return doc+trn;
 }
 // Comments: their own records (so two people commenting on one row never overwrite each other), deleted by flag.
 function _regComments(kind,rowId,qual){
@@ -8383,23 +8435,6 @@ const _REG_SVG={
 function _regIcon(k){return k==='over'||k==='exp'?_RD_SVG.late:k==='d30'?_RD_SVG.soon:k==='d60'||k==='d90'?_REG_SVG.dia:k==='ok'?_RD_SVG.ok:_REG_SVG.ring;}
 function _regDate(d){if(!d)return'';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}
 function _regDaysText(s){if(s.days==null)return'';const n=Math.abs(s.days);return s.days<0?`${n} day${n===1?'':'s'} ago`:s.days===0?'today':`in ${n} day${n===1?'':'s'}`;}
-function renderRegisters(){
-  const v=_regView,c=(DB.clients||[]).find(x=>x.id===v.clientId);
-  if(!c){_regView=null;return renderRetainedDash();}
-  const docs=(DB.registerDocs||[]).filter(d=>d.clientId===v.clientId&&!d.archived);
-  const people=(DB.registerPeople||[]).filter(p=>p.clientId===v.clientId&&!p.archived);
-  const meta=(DB.registers||[]).find(r=>r.clientId===v.clientId)||{};
-  const tab=(k,label,n)=>`<button type="button" role="tab" class="reg-tab${v.tab===k?' on':''}" aria-selected="${v.tab===k}" id="reg-tab-${k}" onclick="_regSet('tab','${k}')">${label}<span>${n}</span></button>`;
-  const last=meta[v.tab==='docs'?'docs':'training'],by=last&&last.by?getStaff(last.by):null;
-  const lastTxt=last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'';
-  return`<div class="rd reg">
-    <div class="reg-top"><button type="button" class="btn btn-ghost btn-sm" id="reg-back" onclick="_rdHome()">‹ Retained Services</button><h2 class="reg-h">${escHtml(c.name)} registers</h2>
-      <div class="reg-acts"><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${v.tab}')">Import from Excel</button><button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${v.tab}')">Download template</button></div></div>
-    <div class="reg-tabs" role="tablist" aria-label="Registers">${tab('docs','Document register',docs.length)}${tab('training','Training matrix',people.length)}</div>
-    ${lastTxt?`<p class="rd-hint reg-last">${lastTxt}</p>`:''}
-    ${v.tab==='docs'?_regDocsHtml(c,docs):_regTrainingHtml(c,people,meta)}
-  </div>`;
-}
 function _regCmCounts(clientId,kind){
   const m=new Map();
   (DB.registerComments||[]).forEach(x=>{if(x.deleted||x.kind!==kind||x.clientId!==clientId)return;m.set(x.rowId,(m.get(x.rowId)||0)+1);if(x.qual){const k=x.rowId+'|'+x.qual;m.set(k,(m.get(k)||0)+1);}});
@@ -8415,7 +8450,7 @@ function _regDocsHtml(c,docs){
   const series=[...new Set(docs.map(d=>_regSeries(d.code)).filter(Boolean))].sort(),q=_regNorm(v.q);
   const list=rows.filter(x=>(!v.st||x.s.k===v.st)&&(!v.series||_regSeries(x.d.code)===v.series)&&(!q||_regNorm(x.d.name+' '+(x.d.note||'')).includes(q)))
     .sort((a,b)=>(a.d.nextReview?0:1)-(b.d.nextReview?0:1)||String(a.d.nextReview||'').localeCompare(String(b.d.nextReview||''))||String(a.d.code||a.d.name).localeCompare(String(b.d.code||b.d.name)));
-  const cm=_regCmCounts(c.id,'doc');
+  const cm=_regCmCounts(c.id,'doc'),tg=_regImsTarget(c.id);
   const body=list.length?list.map(({d,s})=>`<tr class="reg-r ${s.k}" data-reg-doc="${d.id}">
       <td class="reg-code">${escHtml(d.code||'')}</td>
       <td class="reg-doc"><button type="button" class="rq-w" onclick="_regOpenDoc('${d.id}')"><b>${escHtml(d.title||d.name)}</b>${d.note?`<small>${escHtml(d.note)}</small>`:''}</button></td>
@@ -8423,13 +8458,14 @@ function _regDocsHtml(c,docs){
       <td class="reg-num" data-l="Review every">${d.reviewMonths?d.reviewMonths+' months':''}</td>
       <td class="reg-num" data-l="Next review">${_regDate(d.nextReview)}</td>
       <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null&&s.k!=='ok'?` <em>${_regDaysText(s)}</em>`:''}</span></td>
+      <td class="reg-tk" data-l="Review task">${_regTaskCell(d,tg)}</td>
       <td class="reg-cm">${_regCmHtml(cm.get(d.id)||0)}</td></tr>`).join('')
-    :'<tr class="rq-none"><td colspan="7">Nothing matches these filters.</td></tr>';
-  return`<section class="rd-sheet">
+    :'<tr class="rq-none"><td colspan="8">Nothing matches these filters.</td></tr>';
+  return`<section class="rd-sheet">${_regIoBar(c,'docs')}
     <div class="reg-bar"><div class="reg-seg" role="group" aria-label="Review status">${segs.map(([k,l,n])=>`<button type="button" class="${v.st===k?'on ':''}${k}" aria-pressed="${v.st===k}" data-reg-st="${k}" onclick="_regSet('st','${k}')">${k?_regIcon(k):''}${l}<b>${n}</b></button>`).join('')}</div>
       <div class="reg-fl">${series.length?`<label class="rd-f"><span>Series</span><select class="form-input" id="reg-series" onchange="_regSet('series',this.value)"><option value="">All series</option>${series.map(s=>`<option value="${escHtml(s)}"${v.series===s?' selected':''}>${escHtml(s)}</option>`).join('')}</select></label>`:''}
       <label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or note" oninput="_regSearch(this.value)"></label></div></div>
-    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th>Review task</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
   </section>`;
 }
 function _regQualsOrder(people,meta){
@@ -8451,7 +8487,7 @@ function _regTrainingHtml(c,people,meta){
   const modeBtn=(k,l)=>`<button type="button" class="${v.mode===k?'on':''}" aria-pressed="${v.mode===k}" data-reg-mode="${k}" onclick="_regSet('mode','${k}')">${l}</button>`;
   const win=`<label class="rd-f"><span>Window</span><select class="form-input" id="reg-win" onchange="_regSet('win',this.value)">${[['exp','Expired only'],['30','Expired or within 30 days'],['60','Expired or within 60 days'],['90','Expired or within 90 days'],['all','Every dated record']].map(([k,l])=>`<option value="${k}"${v.win===k?' selected':''}>${l}</option>`).join('')}</select></label>`;
   const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label>`;
-  return`<section class="rd-sheet"><div class="reg-bar"><div class="reg-seg" role="group" aria-label="View">${modeBtn('expiring','Expiring')}${modeBtn('matrix','Matrix')}</div><div class="reg-fl">${v.mode==='matrix'?due:win}${filters}</div></div>
+  return`<section class="rd-sheet">${_regIoBar(c,'training')}<div class="reg-bar"><div class="reg-seg" role="group" aria-label="View">${modeBtn('expiring','Expiring')}${modeBtn('matrix','Matrix')}</div><div class="reg-fl">${v.mode==='matrix'?due:win}${filters}</div></div>
     ${v.mode==='matrix'?_regMatrixHtml(ppl,quals,cm,today):_regExpiringHtml(ppl,cm,today)}</section>`;
 }
 function _regExpiringHtml(ppl,cm,today){
@@ -8514,7 +8550,7 @@ function _regDrawerRender(){
     head=`${d.code?`<span class="reg-dr-code">${escHtml(d.code)}</span>`:''}<h3 id="reg-dr-title">${escHtml(d.title||d.name)}</h3>`;
     info=`<dl class="reg-dl"><dt>Status</dt><dd><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null?` <em>${_regDaysText(s)}</em>`:''}</span></dd>
       <dt>Issued</dt><dd>${_regDate(d.issueDate)||'Not given'}</dd><dt>Review every</dt><dd>${d.reviewMonths?d.reviewMonths+' months':'Not given'}</dd><dt>Next review</dt><dd>${_regDate(d.nextReview)||'Not set'}</dd>
-      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}</dl>`;
+      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}<dt>Review task</dt><dd>${_regTaskCell(d,_regImsTarget(d.clientId))||'<span class="rq-na">None</span>'}</dd></dl>`;
     list=_regComments('doc',d.id);
   }else{
     const p=(DB.registerPeople||[]).find(x=>x.id===dr.rowId);if(!p){_regDrawerClose();return;}
@@ -8676,6 +8712,143 @@ function _regTemplateBuild(kind){
     if(!j){cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:DEEP}};cell.alignment={wrapText:true,vertical:'middle'};}
     else cell.font={color:{argb:INK}};});});
   return wb.xlsx.writeBuffer();
+}
+
+// ── A page per retained client: Overview (the month, requests and work, document control, training), then the registers ──
+function openRetainedClient(clientId){openRegisters(clientId,'overview');}
+function _regLastImport(c,kind){
+  const meta=(DB.registers||[]).find(r=>r.clientId===c.id)||{},last=meta[kind],by=last&&last.by?getStaff(last.by):null;
+  return last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'Not imported yet.';
+}
+function _regIoBar(c,kind){
+  return`<div class="reg-io"><p class="rd-hint reg-last">${_regLastImport(c,kind)}</p><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button><button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div>`;
+}
+function renderRegisters(){
+  const v=_regView,c=(DB.clients||[]).find(x=>x.id===v.clientId);
+  if(!c){_regView=null;return renderRetainedDash();}
+  const b=(DB.workboards||[]).find(w=>w.clientId===c.id&&!w.archived&&_isRetainedBoard(w))||null;
+  const docs=(DB.registerDocs||[]).filter(d=>d.clientId===v.clientId&&!d.archived);
+  const people=(DB.registerPeople||[]).filter(p=>p.clientId===v.clientId&&!p.archived);
+  const meta=(DB.registers||[]).find(r=>r.clientId===v.clientId)||{};
+  const tab=(k,label,n)=>`<button type="button" role="tab" class="reg-tab${v.tab===k?' on':''}" aria-selected="${v.tab===k}" id="reg-tab-${k}" onclick="_regSet('tab','${k}')">${label}${n!=null?`<span>${n}</span>`:''}</button>`;
+  const r=b&&b.retainer,lv=r?(_rsLevel(r.priority)||_rsLevel('Standard')):null,keys=r?(r.services||[]).map(s=>s.key):[],bn=_rsBundleName(keys);
+  const lead=r&&r.leadId?getStaff(r.leadId):null,fee=r?_rsFeeFor(r,_rsYm()):null;
+  const facts=r?[_rdLevelHtml(lv),`<span>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}</span>`,lead?`<span>Lead ${escHtml(lead.name)}</span>`:'',_canBill(currentUser)&&fee!=null?`<span>${_rsMoney(fee)} a month</span>`:''].filter(Boolean).join('')
+    :'<span>No active retainer</span>';
+  const acts=b?`<button class="btn btn-ghost btn-sm" onclick="openRetainerPlan('${b.id}')">Plan</button><button class="btn btn-ghost btn-sm" id="rc-board" onclick="_rdOpenBoard('${b.id}')">Board</button><button class="btn btn-ghost btn-sm" id="rc-report" onclick="openMonthReport('${b.id}')">Month report</button>`:'';
+  const body=v.tab==='docs'?_regDocsHtml(c,docs):v.tab==='training'?_regTrainingHtml(c,people,meta):_rcOverviewHtml(c,b,docs,people);
+  return`<div class="rd reg">
+    <div class="reg-top"><button type="button" class="btn btn-ghost btn-sm" id="reg-back" onclick="_rdHome()">‹ Retained Services</button>
+      <div class="rc-id"><h2 class="reg-h">${escHtml(c.name)}</h2><div class="rc-facts">${facts}</div></div>
+      <div class="reg-acts">${acts}</div></div>
+    <div class="reg-tabs" role="tablist" aria-label="${escHtml(c.name)}">${tab('overview','Overview',null)}${tab('docs','Document register',docs.length)}${tab('training','Training matrix',people.length)}</div>
+    ${body}
+  </div>`;
+}
+function _rcQueueRow(r){
+  const own=r.ownerId?getStaff(r.ownerId):null,lvNone=r.lv.resp==null;
+  const sub=[escHtml(r.sub||''),r.kind==='request'?`Request, received ${escHtml(_rdShort(toDateStr(new Date(r.received))))}`:'Task'].filter(Boolean).join('. ');
+  return`<tr class="${r.late?'late':''}" data-rq="${r.kind}:${r.id}"><td class="rq-c-w"><button type="button" class="rq-w" onclick="_rdOpen('${r.kind}','${r.id}')"><b>${escHtml(r.title)}</b><small>${sub}</small></button></td>
+    <td class="rq-c-due" data-l="Reply by">${_rdClockHtml(r.reply,r.replyState,lvNone?'Priority queue':'No clock','Replied')}</td>
+    <td class="rq-c-due" data-l="Deliver by">${_rdClockHtml(r.deliver,r.deliverState,r.kind==='task'?'No due date':lvNone?'Surge support':'Accelerated','Delivered')}</td>
+    <td class="rq-c-own" data-l="Owner">${own?escHtml(own.name):'<span class="rq-na">Unassigned</span>'}</td>
+    <td class="rq-c-st"><span class="rq-st" style="background:${_safeCss(r.status.bg,'#f1f5f9')};color:${_safeCss(r.status.color,'#475569')}">${escHtml(r.status.label||'')}</span></td></tr>`;
+}
+function _rcOverviewHtml(c,b,docs,people){
+  const today=_regToday(),ym=_rsYm(),month=_rsMonthName(ym);
+  let monthHtml='';
+  if(b){
+    const svc=(b.retainer.services||[]).map(s=>{
+      const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},used=_retainerUsed(b.id,s.groupId,ym),own=s.ownerId?getStaff(s.ownerId):null;
+      return`<li class="${used>=s.allowance?'full':used>=s.allowance*0.8?'near':''}" data-rc-svc="${s.key}"><div class="rc-svc-n"><b>${escHtml(cat.name)}</b>${own?`<small>${escHtml(own.name)}</small>`:''}</div>${_rsSquares(used,s.allowance,cat.color,'lg')}<span class="rc-svc-u"><b>${used} of ${s.allowance}</b> ${escHtml(s.unit)}</span></li>`;
+    }).join('');
+    const top=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t));
+    const delivered=top.filter(t=>_rsDone(t)&&_rsDoneYm(t)===ym).length;
+    const reqs=(DB.clientWorkRequests||[]).filter(q=>q.clientId===c.id&&q.submittedAt&&_rsYm(new Date(q.submittedAt))===ym).length;
+    const overdue=top.filter(t=>!_rsDone(t)&&t.endDate&&t.endDate<today).length;
+    monthHtml=`<section class="rd-sheet rc-month" aria-labelledby="rc-month-h"><h3 class="rd-h" id="rc-month-h">${month} so far</h3><ul class="rc-svc">${svc||'<li class="rq-na">No services on the plan.</li>'}</ul>
+      <p class="rc-figs"><span><b>${delivered}</b>delivered</span><span><b>${reqs}</b>request${reqs===1?'':'s'} received</span><span class="${overdue?'bad':''}"><b>${overdue}</b>overdue now</span></p></section>`;
+  }
+  const rows=_rqSort(_rqQueue().filter(x=>x.board.clientId===c.id),'due');
+  const work=`<section class="rd-sheet" aria-labelledby="rc-q-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-q-h">Requests and work <span class="rd-n">${rows.length}</span></h3></div>
+    ${rows.length?`<div class="rq-wrap"><table class="rq-t rc-q" id="rc-queue"><thead><tr><th>Work</th><th>Reply by</th><th>Deliver by</th><th>Owner</th><th>Status</th></tr></thead><tbody>${rows.slice(0,12).map(_rcQueueRow).join('')}</tbody></table></div>${rows.length>12?`<p class="rd-hint">And ${rows.length-12} more in the queue.</p>`:''}`
+      :'<p class="rd-hint">Nothing open for this client.</p>'}</section>`;
+  return`<div class="rc-grid"><div class="rc-col">${monthHtml}${work}</div><div class="rc-col">${_rcDocsHtml(c,b,docs,today)}${_rcTrainingHtml(c,people,today)}</div></div>`;
+}
+// Document control on the Overview: what is due, and the reviews still without a task, one click from being work.
+function _rcDocsHtml(c,b,docs,today){
+  if(!docs.length)return`<section class="rd-sheet rc-docs"><h3 class="rd-h">Document control</h3><p class="rd-hint">No document register yet. <button type="button" class="rs-lvl-use" onclick="_regSet('tab','docs')">Import it</button> to see what is due and turn the reviews into tasks.</p></section>`;
+  const rows=docs.map(d=>({d,s:_regDocState(d,today)})),cnt=k=>rows.filter(x=>x.s.k===k).length;
+  const due=rows.filter(x=>x.s.k==='over'||x.s.k==='d30').sort((a,z)=>String(a.d.nextReview).localeCompare(String(z.d.nextReview)));
+  const need=due.filter(x=>!_regDocInHand(x.d)),tg=_regImsTarget(c.id),N=need.length;
+  const sum=[cnt('over')?`<b class="bad">${cnt('over')} overdue</b>`:'',cnt('d30')?`<b class="warn">${cnt('d30')} due within 30 days</b>`:'',`${cnt('d60')+cnt('d90')+cnt('ok')} current`,cnt('none')?`${cnt('none')} with no date`:''].filter(Boolean).join(', ');
+  const sugg=!N?'':tg
+    ?`<div class="rc-sugg" id="rc-sugg"><p><b>${N} document${N===1?' is':'s are'} due for review with no task yet.</b> Add ${N===1?'it':'them'} to IMS and Document Control: each task is due on the review date and counts as a document review when done.</p><button class="btn btn-primary btn-sm" id="rc-add-tasks" onclick="_regAddTasks('${c.id}','due')">Add ${N} review task${N===1?'':'s'}</button></div>`
+    :`<div class="rc-sugg" id="rc-sugg"><p><b>${N} document${N===1?' is':'s are'} due for review.</b> ${b?'Add IMS and Document Control to the plan':'Set up a retainer'} to turn reviews into tasks.</p></div>`;
+  const list=due.slice(0,8).map(({d,s})=>`<li class="${s.k}" data-rc-doc="${d.id}"><button type="button" class="rq-w" onclick="_regOpenDoc('${d.id}')"><b>${d.code?`<span class="reg-code">${escHtml(d.code)}</span> `:''}${escHtml(d.title||d.name)}</b><small>Next review ${_regDate(d.nextReview)}, <span class="reg-st ${s.k}">${escHtml(s.label)}</span></small></button>${_regTaskCell(d,tg)}</li>`).join('');
+  return`<section class="rd-sheet rc-docs" aria-labelledby="rc-docs-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-docs-h">Document control <span class="rd-n">${docs.length}</span></h3><button type="button" class="rs-lvl-use" onclick="_regSet('tab','docs')">Full register</button></div>
+    <p class="rc-sum">${sum}.</p>${sugg}${list?`<ul class="rc-list">${list}</ul>${due.length>8?`<p class="rd-hint">And ${due.length-8} more in the register.</p>`:''}`:''}</section>`;
+}
+function _rcTrainingHtml(c,people,today){
+  if(!people.length)return`<section class="rd-sheet rc-trn"><h3 class="rd-h">Training and tickets</h3><p class="rd-hint">No training matrix yet. <button type="button" class="rs-lvl-use" onclick="_regSet('tab','training')">Import it</button> to see what has expired or is about to.</p></section>`;
+  const items=[];let exp=0,d30=0,recs=0;
+  people.forEach(p=>Object.entries(p.quals||{}).forEach(([name,q])=>{recs++;const s=_regQualState(q,today);if(!s)return;if(s.k==='exp')exp++;else if(s.k==='d30')d30++;if(s.k==='exp'||s.k==='d30')items.push({p,name,q,s});}));
+  items.sort((a,z)=>a.s.days-z.s.days);
+  const list=items.slice(0,8).map(({p,name,q,s})=>`<li class="${s.k}"><button type="button" class="rq-w" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml(name)}</small></button><span class="reg-num">${_regDate(q.d)}</span><span class="reg-st ${s.k}">${_regIcon(s.k)}${s.k==='exp'?'Expired':'Within 30 days'}</span></li>`).join('');
+  return`<section class="rd-sheet rc-trn" aria-labelledby="rc-trn-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-trn-h">Training and tickets <span class="rd-n">${people.length} ${people.length===1?'person':'people'}</span></h3><button type="button" class="rs-lvl-use" onclick="_regSet('tab','training')">Full matrix</button></div>
+    <p class="rc-sum">${recs} record${recs===1?'':'s'}: ${exp?`<b class="bad">${exp} expired</b>, `:''}${d30?`<b class="warn">${d30} expire within 30 days</b>, `:''}the rest current or held.</p>${list?`<ul class="rc-list">${list}</ul>${items.length>8?`<p class="rd-hint">And ${items.length-8} more in the matrix.</p>`:''}`:''}</section>`;
+}
+// ── Document reviews as work: a review task in the client's IMS and Document Control group, linked to its document ──
+function _regImsTarget(clientId){
+  const b=(DB.workboards||[]).find(w=>w.clientId===clientId&&!w.archived&&_isRetainedBoard(w));
+  const s=b&&(b.retainer.services||[]).find(x=>x.key==='ims');
+  return s?{board:b,service:s}:null;
+}
+function _regDocTask(d){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerDocId===d.id).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
+// In hand: a review task is open, or one was finished since the document was last issued.
+function _regDocInHand(d){
+  const t=_regDocTask(d);if(!t)return false;if(!_rsDone(t))return true;
+  const at=String(t.completedAt||t.updatedAt||'').slice(0,10);return !!at&&(!d.issueDate||at>=d.issueDate);
+}
+function _regNeedsTask(d,today){const k=_regDocState(d,today).k;return(k==='over'||k==='d30')&&!_regDocInHand(d);}
+function regAddReviewTasks(clientId,ids){
+  try{requireInternalUser(currentUser);}catch(e){return 0;}
+  const tg=_regImsTarget(clientId);if(!tg)return 0;
+  const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
+  let n=0,order=(DB.tasks||[]).filter(t=>t.groupId===tg.service.groupId&&!t.parentTaskId).length;
+  ids.forEach(id=>{
+    const d=(DB.registerDocs||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!d||_regDocInHand(d))return;
+    // Only a review that is due (overdue, or within 90 days) becomes a task.
+    const k=_regDocState(d,today).k;if(k==='ok'||k==='none')return;
+    const name=('Review '+(d.code?d.code+' ':'')+(d.title||d.name)).slice(0,200);
+    DB.tasks.push({id:'t'+uid(),name,title:name,clientId,boardId:tg.board.id,workboardId:tg.board.id,groupId:tg.service.groupId,parentTaskId:null,
+      status:'todo',priority:'med',ownerId:owner,currentlyWith:owner,currentlyWithType:owner?'staff':'none',currentlyWithUserId:owner,
+      startDate:today,endDate:d.nextReview&&d.nextReview>today?d.nextReview:today,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:order++,
+      description:`From the document register: next review ${_regDate(d.nextReview)||'not set'}${d.reviewMonths?`, every ${d.reviewMonths} months`:''}. Once it is reissued, update the client's register and import it again.`,
+      dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,registerDocId:d.id});
+    n++;
+  });
+  if(n){
+    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} document review task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
+    saveDB(DB);
+  }
+  return n;
+}
+function _regTaskCell(d,tg){
+  const t=_regDocTask(d);
+  if(t&&!_rsDone(t)){const sm=getStatusMeta(t.status);return`<button type="button" class="reg-task" data-reg-task="${t.id}" onclick="openTaskPanel('${t.id}')" title="Open the review task">${escHtml(sm.label||'Open')}${t.endDate?`, due ${escHtml(_rdShort(t.endDate).replace(/^\w+,? /,''))}`:''}</button>`;}
+  if(t&&_regDocInHand(d))return`<span class="reg-task done" data-reg-task="${t.id}">Reviewed ${escHtml(_rdShort(String(t.completedAt||t.updatedAt).slice(0,10)).replace(/^\w+,? /,''))}, update the register</span>`;
+  const k=_regDocState(d,_regToday()).k;
+  if(tg&&(k==='over'||k==='d30'||k==='d60'||k==='d90'))return`<button type="button" class="btn btn-ghost btn-sm reg-add-task" data-reg-add="${d.id}" onclick="_regAddTasks('${d.clientId}','${d.id}')">Add review task</button>`;
+  return'';
+}
+function _regAddTasks(clientId,which){
+  const today=_regToday();
+  const ids=which==='due'?(DB.registerDocs||[]).filter(d=>d.clientId===clientId&&!d.archived&&_regNeedsTask(d,today)).map(d=>d.id):[which];
+  const n=regAddReviewTasks(clientId,ids);
+  if(n){showToast(`${n} review task${n===1?'':'s'} added to IMS and Document Control.`,'success');renderSidebarWorkboards();}
+  if(_regDr&&_regDr.kind==='doc')_regDrawerRender();
+  _regRerender();
 }
 
 // ── Retained Services in the portal and in requests (plan R2, R3, R6, R7, R11) ──
@@ -20493,7 +20666,7 @@ function renderWbTabs(activeView){
   <div style="display:flex;align-items:center;border-bottom:1px solid #e2eaf2;background:#fff;margin:-24px -24px 0;padding:0;overflow-x:auto;flex-shrink:0;position:sticky;top:56px;z-index:6" class="ws-tabstrip">
     <button onclick="exitWorkboard()" style="display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 16px;border:none;border-right:1px solid #e2eaf2;background:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;color:#8da2b2;white-space:nowrap;flex-shrink:0;transition:color 0.12s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#8da2b2'">
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Boards
+      ${_isRetainedBoard(wb)?'Retained Services':'Boards'}
     </button>
     <div style="display:flex;align-items:center;gap:3px;padding:0 6px;border-right:1px solid #e2eaf2">
       <div style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0"></div>
@@ -22931,9 +23104,8 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
 
         ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
         <span class="ws-grp-count">${sec.tasks.length}</span>
-        <div class="ws-grp-bar">${statusMixBar(mix,64)||`<div class="progress-bar" style="width:64px"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>`}</div>
-        <span class="ws-grp-pct">${pct}%</span>
-        ${_retainerMeterHtml(sec)}
+        ${_retainerMeterHtml(sec)||`<div class="ws-grp-bar">${statusMixBar(mix,64)||`<div class="progress-bar" style="width:64px"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>`}</div>
+        <span class="ws-grp-pct">${pct}%</span>`}
         <button onclick="event.stopPropagation();openTaskModal(null,'${sec.defGrp||''}')" style="margin-left:auto;background:none;border:1px solid #e2eaf2;cursor:pointer;font-size:11px;color:#6b8399;padding:3px 10px;border-radius:4px;font-family:'Jost',sans-serif;font-weight:600" onmouseover="this.style.background='#fff'" onmouseout="this.style.background='none'">+ Add</button>
       </div>
     </td>
