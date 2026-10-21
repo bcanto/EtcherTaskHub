@@ -1,0 +1,23 @@
+// Can-fail mutations for the Main Table column fix and the two Retained Services fixes (node .agents/_canfail.cjs .agents/_mut-mt-cols.cjs --green).
+module.exports = [
+  { id: 'mtc-no-resize', suite: 'mt-cols-test', file: 'index.html', note: 'an added column has no resize edge',
+    find: "    <span class=\"col-resize\" onclick=\"event.stopPropagation()\" onmousedown=\"wsStartColResize(event,'${grid}','${id}')\" title=\"Drag to resize\"></span>\n  </th>`;", replace: "  </th>`;" },
+  { id: 'mtc-no-drag', suite: 'mt-cols-test', file: 'index.html', note: 'an added column cannot be dragged',
+    find: "  return`<th class=\"ws-col-draggable\" draggable=\"true\"\n    ondragstart=\"_wsColDragStart(event,'${grid}','${id}')\"", replace: "  return`<th class=\"ws-col-draggable\"\n    ondragstart=\"_wsColDragStart(event,'${grid}','${id}')\"" },
+  { id: 'mtc-drop-custom', suite: 'mt-cols-test', file: 'index.html', note: 'a drop that names an added column is ignored',
+    find: "...mtGetBoardCustomCols().filter(cc=>grid!=='sub'||mtColAppliesTo(cc,true)).map(cc=>cc.id)].forEach", replace: "].forEach" },
+  { id: 'mtc-row-fixed', suite: 'mt-cols-test', file: 'index.html', note: 'item row cells ignore the header order again',
+    find: "      return _wsMixCols('item',visCols,custCols).map(m=>m.cc?_cc(m.cc):(_cells[m.key]||'')).join('');", replace: "      return ['ref','status','priority','owner','cwith','duedate','progress','hours','client','tags','attachments','deps'].map(k=>_cells[k]).join('')+custCols.map(_cc).join('');" },
+  { id: 'mtc-mix-saved', suite: 'mt-cols-test', file: 'index.html', note: 'the saved order is ignored for added columns',
+    find: "return all.map((x,i)=>({x,s:idx.has(x.key)?idx.get(x.key):1000+i}))", replace: "return all.map((x,i)=>({x,s:(idx.has(x.key)&&!x.cc)?idx.get(x.key):1000+i}))" },
+  { id: 'mtc-sub-row', suite: 'mt-cols-test', file: 'index.html', note: 'subitem cells for added columns stay at the end',
+    find: "    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class=\"ws-editable\" onclick=\"event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)\"", replace: "    ${[...visSub.map(c=>({c,key:c.key})),...subCust.map(cc=>({cc,key:cc.id}))].map(m=>m.cc?`<td class=\"ws-editable\" onclick=\"event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)\"" },
+  { id: 'mtc-month-native', suite: 'mt-cols-test', file: 'index.html', note: 'Starts is the browser\'s month picker again',
+    find: "<select class=\"form-input\" id=\"rs-su-start\" onchange=\"_rsSet('startMonth',null,this.value)\">${_rsStartMonthOptions(m.startMonth)}</select>", replace: "<input type=\"month\" class=\"form-input\" id=\"rs-su-start\" value=\"${m.startMonth}\" onchange=\"_rsSet('startMonth',null,this.value)\">" },
+  { id: 'mtc-month-blank', suite: 'mt-cols-test', file: 'index.html', note: 'an empty start month is accepted',
+    find: "  else if(field==='startMonth'){if(/^[0-9]{4}-[0-9]{2}$/.test(String(val||'')))m.startMonth=val;}", replace: "  else if(field==='startMonth'){m.startMonth=val;}" },
+  { id: 'mtc-cap', suite: 'mt-cols-test', file: 'index.html', note: 'the dashboard stops at 1480px again',
+    find: ".rd{display:grid;gap:16px;min-width:0}", replace: ".rd{display:grid;gap:16px;min-width:0;max-width:1480px}" },
+  { id: 'mtc-cap-mast', suite: 'mt-cols-test', file: 'index.html', note: 'the client header stops at 1480px again',
+    find: ".rc-mast{overflow:hidden;", replace: ".rc-mast{max-width:1480px;overflow:hidden;" },
+];
