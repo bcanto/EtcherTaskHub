@@ -98,6 +98,13 @@ H.run('retained8-test', 3269, async (t) => {
   t.ok(/3 documents are due for review with no task yet/.test(ov.sugg), `three documents (two overdue, one due within 30 days) are suggested as review tasks (got "${ov.sugg.trim().slice(0, 90)}")`);
   const shotOv = await ui.shot('retained8-client');
   t.eq(shotOv.phone, 0, 'the client\'s page fits a phone');
+  // The header card clips what sticks out, so a too-wide tab row would hide tabs rather than scroll the page:
+  // on a phone every tab must sit inside the row, or the row must scroll.
+  await ui.size(390, 844);
+  const ph = await ev(() => { const row = document.querySelector('.rc-mast .rc-tabs'), r = row.getBoundingClientRect();
+    return { inside: [...row.querySelectorAll('.rc-tab')].every(b => b.getBoundingClientRect().right <= r.right + 1), scrolls: getComputedStyle(row).overflowX === 'auto' }; });
+  await ui.size(1440, 1000);
+  t.ok(ph.inside || ph.scrolls, `on a phone every tab can be reached (got ${JSON.stringify(ph)})`);
 
   // ── Review tasks ──
   const add = await ev(fx => {

@@ -37,7 +37,7 @@ module.exports = [
   { id: 'rt8-tab-leave', suite: 'retained8-test', file: 'index.html', note: 'going from the board to a register leaves the board open underneath',
     find: "  currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;", replace: "  wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;" },
   { id: 'rt8-tabs-phone', suite: 'retained8-test', file: 'index.html', note: "the client's tabs are too wide for a phone",
-    find: ".reg-tabs{display:flex;gap:4px;overflow-x:auto;box-shadow:inset 0 -1px 0 #d8e0ec;scrollbar-width:none}", replace: ".reg-tabs{display:flex;gap:4px;box-shadow:inset 0 -1px 0 #d8e0ec}.reg-tab{padding-left:30px!important}" },
+    find: ".rc-tabs{display:flex;padding:0 8px;overflow-x:auto;border-top:1px solid #e4eaf3;scrollbar-width:none}", replace: ".rc-tabs{display:flex;padding:0 8px;border-top:1px solid #e4eaf3}.rc-tab{padding-left:30px!important}" },
   { id: 'rt8-client-open', suite: 'retained8-test', file: 'index.html', note: "the client's name opens the document register instead of the page",
     find: "class=\"rq-w rd-cl-open\" data-rd-open=\"${b.clientId}\" onclick=\"openRetainedClient('${b.clientId}')\"", replace: "class=\"rq-w rd-cl-open\" data-rd-open=\"${b.clientId}\" onclick=\"openRegisters('${b.clientId}','docs')\"" },
 ];
