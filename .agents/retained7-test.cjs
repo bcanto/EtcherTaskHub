@@ -122,12 +122,29 @@ H.run('retained7-test', 3267, async (t) => {
   const shotMx = await ui.shot('retained7-matrix');
   t.eq(shotMx.phone, 0, 'the matrix scrolls inside its own box on a phone');
 
+  // Odd columns and cells: a __proto__ heading is never a training, a plain number is not a date, a date may carry a time.
+  const edge = await ev(() => {
+    const XL = window.XLSX, ws = XL.utils.aoa_to_sheet([['Surname', 'First Name', '__proto__', 'Induction No', 'First Aid'], ['EDGE', 'Pat', 46000, 12345, '15/09/2027 00:00']]);
+    const p = _regParseTraining({ SheetNames: ['S'], Sheets: { S: ws } }), r = p.rows[0];
+    return { quals: p.quals, proto: Object.getPrototypeOf(r.quals) === Object.prototype, ind: r.quals['Induction No'], fa: r.quals['First Aid'],
+      text: [_regParseDateText('15/9/25 3:45 pm'), _regParseDateText('2025-09-15T00:00:00'), _regParseDateText('31/02/2025')] };
+  });
+  t.ok(!edge.quals.includes('__proto__') && edge.proto, 'a column headed __proto__ is never a training and cannot reach the record');
+  t.ok(edge.ind && edge.ind.t === '12345' && !edge.ind.d, `a plain number in a training column stays text, not a 1933 date (got ${JSON.stringify(edge.ind)})`);
+  t.ok(edge.fa && edge.fa.d === '2027-09-15', 'a typed date with a time on it still reads');
+  t.eq(edge.text, ['2025-09-15', '2025-09-15', null], 'dates typed with a time or in ISO form read; an impossible date does not');
+
   // Comments on a person, about one training; deleting is the author's or an admin's.
   const cm = await ev(() => {
     const p = DB.registerPeople.find(x => x.surname === 'EXAMPLE');
     _regOpenPerson(p.id, 'White Card');
+    const focused = !!(document.activeElement && document.activeElement.classList.contains('reg-dr-x'));
+    // The matrix keeps its place when a comment redraws the page (its scroll box is drawn anew each time).
+    const vc = document.getElementById('view-container'), vkeep = vc.style.maxWidth;
+    vc.style.maxWidth = '520px'; const w0 = document.querySelector('.reg-mx-wrap'); w0.scrollLeft = 150; const before = w0.scrollLeft;
     const about = document.getElementById('reg-cm-about').value;
     document.getElementById('reg-cm-text').value = 'Booked into the White Card course on 4 November.'; _regCommentSubmit(p.clientId);
+    const after = document.querySelector('.reg-mx-wrap').scrollLeft; vc.style.maxWidth = vkeep;
     const c = _regComments('person', p.id)[0];
     renderView('retained');
     const dot = !!document.querySelector(`#reg-matrix tr[data-reg-person="${p.id}"] .reg-c[data-q="White Card"] .reg-dot`);
@@ -137,8 +154,10 @@ H.run('retained7-test', 3267, async (t) => {
     const adminDel = regDeleteComment('rc-other');
     _regDrawerRender();
     const panel = document.getElementById('reg-drawer').textContent.replace(/\s+/g, ' ');
-    return { about, qual: c && c.qual, dot, staffDel, adminDel, panel };
+    return { about, qual: c && c.qual, dot, staffDel, adminDel, panel, focused, before, after };
   });
+  t.ok(cm.focused, 'the panel takes focus when it opens');
+  t.ok(cm.before > 0 && cm.after === cm.before, `adding a comment keeps the matrix scrolled where it was (got ${cm.before} then ${cm.after})`);
   t.ok(cm.about === 'White Card' && cm.qual === 'White Card', 'a comment from a cell is about that training');
   t.ok(cm.dot, 'the cell shows it has a comment');
   t.ok(!cm.staffDel && cm.adminDel, 'staff cannot delete someone else\'s comment; an admin can');

@@ -8127,7 +8127,7 @@ const _REG_MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov
 function _regParseDateText(s){
   s=String(s||'').trim();if(!s)return null;
   let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$/);if(m)return _regYmd(+m[1],+m[2],+m[3]);
-  m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/);if(m)return _regYmd(+m[3]+(m[3].length===2?2000:0),+m[2],+m[1]);
+  m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})(?:[ T]+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?)?$/i);if(m)return _regYmd(+m[3]+(m[3].length===2?2000:0),+m[2],+m[1]);
   m=s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})\.?[\s\-,]+(\d{2}|\d{4})$/);
   if(m){const mo=_REG_MON[m[2].toLowerCase().slice(0,3)];return mo?_regYmd(+m[3]+(m[3].length===2?2000:0),mo,+m[1]):null;}
   return null;
@@ -8136,7 +8136,9 @@ function _regParseDateText(s){
 function _regCellDate(c,dateCol){
   if(!c||c.v==null||c.v==='')return null;
   if(c.t==='n'){
-    if(!((c.z&&window.XLSX.SSF.is_date(c.z))||dateCol)||c.v<3653||c.v>2958465)return null;
+    // A date-formatted number is a date from 1910 on; a plain number only when, as a date, it falls 1990 to 2100.
+    const fmt=!!(c.z&&window.XLSX.SSF.is_date(c.z));
+    if(!(fmt?c.v>=3653:(dateCol&&c.v>=32874&&c.v<=73051))||c.v>2958465)return null;
     const p=window.XLSX.SSF.parse_date_code(c.v);return p?_regYmd(p.y,p.m,p.d):null;
   }
   if(c.t==='d'&&c.v instanceof Date)return _regYmd(c.v.getFullYear(),c.v.getMonth()+1,c.v.getDate());
@@ -8235,7 +8237,7 @@ function _regParseTraining(wb){
     const k=Object.keys(_REG_PER_COLS).find(k=>col[k]==null&&_REG_PER_COLS[k].test(x.h));
     if(k){col[k]=x.c;used.push(x.raw);return;}
     if(_REG_PERSONAL.test(x.h)){personal.push(x.raw);return;}
-    const name=_regQualName(x.raw);if(name)qcols.push({c:x.c,name,raw:x.raw});
+    const name=_regQualName(x.raw);if(name&&!/^(__proto__|constructor|prototype)$/i.test(name))qcols.push({c:x.c,name,raw:x.raw});
   });
   const names=new Map();qcols.forEach(q=>{const n=names.get(q.name.toLowerCase())||0;names.set(q.name.toLowerCase(),n+1);if(n)q.name+=` (${n+1})`;});
   const rows=[],problems=[],hasVal=new Set();
@@ -8523,7 +8525,7 @@ function _regDrawerRender(){
     about=`<label class="rd-f"><span>About</span><select class="form-input" id="reg-cm-about"><option value="">${escHtml(_regPersonName(p))} in general</option>${qs.map(x=>`<option value="${escHtml(x.name)}"${dr.qual===x.name?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>`;
     list=_regComments('person',p.id);
   }
-  let el=document.getElementById('reg-drawer');
+  let el=document.getElementById('reg-drawer');const fresh=!el;
   if(!el){el=document.createElement('aside');el.id='reg-drawer';el.className='reg-drawer';el.setAttribute('role','dialog');el.setAttribute('aria-labelledby','reg-dr-title');document.body.appendChild(el);document.addEventListener('keydown',_regDrKey,true);}
   const canDel=c=>c.by===currentUser.id||currentUser.role==='admin';
   const cms=list.length?list.map(c=>`<li data-reg-cm="${c.id}"><div class="reg-cm-h"><b>${escHtml(who(c.by))}</b><span>${escHtml(when(c.at))}</span>${c.qual?`<em>About ${escHtml(c.qual)}</em>`:''}${canDel(c)?`<button type="button" class="reg-cm-x" onclick="_regCommentDelete('${c.id}')" aria-label="Delete this comment">Delete</button>`:''}</div><p>${escHtml(c.text)}</p></li>`).join('')
@@ -8531,6 +8533,18 @@ function _regDrawerRender(){
   el.innerHTML=`<div class="reg-dr-head"><div class="reg-dr-t">${head}</div><button type="button" class="reg-dr-x" onclick="_regDrawerClose()" aria-label="Close">×</button></div>
     <div class="reg-dr-body">${info}<h4 class="rd-h reg-dr-h">Comments</h4><ul class="reg-cms">${cms}</ul>
       <div class="reg-cm-new">${about}<textarea class="form-input" id="reg-cm-text" rows="3" maxlength="4000" placeholder="A comment for the team" aria-label="New comment"></textarea><button type="button" class="btn btn-primary btn-sm" id="reg-cm-add" onclick="_regCommentSubmit('${clientId}')">Add comment</button></div></div>`;
+  if(fresh){const x=el.querySelector('.reg-dr-x');if(x)x.focus();}
+}
+// Redraw the page under the panel without losing the place: the page scroll and the matrix's own scroll.
+function _regRerender(){
+  if(currentView!=='retained')return;
+  const w=document.querySelector('.reg-mx-wrap'),vc=document.getElementById('view-container');
+  const s=[w?w.scrollTop:0,w?w.scrollLeft:0,vc?vc.scrollTop:0,window.scrollY];
+  renderView('retained');
+  const w2=document.querySelector('.reg-mx-wrap'),vc2=document.getElementById('view-container');
+  if(w2){w2.scrollTop=s[0];w2.scrollLeft=s[1];}
+  if(vc2)vc2.scrollTop=s[2];
+  window.scrollTo(0,s[3]);
 }
 function _regCommentSubmit(clientId){
   const dr=_regDr;if(!dr)return;
@@ -8538,10 +8552,10 @@ function _regCommentSubmit(clientId){
   const qual=dr.kind==='person'?((ab?ab.value:dr.qual)||null):null;
   if(!regAddComment(dr.kind,dr.rowId,clientId,qual,ta?ta.value:'')){if(ta)ta.focus();return;}
   dr.qual=qual;_regDrawerRender();
-  if(currentView==='retained')renderView('retained');
+  _regRerender();
   showToast('Comment added.','success');
 }
-function _regCommentDelete(id){if(regDeleteComment(id)){_regDrawerRender();if(currentView==='retained')renderView('retained');}}
+function _regCommentDelete(id){if(regDeleteComment(id)){_regDrawerRender();_regRerender();}}
 
 // ── Import from Excel: choose the file, see what it will do, then import ──
 let _regPending=null;
