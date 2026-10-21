@@ -1094,6 +1094,106 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .rd-c-act{text-align:right;white-space:nowrap}.rd-c-act .btn+.btn{margin-left:4px}
 .rd-req>.card{padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
 #generic-modal [id^="wr-sm-"]{z-index:600!important}
+.mr{display:grid;gap:14px}
+.mr-top{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px;align-items:end}
+.mr-fig{margin:0;font-size:13px;line-height:1.5;color:#3d5269}.mr-fig b{font-family:Jost,sans-serif;font-size:15px;color:#0d1c33}
+.mr-svc{list-style:none;margin:0;padding:0;border-top:1px solid #eef2f6}
+.mr-svc li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid #eef2f6;font-size:12.5px;color:#1a2940}
+.mr-svc b{color:#0d1c33;font-variant-numeric:tabular-nums}.mr-svc small{font-size:11.5px;color:#8da2b2}
+@media (max-width:560px){.mr-top{grid-template-columns:minmax(0,1fr)}}
+.reg-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.reg-h{flex:1;min-width:200px;margin:0;font-family:Jost,sans-serif;font-size:18px;font-weight:700;letter-spacing:-.01em;color:#0d1c33}
+.reg-acts{display:flex;flex-wrap:wrap;gap:8px}
+.reg-tabs{display:flex;gap:4px;border-bottom:1px solid #d8e0ec}
+.reg-tab{display:inline-flex;align-items:center;gap:8px;margin-bottom:-1px;padding:9px 14px;border:0;border-bottom:2px solid transparent;background:none;font-family:Jost,sans-serif;font-size:13px;font-weight:700;color:#6b8399;cursor:pointer}
+.reg-tab span{font-family:Lato,sans-serif;font-size:11.5px;color:#7a96ad;font-variant-numeric:tabular-nums}
+.reg-tab:hover{color:#0d1c33}.reg-tab:active{opacity:.8}.reg-tab.on{border-bottom-color:#31585a;color:#0d1c33}
+.reg-tab:focus-visible{outline:2px solid #31585a;outline-offset:-2px;border-radius:4px}
+.reg-last{margin:-6px 0 0}
+.reg-bar{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.reg-seg{display:inline-flex;flex-wrap:wrap;overflow:hidden;border:1px solid #d8e0ec;border-radius:8px;background:#fff}
+.reg-seg button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:0;border-right:1px solid #e4eaf3;background:none;font-size:12px;font-weight:600;white-space:nowrap;color:#3d5269;cursor:pointer}
+.reg-seg button:last-child{border-right:0}
+.reg-seg button b{color:#0d1c33;font-variant-numeric:tabular-nums}
+.reg-seg button:hover{background:#f4f7fa}.reg-seg button:active{background:#e9eef4}
+.reg-seg button.on{background:#0d1c33;color:#fff}.reg-seg button.on b,.reg-seg button.on .rq-ic{color:#fff}
+.reg-seg button:focus-visible{outline:2px solid #31585a;outline-offset:-2px}
+.reg-seg .over .rq-ic{color:#b91c1c}.reg-seg .d30 .rq-ic{color:#b45309}.reg-seg .d60 .rq-ic,.reg-seg .d90 .rq-ic{color:#8a5200}.reg-seg .ok .rq-ic{color:#15803d}.reg-seg .none .rq-ic{color:#8da2b2}
+.reg-fl{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
+.reg-fl input[type=search]{min-width:180px;height:32px;padding:0 10px;font-size:12.5px}
+.reg-chk{display:inline-flex;align-items:center;gap:7px;padding-bottom:7px;font-size:12.5px;color:#3d5269;cursor:pointer}.reg-chk input{accent-color:#31585a}
+.reg-code{white-space:nowrap;font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:11.5px;color:#3d5269}
+.reg-num{white-space:nowrap;font-variant-numeric:tabular-nums}
+.reg-st{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;font-weight:700}
+.reg-st em{font-style:normal;font-weight:400;color:#6b8399}
+.reg-st.over,.reg-st.exp{color:#b91c1c}.reg-st.d30{color:#9a4a07}.reg-st.d60,.reg-st.d90{color:#8a5200}.reg-st.ok{color:#15803d}.reg-st.none,.reg-st.noexp,.reg-st.held{color:#6b8399}
+.reg-t tr.over,.reg-t tr.over td,.reg-t tr.exp,.reg-t tr.exp td{background:#fff8f8}
+.reg-cm{width:40px;text-align:right}
+.reg-cmn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:#31585a}
+.reg .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.reg-pad{margin:0;padding:18px 0;text-align:center;color:#6b8399}
+.reg-mx-wrap{max-height:70vh;overflow:auto;border:1px solid #e4eaf3;border-radius:8px}
+.reg-mx-wrap:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.reg-mx{border-collapse:separate;border-spacing:0;font-size:11.5px}
+.reg-mx thead th{position:sticky;top:0;z-index:2;min-width:84px;max-width:100px;padding:6px 5px;border-bottom:1px solid #d8e0ec;background:#f6f8fb;vertical-align:bottom;text-align:left;font-family:Jost,sans-serif;font-size:10px;font-weight:700;color:#3d5269}
+.reg-mx thead th span{display:-webkit-box;overflow:hidden;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.25}
+.reg-mx thead th.reg-mx-p{left:0;z-index:3;min-width:210px}
+.reg-mx tbody th{position:sticky;left:0;z-index:1;min-width:210px;padding:6px 10px 6px 8px;border-right:1px solid #e4eaf3;border-bottom:1px solid #eef2f6;background:#fff;text-align:left;font-weight:400}
+.reg-mx tbody th .rq-w{display:inline-grid;max-width:170px;vertical-align:middle}
+.reg-mx tbody th .reg-cmn{margin-left:6px;vertical-align:middle}
+.reg-mx td{padding:3px;border-bottom:1px solid #eef2f6;text-align:center}
+.reg-c{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:78px;height:26px;padding:0 6px;border:1px solid transparent;border-radius:5px;background:none;white-space:nowrap;font-size:11.5px;color:#1a2940;font-variant-numeric:tabular-nums;cursor:pointer}
+.reg-c:hover{border-color:#97bcbd}.reg-c:active{opacity:.8}.reg-c:focus-visible{outline:2px solid #31585a;outline-offset:1px}
+.reg-c .rq-ic{width:9px;height:9px}
+.reg-ct{display:block;max-width:92px;overflow:hidden;text-overflow:ellipsis}
+.reg-c.exp{background:#fde8e8;font-weight:700;color:#991b1b}
+.reg-c.d30{background:#fdf0dc;font-weight:700;color:#8a4200}
+.reg-c.d60,.reg-c.d90{border-color:#f0c98a;color:#7a4b00}
+.reg-c.noexp,.reg-c.held{color:#6b8399}
+.reg-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#31585a}
+.reg-drawer{position:fixed;top:0;right:0;bottom:0;z-index:450;display:flex;flex-direction:column;width:min(400px,100vw);background:#fff;box-shadow:-1px 0 0 #e4eaf3,-10px 0 32px rgba(13,28,51,.14)}
+.reg-dr-head{display:flex;align-items:flex-start;gap:10px;padding:18px 18px 14px;border-bottom:1px solid #e4eaf3}
+.reg-dr-t{flex:1;min-width:0}
+.reg-dr-head h3{margin:2px 0 0;font-family:Jost,sans-serif;font-size:16px;font-weight:700;line-height:1.3;color:#0d1c33}
+.reg-dr-code{font-family:ui-monospace,'Cascadia Mono',Consolas,monospace;font-size:11px;color:#6b8399}
+.reg-dr-sub{margin:4px 0 0;font-size:12px;color:#6b8399}
+.reg-dr-x{padding:2px 7px;border:0;border-radius:6px;background:none;font-size:22px;line-height:1;color:#8da2b2;cursor:pointer}
+.reg-dr-x:hover{background:#f0f4f8;color:#0d1c33}.reg-dr-x:active{background:#e4eaf3}.reg-dr-x:focus-visible{outline:2px solid #31585a}
+.reg-dr-body{display:grid;flex:1;align-content:start;gap:12px;overflow:auto;padding:14px 18px 22px}
+.reg-dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:7px 10px;margin:0;font-size:12.5px}
+.reg-dl dt{padding-top:2px;font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
+.reg-dl dd{margin:0;color:#1a2940}
+.reg-ql{list-style:none;margin:0;padding:0;border-top:1px solid #eef2f6}
+.reg-ql li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eef2f6;font-size:12.5px;color:#1a2940}
+.reg-ql li.on{margin:0 -8px;padding:6px 8px;border-radius:6px;background:#f2f7f7}
+.reg-dr-note{margin:0;font-size:12.5px;color:#3d5269}
+.reg-dr-h{margin-top:4px;font-size:13px}
+.reg-cms{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.reg-cms li{padding:9px 11px;border-radius:8px;background:#f6f8fb}
+.reg-cm-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:11.5px;color:#6b8399}.reg-cm-h b{font-size:12px;color:#0d1c33}.reg-cm-h em{font-style:normal;font-weight:700;color:#31585a}
+.reg-cm-x{margin-left:auto;padding:0;border:0;background:none;font-size:11px;color:#8da2b2;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.reg-cm-x:hover{color:#b91c1c}.reg-cm-x:focus-visible{outline:2px solid #31585a;border-radius:3px}
+.reg-cms p{margin:4px 0 0;font-size:12.5px;line-height:1.55;color:#1a2940;white-space:pre-wrap;word-break:break-word}
+.reg-cms .reg-cm-none{padding:0;background:none;font-size:12px;color:#8da2b2}
+.reg-cm-new{display:grid;gap:8px}.reg-cm-new textarea{min-height:72px;resize:vertical}.reg-cm-new .btn{justify-self:end}
+.reg-imp{display:grid;gap:12px}
+.reg-imp-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.reg-file{position:relative;overflow:hidden;cursor:pointer}.reg-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.reg-file:focus-within{outline:2px solid #31585a;outline-offset:2px}
+.reg-imp-res{display:grid;gap:10px;font-size:13px;color:#1a2940}.reg-imp-res p{margin:0}
+.reg-imp-cols{display:grid;gap:3px;margin:0;padding-left:18px;font-size:12px;color:#3d5269}
+.reg-warn{padding:10px 12px;border-radius:8px;background:#fdf5e7;font-size:12px;color:#7a4b00}.reg-warn ul{margin:6px 0 0;padding-left:18px}
+.reg-err{margin:0;padding:10px 12px;border-radius:8px;background:#fdecec;font-size:12.5px;color:#991b1b}
+.reg-imp-t td{font-size:12px}
+.rd-reg{display:block;white-space:nowrap;font-size:11.5px;color:#3d5269}.rd-reg.bad{font-weight:700;color:#b91c1c}.rd-reg.warn{font-weight:700;color:#8a5200}
+@media (max-width:760px){
+  .reg-bar{align-items:stretch}.reg-fl{width:100%}.reg-fl .rd-f{flex:1 1 140px}.reg-fl input[type=search]{width:100%;min-width:0}
+  .reg-t td[data-l]{display:flex;grid-column:1/-1;gap:6px;font-size:12px}
+  .reg-t td[data-l]::before{content:attr(data-l);flex-shrink:0;width:86px;padding-top:2px;font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
+  .reg-code{grid-column:1/-1}.reg-doc{grid-column:1}.reg-cm{grid-column:2;grid-row:1;width:auto}
+  .reg-mx-wrap{max-height:62vh}
+  .reg-drawer{top:auto;width:100vw;height:86vh;border-radius:14px 14px 0 0}
+}
 .rd-nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:auto;padding:0 5px;border-radius:9px;background:#b91c1c;color:#fff;font-family:Lato,sans-serif;font-size:10px;font-weight:700}
 @media (max-width:760px){
   .rd-sheet{padding:14px}
@@ -3125,6 +3225,7 @@ function _mergeDB(current, incoming){
   if(deletedClientIds.size){
     merged.clientNotes=(merged.clientNotes||[]).filter(n=>!deletedClientIds.has(n.clientId));
     merged.clientWorkRequests=(merged.clientWorkRequests||[]).filter(r=>!deletedClientIds.has(r.clientId));
+    ['registerDocs','registerPeople','registerComments','registers'].forEach(k=>{if(Array.isArray(merged[k]))merged[k]=merged[k].filter(x=>!deletedClientIds.has(x.clientId));});
   }
   const deletedWorkRequestIds=new Set([...(current.deletedWorkRequestIds||[]),...(incoming.deletedWorkRequestIds||[])]);
   merged.deletedWorkRequestIds=[...deletedWorkRequestIds];
@@ -5465,6 +5566,7 @@ function navigate(view){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active',el.dataset.view===view);
   });
+  if(view!=='retained'&&typeof _regDrawerClose==='function')_regDrawerClose();
   const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin',retained:'Retained Services'};
   const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
   // Inside a workboard the tab strip already shows the board name (with its colour dot and
@@ -7175,7 +7277,7 @@ function renderSidebarWorkboards(){
   // not a wbFolders record, so it cannot be renamed, deleted or lost in sync. Same rows as workboards.
   const retList=document.getElementById('sidebar-retained-list');
   const rdLate=retainedWbs.length?_rqLateCount():0;
-  const rdRow=`<div class="nav-item${currentView==='retained'?' active':''}" data-view="retained" id="nav-retained-dash" role="button" tabindex="0" onclick="navigate('retained')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigate('retained')}" style="padding-left:14px">
+  const rdRow=`<div class="nav-item${currentView==='retained'?' active':''}" data-view="retained" id="nav-retained-dash" role="button" tabindex="0" onclick="_rdHome()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_rdHome()}" style="padding-left:14px">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="3" y="8.5" width="2.2" height="3" rx=".5" fill="currentColor"/><rect x="6.9" y="6" width="2.2" height="5.5" rx=".5" fill="currentColor"/><rect x="10.8" y="3.5" width="2.2" height="8" rx=".5" fill="currentColor"/></svg></span>
       <span style="flex:1">Dashboard</span>${rdLate?`<span class="rd-nav-badge" title="${rdLate} late in the queue" aria-label="${rdLate} late in the queue">${rdLate}</span>`:''}
     </div>`;
@@ -7776,6 +7878,7 @@ function _wrRedraw(id){
 }
 function renderRetainedDash(){
   try{requireInternalUser(currentUser);}catch(e){return _acDeniedHtml();}
+  if(_regView)return renderRegisters();
   const ym=_rsYm(),boards=_rdBoards(),admin=currentUser.role==='admin',bill=_canBill(currentUser);
   const cName=id=>((DB.clients||[]).find(c=>c.id===id)||{}).name||'Client';
   const cColor=id=>_safeCss(((DB.clients||[]).find(c=>c.id===id)||{}).color,'#8da2b2');
@@ -7818,7 +7921,7 @@ function renderRetainedDash(){
       <td class="rq-c-st"><span class="rq-st" style="background:${_safeCss(r.status.bg,'#f1f5f9')};color:${_safeCss(r.status.color,'#475569')}">${escHtml(r.status.label||'')}</span></td>
     </tr>`;
   };
-  const qBody=rows.length?rows.map(qRow).join(''):`<tr class="rq-none"><td colspan="7">${all.length?'Nothing matches these filters.':'Nothing open. New requests from retained clients land here with their reply and delivery dates.'}</td></tr>`;
+  const qBody=rows.length?rows.map(qRow).join(''):`<tr class="rq-none"><td colspan="7">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`No open requests, and nothing late or due within a week. <button type="button" class="rs-lvl-use" id="rd-show-all" onclick="_rdSetQ('show','all')">Show all ${all.length} open item${all.length===1?'':'s'}</button>`:'Nothing matches these filters.'}</td></tr>`;
   const queue=`<section class="rd-sheet" aria-labelledby="rd-q-h">
     <div class="rd-sheet-head"><h2 class="rd-h" id="rd-q-h">Queue <span class="rd-n">${rows.length}${rows.length!==all.length?' of '+all.length:''}</span></h2><div class="rd-filters">${filters}</div></div>
     <div class="rq-wrap"><table class="rq-t" id="rd-queue"><thead><tr><th>Level</th><th>Client</th><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
@@ -7846,6 +7949,719 @@ function renderRetainedDash(){
   </section>`;
   const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
   return`<div class="rd"><div class="rd-top">${sum}${newBtn}</div>${attHtml}${queue}${clients}</div>`;
+}
+
+// ── Month-end report (PDF): the month in review for the client, from the same figures the portal shows ──
+// Made to send to the client: services and allowances used, work delivered, requests received, the focus and the
+// lead's note. Never hours, rates or fees.
+function _mrMonths(b){
+  const now=_rsYm(),start=b.retainer.startMonth||now,out=[];
+  for(let ym=now,n=0;ym>=start&&n<24;ym=_rsPrevYm(ym),n++)out.push(ym);
+  return out.length?out:[now];
+}
+function _mrData(b,ym){
+  const r=b.retainer,months=r.months||{},next=_rsNextYm(ym)+'-01';
+  const c=(DB.clients||[]).find(x=>x.id===b.clientId)||{};
+  const inM=iso=>!!iso&&_rsYm(new Date(iso))===ym;
+  const top=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t));
+  const gName=id=>{const s=(r.services||[]).find(x=>x.groupId===id),cat=s&&_rsCat(s.key);return cat?cat.name:(((DB.groups||[]).find(g=>g.id===id)||{}).name||'');};
+  const doneBy=(t,iso)=>{const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||null;return _rsDone(t)&&(!at||at<iso);};
+  const delivered=top.filter(t=>_rsDone(t)&&_rsDoneYm(t)===ym).map(t=>({name:t.name||t.title||'',service:gName(t.groupId),at:t.completedAt||(t.clientApproval&&t.clientApproval.at)||t.updatedAt||null}))
+    .sort((a,b)=>String(a.at||'').localeCompare(String(b.at||'')));
+  // Overdue at month end: due by the last day of the month, open when the month closed.
+  const overdue=top.filter(t=>t.endDate&&t.endDate<next&&(!t.createdAt||t.createdAt<next+'T00:00:00')&&!doneBy(t,next+'T00:00:00')).length;
+  const reqState=q=>{
+    if(q.status==='declined')return'Not progressing';
+    const t=q.linkedItemType==='task'&&(DB.tasks||[]).find(x=>x.id===q.linkedItemId);
+    if(t&&_rsDone(t))return'Delivered';
+    if(t&&t.awaitingClient&&_cpIsApprovalAsk(t))return'With you for approval';
+    return q.linkedItemId||q.status==='scoped'?'In progress':q.status==='reviewing'?'Being reviewed':'Received';
+  };
+  const requests=(DB.clientWorkRequests||[]).filter(q=>q.clientId===b.clientId&&inM(q.submittedAt))
+    .sort((a,b)=>String(a.submittedAt).localeCompare(String(b.submittedAt))).map(q=>({title:q.title||'Request',at:q.submittedAt,state:reqState(q)}));
+  const focus=((months[ym]||{}).focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean)
+    .map(t=>({name:t.name||t.title||'',state:_rsDone(t)?'Done':`${getEffectiveTaskPct(t.id)}% complete`}));
+  const lead=r.leadId?getStaff(r.leadId):null,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys);
+  return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority||'',levelLine:_rsLevelLine(r.priority),
+    bundle:(bn?bn+' bundle, ':'')+_retainerBundle(keys),lead:lead?lead.name:'',
+    services:(r.services||[]).map(s=>({name:(_rsCat(s.key)||{name:s.key}).name,unit:s.unit,allowance:s.allowance,used:_retainerUsed(b.id,s.groupId,ym)})),
+    delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date())};
+}
+function _mrSummaryHtml(d){
+  const svc=d.services.map(s=>`<li><span>${escHtml(s.name)}</span><b>${s.used} of ${s.allowance}</b><small>${escHtml(s.unit)}</small></li>`).join('');
+  return`<p class="mr-fig"><b>${d.delivered.length}</b> delivered, <b>${d.requests.length}</b> request${d.requests.length===1?'':'s'} received, <b>${d.overdue}</b> overdue at month end.</p>
+    <ul class="mr-svc">${svc}</ul>
+    <p class="rs-pl-hint">${d.note?'Includes the note from '+escHtml(d.lead||'the retainer lead')+'.':'No note for this month. The plan takes one for last month.'}${d.focus.length?` Focus: ${d.focus.length} task${d.focus.length===1?'':'s'}.`:''}</p>`;
+}
+let _mrBoard=null;
+function openMonthReport(boardId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!b.retainer)return;
+  _mrBoard=boardId;
+  const months=_mrMonths(b),prev=_rsPrevYm(_rsYm()),sel=months.includes(prev)?prev:months[0];
+  const c=(DB.clients||[]).find(x=>x.id===b.clientId)||{};
+  const body=`<div class="mr">
+    <div class="mr-top"><label class="rs-cfg"><span>Month</span><select class="form-input" id="mr-month" onchange="_mrShow(this.value)">${months.map(m=>`<option value="${m}"${m===sel?' selected':''}>${escHtml(_rsMonthYear(m))}</option>`).join('')}</select></label>
+      <p class="rs-pl-hint">For ${escHtml(c.name||'the client')}: services used, work delivered, requests received, the focus and the lead's note. No hours, rates or fees.</p></div>
+    <div id="mr-preview">${_mrSummaryHtml(_mrData(b,sel))}</div>
+    <div class="rs-su2-foot"><span class="rs-su2-sum"></span><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="mr-dl" onclick="downloadMonthReport()">Download PDF</button></div>
+  </div>`;
+  openGenericModal('Month-end report',body,'560px');
+}
+function _mrShow(ym){const b=(DB.workboards||[]).find(w=>w.id===_mrBoard),el=document.getElementById('mr-preview');if(b&&el)el.innerHTML=_mrSummaryHtml(_mrData(b,ym));}
+function downloadMonthReport(){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const b=(DB.workboards||[]).find(w=>w.id===_mrBoard);if(!b)return;
+  const ym=(document.getElementById('mr-month')||{}).value||_rsPrevYm(_rsYm());
+  const d=_mrData(b,ym),btn=document.getElementById('mr-dl');
+  if(btn){btn.disabled=true;btn.textContent='Preparing...';}
+  const reset=()=>{if(btn){btn.disabled=false;btn.textContent='Download PDF';}};
+  const go=logo=>_ensureJsPdf(()=>{
+    try{
+      const doc=_mrPdf(d,logo);
+      doc.save(`Retained_Services_${_pfSanitizeFileName(d.client)}_${ym}.pdf`);
+      try{writeAuditEvent('Board',b.id,'month report downloaded',null,{title:d.client+', '+d.monthLabel});saveDB(DB);}catch(e){}
+      showToast('Month-end report ready.','success');
+    }catch(err){console.error(err);showAlert('The report could not be made: '+err.message,'PDF error');}
+    finally{reset();}
+  },reset);
+  fetch('etcher-logo-white-520.png',{cache:'force-cache'}).then(r=>r.ok?r.blob():null).then(blob=>{
+    if(!blob)return go(null);
+    const fr=new FileReader();fr.onload=()=>go(fr.result);fr.onerror=()=>go(null);fr.readAsDataURL(blob);
+  }).catch(()=>go(null));
+}
+function _mrPdf(d,logo){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=16;
+  const NAVY=[13,28,51],TEAL=[151,188,189],DEEP=[49,88,90],INK=[15,25,41],GREY=[107,131,153],RULE=[216,224,236];
+  const date=s=>{if(!s)return'';const x=new Date(String(s).length<=10?s+'T12:00:00':s);return x.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});};
+  // Header band: the white logo on navy, the report's name on the right.
+  doc.setFillColor(...NAVY);doc.rect(0,0,W,32,'F');doc.setFillColor(...TEAL);doc.rect(0,32,W,1.4,'F');
+  if(logo){try{doc.addImage(logo,'PNG',M,7,40,18.5,'etcher-logo','FAST');}catch(e){logo=null;}}
+  if(!logo){doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(255,255,255);doc.text('ETCHER',M,17);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...TEAL);doc.text('SOLUTIONS',M,22);}
+  doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...TEAL);doc.text('RETAINED SERVICES',W-M,12,{align:'right'});
+  doc.setFontSize(16);doc.setTextColor(255,255,255);doc.text('Month-end report',W-M,19.5,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(214,226,236);doc.text(d.monthLabel,W-M,25.5,{align:'right'});
+  // The terms, as label and value pairs in two columns.
+  let y=44;
+  const pair=(lbl,val,x,yy,w)=>{doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...GREY);doc.text(lbl.toUpperCase(),x,yy);
+    doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...INK);const ln=doc.splitTextToSize(val||'',w);doc.text(ln,x,yy+4.6);return ln.length;};
+  const cW=(W-M*2)/2-4;
+  let a=pair('Client',d.client,M,y,cW),b2=pair('Month',d.monthLabel,M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
+  a=pair('Service level',d.level+(d.levelLine?': '+d.levelLine:''),M,y,cW);b2=pair('Bundle',d.bundle,M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
+  a=pair('Retainer lead',d.lead,M,y,cW);b2=pair('Prepared',date(d.prepared),M+cW+8,y,cW);y+=6+Math.max(a,b2)*4.4;
+  // The month in figures: one ruled row, three cells.
+  y+=2;doc.setDrawColor(...RULE);doc.setLineWidth(0.3);
+  const fig=[[d.delivered.length,'Delivered'],[d.requests.length,'Requests received'],[d.overdue,'Overdue at month end']],fw=(W-M*2)/3;
+  doc.line(M,y,W-M,y);doc.line(M,y+17,W-M,y+17);
+  fig.forEach(([n,l],i)=>{const x=M+i*fw;if(i)doc.line(x,y,x,y+17);
+    doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(...NAVY);doc.text(String(n),x+5,y+9.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...GREY);doc.text(l,x+5,y+14);});
+  y+=25;
+  const head=(t,yy)=>{if(yy>H-40){doc.addPage();yy=20;}doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...NAVY);doc.text(t,M,yy);return yy+3;};
+  const theme={styles:{font:'helvetica',fontSize:9,cellPadding:{top:2.4,bottom:2.4,left:2,right:2},textColor:INK,lineColor:[232,237,244],lineWidth:{bottom:0.2}},
+    headStyles:{fillColor:false,textColor:GREY,fontStyle:'bold',fontSize:7.5,lineWidth:{bottom:0.4},lineColor:RULE},
+    theme:'plain',margin:{left:M,right:M,bottom:20},showHead:'everyPage'};
+  // Services, with a gauge drawn in the last column.
+  y=head('Services and allowances',y);
+  doc.autoTable({...theme,startY:y,head:[['Service','Allowance','Used','']],
+    body:d.services.map(s=>[s.name,`${s.allowance} ${s.unit}`,`${s.used}`,'']),
+    columnStyles:{0:{cellWidth:62},1:{cellWidth:58},2:{cellWidth:18,halign:'right',fontStyle:'bold'},3:{cellWidth:'auto'}},
+    didDrawCell:h=>{if(h.section!=='body'||h.column.index!==3)return;const s=d.services[h.row.index];if(!s)return;
+      const x=h.cell.x+3,w=h.cell.width-6,yy=h.cell.y+h.cell.height/2-1.1,p=s.allowance?Math.min(1,s.used/s.allowance):0;
+      doc.setFillColor(233,238,244);doc.roundedRect(x,yy,w,2.2,1.1,1.1,'F');
+      if(p>0){doc.setFillColor(...(s.used>=s.allowance?[180,83,9]:DEEP));doc.roundedRect(x,yy,Math.max(2.2,w*p),2.2,1.1,1.1,'F');}}});
+  y=doc.lastAutoTable.finalY+9;
+  y=head(`Delivered in ${_rsMonthName(d.month)}`,y);
+  doc.autoTable({...theme,startY:y,head:[['Work','Service','Finished']],
+    body:d.delivered.length?d.delivered.map(x=>[x.name,x.service,date(x.at)]):[['Nothing was finished this month.','','']],
+    columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:62},2:{cellWidth:28}}});
+  y=doc.lastAutoTable.finalY+9;
+  y=head('Requests received',y);
+  doc.autoTable({...theme,startY:y,head:[['Request','Received','Where it stands']],
+    body:d.requests.length?d.requests.map(x=>[x.title,date(x.at),x.state]):[['No requests this month.','','']],
+    columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:28},2:{cellWidth:44}}});
+  y=doc.lastAutoTable.finalY+9;
+  if(d.focus.length){
+    y=head(`${_rsMonthName(d.month)} focus`,y);
+    doc.autoTable({...theme,startY:y,head:[['Task','Where it stands']],body:d.focus.map(x=>[x.name,x.state]),columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:44}}});
+    y=doc.lastAutoTable.finalY+9;
+  }
+  if(d.note){
+    const ln=doc.splitTextToSize(d.note,W-M*2-8);
+    if(y+ln.length*4.6+18>H-20){doc.addPage();y=20;}
+    y=head('From your retainer lead',y)+3;
+    doc.setFillColor(246,248,251);doc.rect(M,y-1,W-M*2,ln.length*4.6+(d.lead?11:6),'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...INK);doc.text(ln,M+5,y+4);
+    if(d.lead){doc.setFontSize(8.5);doc.setTextColor(...GREY);doc.text(`${d.lead}, retainer lead`,M+5,y+4+ln.length*4.6+1.5);}
+  }
+  const pages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);doc.setDrawColor(...RULE);doc.setLineWidth(0.2);doc.line(M,H-13,W-M,H-13);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...GREY);
+    doc.text(`Prepared by Etcher Solutions for ${d.client}, ${d.monthLabel}.`,M,H-8.5);
+    doc.text(`Page ${p} of ${pages}`,W-M,H-8.5,{align:'right'});
+  }
+  return doc;
+}
+
+// ── Registers (Retained Services): each client's document register and training matrix ──
+// Imported from the client's own spreadsheets, re-imported whenever they change, with review and expiry warnings and
+// comments. Staff only: the portal slice is a whitelist and never carries any of it.
+// DB.registerDocs, DB.registerPeople and DB.registerComments are plain {id} collections (merged by id and updatedAt);
+// DB.registers keeps one record per client: the last import of each kind and the training columns in sheet order.
+const _REG_FAR_DAYS=30*365;   // a date this far out is the "no expiry" placeholder some systems write (e.g. 2074)
+function _regToday(){return toDateStr(new Date());}
+function _regDays(from,to){return Math.round((new Date(to+'T12:00:00')-new Date(from+'T12:00:00'))/864e5);}
+function _regYmd(y,m,d){
+  if(!(y>=1900&&y<=9999&&m>=1&&m<=12&&d>=1&&d<=31))return null;
+  const t=new Date(y,m-1,d,12);return t.getMonth()===m-1?toDateStr(t):null;
+}
+function _regAddMonths(ymd,n){
+  const[y,m,d]=ymd.split('-').map(Number),t=new Date(y,m-1+n,1,12),last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  t.setDate(Math.min(d,last));return toDateStr(t);
+}
+const _REG_MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+// A date typed as text, Australian order: 15/09/2025, 15/9/25, 15-09-2025, 15.09.2025, 2025-09-15, 15 Sep 2025.
+function _regParseDateText(s){
+  s=String(s||'').trim();if(!s)return null;
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ].*)?$/);if(m)return _regYmd(+m[1],+m[2],+m[3]);
+  m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/);if(m)return _regYmd(+m[3]+(m[3].length===2?2000:0),+m[2],+m[1]);
+  m=s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})\.?[\s\-,]+(\d{2}|\d{4})$/);
+  if(m){const mo=_REG_MON[m[2].toLowerCase().slice(0,3)];return mo?_regYmd(+m[3]+(m[3].length===2?2000:0),mo,+m[1]):null;}
+  return null;
+}
+// One spreadsheet cell as yyyy-mm-dd, or null. Excel keeps a date as a serial number with a date format.
+function _regCellDate(c,dateCol){
+  if(!c||c.v==null||c.v==='')return null;
+  if(c.t==='n'){
+    if(!((c.z&&window.XLSX.SSF.is_date(c.z))||dateCol)||c.v<3653||c.v>2958465)return null;
+    const p=window.XLSX.SSF.parse_date_code(c.v);return p?_regYmd(p.y,p.m,p.d):null;
+  }
+  if(c.t==='d'&&c.v instanceof Date)return _regYmd(c.v.getFullYear(),c.v.getMonth()+1,c.v.getDate());
+  if(c.t==='s')return _regParseDateText(c.v);
+  return null;
+}
+function _regCellText(c){if(!c||c.v==null)return'';return String(c.t!=='s'&&c.w!=null?c.w:c.v).replace(/\s+/g,' ').trim();}
+function _regHead(s){return String(s||'').toLowerCase().replace(/\s+/g,' ').replace(/\s*\/\s*/g,' / ').replace(/[*:]+$/,'').trim();}
+// Months between reviews from 12, "24", "2 years", "6 months", "annual", "every two years".
+function _regMonths(c){
+  if(!c||c.v==null||c.v==='')return null;
+  if(c.t==='n')return c.v>0&&c.v<=240?Math.round(c.v):null;
+  const s=String(c.v).toLowerCase().trim();
+  if(/^\d+(\.\d+)?$/.test(s)){const n=Math.round(+s);return n>0&&n<=240?n:null;}
+  let m=s.match(/(\d+(?:\.\d+)?)\s*(years?|yrs?|y)\b/);if(m)return Math.round(+m[1]*12);
+  m=s.match(/(\d+(?:\.\d+)?)\s*(months?|mths?|mos?|m)\b/);if(m)return Math.round(+m[1]);
+  if(/bienn|two.?year|2.?yearly|every (two|2|other) years?/.test(s))return 24;
+  if(/three.?year|triennial/.test(s))return 36;
+  if(/annual|yearly|every year|each year/.test(s))return 12;
+  if(/six.?month|half.?year/.test(s))return 6;
+  if(/quarter/.test(s))return 3;
+  if(/^monthly$/.test(s))return 1;
+  return null;
+}
+const _REG_DOC_COLS={
+  name:/^(file name|filename|file|document|document name|document title|document no\.? and title|title|name)$/,
+  issue:/^(issue date|issued|date issued|issue|issue \/ created date|issue or created date|created date|created|revision date|rev date|date of issue)$/,
+  months:/^(review every( \(months\))?|review every months|review frequency( \(months\))?|frequency( of review)?( \(months\))?|review period( \(months\))?|review cycle|review interval|review \(months\)|months between reviews)$/,
+  next:/^(next review( date)?|expiry \/ next review( date)?|expiry( date)?|review date|review due( date)?|due date|next review due|next due)$/,
+  note:/^(notes?|comments?|remarks?)$/,
+};
+const _REG_PER_COLS={
+  ref:/^(id|ref|reference|employee (id|no\.?|number)|staff (id|no\.?|number)|payroll( no\.?| number| id)?|emp ?(no\.?|#|id)|(.* )?sap( id| no\.?| number)?)$/,
+  surname:/^(surname|last name|lastname|family name)$/,
+  first:/^(first name|firstname|given name|given names|first|preferred name)$/,
+  full:/^(name|full name|employee|employee name|worker|worker name|person|staff name)$/,
+  position:/^(position|role|job title|title|occupation|trade|job)$/,
+  location:/^(location|site|region|base|work location)$/,
+  employment:/^(employment status|employment|employment type|status|engagement)$/,
+  company:/^(company|employer|contractor|business|subcontractor|organisation|organization)$/,
+  note:/^(notes?|comments?|remarks?)$/,
+};
+// Personal details stay in the client's spreadsheet: Task Hub only needs names, roles and expiry dates.
+const _REG_PERSONAL=/^(dob|d\.o\.b\.?|date of birth|birth ?date|birthday|age|gender|sex|phone|mobile|mob|(phone|mobile|contact) ?(no\.?|number|#)?|email|e-mail|email address|address|home address|postcode|suburb|dl|dl ?#|dl no\.?|dl number|(driver'?s? )?licen[cs]e ?(no\.?|number|#)|class|licen[cs]e class|hrwl ?#|hrwl no\.?|hrwl number|tfn|abn|bank.*|bsb|account( no\.?| number)?|super( fund)?|emergency contact.*|next of kin|nok|medical.*|usi|passport.*|visa.*)$/;
+// "DL EXPIRY" is the DL column, "White Card" stays as it is.
+function _regQualName(raw){return String(raw||'').replace(/\s+/g,' ').trim().replace(/[\s\-]*(expiry date|expiry|expires|exp\.?|renewal date|renewal)$/i,'').trim();}
+function _regQualCell(c){
+  const txt=_regCellText(c);if(!txt)return null;
+  if(/^(n\/?a|na|-+|nil|none|not held|no)$/i.test(txt))return null;
+  const d=_regCellDate(c,true);return d?{d}:{t:txt.slice(0,60)};
+}
+function _regFindHeader(ws,kind){
+  const XL=window.XLSX;if(!ws||!ws['!ref'])return null;
+  const rg=XL.utils.decode_range(ws['!ref']);
+  for(let r=rg.s.r;r<=Math.min(rg.e.r,rg.s.r+25);r++){
+    const heads=[];
+    for(let c=rg.s.c;c<=rg.e.c;c++){const raw=_regCellText(ws[XL.utils.encode_cell({r,c})]);heads.push({c,raw,h:_regHead(raw)});}
+    const has=re=>heads.some(x=>x.h&&re.test(x.h));
+    if(kind==='docs'&&has(_REG_DOC_COLS.name)&&(has(_REG_DOC_COLS.issue)||has(_REG_DOC_COLS.next)||has(_REG_DOC_COLS.months)))return{r,heads,rg};
+    if(kind==='training'&&(has(_REG_PER_COLS.surname)||has(_REG_PER_COLS.full)))return{r,heads,rg};
+  }
+  return null;
+}
+function _regFindSheet(wb,kind){for(const n of wb.SheetNames){const f=_regFindHeader(wb.Sheets[n],kind);if(f)return Object.assign(f,{sheet:n,ws:wb.Sheets[n]});}return null;}
+// The code at the front of a file name: "HR-POL-001 - Performance Management Policy".
+function _regSplitName(name){
+  const m=String(name).match(/^([A-Z][A-Z0-9]{0,9}(?:-[A-Z0-9]{1,10}){1,4})\s*[-–—:]\s*(.+)$/);
+  return m?{code:m[1],title:m[2].trim()}:{code:'',title:String(name)};
+}
+function _regSeries(code){return String(code||'').replace(/-[0-9][0-9A-Z]*$/,'');}
+function _regParseDocs(wb){
+  const f=_regFindSheet(wb,'docs');
+  if(!f)return{error:'No sheet has a File Name column with dates beside it. Use the template, or check the header row.'};
+  const XL=window.XLSX,col={},used=[],skipped=[];
+  f.heads.forEach(x=>{if(!x.h)return;const k=Object.keys(_REG_DOC_COLS).find(k=>col[k]==null&&_REG_DOC_COLS[k].test(x.h));if(k){col[k]=x.c;used.push(x.raw);}else skipped.push(x.raw);});
+  const rows=[],problems=[];
+  for(let r=f.r+1;r<=f.rg.e.r;r++){
+    const cell=c=>c==null?null:f.ws[XL.utils.encode_cell({r,c})],txt=c=>_regCellText(cell(c));
+    const name=txt(col.name);
+    if(!name){if([col.issue,col.months,col.next,col.note].some(c=>c!=null&&txt(c)))problems.push(`Row ${r+1}: no file name, so it was left out.`);continue;}
+    const issue=_regCellDate(cell(col.issue),true),given=_regCellDate(cell(col.next),true),months=_regMonths(cell(col.months));
+    if(txt(col.issue)&&!issue)problems.push(`Row ${r+1}: the issue date "${txt(col.issue)}" is not a date.`);
+    if(txt(col.next)&&!given)problems.push(`Row ${r+1}: the next review date "${txt(col.next)}" is not a date.`);
+    if(txt(col.months)&&!months)problems.push(`Row ${r+1}: the review period "${txt(col.months)}" was not understood.`);
+    const sp=_regSplitName(name);
+    rows.push({row:r+1,name,code:sp.code,title:sp.title,issueDate:issue,reviewMonths:months,nextReview:given||(issue&&months?_regAddMonths(issue,months):null),note:txt(col.note).slice(0,1000)});
+  }
+  return{kind:'docs',sheet:f.sheet,headerRow:f.r+1,used,skipped,personal:[],empty:[],rows,problems};
+}
+function _regParseTraining(wb){
+  const f=_regFindSheet(wb,'training');
+  if(!f)return{error:'No sheet has a Surname or Name column. Use the template, or check the header row.'};
+  const XL=window.XLSX,col={},used=[],personal=[],qcols=[];
+  f.heads.forEach(x=>{
+    if(!x.h)return;
+    const k=Object.keys(_REG_PER_COLS).find(k=>col[k]==null&&_REG_PER_COLS[k].test(x.h));
+    if(k){col[k]=x.c;used.push(x.raw);return;}
+    if(_REG_PERSONAL.test(x.h)){personal.push(x.raw);return;}
+    const name=_regQualName(x.raw);if(name)qcols.push({c:x.c,name,raw:x.raw});
+  });
+  const names=new Map();qcols.forEach(q=>{const n=names.get(q.name.toLowerCase())||0;names.set(q.name.toLowerCase(),n+1);if(n)q.name+=` (${n+1})`;});
+  const rows=[],problems=[],hasVal=new Set();
+  for(let r=f.r+1;r<=f.rg.e.r;r++){
+    const cell=c=>c==null?null:f.ws[XL.utils.encode_cell({r,c})],txt=c=>_regCellText(cell(c));
+    const surname=txt(col.surname),first=txt(col.first),full=txt(col.full);
+    if(!surname&&!first&&!full){if(qcols.some(q=>txt(q.c)))problems.push(`Row ${r+1}: no name, so it was left out.`);continue;}
+    const quals={};
+    qcols.forEach(q=>{const v=_regQualCell(cell(q.c));if(v){quals[q.name]=v;hasVal.add(q.name);}});
+    rows.push({row:r+1,ref:txt(col.ref).slice(0,40),surname:surname.slice(0,80),first:first.slice(0,80),full:full.slice(0,120),position:txt(col.position).slice(0,80),location:txt(col.location).slice(0,80),
+      employment:txt(col.employment).slice(0,40),company:txt(col.company).slice(0,80),note:txt(col.note).slice(0,1000),quals});
+  }
+  const quals=qcols.filter(q=>hasVal.has(q.name)).map(q=>q.name),empty=qcols.filter(q=>!hasVal.has(q.name)).map(q=>q.raw);
+  return{kind:'training',sheet:f.sheet,headerRow:f.r+1,used:used.concat(qcols.filter(q=>hasVal.has(q.name)).map(q=>q.raw)),skipped:[],personal,empty,quals,rows,problems};
+}
+function _regNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+function _regPersonName(p){return p.full||[p.first,p.surname].filter(Boolean).join(' ')||'Unnamed';}
+function _regKeys(kind,p){
+  if(kind==='docs')return[p.code?'c:'+p.code.toUpperCase():'n:'+_regNorm(p.name)];
+  const ref=String(p.ref||'').trim(),nk='n:'+_regNorm(p.surname)+'|'+_regNorm(p.first||p.full);
+  return ref&&!/^(n\/?a|na|none|-+|tbc|tba|0)$/i.test(ref)?['r:'+ref.toLowerCase(),nk]:[nk];
+}
+const _REG_FIELDS={docs:['name','code','title','issueDate','reviewMonths','nextReview','note'],training:['ref','surname','first','full','position','location','employment','company','note','quals']};
+// What an import would do: rows matched by code or name (documents), or by ID then name (people). Nothing is saved.
+function _regPlan(clientId,parsed){
+  const kind=parsed.kind,coll=kind==='docs'?'registerDocs':'registerPeople';
+  const mine=(DB[coll]||[]).filter(x=>x.clientId===clientId),prim=new Map(),byName=new Map(),hit=new Set();
+  mine.forEach(x=>{const k=(x.keys||[x.key])[0];if(!k)return;if(!prim.has(k))prim.set(k,x);if(k.startsWith('n:')&&!byName.has(k))byName.set(k,x);});
+  const seen=new Set(),plan=[];let added=0,updated=0,same=0,dupes=0;
+  parsed.rows.forEach(p=>{
+    const keys=_regKeys(kind,p);
+    if(seen.has(keys[0])){dupes++;return;}seen.add(keys[0]);
+    // A person first imported without an ID is found again by name once the sheet gives them one.
+    let ex=prim.get(keys[0])||(keys[1]&&byName.get(keys[1]))||null;
+    if(ex&&hit.has(ex.id))ex=null;
+    const fields={};_REG_FIELDS[kind].forEach(f=>{fields[f]=p[f]==null?null:p[f];});
+    if(!ex){plan.push({p,ex:null,fields,keys});added++;return;}
+    hit.add(ex.id);
+    const changed=ex.archived||_REG_FIELDS[kind].some(f=>JSON.stringify(ex[f]==null?null:ex[f])!==JSON.stringify(fields[f]));
+    plan.push({p,ex,fields,keys,changed});changed?updated++:same++;
+  });
+  const missing=mine.filter(x=>!x.archived&&!hit.has(x.id));
+  return{plan,added,updated,same,dupes,missing};
+}
+function _regApply(clientId,parsed,archiveMissing,fileName){
+  try{requireInternalUser(currentUser);}catch(e){return null;}
+  const kind=parsed.kind,coll=kind==='docs'?'registerDocs':'registerPeople',list=DB[coll]=DB[coll]||[];
+  const pl=_regPlan(clientId,parsed),now=new Date().toISOString();
+  pl.plan.forEach(x=>{
+    if(!x.ex){list.push(Object.assign({id:'rg'+uid(),clientId,key:x.keys[0],keys:x.keys,archived:false,createdAt:now,updatedAt:now,importedAt:now},x.fields));return;}
+    if(x.changed)Object.assign(x.ex,x.fields,{key:x.keys[0],keys:x.keys,archived:false,updatedAt:now,importedAt:now});
+  });
+  let archived=0;
+  if(archiveMissing)pl.missing.forEach(x=>{x.archived=true;x.updatedAt=now;archived++;});
+  const regs=DB.registers=DB.registers||[];let meta=regs.find(r=>r.clientId===clientId);
+  if(!meta){meta={id:'reg-'+clientId,clientId,createdAt:now};regs.push(meta);}
+  meta[kind]=Object.assign({file:String(fileName||'').slice(0,160),at:now,by:currentUser.id,rows:parsed.rows.length},kind==='training'?{quals:parsed.quals.slice(0,300)}:{});
+  meta.updatedAt=now;
+  saveDB(DB);
+  return{added:pl.added,updated:pl.updated,same:pl.same,archived,dupes:pl.dupes};
+}
+// Review and expiry states. Documents: overdue, due within 30, 60 or 90 days, current, no date. Training the same,
+// plus held with no date ("Yes"), and no expiry (a placeholder date decades out, or the words).
+function _regDocState(d,today){
+  if(!d.nextReview)return{k:'none',label:'No review date',days:null};
+  const days=_regDays(today||_regToday(),d.nextReview);
+  return{k:days<0?'over':days<=30?'d30':days<=60?'d60':days<=90?'d90':'ok',days,
+    label:days<0?'Overdue':days<=30?'Due within 30 days':days<=60?'Due within 60 days':days<=90?'Due within 90 days':'Current'};
+}
+function _regQualState(q,today){
+  if(!q)return null;
+  if(!q.d)return/^(no expiry|does not expire|never expires|lifetime|n\/e)$/i.test(q.t||'')?{k:'noexp',label:'No expiry',days:null}:{k:'held',label:q.t||'Held',days:null};
+  const days=_regDays(today||_regToday(),q.d);
+  if(days>_REG_FAR_DAYS)return{k:'noexp',label:'No expiry',days};
+  return{k:days<0?'exp':days<=30?'d30':days<=60?'d60':days<=90?'d90':'ok',days,
+    label:days<0?'Expired':days<=30?'Expires within 30 days':days<=60?'Expires within 60 days':days<=90?'Expires within 90 days':'Current'};
+}
+function _regCounts(clientId){
+  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0};
+  (DB.registerDocs||[]).forEach(d=>{if(d.clientId!==clientId||d.archived)return;n.docs++;const k=_regDocState(d,today).k;if(k==='over')n.dOver++;else if(k==='d30')n.d30++;});
+  (DB.registerPeople||[]).forEach(p=>{if(p.clientId!==clientId||p.archived)return;n.people++;
+    Object.values(p.quals||{}).forEach(q=>{const s=_regQualState(q,today);if(s&&s.k==='exp')n.tExp++;else if(s&&s.k==='d30')n.t30++;});});
+  return n;
+}
+// Dashboard hooks: a Needs attention line per register, and the Registers column of the Clients sheet.
+function _regAttention(boards){
+  const out=[];
+  boards.forEach(b=>{
+    const n=_regCounts(b.clientId),cn=escHtml(((DB.clients||[]).find(c=>c.id===b.clientId)||{}).name||'Client');
+    if(n.dOver||n.d30)out.push({tone:n.dOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,act:`openRegisters('${b.clientId}','docs')`,btn:'Registers',
+      text:`${cn}: ${[n.dOver?`${n.dOver} document${n.dOver===1?' is':'s are'} overdue for review`:'',n.d30?`${n.d30} due within 30 days`:''].filter(Boolean).join(', ')}.`});
+    if(n.tExp||n.t30)out.push({tone:n.tExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRegisters('${b.clientId}','training')`,btn:'Registers',
+      text:`${cn}: ${[n.tExp?`${n.tExp} training record${n.tExp===1?' has':'s have'} expired`:'',n.t30?`${n.t30} expire${n.t30===1?'s':''} within 30 days`:''].filter(Boolean).join(', ')}.`});
+  });
+  return out;
+}
+function _regClientSummary(clientId){
+  const n=_regCounts(clientId);if(!n.docs&&!n.people)return'';
+  const part=(label,total,bad,warn,bw,ww)=>total?`<span class="rd-reg${bad?' bad':warn?' warn':''}">${label}: ${bad?bad+' '+bw:warn?warn+' '+ww:'up to date'}</span>`:'';
+  return part('Documents',n.docs,n.dOver,n.d30,'overdue','due soon')+part('Training',n.people,n.tExp,n.t30,'expired','expiring soon');
+}
+// Comments: their own records (so two people commenting on one row never overwrite each other), deleted by flag.
+function _regComments(kind,rowId,qual){
+  return(DB.registerComments||[]).filter(c=>!c.deleted&&c.kind===kind&&c.rowId===rowId&&(qual===undefined||(c.qual||null)===(qual||null)))
+    .sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+}
+function regAddComment(kind,rowId,clientId,qual,text){
+  try{requireInternalUser(currentUser);}catch(e){return false;}
+  text=String(text||'').trim().slice(0,4000);if(!text)return false;
+  const now=new Date().toISOString();
+  (DB.registerComments=DB.registerComments||[]).push({id:'rc'+uid(),clientId,kind,rowId,qual:qual||null,text,by:currentUser.id,at:now,updatedAt:now});
+  saveDB(DB);return true;
+}
+function regDeleteComment(id){
+  try{requireInternalUser(currentUser);}catch(e){return false;}
+  const c=(DB.registerComments||[]).find(x=>x.id===id);if(!c||(c.by!==currentUser.id&&currentUser.role!=='admin'))return false;
+  c.deleted=true;c.updatedAt=new Date().toISOString();saveDB(DB);return true;
+}
+
+// ── Registers page, inside the Retained Services view ──
+let _regView=null;
+function openRegisters(clientId,tab){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const keep=_regView&&_regView.clientId===clientId?_regView:{};
+  _regView=Object.assign({mode:'expiring',st:'',series:'',q:'',loc:'',pos:'',qual:'',win:'90',dueOnly:false},keep,{clientId,tab:tab||keep.tab||'docs'});
+  _regDrawerClose();
+  if(currentView!=='retained')navigate('retained');else renderView('retained');
+}
+function _rdHome(){_regView=null;_regDrawerClose();navigate('retained');}
+function _regSet(k,v){if(!_regView)return;_regView[k]=v;renderView('retained');}
+let _regQTimer=null;
+function _regSearch(v){
+  if(!_regView)return;_regView.q=v;clearTimeout(_regQTimer);
+  _regQTimer=setTimeout(()=>{renderView('retained');const el=document.getElementById('reg-q');if(el){el.focus();const n=el.value.length;try{el.setSelectionRange(n,n);}catch(e){}}},180);
+}
+const _REG_SVG={
+  dia:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.4 10.6 6 6 10.6 1.4 6z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  ring:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  bubble:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2.2h8a1 1 0 0 1 1 1v4.6a1 1 0 0 1-1 1H5.2L2.6 10.6V8.8H2a1 1 0 0 1-1-1V3.2a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+};
+// Shape and colour together: red triangle expired or overdue, amber diamond within 30 days, outlined diamond within
+// 60 or 90 days, green dot current, grey ring no date or no expiry.
+function _regIcon(k){return k==='over'||k==='exp'?_RD_SVG.late:k==='d30'?_RD_SVG.soon:k==='d60'||k==='d90'?_REG_SVG.dia:k==='ok'?_RD_SVG.ok:_REG_SVG.ring;}
+function _regDate(d){if(!d)return'';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}
+function _regDaysText(s){if(s.days==null)return'';const n=Math.abs(s.days);return s.days<0?`${n} day${n===1?'':'s'} ago`:s.days===0?'today':`in ${n} day${n===1?'':'s'}`;}
+function renderRegisters(){
+  const v=_regView,c=(DB.clients||[]).find(x=>x.id===v.clientId);
+  if(!c){_regView=null;return renderRetainedDash();}
+  const docs=(DB.registerDocs||[]).filter(d=>d.clientId===v.clientId&&!d.archived);
+  const people=(DB.registerPeople||[]).filter(p=>p.clientId===v.clientId&&!p.archived);
+  const meta=(DB.registers||[]).find(r=>r.clientId===v.clientId)||{};
+  const tab=(k,label,n)=>`<button type="button" role="tab" class="reg-tab${v.tab===k?' on':''}" aria-selected="${v.tab===k}" id="reg-tab-${k}" onclick="_regSet('tab','${k}')">${label}<span>${n}</span></button>`;
+  const last=meta[v.tab==='docs'?'docs':'training'],by=last&&last.by?getStaff(last.by):null;
+  const lastTxt=last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'';
+  return`<div class="rd reg">
+    <div class="reg-top"><button type="button" class="btn btn-ghost btn-sm" id="reg-back" onclick="_rdHome()">‹ Retained Services</button><h2 class="reg-h">${escHtml(c.name)} registers</h2>
+      <div class="reg-acts"><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${v.tab}')">Import from Excel</button><button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${v.tab}')">Download template</button></div></div>
+    <div class="reg-tabs" role="tablist" aria-label="Registers">${tab('docs','Document register',docs.length)}${tab('training','Training matrix',people.length)}</div>
+    ${lastTxt?`<p class="rd-hint reg-last">${lastTxt}</p>`:''}
+    ${v.tab==='docs'?_regDocsHtml(c,docs):_regTrainingHtml(c,people,meta)}
+  </div>`;
+}
+function _regCmCounts(clientId,kind){
+  const m=new Map();
+  (DB.registerComments||[]).forEach(x=>{if(x.deleted||x.kind!==kind||x.clientId!==clientId)return;m.set(x.rowId,(m.get(x.rowId)||0)+1);if(x.qual){const k=x.rowId+'|'+x.qual;m.set(k,(m.get(k)||0)+1);}});
+  return m;
+}
+function _regCmHtml(n){return n?`<span class="reg-cmn" title="${n} comment${n===1?'':'s'}">${_REG_SVG.bubble}${n}</span>`:'';}
+function _regDocsHtml(c,docs){
+  const v=_regView,today=_regToday();
+  if(!docs.length)return _regEmpty('docs',c);
+  const rows=docs.map(d=>({d,s:_regDocState(d,today)})),cnt=k=>rows.filter(x=>x.s.k===k).length;
+  const segs=[['','All',rows.length],['over','Overdue',cnt('over')],['d30','Within 30 days',cnt('d30')],['d60','Within 60 days',cnt('d60')],['d90','Within 90 days',cnt('d90')],['ok','Current',cnt('ok')],['none','No date',cnt('none')]]
+    .filter(x=>x[0]===''||x[2]||v.st===x[0]);
+  const series=[...new Set(docs.map(d=>_regSeries(d.code)).filter(Boolean))].sort(),q=_regNorm(v.q);
+  const list=rows.filter(x=>(!v.st||x.s.k===v.st)&&(!v.series||_regSeries(x.d.code)===v.series)&&(!q||_regNorm(x.d.name+' '+(x.d.note||'')).includes(q)))
+    .sort((a,b)=>(a.d.nextReview?0:1)-(b.d.nextReview?0:1)||String(a.d.nextReview||'').localeCompare(String(b.d.nextReview||''))||String(a.d.code||a.d.name).localeCompare(String(b.d.code||b.d.name)));
+  const cm=_regCmCounts(c.id,'doc');
+  const body=list.length?list.map(({d,s})=>`<tr class="reg-r ${s.k}" data-reg-doc="${d.id}">
+      <td class="reg-code">${escHtml(d.code||'')}</td>
+      <td class="reg-doc"><button type="button" class="rq-w" onclick="_regOpenDoc('${d.id}')"><b>${escHtml(d.title||d.name)}</b>${d.note?`<small>${escHtml(d.note)}</small>`:''}</button></td>
+      <td class="reg-num" data-l="Issued">${_regDate(d.issueDate)}</td>
+      <td class="reg-num" data-l="Review every">${d.reviewMonths?d.reviewMonths+' months':''}</td>
+      <td class="reg-num" data-l="Next review">${_regDate(d.nextReview)}</td>
+      <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null&&s.k!=='ok'?` <em>${_regDaysText(s)}</em>`:''}</span></td>
+      <td class="reg-cm">${_regCmHtml(cm.get(d.id)||0)}</td></tr>`).join('')
+    :'<tr class="rq-none"><td colspan="7">Nothing matches these filters.</td></tr>';
+  return`<section class="rd-sheet">
+    <div class="reg-bar"><div class="reg-seg" role="group" aria-label="Review status">${segs.map(([k,l,n])=>`<button type="button" class="${v.st===k?'on ':''}${k}" aria-pressed="${v.st===k}" data-reg-st="${k}" onclick="_regSet('st','${k}')">${k?_regIcon(k):''}${l}<b>${n}</b></button>`).join('')}</div>
+      <div class="reg-fl">${series.length?`<label class="rd-f"><span>Series</span><select class="form-input" id="reg-series" onchange="_regSet('series',this.value)"><option value="">All series</option>${series.map(s=>`<option value="${escHtml(s)}"${v.series===s?' selected':''}>${escHtml(s)}</option>`).join('')}</select></label>`:''}
+      <label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or note" oninput="_regSearch(this.value)"></label></div></div>
+    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
+  </section>`;
+}
+function _regQualsOrder(people,meta){
+  const used=new Set();people.forEach(p=>Object.keys(p.quals||{}).forEach(k=>used.add(k)));
+  const order=(((meta||{}).training||{}).quals||[]).filter(k=>used.has(k)),inOrder=new Set(order);
+  return order.concat([...used].filter(k=>!inOrder.has(k)).sort());
+}
+function _regTrainingHtml(c,people,meta){
+  const v=_regView,today=_regToday();
+  if(!people.length)return _regEmpty('training',c);
+  const quals=_regQualsOrder(people,meta);
+  const locs=[...new Set(people.map(p=>p.location).filter(Boolean))].sort(),pos=[...new Set(people.map(p=>p.position).filter(Boolean))].sort(),q=_regNorm(v.q);
+  const ppl=people.filter(p=>(!v.loc||p.location===v.loc)&&(!v.pos||p.position===v.pos)&&(!q||_regNorm([_regPersonName(p),p.ref,p.company].join(' ')).includes(q)))
+    .sort((a,b)=>String(a.surname||a.full||'').localeCompare(String(b.surname||b.full||''))||String(a.first||'').localeCompare(String(b.first||'')));
+  const cm=_regCmCounts(c.id,'person');
+  const sel=(k,label,all,opts)=>`<label class="rd-f"><span>${label}</span><select class="form-input" id="reg-${k}" onchange="_regSet('${k}',this.value)"><option value="">${all}</option>${opts.map(o=>`<option value="${escHtml(o)}"${v[k]===o?' selected':''}>${escHtml(o)}</option>`).join('')}</select></label>`;
+  const filters=(locs.length?sel('loc','Location','All locations',locs):'')+(pos.length?sel('pos','Position','All positions',pos):'')+sel('qual','Training','All training',quals)
+    +`<label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or ID" oninput="_regSearch(this.value)"></label>`;
+  const modeBtn=(k,l)=>`<button type="button" class="${v.mode===k?'on':''}" aria-pressed="${v.mode===k}" data-reg-mode="${k}" onclick="_regSet('mode','${k}')">${l}</button>`;
+  const win=`<label class="rd-f"><span>Window</span><select class="form-input" id="reg-win" onchange="_regSet('win',this.value)">${[['exp','Expired only'],['30','Expired or within 30 days'],['60','Expired or within 60 days'],['90','Expired or within 90 days'],['all','Every dated record']].map(([k,l])=>`<option value="${k}"${v.win===k?' selected':''}>${l}</option>`).join('')}</select></label>`;
+  const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label>`;
+  return`<section class="rd-sheet"><div class="reg-bar"><div class="reg-seg" role="group" aria-label="View">${modeBtn('expiring','Expiring')}${modeBtn('matrix','Matrix')}</div><div class="reg-fl">${v.mode==='matrix'?due:win}${filters}</div></div>
+    ${v.mode==='matrix'?_regMatrixHtml(ppl,quals,cm,today):_regExpiringHtml(ppl,cm,today)}</section>`;
+}
+function _regExpiringHtml(ppl,cm,today){
+  const v=_regView,lim={'30':30,'60':60,'90':90,all:1e9}[v.win],items=[];
+  ppl.forEach(p=>Object.entries(p.quals||{}).forEach(([name,q])=>{
+    if(v.qual&&name!==v.qual)return;
+    const s=_regQualState(q,today);if(!s||s.days==null||s.k==='noexp')return;
+    if(v.win==='exp'?s.days>=0:s.days>(lim==null?90:lim))return;
+    items.push({p,name,q,s});
+  }));
+  items.sort((a,b)=>a.s.days-b.s.days||_regPersonName(a.p).localeCompare(_regPersonName(b.p)));
+  const body=items.length?items.map(({p,name,q,s})=>`<tr class="reg-r ${s.k}" data-reg-exp="${p.id}">
+      <td class="reg-doc"><button type="button" class="rq-w" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml([p.position,p.location,p.company].filter(Boolean).join(', '))}</small></button></td>
+      <td data-l="Training">${escHtml(name)}</td><td class="reg-num" data-l="Expires">${_regDate(q.d)}</td>
+      <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)} <em>${_regDaysText(s)}</em></span></td>
+      <td class="reg-cm">${_regCmHtml(cm.get(p.id+'|'+name)||0)}</td></tr>`).join('')
+    :`<tr class="rq-none"><td colspan="5">${v.win==='exp'?'Nothing has expired.':'Nothing expires in this window.'}</td></tr>`;
+  return`<div class="rq-wrap"><table class="rq-t reg-t" id="reg-expiring"><thead><tr><th>Person</th><th>Training</th><th>Expires</th><th>Status</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function _regMatrixHtml(ppl,quals,cm,today){
+  const v=_regView;
+  let cols=v.qual?quals.filter(q=>q===v.qual):quals;
+  if(v.dueOnly)cols=cols.filter(name=>ppl.some(p=>{const s=_regQualState((p.quals||{})[name],today);return s&&s.days!=null&&s.k!=='noexp'&&s.days<=90;}));
+  if(!ppl.length)return'<p class="reg-pad">Nobody matches these filters.</p>';
+  if(!cols.length)return'<p class="reg-pad">No training matches these filters.</p>';
+  const short=d=>{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y.slice(2)}`;};
+  const th=cols.map(n=>`<th scope="col"><span title="${escHtml(n)}">${escHtml(n)}</span></th>`).join('');
+  const rows=ppl.map(p=>{
+    const cells=cols.map(name=>{
+      const q=(p.quals||{})[name];if(!q)return'<td></td>';
+      const s=_regQualState(q,today),n=cm.get(p.id+'|'+name)||0,txt=s.k==='noexp'?'No expiry':q.d?short(q.d):`<span class="reg-ct">${escHtml(String(q.t))}</span>`;
+      return`<td><button type="button" class="reg-c ${s.k}" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" title="${escHtml(name)}: ${escHtml(s.label)}${q.d?', '+_regDate(q.d):''}">${['exp','d30','d60','d90'].includes(s.k)?_regIcon(s.k):''}${txt}${n?'<i class="reg-dot" aria-hidden="true"></i>':''}</button></td>`;
+    }).join('');
+    return`<tr data-reg-person="${p.id}"><th scope="row"><button type="button" class="rq-w" onclick="_regOpenPerson('${p.id}','')"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml([p.position,p.location].filter(Boolean).join(', '))}</small></button>${_regCmHtml(cm.get(p.id)||0)}</th>${cells}</tr>`;
+  }).join('');
+  return`<div class="reg-mx-wrap" tabindex="0" role="region" aria-label="Training matrix"><table class="reg-mx" id="reg-matrix"><thead><tr><th scope="col" class="reg-mx-p">Person</th>${th}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="rd-hint">Each cell is the expiry date. A red triangle has expired, an amber diamond expires within 30 days, an outlined diamond within 90 days. A dot means there are comments.</p>`;
+}
+function _regEmpty(kind,c){
+  const docs=kind==='docs';
+  return`<section class="rd-sheet rd-empty" id="reg-empty"><h2 class="rd-h">${docs?'No document register yet':'No training matrix yet'}</h2>
+    <p>${docs?`Import ${escHtml(c.name)}'s register from Excel: one row per controlled document with its file name, issue date, how often it is reviewed and the next review date. Task Hub then shows what is overdue or due soon, and the team can comment on each document.`:`Import ${escHtml(c.name)}'s training matrix from Excel: one row per person and one column per training, ticket or licence, with the expiry date in each cell. Personal details such as date of birth, phone, email and licence numbers are not imported.`}</p>
+    <p>Import the spreadsheet again whenever it changes. Rows are matched up again, so comments stay.</p>
+    <div class="reg-acts"><button class="btn btn-primary btn-sm" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button><button class="btn btn-ghost btn-sm" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div></section>`;
+}
+// ── The side panel: one document or one person, its details and the team's comments ──
+let _regDr=null;
+function _regOpenDoc(id){_regDr={kind:'doc',rowId:id,qual:null};_regDrawerRender();}
+function _regOpenPerson(id,qual){_regDr={kind:'person',rowId:id,qual:qual||null};_regDrawerRender();}
+function _regDrawerClose(){_regDr=null;const el=document.getElementById('reg-drawer');if(el)el.remove();document.removeEventListener('keydown',_regDrKey,true);}
+function _regDrKey(e){if(e.key==='Escape'&&_regDr&&!document.querySelector('.modal-overlay:not(.hidden)')){e.preventDefault();e.stopPropagation();_regDrawerClose();}}
+function _regDrawerRender(){
+  const dr=_regDr;if(!dr)return;
+  const today=_regToday(),who=id=>{const u=getStaff(id);return u?u.name:'Someone';};
+  const when=iso=>new Date(iso).toLocaleString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+  let head='',info='',about='',list=[],clientId='';
+  if(dr.kind==='doc'){
+    const d=(DB.registerDocs||[]).find(x=>x.id===dr.rowId);if(!d){_regDrawerClose();return;}
+    clientId=d.clientId;const s=_regDocState(d,today);
+    head=`${d.code?`<span class="reg-dr-code">${escHtml(d.code)}</span>`:''}<h3 id="reg-dr-title">${escHtml(d.title||d.name)}</h3>`;
+    info=`<dl class="reg-dl"><dt>Status</dt><dd><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null?` <em>${_regDaysText(s)}</em>`:''}</span></dd>
+      <dt>Issued</dt><dd>${_regDate(d.issueDate)||'Not given'}</dd><dt>Review every</dt><dd>${d.reviewMonths?d.reviewMonths+' months':'Not given'}</dd><dt>Next review</dt><dd>${_regDate(d.nextReview)||'Not set'}</dd>
+      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}</dl>`;
+    list=_regComments('doc',d.id);
+  }else{
+    const p=(DB.registerPeople||[]).find(x=>x.id===dr.rowId);if(!p){_regDrawerClose();return;}
+    clientId=p.clientId;
+    head=`${p.ref?`<span class="reg-dr-code">${escHtml(p.ref)}</span>`:''}<h3 id="reg-dr-title">${escHtml(_regPersonName(p))}</h3><p class="reg-dr-sub">${escHtml([p.position,p.location,p.company,p.employment].filter(Boolean).join(', '))}</p>`;
+    const qs=Object.entries(p.quals||{}).map(([name,q])=>({name,q,s:_regQualState(q,today)})).sort((a,b)=>(a.s.days==null?1e9:a.s.days)-(b.s.days==null?1e9:b.s.days)||a.name.localeCompare(b.name));
+    info=`${p.note?`<p class="reg-dr-note">${escHtml(p.note)}</p>`:''}<ul class="reg-ql">${qs.map(x=>`<li class="${dr.qual===x.name?'on':''}"><span>${escHtml(x.name)}</span><span class="reg-st ${x.s.k}">${_regIcon(x.s.k)}${x.q.d&&x.s.k!=='noexp'?_regDate(x.q.d):escHtml(x.s.label)}</span></li>`).join('')}</ul>`;
+    about=`<label class="rd-f"><span>About</span><select class="form-input" id="reg-cm-about"><option value="">${escHtml(_regPersonName(p))} in general</option>${qs.map(x=>`<option value="${escHtml(x.name)}"${dr.qual===x.name?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>`;
+    list=_regComments('person',p.id);
+  }
+  let el=document.getElementById('reg-drawer');
+  if(!el){el=document.createElement('aside');el.id='reg-drawer';el.className='reg-drawer';el.setAttribute('role','dialog');el.setAttribute('aria-labelledby','reg-dr-title');document.body.appendChild(el);document.addEventListener('keydown',_regDrKey,true);}
+  const canDel=c=>c.by===currentUser.id||currentUser.role==='admin';
+  const cms=list.length?list.map(c=>`<li data-reg-cm="${c.id}"><div class="reg-cm-h"><b>${escHtml(who(c.by))}</b><span>${escHtml(when(c.at))}</span>${c.qual?`<em>About ${escHtml(c.qual)}</em>`:''}${canDel(c)?`<button type="button" class="reg-cm-x" onclick="_regCommentDelete('${c.id}')" aria-label="Delete this comment">Delete</button>`:''}</div><p>${escHtml(c.text)}</p></li>`).join('')
+    :'<li class="reg-cm-none">No comments yet.</li>';
+  el.innerHTML=`<div class="reg-dr-head"><div class="reg-dr-t">${head}</div><button type="button" class="reg-dr-x" onclick="_regDrawerClose()" aria-label="Close">×</button></div>
+    <div class="reg-dr-body">${info}<h4 class="rd-h reg-dr-h">Comments</h4><ul class="reg-cms">${cms}</ul>
+      <div class="reg-cm-new">${about}<textarea class="form-input" id="reg-cm-text" rows="3" maxlength="4000" placeholder="A comment for the team" aria-label="New comment"></textarea><button type="button" class="btn btn-primary btn-sm" id="reg-cm-add" onclick="_regCommentSubmit('${clientId}')">Add comment</button></div></div>`;
+}
+function _regCommentSubmit(clientId){
+  const dr=_regDr;if(!dr)return;
+  const ta=document.getElementById('reg-cm-text'),ab=document.getElementById('reg-cm-about');
+  const qual=dr.kind==='person'?((ab?ab.value:dr.qual)||null):null;
+  if(!regAddComment(dr.kind,dr.rowId,clientId,qual,ta?ta.value:'')){if(ta)ta.focus();return;}
+  dr.qual=qual;_regDrawerRender();
+  if(currentView==='retained')renderView('retained');
+  showToast('Comment added.','success');
+}
+function _regCommentDelete(id){if(regDeleteComment(id)){_regDrawerRender();if(currentView==='retained')renderView('retained');}}
+
+// ── Import from Excel: choose the file, see what it will do, then import ──
+let _regPending=null;
+function openRegisterImport(clientId,kind){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const c=(DB.clients||[]).find(x=>x.id===clientId);if(!c)return;
+  _regPending={clientId,kind,parsed:null,fileName:''};
+  const docs=kind==='docs';
+  const body=`<div class="reg-imp" id="reg-imp">
+    <p class="rs-su2-intro">${docs?'One row per document: <b>File Name</b>, <b>Issue Date</b>, <b>Review Every (Months)</b> and <b>Next Review Date</b>, with <b>Notes</b> if you keep them. Any other column is left out, and an empty next review date is worked out from the issue date.'
+      :'One row per person: name, position and location, then one column per training, ticket or licence with the expiry date in each cell. Personal details (date of birth, phone, email, licence numbers) are not imported.'}</p>
+    <div class="reg-imp-pick"><label class="btn btn-primary btn-sm reg-file">Choose the spreadsheet<input type="file" id="reg-file" accept=".xlsx,.xlsm,.xls,.csv" onchange="_regFileChosen(this)"></label><button type="button" class="btn btn-ghost btn-sm" onclick="downloadRegisterTemplate('${kind}')">Download the template</button></div>
+    <div id="reg-imp-out" aria-live="polite"></div>
+  </div>`;
+  openGenericModal(docs?`Import ${escHtml(c.name)}'s document register`:`Import ${escHtml(c.name)}'s training matrix`,body,'780px');
+}
+function _regFileChosen(input){
+  const f=input&&input.files&&input.files[0];if(!f||!_regPending)return;
+  const out=document.getElementById('reg-imp-out');
+  if(f.size>15*1024*1024){if(out)out.innerHTML='<p class="reg-err">That file is over 15 MB. Save just the register sheet and try again.</p>';return;}
+  if(out)out.innerHTML='<p class="rs-pl-hint">Reading the file...</p>';
+  _ensureDocViewer('xlsx',()=>{
+    f.arrayBuffer().then(buf=>{
+      try{
+        const wb=window.XLSX.read(buf,{type:'array',cellNF:true,raw:/\.csv$/i.test(f.name)});
+        const parsed=_regPending.kind==='docs'?_regParseDocs(wb):_regParseTraining(wb);
+        _regPending.parsed=parsed.error?null:parsed;_regPending.fileName=f.name;
+        _regImportPreview(parsed);
+      }catch(e){if(out)out.innerHTML=`<p class="reg-err">The file could not be read (${escHtml(e.message||'unknown error')}). Save it as .xlsx and try again.</p>`;}
+    });
+  },()=>{if(out)out.innerHTML='<p class="reg-err">The spreadsheet reader could not be loaded. Check your connection and try again.</p>';});
+}
+function _regImportPreview(parsed){
+  const out=document.getElementById('reg-imp-out');if(!out||!_regPending)return;
+  if(parsed.error){out.innerHTML=`<p class="reg-err" id="reg-imp-err">${escHtml(parsed.error)}</p>`;return;}
+  const pl=_regPlan(_regPending.clientId,parsed),docs=parsed.kind==='docs',today=_regToday();
+  const N=n=>`${n} ${docs?(n===1?'document':'documents'):(n===1?'person':'people')}`;
+  const li=(t,list)=>list.length?`<li><b>${t}</b> ${escHtml(list.join(', '))}</li>`:'';
+  const change=[pl.added?`${pl.added} new`:'',pl.updated?`${pl.updated} updated`:'',pl.same?`${pl.same} unchanged`:''].filter(Boolean).join(', ')||'Nothing to change';
+  const probs=parsed.problems.concat(pl.dupes?[`${pl.dupes} repeated row${pl.dupes===1?' was':'s were'} left out (the first one counts).`]:[]);
+  const sample=parsed.rows.slice(0,6);
+  const tbl=docs
+    ?`<table class="rq-t reg-t reg-imp-t"><thead><tr><th>Document</th><th>Issued</th><th>Every</th><th>Next review</th><th>Status</th></tr></thead><tbody>${sample.map(r=>{const s=_regDocState(r,today);return`<tr><td>${escHtml(r.name)}</td><td class="reg-num">${_regDate(r.issueDate)}</td><td class="reg-num">${r.reviewMonths?r.reviewMonths+' months':''}</td><td class="reg-num">${_regDate(r.nextReview)}</td><td><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}</span></td></tr>`;}).join('')}</tbody></table>`
+    :`<table class="rq-t reg-t reg-imp-t"><thead><tr><th>Person</th><th>Position</th><th>Records</th><th>Expired</th></tr></thead><tbody>${sample.map(r=>{const v=Object.values(r.quals).map(q=>_regQualState(q,today));return`<tr><td>${escHtml(_regPersonName(r))}</td><td>${escHtml(r.position||'')}</td><td class="reg-num">${v.length}</td><td class="reg-num">${v.filter(s=>s&&s.k==='exp').length}</td></tr>`;}).join('')}</tbody></table>`;
+  out.innerHTML=`<div class="reg-imp-res" id="reg-imp-res">
+    <p>Read <b>${N(parsed.rows.length)}</b> from the sheet "${escHtml(parsed.sheet)}", headings on row ${parsed.headerRow}${docs?'':`, ${parsed.quals.length} training column${parsed.quals.length===1?'':'s'}`}.</p>
+    <ul class="reg-imp-cols">${li('Imported:',parsed.used)}${li('Left out:',parsed.skipped)}${li('Personal details, not imported:',parsed.personal)}${li('Empty columns, left out:',parsed.empty)}</ul>
+    ${probs.length?`<div class="reg-warn" id="reg-imp-probs"><b>${probs.length} thing${probs.length===1?'':'s'} to check</b><ul>${probs.slice(0,8).map(p=>`<li>${escHtml(p)}</li>`).join('')}${probs.length>8?`<li>And ${probs.length-8} more.</li>`:''}</ul></div>`:''}
+    ${sample.length?`<div class="rq-wrap">${tbl}</div>${parsed.rows.length>sample.length?`<p class="rs-pl-hint">And ${parsed.rows.length-sample.length} more.</p>`:''}`:''}
+    <p class="reg-imp-change" id="reg-imp-change"><b>${change}.</b></p>
+    ${pl.missing.length?`<label class="reg-chk"><input type="checkbox" id="reg-imp-archive" checked> Archive the ${N(pl.missing.length)} not in this file. Their comments are kept, and they come back if a later file has them.</label>`:''}
+    <div class="rs-su2-foot"><span class="rs-su2-sum"></span><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="reg-imp-go" onclick="_regImportConfirm()"${parsed.rows.length?'':' disabled'}>Import ${N(parsed.rows.length)}</button></div>
+  </div>`;
+}
+function _regImportConfirm(){
+  const p=_regPending;if(!p||!p.parsed)return;
+  const arch=document.getElementById('reg-imp-archive');
+  const res=_regApply(p.clientId,p.parsed,!!(arch&&arch.checked),p.fileName);if(!res)return;
+  closeGenericModal();_regPending=null;
+  if(_regView&&_regView.clientId===p.clientId)_regView.tab=p.parsed.kind;
+  if(currentView==='retained')renderView('retained');
+  showToast(`${p.parsed.kind==='docs'?'Document register':'Training matrix'} updated: ${[res.added?res.added+' new':'',res.updated?res.updated+' updated':'',res.archived?res.archived+' archived':''].filter(Boolean).join(', ')||'no changes'}.`,'success');
+}
+// ── Templates: the columns the importer reads, with dates formatted and checked, and a how-to sheet ──
+function downloadRegisterTemplate(kind){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  _ensureExcelJs(()=>{
+    _regTemplateBuild(kind).then(buf=>_regDownloadBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),kind==='docs'?'Document register template.xlsx':'Training matrix template.xlsx'))
+      .catch(e=>showAlert('The template could not be made: '+e.message,'Template'));
+  },()=>showAlert('The spreadsheet writer could not be loaded. Check your connection and try again.','Template'));
+}
+function _regDownloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+function _regTemplateBuild(kind){
+  const wb=new window.ExcelJS.Workbook(),docs=kind==='docs',NAVY='FF0D1C33',TEAL='FF97BCBD',DEEP='FF31585A',INK='FF1A2940';
+  wb.creator='Etcher Task Hub';wb.created=new Date();
+  const cols=docs?[{h:'File Name',w:58},{h:'Issue Date',w:14,date:1},{h:'Review Every (Months)',w:16,num:1},{h:'Next Review Date',w:17,date:1},{h:'Notes',w:48}]
+    :[{h:'ID',w:12},{h:'Surname',w:18},{h:'First Name',w:16},{h:'Position',w:18},{h:'Location',w:18},{h:'Employment Status',w:17},{h:'Company',w:20},
+      {h:'White Card',w:14,date:1},{h:'First Aid',w:14,date:1},{h:'Working at Heights',w:15,date:1},{h:'Driver Licence Expiry',w:15,date:1}];
+  const ws=wb.addWorksheet(docs?'Document register':'Training matrix',{views:[{state:'frozen',ySplit:1}],properties:{tabColor:{argb:NAVY}}});
+  ws.columns=cols.map(c=>({header:c.h,width:c.w,style:c.date?{numFmt:'dd/mm/yyyy'}:{}}));
+  const hr=ws.getRow(1);hr.height=32;
+  hr.eachCell(cell=>{cell.font={name:'Calibri',size:11,bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}};
+    cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};cell.border={bottom:{style:'medium',color:{argb:TEAL}}};});
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols.length}};
+  cols.forEach((c,i)=>{
+    const L=String.fromCharCode(65+i),rng=`${L}2:${L}1000`;
+    if(c.date)ws.dataValidations.add(rng,{type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(1950,0,1)],showErrorMessage:true,errorStyle:'warning',errorTitle:'A date',error:'Type a date such as 15/09/2026, or leave it blank.'});
+    if(c.num)ws.dataValidations.add(rng,{type:'whole',operator:'between',allowBlank:true,formulae:[1,240],showErrorMessage:true,errorTitle:'Months',error:'Months between reviews: 12 for every year, 24 for every two years.'});
+  });
+  const how=wb.addWorksheet('How to fill it in',{properties:{tabColor:{argb:TEAL}}});
+  how.getColumn(1).width=5;how.getColumn(2).width=docs?58:16;for(let i=3;i<=12;i++)how.getColumn(i).width=docs?18:16;
+  const lines=docs?[
+    'One row for each controlled document, on the "Document register" sheet. Keep the headings as they are.',
+    'File Name: the name as it appears in your register, for example "QMS-POL-001 - Quality Policy". A code at the front is used for sorting and the Series filter.',
+    'Issue Date: the date the current version was issued, as dd/mm/yyyy.',
+    'Review Every (Months): how often it is reviewed. 12 for every year, 24 for every two years.',
+    'Next Review Date: leave it blank and Task Hub works it out from the issue date and the review period. Type a date to set it yourself.',
+    'Notes: optional. Shown with the document in Task Hub. Comments are added in Task Hub itself.',
+    'Import the file again whenever the register changes. Documents are matched by their code, or by name, so the comments stay with them.',
+  ]:[
+    'One row for each person, on the "Training matrix" sheet.',
+    'ID: their employee or site ID if they have one. It keeps a person matched when their name is spelt differently later.',
+    'Surname and First Name, then Position, Location, Employment Status and Company. Any of these can be blank.',
+    'After those, one column for each training, ticket or licence, headed with its name. Rename, add or delete the example columns (White Card, First Aid and so on) to match yours.',
+    'In each cell put the expiry date as dd/mm/yyyy. Leave it blank when the person does not hold it. Write "No expiry" when it never expires, or "Yes" when it is held with no date.',
+    'Keep personal details out of this sheet: date of birth, phone, email and licence numbers are not needed, and Task Hub does not import them.',
+    'Import the file again whenever it changes. People are matched by ID, or by name, so comments stay with them.',
+  ];
+  how.getCell('B1').value=docs?'Document register: how to fill it in':'Training matrix: how to fill it in';
+  how.getCell('B1').font={name:'Calibri',size:15,bold:true,color:{argb:NAVY}};
+  lines.forEach((t,i)=>{const r=how.getRow(i+3);r.getCell(1).value=i+1;r.getCell(1).font={bold:true,color:{argb:DEEP}};r.getCell(1).alignment={vertical:'top'};
+    how.mergeCells(i+3,2,i+3,docs?6:12);r.getCell(2).value=t;r.getCell(2).alignment={wrapText:true,vertical:'top'};r.getCell(2).font={name:'Calibri',size:11,color:{argb:INK}};r.height=docs?32:30;});
+  const ex=lines.length+5;how.getCell('B'+ex).value='Example (made up)';how.getCell('B'+ex).font={bold:true,color:{argb:NAVY}};
+  const exHead=cols.map(c=>c.h),exRows=docs
+    ?[['QMS-POL-001 - Quality Policy','15/09/2025','12','','Reviewed every year'],['WHS-PRO-004 - Hazard Reporting Procedure','12/10/2026','24','12/10/2028','The procedure states a two-year review']]
+    :[['10234','Example','Alex','Cleaner','Perth','Casual','','01/03/2027','14/06/2027','No expiry','09/09/2028'],['','Sample','Jordan','Supervisor','Karratha','Full time','','Yes','','21/11/2026','']];
+  [exHead].concat(exRows).forEach((vals,j)=>{const r=how.getRow(ex+1+j);vals.forEach((v,i)=>{const cell=r.getCell(2+i);cell.value=v;
+    if(!j){cell.font={bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:DEEP}};cell.alignment={wrapText:true,vertical:'middle'};}
+    else cell.font={color:{argb:INK}};});});
+  return wb.xlsx.writeBuffer();
 }
 
 // ── Retained Services in the portal and in requests (plan R2, R3, R6, R7, R11) ──
@@ -19456,14 +20272,16 @@ function _clientLeftovers(id){
   const archive=boards.filter(b=>!other(b)),unlink=boards.filter(other);
   const notes=(DB.clientNotes||[]).filter(n=>n.clientId===id);
   const requests=(DB.clientWorkRequests||[]).filter(r=>r.clientId===id);
+  const regs=_REG_COLLS.reduce((n,k)=>n+(DB[k]||[]).filter(x=>x.clientId===id).length,0);
   const parts=[];
   if(archive.length)parts.push(archive.length+' board'+(archive.length!==1?'s':'')+' will move to Archive & Bin.');
   if(unlink.length)parts.push(unlink.length+' board'+(unlink.length!==1?'s':'')+' will stay, with no client, because '+(unlink.length!==1?'they hold':'it holds')+' other work.');
   const del=[];
   if(notes.some(n=>(n.sections||[]).length))del.push('its client notes');
   if(requests.length)del.push(requests.length+' work request'+(requests.length!==1?'s':''));
+  if(regs)del.push('its document register and training matrix');
   if(del.length){const t=del.join(' and ');parts.push(t.charAt(0).toUpperCase()+t.slice(1)+' will be deleted.');}
-  return{archive,unlink,notes,requests,text:parts.join(' ')};
+  return{archive,unlink,notes,requests,regs,text:parts.join(' ')};
 }
 function _removeClientLeftovers(id){
   const lo=_clientLeftovers(id),now=new Date().toISOString();
@@ -19478,8 +20296,10 @@ function _removeClientLeftovers(id){
     (DB.deletedWorkRequestIds=DB.deletedWorkRequestIds||[]).push(...lo.requests.map(r=>r.id));
     DB.clientWorkRequests=(DB.clientWorkRequests||[]).filter(r=>r.clientId!==id);
   }
+  if(lo.regs)_REG_COLLS.forEach(k=>{if(DB[k])DB[k]=DB[k].filter(x=>x.clientId!==id);});
   return lo;
 }
+const _REG_COLLS=['registerDocs','registerPeople','registerComments','registers'];
 function confirmDelete(type, id){
   try{requireInternalUser(currentUser);}catch(e){showAlert(e.message);return;}
   // Deleting a client cascades to every one of its groups and tasks (and everything under

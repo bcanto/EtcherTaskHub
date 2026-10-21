@@ -173,7 +173,8 @@ H.run('retained4-test', 3264, async (t) => {
   t.ok(second.dupIssues.some(i => /fixed fees? already on another invoice/.test(i)), `a copied invoice is stopped from billing the fee twice (got ${JSON.stringify(second.dupIssues)})`);
   const edit = await ev((id, b) => {
     pfiCurrentId = id; renderView('reports');
-    const inv = DB.proFormaInvoices.find(i => i.id === id), f = inv.feeLines[1];
+    const inv = DB.proFormaInvoices.find(i => i.id === id), f = (inv.feeLines || [])[1];
+    if (!f) return { line: null, retainer: null, total: null };
     pfiSaveFeeLine(id, f.id, 'amount', '2250');
     const w = DB.workboards.find(x => x.id === b);
     return { line: f.amount, retainer: _rsFeeFor(w.retainer, _rsYm()), total: pfiCalcTotals(inv).feeTotal };
