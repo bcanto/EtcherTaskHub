@@ -1094,7 +1094,7 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .reg-task:hover{border-color:#31585a}.reg-task:active{opacity:.85}.reg-task:focus-visible{outline:2px solid #31585a;outline-offset:2px}
 .reg-task.done{padding-left:0;border-color:transparent;background:none;font-weight:600;color:#15803d;cursor:default}
 .reg-add-task{white-space:nowrap}
-.reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;margin:0}
+.reg-io{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}.reg-io .reg-last{flex:1;min-width:200px;max-width:none;margin:0}
 .rc-btabs{margin:-24px -24px 0;padding:4px 24px 0;overflow-x:auto;background:#edf0f5}.rc-btabs .reg-tab{flex-shrink:0}
 @media (max-width:640px){.reg-tab{padding:9px 9px;gap:6px}.reg-tab[data-short] .rt-l{display:none}.reg-tab[data-short]::before{content:attr(data-short)}}
 .rc-mast{overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(13,28,51,.07),0 1px 2px rgba(13,28,51,.04),0 10px 28px -18px rgba(13,28,51,.2)}
@@ -1275,10 +1275,11 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .reg-pad{margin:0;padding:18px 0;text-align:center;color:#6b8399}
 .reg-mx-wrap{max-height:70vh;overflow:auto;border:1px solid #e4eaf3;border-radius:8px}
 .reg-mx-wrap:focus-visible{outline:2px solid #31585a;outline-offset:2px}
-.reg-mx{border-collapse:separate;border-spacing:0;font-size:11.5px}
-.reg-mx thead th{position:sticky;top:0;z-index:2;min-width:84px;max-width:100px;padding:6px 5px;border-bottom:1px solid #d8e0ec;background:#f6f8fb;vertical-align:bottom;text-align:left;font-family:Jost,sans-serif;font-size:10px;font-weight:700;color:#3d5269}
-.reg-mx thead th span{display:-webkit-box;overflow:hidden;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.25}
-.reg-mx thead th.reg-mx-p{left:0;z-index:3;min-width:210px}
+.reg-mx{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px}
+.reg-mx thead th{position:sticky;top:0;z-index:2;min-width:104px;padding:9px 8px 8px;border-bottom:1px solid #d8e0ec;background:#f6f8fb;vertical-align:bottom;text-align:center;font-family:Jost,sans-serif;font-size:12px;font-weight:600;line-height:1.25;color:#0d1c33}
+.reg-mx thead th .reg-mx-n{display:-webkit-box;overflow:hidden;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.25}
+.reg-mx-t{display:block;margin-top:4px;font-family:Lato,sans-serif;font-size:11px;font-weight:400;line-height:1.35;color:#6b8399}.reg-mx-t b{font-weight:700}.reg-mx-t .exp,.reg-key-sum .exp{color:#b91c1c}.reg-mx-t .due,.reg-key-sum .due{color:#9a4a07}
+.reg-mx thead th.reg-mx-p{left:0;z-index:3;min-width:220px;width:220px;text-align:left}
 .reg-mx tbody th{position:sticky;left:0;z-index:1;min-width:210px;padding:6px 10px 6px 8px;border-right:1px solid #e4eaf3;border-bottom:1px solid #eef2f6;background:#fff;text-align:left;font-weight:400}
 .reg-mx tbody th .rq-w{display:inline-grid;max-width:170px;vertical-align:middle}
 .reg-mx tbody th .reg-cmn{margin-left:6px;vertical-align:middle}
@@ -1292,6 +1293,21 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .reg-c.d60,.reg-c.d90{border-color:#f0c98a;color:#7a4b00}
 .reg-c.noexp,.reg-c.held{color:#6b8399}
 .reg-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#31585a}
+.reg-c.empty::before{content:"";position:absolute;left:50%;top:50%;width:12px;height:1.5px;margin:-.75px 0 0 -6px;border-radius:1px;background:#d3dce6;transition:opacity .15s}
+.reg-c.empty:hover::before,.reg-c.empty:focus-visible::before{opacity:0}
+.reg-ren{width:11px;height:11px;flex-shrink:0;margin-left:2px;color:#31585a}
+.reg-c.ren{box-shadow:inset 0 0 0 1px #97bcbd}
+.reg-ren-t{display:flex;align-items:center;gap:4px;margin-top:2px;font-size:11.5px;color:#31585a}
+.reg-key{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 18px;margin:0 0 10px}
+.reg-key-sum{margin:0;font-size:12.5px;color:#3d5269}.reg-key-sum b{font-weight:700}
+.reg-key ul{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none;font-size:11.5px;color:#4a5f75}
+.reg-key li{display:inline-flex;align-items:center;gap:6px}
+.reg-key li .reg-c{min-width:22px;width:22px;height:18px;padding:0;cursor:default}
+.reg-key li .reg-c.d90{border-color:#f0c98a}
+.reg-key-empty{position:relative}
+.reg-key-ren{display:inline-flex;color:#31585a}.reg-key-ren .reg-ren{width:12px;height:12px;margin:0}
+.reg-key-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#31585a}
+@media (max-width:640px){.reg-key{justify-content:flex-start}}
 .reg-drawer{position:fixed;top:0;right:0;bottom:0;z-index:450;display:flex;flex-direction:column;width:min(400px,100vw);background:#fff;box-shadow:-1px 0 0 #e4eaf3,-10px 0 32px rgba(13,28,51,.14)}
 .reg-dr-head{display:flex;align-items:flex-start;gap:10px;padding:18px 18px 14px;border-bottom:1px solid #e4eaf3}
 .reg-dr-t{flex:1;min-width:0}
@@ -8268,7 +8284,7 @@ function renderRetainedDash(){
   };
   const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
     <div class="rd-sheet-head"><h2 class="rd-h" id="rd-c-h">Clients <span class="rd-n">${boards.length}</span></h2></div>
-    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Support tier</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank||cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody></table></div>
+    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Support tier</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(cRow).join('')}</tbody></table></div>
   </section>`;
   const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
   return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}${queue}${clients}</div>`;
@@ -8712,7 +8728,7 @@ let _regView=null;
 function openRegisters(clientId,tab){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const keep=_regView&&_regView.clientId===clientId?_regView:{};
-  _regView=Object.assign({mode:'expiring',st:'',series:'',q:'',loc:'',pos:'',qual:'',win:'90',dueOnly:false},keep,{clientId,tab:tab||keep.tab||'docs'});
+  _regView=Object.assign({mode:'expiring',st:'',series:'',q:'',loc:'',pos:'',qual:'',win:'90',dueOnly:false,order:'added'},keep,{clientId,tab:tab||keep.tab||'docs'});
   _regDrawerClose();
   if(currentView!=='retained')navigate('retained');else renderView('retained');
 }
@@ -8726,6 +8742,7 @@ function _regSearch(v){
 const _REG_SVG={
   dia:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.4 10.6 6 6 10.6 1.4 6z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
   ring:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  ren:'<svg class="reg-ren" viewBox="0 0 12 12" aria-hidden="true"><path d="M9.8 4.6A4 4 0 0 0 2.4 4M2.2 7.4a4 4 0 0 0 7.4.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.2 1.8v2.9H7.3M1.8 10.2V7.3h2.9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   bubble:'<svg class="rq-ic" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2.2h8a1 1 0 0 1 1 1v4.6a1 1 0 0 1-1 1H5.2L2.6 10.6V8.8H2a1 1 0 0 1-1-1V3.2a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
 };
 // Shape and colour together: red triangle expired or overdue, amber diamond within 30 days, outlined diamond within
@@ -8777,15 +8794,16 @@ function _regTrainingHtml(c,people,meta){
   if(!people.length)return _regEmpty('training',c);
   const quals=_regQualsOrder(people,meta);
   const locs=[...new Set(people.map(p=>p.location).filter(Boolean))].sort(),pos=[...new Set(people.map(p=>p.position).filter(Boolean))].sort(),q=_regNorm(v.q);
-  const ppl=people.filter(p=>(!v.loc||p.location===v.loc)&&(!v.pos||p.position===v.pos)&&(!q||_regNorm([_regPersonName(p),p.ref,p.company].join(' ')).includes(q)))
-    .sort((a,b)=>String(a.surname||a.full||'').localeCompare(String(b.surname||b.full||''))||String(a.first||'').localeCompare(String(b.first||'')));
+  // In the order they were added: the spreadsheet's row order, people added later after them.
+  const ppl=people.filter(p=>(!v.loc||p.location===v.loc)&&(!v.pos||p.position===v.pos)&&(!q||_regNorm([_regPersonName(p),p.ref,p.company].join(' ')).includes(q)));
   const cm=_regCmCounts(c.id,'person');
   const sel=(k,label,all,opts)=>`<label class="rd-f"><span>${label}</span><select class="form-input" id="reg-${k}" onchange="_regSet('${k}',this.value)"><option value="">${all}</option>${opts.map(o=>`<option value="${escHtml(o)}"${v[k]===o?' selected':''}>${escHtml(o)}</option>`).join('')}</select></label>`;
   const filters=(locs.length?sel('loc','Location','All locations',locs):'')+(pos.length?sel('pos','Position','All positions',pos):'')+sel('qual','Training','All training',quals)
     +`<label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or ID" oninput="_regSearch(this.value)"></label>`;
   const modeBtn=(k,l)=>`<button type="button" class="${v.mode===k?'on':''}" aria-pressed="${v.mode===k}" data-reg-mode="${k}" onclick="_regSet('mode','${k}')">${l}</button>`;
   const win=`<label class="rd-f"><span>Window</span><select class="form-input" id="reg-win" onchange="_regSet('win',this.value)">${[['exp','Expired only'],['30','Expired or within 30 days'],['60','Expired or within 60 days'],['90','Expired or within 90 days'],['all','Every dated record']].map(([k,l])=>`<option value="${k}"${v.win===k?' selected':''}>${l}</option>`).join('')}</select></label>`;
-  const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label><button type="button" class="btn btn-ghost btn-sm" id="reg-add-col" onclick="_regAddColumnDialog('${c.id}')">+ Training column</button>`;
+  const due=`<label class="reg-chk"><input type="checkbox" id="reg-dueonly"${v.dueOnly?' checked':''} onchange="_regSet('dueOnly',this.checked)"> Only training due within 90 days</label>`
+    +`<label class="rd-f"><span>Order</span><select class="form-input" id="reg-order" onchange="_regSet('order',this.value)"><option value="added"${v.order!=='urgent'?' selected':''}>Order added</option><option value="urgent"${v.order==='urgent'?' selected':''}>Most urgent first</option></select></label>`;
   return`<section class="rd-sheet">${_regIoBar(c,'training')}<div class="reg-bar"><div class="reg-seg" role="group" aria-label="View">${modeBtn('expiring','Expiring')}${modeBtn('matrix','Matrix')}</div><div class="reg-fl">${v.mode==='matrix'?due:win}${filters}</div></div>
     ${v.mode==='matrix'?_regMatrixHtml(ppl,quals,cm,today):_regExpiringHtml(ppl,cm,today)}</section>`;
 }
@@ -8801,10 +8819,19 @@ function _regExpiringHtml(ppl,cm,today){
   const body=items.length?items.map(({p,name,q,s})=>`<tr class="reg-r ${s.k}" data-reg-exp="${p.id}">
       <td class="reg-doc"><button type="button" class="rq-w" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml([p.position,p.location,p.company].filter(Boolean).join(', '))}</small></button></td>
       <td data-l="Training">${escHtml(name)}</td><td class="reg-num" data-l="Expires">${_regDate(q.d)}</td>
-      <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)} <em>${_regDaysText(s)}</em></span></td>
+      <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)} <em>${_regDaysText(s)}</em></span>${(()=>{const rn=_regRenewing(p);return rn&&rn.quals.has(name)?`<span class="reg-ren-t">${_REG_SVG.ren}${rn.done?'Renewed, update the matrix':'Renewal task '+escHtml(((getStatusMeta(rn.t.status)||{}).label||'open').toLowerCase())}</span>`:'';})()}</td>
       <td class="reg-cm">${_regCmHtml(cm.get(p.id+'|'+name)||0)}</td></tr>`).join('')
     :`<tr class="rq-none"><td colspan="5">${v.win==='exp'?'Nothing has expired.':'Nothing expires in this window.'}</td></tr>`;
   return`<div class="rq-wrap"><table class="rq-t reg-t" id="reg-expiring"><thead><tr><th>Person</th><th>Training</th><th>Expires</th><th>Status</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+// Training a renewal task is already handling, for a person: the open task, or one finished in the last 30 days.
+function _regRenewing(p){
+  if(!_regPersonInHand(p))return null;
+  const t=_regPersonTask(p);return t?{t,quals:new Set(t.registerQuals||[]),done:_rsDone(t)}:null;
+}
+// Most urgent first: the soonest expiry (expired first) among the training shown; nothing dated goes last, by name.
+function _regUrgency(p,cols,today){
+  let best=Infinity;cols.forEach(n=>{const s=_regQualState((p.quals||{})[n],today);if(s&&s.days!=null&&s.k!=='noexp'&&s.days<best)best=s.days;});return best;
 }
 function _regMatrixHtml(ppl,quals,cm,today){
   const v=_regView;
@@ -8812,18 +8839,32 @@ function _regMatrixHtml(ppl,quals,cm,today){
   if(v.dueOnly)cols=cols.filter(name=>ppl.some(p=>{const s=_regQualState((p.quals||{})[name],today);return s&&s.days!=null&&s.k!=='noexp'&&s.days<=90;}));
   if(!ppl.length)return'<p class="reg-pad">Nobody matches these filters.</p>';
   if(!cols.length)return'<p class="reg-pad">No training matches these filters.</p>';
+  if(v.order==='urgent'){const u=new Map(ppl.map(p=>[p.id,_regUrgency(p,cols,today)]));ppl=ppl.slice().sort((a,b)=>(u.get(a.id)-u.get(b.id))||0);}
   const short=d=>{const[y,m,dd]=d.split('-');return`${dd}/${m}/${y.slice(2)}`;};
-  const th=cols.map(n=>`<th scope="col"><span title="${escHtml(n)}">${escHtml(n)}</span></th>`).join('');
+  const due=k=>k==='d30'||k==='d60'||k==='d90';
+  // Per training: held, expired, due within 90 days (of the people shown).
+  const tally=cols.map(name=>{let held=0,exp=0,soon=0;ppl.forEach(p=>{const q=(p.quals||{})[name];if(!q)return;held++;const s=_regQualState(q,today);if(s.k==='exp')exp++;else if(due(s.k))soon++;});return{held,exp,soon};});
+  const th=cols.map((n,i)=>{const t=tally[i];
+    return`<th scope="col"><span class="reg-mx-n" title="${escHtml(n)}">${escHtml(n)}</span><small class="reg-mx-t">${t.held} of ${ppl.length} held${t.exp?`, <b class="exp">${t.exp} expired</b>`:''}${t.soon?`, <b class="due">${t.soon} due</b>`:''}</small></th>`;}).join('');
+  let nExp=0,nSoon=0,nRen=0;
   const rows=ppl.map(p=>{
+    const rn=_regRenewing(p);if(rn)nRen++;
     const cells=cols.map(name=>{
-      const q=(p.quals||{})[name];if(!q)return`<td><button type="button" class="reg-c empty" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" aria-label="Add ${escHtml(name)} for ${escHtml(_regPersonName(p))}"><span class="reg-ct">Add</span></button></td>`;
+      const q=(p.quals||{})[name];if(!q)return`<td><button type="button" class="reg-c empty" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" aria-label="${escHtml(name)}: not held. Add it for ${escHtml(_regPersonName(p))}"><span class="reg-ct">Add</span></button></td>`;
       const s=_regQualState(q,today),n=cm.get(p.id+'|'+name)||0,txt=s.k==='noexp'?'No expiry':q.d?short(q.d):`<span class="reg-ct">${escHtml(String(q.t))}</span>`;
-      return`<td><button type="button" class="reg-c ${s.k}" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" title="${escHtml(name)}: ${escHtml(s.label)}${q.d?', '+_regDate(q.d):''}">${['exp','d30','d60','d90'].includes(s.k)?_regIcon(s.k):''}${txt}${n?'<i class="reg-dot" aria-hidden="true"></i>':''}</button></td>`;
+      if(s.k==='exp')nExp++;else if(due(s.k))nSoon++;
+      const ren=rn&&rn.quals.has(name)&&(s.k==='exp'||due(s.k));
+      const renTxt=ren?(rn.done?'. Renewed, update the matrix':`. Renewal task: ${(getStatusMeta(rn.t.status)||{}).label||'open'}`):'';
+      return`<td><button type="button" class="reg-c ${s.k}${ren?' ren':''}" data-q="${escHtml(name)}" onclick="_regOpenPerson('${p.id}',this.dataset.q)" title="${escHtml(name)}: ${escHtml(s.label)}${q.d?', '+_regDate(q.d):''}${escHtml(renTxt)}">${['exp','d30','d60','d90'].includes(s.k)?_regIcon(s.k):''}${txt}${ren?_REG_SVG.ren:''}${n?'<i class="reg-dot" aria-hidden="true"></i>':''}</button></td>`;
     }).join('');
     return`<tr data-reg-person="${p.id}"><th scope="row"><button type="button" class="rq-w" onclick="_regOpenPerson('${p.id}','')"><b>${escHtml(_regPersonName(p))}</b><small>${escHtml([p.position,p.location].filter(Boolean).join(', '))}</small></button>${_regCmHtml(cm.get(p.id)||0)}</th>${cells}</tr>`;
   }).join('');
-  return`<div class="reg-mx-wrap" tabindex="0" role="region" aria-label="Training matrix"><table class="reg-mx" id="reg-matrix"><thead><tr><th scope="col" class="reg-mx-p">Person</th>${th}</tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="rd-hint">Each cell is the expiry date. A red triangle has expired, an amber diamond expires within 30 days, an outlined diamond within 90 days. A dot means there are comments.</p>`;
+  const sum=[`${ppl.length} ${ppl.length===1?'person':'people'}`,nExp?`<b class="exp">${nExp} expired</b>`:'',nSoon?`<b class="due">${nSoon} due within 90 days</b>`:'',nRen?`${nRen} with a renewal task`:'',!nExp&&!nSoon?'nothing expired or due':''].filter(Boolean).join(', ');
+  const key=`<div class="reg-key" id="reg-key"><p class="reg-key-sum" id="reg-mx-sum">${sum}.</p><ul aria-label="Key">
+      <li><span class="reg-c exp">${_regIcon('exp')}</span>Expired</li><li><span class="reg-c d30">${_regIcon('d30')}</span>Within 30 days</li><li><span class="reg-c d90">${_regIcon('d90')}</span>Within 90 days</li>
+      <li><span class="reg-c empty reg-key-empty"></span>Not held</li><li><span class="reg-key-ren">${_REG_SVG.ren}</span>Renewal task</li><li><i class="reg-key-dot"></i>Comments</li></ul></div>`;
+  return`${key}<div class="reg-mx-wrap" tabindex="0" role="region" aria-label="Training matrix"><table class="reg-mx" id="reg-matrix"><thead><tr><th scope="col" class="reg-mx-p">Person</th>${th}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="rd-hint">Each cell is the expiry date. Click one to see the person, change the date or add a comment.</p>`;
 }
 function _regEmpty(kind,c){
   const docs=kind==='docs';
@@ -9066,7 +9107,7 @@ function _regLastImport(c,kind){
   return last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'Not imported yet.';
 }
 function _regIoBar(c,kind){
-  return`<div class="reg-io"><p class="rd-hint reg-last">${_regLastImport(c,kind)}</p><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button><button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div>`;
+  return`<div class="reg-io"><p class="rd-hint reg-last">${_regLastImport(c,kind)}</p><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button>${kind==='training'?`<button type="button" class="btn btn-ghost btn-sm" id="reg-add-col" onclick="_regAddColumnDialog('${c.id}')">+ Training column</button>`:''}<button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div>`;
 }
 function renderRegisters(){
   const v=_regView,c=(DB.clients||[]).find(x=>x.id===v.clientId);
