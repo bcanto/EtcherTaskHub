@@ -65,7 +65,7 @@ H.run('retained7-test', 3267, async (t) => {
   const firstId = await ev(() => DB.registerDocs.find(x => x.code === 'QMS-POL-001').id);
   const docs2 = await F.docRegister(path.join(dir, 'Doc Register v2.xlsx'), { rows: [
     ['QMS-POL-001 - Quality Policy', new Date(Date.UTC(2026, 9, 15)), 'Issue date (register)', 12, '', '', '', '', 'Reissued'],
-    ['QMS-POL-002 - Customer Complaints Policy', new Date(Date.UTC(2025, 10, 15)), '', 12, '', '', '', '', ''],
+    ['QMS-POL-002 - Customer Complaints Policy', (() => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - 340); return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); })(), '', 12, '', '', '', '', ''],
     ['QMS-POL-003 - Supplier Selection Policy', new Date(Date.UTC(2026, 8, 1)), '', 24, '', '', '', '', ''],
   ] });
   const pv2 = await pick('docs', docs2);
@@ -106,9 +106,9 @@ H.run('retained7-test', 3267, async (t) => {
     _regSet('loc', ''); _regSet('qual', 'White Card'); out.wc = rows();
     _regSet('qual', ''); _regSet('win', '90'); _regSet('mode', 'matrix');
     const mx = document.getElementById('reg-matrix');
-    out.cols = [...mx.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    out.cols = [...mx.querySelectorAll('thead th')].map(th => (th.querySelector('.reg-mx-n') || th).textContent.trim());
     out.cells = mx.querySelectorAll('.reg-c:not(.empty)').length; out.empty = mx.querySelectorAll('button.reg-c.empty').length; out.expCells = mx.querySelectorAll('.reg-c.exp').length; out.expShape = mx.querySelectorAll('.reg-c.exp .rq-ic').length;
-    _regSet('dueOnly', true); out.due = [...document.querySelectorAll('#reg-matrix thead th')].map(th => th.textContent.trim());
+    _regSet('dueOnly', true); out.due = [...document.querySelectorAll('#reg-matrix thead th')].map(th => (th.querySelector('.reg-mx-n') || th).textContent.trim());
     _regSet('dueOnly', false);
     return out;
   });
