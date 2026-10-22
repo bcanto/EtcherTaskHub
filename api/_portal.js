@@ -372,10 +372,10 @@ function normalizeLinkUrl(raw) {
 function makeRecorder(blob, ctx) {
   const emails = [];
   const staffIds = new Set(activeStaff(blob).map(u => u.id));
-  function notify(recipientId, taskId, type, message) {
+  function notify(recipientId, taskId, type, message, link) {
     if (!recipientId) return;
     if (!blob.notifications) blob.notifications = [];
-    blob.notifications.push({ id: 'n' + ctx.rid(), recipientId, taskId: taskId || null, type, message, read: false, createdAt: ctx.now, ...(ctx.userId ? { byUserId: ctx.userId } : {}) });
+    blob.notifications.push({ id: 'n' + ctx.rid(), recipientId, taskId: taskId || null, type, message, read: false, createdAt: ctx.now, ...(ctx.userId ? { byUserId: ctx.userId } : {}), ...(link ? { link } : {}) });
     if (EMAIL_TYPES.has(type)) {
       const rec = arr(blob.users).find(u => u.id === recipientId);
       if (rec && rec.email) emails.push({ to: rec.email, recipientName: rec.name, type, message, senderName: ctx.userName || 'Client' });
@@ -388,8 +388,8 @@ function makeRecorder(blob, ctx) {
     if (ids.length) ids.forEach(id => notify(id, task.id, type, message));
     else notifyAllStaff(type, message, task.id);
   }
-  function notifyAllStaff(type, message, taskId) {
-    activeStaff(blob).forEach(u => notify(u.id, taskId, type, message));
+  function notifyAllStaff(type, message, taskId, link) {
+    activeStaff(blob).forEach(u => notify(u.id, taskId, type, message, link));
   }
   function audit(entityId, action, before, after) {
     if (!blob.auditLog) blob.auditLog = [];
@@ -661,7 +661,8 @@ function applyPortalAction(blob, ctx, action) {
       const rmsg = `New work request from ${clientName}: "${title}"`;
       const rb = arr(blob.boards).find(b => b.clientId === ctx.clientId && isRetainedBoard(b));
       const staff = activeStaff(blob), to = new Set(rb ? staff.filter(u => u.role === 'admin' || u.id === rb.retainer.leadId).map(u => u.id) : []);
-      if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else rec.notifyAllStaff('work_request', rmsg, null);
+      const rlink = { kind: 'client', clientId: ctx.clientId };
+      if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg, rlink)); else rec.notifyAllStaff('work_request', rmsg, null, rlink);
       return ok({ append: ['clientWorkRequests', 'notifications'] });
     }
 

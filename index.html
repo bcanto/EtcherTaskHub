@@ -755,6 +755,29 @@ th.col-resizing .col-resize::after{background:#0d6e4e!important}
 .col-label{cursor:text;border-radius:4px;padding:1px 3px;margin:-1px -3px;transition:background 0.12s;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 .ws-table th .col-label,.ws-subtable th .col-label{min-height:0!important;vertical-align:middle}
 .col-label:hover{background:#e6edf5}
+.rd-tabbox{display:grid;gap:0}.rd-tabs{display:flex;gap:2px;padding:0 4px;border-bottom:1px solid #e2eaf2}
+.rd-tab{border:0;border-bottom:2px solid transparent;background:none;padding:10px 14px 9px;font:600 13.5px Jost,sans-serif;color:#5c6b80;cursor:pointer;margin-bottom:-1px}
+.rd-tab.on{color:#0d1c33;border-bottom-color:#0d1c33}.rd-tab:hover{color:#0d1c33}.rd-tab:focus-visible{outline:2px solid #31585a;outline-offset:-2px}.rd-tab .rd-n{margin-left:4px}
+.rd-tabbox .rd-tabpane{border-top-left-radius:0;border-top-right-radius:0;margin-top:0}
+#rd-queue td{padding-top:4px;padding-bottom:4px;vertical-align:middle}#rd-queue .rq-w{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:2px 0}#rd-queue .rq-w small{font-size:11px}
+#rd-queue .rq-g th{text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;color:#1a2940;padding:0}#rd-queue .rq-g .rq-lv,#rd-queue .rq-g .rq-lv span{text-transform:none;letter-spacing:0}
+#rd-clients td{padding-top:6px;padding-bottom:6px}
+.rq-g th{padding:0;background:#f6f8fb;border-top:1px solid #e2eaf2;border-bottom:1px solid #e2eaf2;text-align:left}
+.rq-g-in{display:flex;align-items:center;gap:10px;padding:6px 10px;flex-wrap:wrap}
+.rq-g-btn{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:2px 4px;font:600 13px Jost,sans-serif;color:#0d1c33;cursor:pointer;border-radius:6px}.rq-g-btn:hover{background:#eef2f6}.rq-g-btn:focus-visible{outline:2px solid #31585a}
+.rq-g-car{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:4px;background:#e6ecf2;font-size:12px;line-height:1;color:#3d5269}
+.rq-g-n{font-size:12px;color:#5c6b80}.rq-g.late .rq-g-n b{color:#b91c1c}
+.rq-g-open{margin-left:auto;border:0;background:none;padding:2px 4px;font-size:12px;font-weight:600;color:#31585a;text-decoration:underline;text-underline-offset:2px;cursor:pointer}.rq-g-open:focus-visible{outline:2px solid #31585a;border-radius:3px}
+.rq-more{margin:10px 0 0}
+.rd-att-c>span>span{font-weight:400}.rd-att li.rd-att-c>span b{font-weight:700}
+#rd-clients td{padding-top:6px;padding-bottom:6px}
+.tp-trail{list-style:none;margin:0;padding:0;display:grid;gap:0}.tp-trail li{display:grid;gap:1px;padding:7px 0 7px 14px;border-left:2px solid #e2eaf2;position:relative}
+.tp-trail li::before{content:"";position:absolute;left:-5px;top:12px;width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid #97bcbd}
+.tp-trail-t{font-size:12.5px;line-height:1.45;color:#1a2940;word-break:break-word}.tp-trail-m{font-size:11px;color:#8da2b2}
+.tp-trail-none{margin:0;font-size:12px;color:#8da2b2}.tp-trail-more{margin-top:6px;border:0;background:none;padding:0;font-size:12px;font-weight:600;color:#31585a;text-decoration:underline;text-underline-offset:2px;cursor:pointer}.tp-trail-more:focus-visible{outline:2px solid #31585a;border-radius:3px}
+.ws-month{display:inline-flex;align-items:center;flex-shrink:0;white-space:nowrap}
+.ws-month select{height:30px;padding:0 26px 0 8px;font-size:12px;font-weight:600;color:#3d5269;max-width:240px}
+.ws-month-hid{border:0;background:none;padding:0 2px;font-size:11.5px;color:#31585a;text-decoration:underline;text-underline-offset:2px;cursor:pointer;white-space:nowrap}.ws-month-hid:hover{color:#0d1c33}.ws-month-hid:focus-visible{outline:2px solid #31585a;border-radius:3px}
 .col-label.col-editing{background:#fff;outline:2px solid #97bcbd;cursor:text;overflow:visible;text-overflow:clip}
 /* ── Subitem grid ──
    Its own table inside one full-width cell of the parent grid, so subitems can carry a
@@ -5511,6 +5534,7 @@ function _deepLinkOpenTask(taskId){
   wsMtSearch='';wsMtPersonFilter='';
   if(task.archived)wsShowArchived=true;
   if(task.parentTaskId)wsExpanded.add(task.parentTaskId);
+  if(_wsMonthOn()&&!_wsMonthFilter([task.parentTaskId?(DB.tasks.find(x=>x.id===task.parentTaskId)||task):task]).length)_wsMonthShowAll();
   renderView('workspace');
   setTimeout(()=>{
     const row=document.querySelector(`tr[data-tid="${taskId}"]`);
@@ -6055,10 +6079,52 @@ function _rptCopyId(){
 // ═══════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════
+// ── Retained boards: the month on show (per board, this device) ──
+let _wsMonthSel=(()=>{try{return JSON.parse(localStorage.getItem('etcher_ws_month')||'{}')||{};}catch(e){return{};}})();
+function _wsMonthOn(){return !!(currentWorkboard&&_isRetainedBoard(currentWorkboard));}
+function _wsMonthVal(){if(!_wsMonthOn())return'all';const v=_wsMonthSel[currentWorkboard.id];return v==='all'||/^\d{4}-\d{2}$/.test(v||'')?v:'cur';}
+// The month the group headers count: the month picked, else this month.
+function _wsMonthYm(){const v=_wsMonthVal();return /^\d{4}-\d{2}$/.test(v)?v:_rsYm();}
+function _wsMonthSet(v){if(!currentWorkboard)return;_wsMonthSel[currentWorkboard.id]=v;try{localStorage.setItem('etcher_ws_month',JSON.stringify(_wsMonthSel));}catch(e){}renderView('workspace');}
+function _wsMonthShowAll(){if(currentWorkboard&&_wsMonthOn()){_wsMonthSel[currentWorkboard.id]='all';try{localStorage.setItem('etcher_ws_month',JSON.stringify(_wsMonthSel));}catch(e){}}}
+// Whether a top-level task shows for the month on show. Subitems follow their parent.
+function _wsMonthKeep(t,v,ym,subsOf){
+  if(v==='all')return true;
+  const doneIn=x=>_rsDone(x)&&_rsDoneYm(x)===ym;
+  if(v==='cur')return !_rsDone(t)||doneIn(t);
+  return doneIn(t)||subsOf(t.id).some(doneIn);
+}
+function _wsMonthFilter(tasks){
+  const v=_wsMonthVal();if(v==='all')return tasks;
+  const ym=v==='cur'?_rsYm():v,kids=new Map();
+  tasks.forEach(t=>{if(t.parentTaskId){if(!kids.has(t.parentTaskId))kids.set(t.parentTaskId,[]);kids.get(t.parentTaskId).push(t);}});
+  const subsOf=id=>kids.get(id)||[],keep=new Set();
+  tasks.forEach(t=>{if(!t.parentTaskId&&_wsMonthKeep(t,v,ym,subsOf))keep.add(t.id);});
+  return tasks.filter(t=>t.parentTaskId?keep.has(t.parentTaskId):keep.has(t.id));
+}
+// Months to pick: from the retainer's start (or its first finished task) to this month, newest first.
+function _wsMonthList(){
+  const b=currentWorkboard,now=_rsYm();let first=(b.retainer&&b.retainer.startMonth)||now;
+  (DB.tasks||[]).forEach(t=>{if((t.boardId||t.workboardId)===b.id&&_rsDone(t)){const m=_rsDoneYm(t);if(m&&m<first)first=m;}});
+  if(first>now)first=now;
+  const out=[];for(let m=now,i=0;m>=first&&i<60;m=_rsPrevYm(m),i++)out.push(m);
+  return out;
+}
+function _wsMonthSelectHtml(){
+  if(!_wsMonthOn())return'';
+  const v=_wsMonthVal(),now=_rsYm();
+  const all=(DB.tasks||[]).filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id&&!t.parentTaskId&&(wsShowArchived||!t.archived)&&canViewTask(currentUser,t));
+  const hidden=v==='cur'?all.filter(t=>_rsDone(t)&&_rsDoneYm(t)!==now).length:0;
+  const opts=[['cur',hidden?`This month (${hidden} earlier hidden)`:'This month'],..._wsMonthList().filter(m=>m!==now).map(m=>[m,'Finished in '+_rsMonthYear(m)]),['all','All months']];
+  return`<label class="ws-month" title="Tasks finished in earlier months are hidden, not archived: they still count in their month.">
+      <select class="form-input" id="ws-month" aria-label="Month" data-hidden="${hidden}" onchange="_wsMonthSet(this.value)">${opts.map(([k,l])=>`<option value="${k}"${v===k?' selected':''}>${escHtml(l)}</option>`).join('')}</select>
+    </label>`;
+}
 function getVisibleTasks(){
   let tasks=DB.tasks.filter(t=>canViewTask(currentUser,t));
   if(currentWorkboard) tasks=tasks.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
   if(!wsShowArchived) tasks=tasks.filter(t=>!t.archived);
+  if(_wsMonthOn())tasks=_wsMonthFilter(tasks);
   return tasks;
 }
 function getWbGroups(){
@@ -6971,6 +7037,44 @@ function _auditBulkTime(action,now,reason){
   writeAuditEvent('TimeEntry',hit[0].id,action,{displayValue:'awaiting approval'},{displayValue:action==='bulk_rejected'?'rejected: '+(reason||''):'approved',title:hit.length+' entr'+(hit.length!==1?'ies':'y')+', '+hrs+'h',count:hit.length,ids:hit.slice(0,200).map(e=>e.id)});
 }
 
+// ── Task changes for the audit trail (2026-10-22) ──
+const _TASK_AUDIT_FIELDS={status:'Status',priority:'Priority',ownerId:'Owner',currentlyWith:'With',currentlyWithUserId:'With',startDate:'Start date',endDate:'Due date',
+  groupId:'Group',name:'Name',title:'Name',clientHidden:'Client portal',clientDescriptionHidden:'Description in the portal',percentComplete:'Progress',tags:'Tags',description:'Description',hourBudget:'Hour budget'};
+function _taskAuditShow(field,v){
+  if(field==='percentComplete')return(Number(v)||0)+'%';
+  if(v==null||v===''||v==='none')return'none';
+  if(field==='status')return(getStatusMeta(v)||{}).label||String(v);
+  if(field==='priority')return(typeof getPrioMeta==='function'?(getPrioMeta(v)||{}).label:'')||String(v);
+  if(field==='ownerId'||field==='currentlyWith'||field==='currentlyWithUserId'){if(v==='client')return'Client';if(v==='approver')return'Approver';const u=getStaff(v);return u?u.name:'someone';}
+  if(field==='startDate'||field==='endDate')return/^\d{4}-\d{2}-\d{2}/.test(String(v))?String(v).slice(0,10).split('-').reverse().join('/'):String(v);
+  if(field==='groupId'){const g=(DB.groups||[]).find(x=>x.id===v);return g?g.name:'another group';}
+  if(field==='clientHidden')return v?'hidden':'visible';
+  if(field==='clientDescriptionHidden')return v?'hidden':'shown';
+  if(field==='percentComplete')return(Number(v)||0)+'%';
+  if(field==='tags')return(Array.isArray(v)?v:[]).join(', ')||'none';
+  if(field==='description')return'edited';
+  return String(v).slice(0,120);
+}
+// Record one change on the task (task.auditTrail, the latest 30). The same person changing the same field again within
+// 5 minutes updates that entry (a slider or typing is one change, not fifty); changing it back removes the entry. Each
+// new entry also goes to the permanent server copy.
+function _taskAudit(taskId,field,oldVal,newVal){
+  const label=_TASK_AUDIT_FIELDS[field];if(!label||!taskId)return;
+  if(field==='currentlyWithUserId')field='currentlyWith';
+  const norm=v=>JSON.stringify(v==null||v===''?null:v);
+  if(norm(oldVal)===norm(newVal))return;
+  const t=(DB.tasks||[]).find(x=>x.id===taskId);if(!t)return;
+  const tr=t.auditTrail=Array.isArray(t.auditTrail)?t.auditTrail:[],now=new Date(),me=currentUser?.id||null;
+  // The permanent copy records every change as it happens.
+  try{_auditForward({id:'ae'+uid(),entityType:'Task',entityId:taskId,actorId:me,action:'updated:'+field,beforeValueJson:JSON.stringify({field,label,displayValue:_taskAuditShow(field,oldVal)}),afterValueJson:JSON.stringify({field,label,displayValue:_taskAuditShow(field,newVal)}),createdAt:now.toISOString()});}catch(e){}
+  const last=tr[tr.length-1];
+  if(last&&last.field===field&&last.by===me&&now-new Date(last.at)<5*60000){
+    if(field!=='description'&&norm(last.raw)===norm(newVal)){tr.pop();return;}
+    last.to=_taskAuditShow(field,newVal);last.at=now.toISOString();return;
+  }
+  tr.push({id:'ta'+uid(),at:now.toISOString(),by:me,field,label,raw:field==='description'?null:(oldVal===undefined?null:oldVal),from:_taskAuditShow(field,oldVal),to:_taskAuditShow(field,newVal)});
+  if(tr.length>30)t.auditTrail=tr.slice(-30);
+}
 // Legacy shim — keeps existing callers working, writes to new AuditEvent shape
 function addAudit(taskId,field,oldVal,newVal){
   const LABELS={status:'Status',ownerId:'Owner',currentlyWith:'Currently With',
@@ -7826,7 +7930,7 @@ function _retainerMeterHtml(sec){
   const wb=currentWorkboard;
   if(wsGroupBy!=='group'||!_isRetainedBoard(wb))return'';
   const s=(wb.retainer.services||[]).find(x=>x.groupId===sec.id);if(!s)return'';
-  const ym=_rsYm(),us=_rsUsage(wb,s,ym);
+  const ym=_wsMonthYm(),us=_rsUsage(wb,s,ym);
   const tip=us.mode==='hours'?'Hours logged on this service\'s work. Monthly parts reset on the 1st, quarterly ones each quarter.':'Finished this month (green) and in progress now (orange), on work the client can see. Resets on the 1st.';
   return us.parts.map(u=>`<span class="ws-grp-meter${_rsPartFull(u)?' full':''}" title="${tip}">${_rsSq(u,'',40)}<span>${escHtml(_rsUseText(u))}${u.unit!=='hours'?' in '+_rsMonthName(ym):''}</span></span>`).join('');
 }
@@ -8299,8 +8403,10 @@ function _rdUsage(boards,ym){
 }
 
 // Filters are per viewer and stay on this device.
-let _rdQ=(()=>{const d={client:'',level:'',owner:'',show:'soon',order:'level'};try{return Object.assign(d,JSON.parse(localStorage.getItem('rd-queue')||'{}'));}catch(e){return d;}})();
-function _rdSetQ(k,v){_rdQ[k]=v;try{localStorage.setItem('rd-queue',JSON.stringify(_rdQ));}catch(e){}renderView('retained');}
+let _rdQ=(()=>{const d={client:'',level:'',owner:'',show:'soon',order:'level',tab:'queue',more:25,collapsed:[],cq:'',csort:'added'};try{return Object.assign(d,JSON.parse(localStorage.getItem('rd-queue')||'{}'));}catch(e){return d;}})();
+function _rdSetQ(k,v){_rdQ[k]=v;if(k!=='more'&&k!=='tab'&&k!=='collapsed')_rdQ.more=25;try{localStorage.setItem('rd-queue',JSON.stringify(_rdQ));}catch(e){}renderView('retained');}
+function _rdToggleGroup(cid){const s=new Set(_rdQ.collapsed||[]);if(s.has(cid))s.delete(cid);else s.add(cid);_rdSetQ('collapsed',[...s]);}
+let _rdCqTimer=null;function _rdClientSearch(v){_rdQ.cq=v;clearTimeout(_rdCqTimer);_rdCqTimer=setTimeout(()=>{const el=document.getElementById('rd-csearch'),pos=el?el.selectionStart:null;renderView('retained');const e2=document.getElementById('rd-csearch');if(e2){e2.focus();if(pos!=null)try{e2.setSelectionRange(pos,pos);}catch(e){}}},200);}
 // "soon": every open request, plus other work that is late or due within the next seven days.
 function _rdFilter(rows){
   const q=_rdQ,d=new Date();d.setDate(d.getDate()+7);const soon=toDateStr(d);
@@ -8361,7 +8467,8 @@ function renderRetainedDash(){
   if(!boards.length)return`<div class="rd"><div class="rd-sheet rd-empty"><h2 class="rd-h">No retained clients yet</h2><p>A retained client gets one board under Retained Services, a group per service, and the monthly tasks you keep. Their requests, allowances and registers then come together here.</p>${newBtn}</div></div>`;
   const all=_rqQueue(),rows=_rqSort(_rdFilter(all),_rdQ.order),usage=_rdUsage(boards,ym),month=_rsMonthName(ym);
   const lateR=all.filter(r=>r.replyState==='late').length,lateD=all.filter(r=>r.deliverState==='late').length,lateN=all.filter(r=>r.late).length;
-  // Needs attention: late clocks, then allowances at 80% or more.
+  // Needs attention: late clocks first, then one line per client (allowances at 80% or more, documents and people with
+  // no task yet), so it stays short however many clients there are.
   const att=[];
   if(lateN){
     const parts=[lateR?`${lateR} past the reply time`:'',lateD?`${lateD} past the delivery date`:''].filter(Boolean);
@@ -8369,12 +8476,15 @@ function renderRetainedDash(){
   }
   usage.filter(u=>u.allowance&&u.ratio>=0.8).sort((a,b)=>b.ratio-a.ratio).forEach(u=>{
     const over=u.used>u.allowance,at=u.used===u.allowance;
-    att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key+(u.pi!=null?'-'+u.pi:''),
-      text:`${escHtml(cName(u.board.clientId))}, ${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'?(u.u.period==='quarter'?'':' in '+month):' in '+month}${over?', over the allowance':at?', the allowance is used up':''}.`,
-      act:`openRetainerPlan('${u.board.id}')`,btn:'Plan'});
+    att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key+(u.pi!=null?'-'+u.pi:''),clientId:u.board.clientId,
+      short:`${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'?(u.u.period==='quarter'?'':' in '+month):' in '+month}${over?', over the allowance':at?', the allowance is used up':''}`});
   });
   if(typeof _regAttention==='function')_regAttention(boards).forEach(a=>att.push(a));
-  const attHtml=att.length?`<section class="rd-sheet rd-att" aria-labelledby="rd-att-h"><h2 class="rd-h" id="rd-att-h">Needs attention</h2><ul>${att.map(a=>`<li class="${a.tone}"${a.id?` id="${a.id}"`:''}>${a.tone==='bad'?_RD_SVG.late:_RD_SVG.soon}<span>${a.text}</span><button class="btn btn-ghost btn-sm" onclick="${a.act}">${a.btn}</button></li>`).join('')}</ul></section>`:'';
+  const attBy=new Map();att.filter(a=>a.clientId).forEach(a=>{if(!attBy.has(a.clientId))attBy.set(a.clientId,[]);attBy.get(a.clientId).push(a);});
+  const attLis=att.filter(a=>!a.clientId).map(a=>`<li class="${a.tone}" id="${a.id}">${_RD_SVG.late}<span>${a.text}</span><button class="btn btn-ghost btn-sm" onclick="${a.act}">${a.btn}</button></li>`)
+    .concat([...attBy].map(([cid,items])=>{const bad=items.some(a=>a.tone==='bad');
+      return`<li class="${bad?'bad':'warn'} rd-att-c" data-rd-att-client="${cid}">${bad?_RD_SVG.late:_RD_SVG.soon}<span><b>${escHtml(cName(cid))}</b>: ${items.map(a=>`<span class="${a.tone}" id="${a.id}">${a.short}</span>`).join('; ')}.</span><button class="btn btn-ghost btn-sm" onclick="openRetainedClient('${cid}')">Open</button></li>`;}));
+  const attHtml=attLis.length?`<section class="rd-sheet rd-att" aria-labelledby="rd-att-h"><h2 class="rd-h" id="rd-att-h">Needs attention <span class="rd-n">${attLis.length}</span></h2><ul>${attLis.join('')}</ul></section>`:'';
   // Queue
   const owners=[...new Set(all.map(r=>r.ownerId).filter(Boolean))].map(id=>getStaff(id)).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
   const sel=(k,label,opts)=>`<label class="rd-f"><span>${label}</span><select class="form-input" data-rd-q="${k}" onchange="_rdSetQ('${k}',this.value)">${opts.map(([v,l])=>`<option value="${escHtml(v)}"${_rdQ[k]===v?' selected':''}>${escHtml(l)}</option>`).join('')}</select></label>`;
@@ -8385,10 +8495,8 @@ function renderRetainedDash(){
     +sel('order','Order',[['level','By level'],['due','By due date']]);
   const qRow=r=>{
     const own=r.ownerId?getStaff(r.ownerId):null,lvNone=r.lv.resp==null;
-    const sub=[escHtml(r.sub||''),r.kind==='request'?`Request, received ${escHtml(_rdShort(toDateStr(new Date(r.received))))}`:'Task',r.neededBy?`Client needs it by ${escHtml(_rdShort(r.neededBy))}`:''].filter(Boolean).join('. ');
-    return`<tr class="${r.late?'late':''}" data-rq="${r.kind}:${r.id}">
-      <td class="rq-c-lv">${_rdLevelHtml(r.lv)}</td>
-      <td class="rq-c-cl"><span class="rq-cl">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===r.board.clientId),22)}${escHtml(cName(r.board.clientId))}</span></td>
+    const sub=[escHtml(r.sub||''),r.kind==='request'?`Request, received ${escHtml(_rdShort(toDateStr(new Date(r.received))))}`:'',r.neededBy?`Client needs it by ${escHtml(_rdShort(r.neededBy))}`:''].filter(Boolean).join('. ');
+    return`<tr class="${r.late?'late':''}" data-rq="${r.kind}:${r.id}" data-rq-client="${r.board.clientId}">
       <td class="rq-c-w"><button type="button" class="rq-w" onclick="_rdOpen('${r.kind}','${r.id}')"><b>${escHtml(r.title)}</b><small>${sub}</small></button></td>
       <td class="rq-c-own" data-l="Owner">${own?escHtml(own.name):'<span class="rq-na">Unassigned</span>'}</td>
       <td class="rq-c-due" data-l="Reply by">${_rdClockHtml(r.reply,r.replyState,lvNone?'Priority queue':'No clock','Replied')}</td>
@@ -8396,33 +8504,60 @@ function renderRetainedDash(){
       <td class="rq-c-st"><span class="rq-st" style="background:${_safeCss(r.status.bg,'#f1f5f9')};color:${_safeCss(r.status.color,'#475569')}">${escHtml(r.status.label||'')}</span></td>
     </tr>`;
   };
-  const qBody=rows.length?rows.map(qRow).join(''):`<tr class="rq-none"><td colspan="7">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`No open requests, and nothing late or due within a week. <button type="button" class="rs-lvl-use" id="rd-show-all" onclick="_rdSetQ('show','all')">Show all ${all.length} open item${all.length===1?'':'s'}</button>`:'Nothing matches these filters.'}</td></tr>`;
-  const queue=`<section class="rd-sheet" aria-labelledby="rd-q-h">
-    <div class="rd-sheet-head"><h2 class="rd-h" id="rd-q-h">Queue <span class="rd-n">${rows.length}${rows.length!==all.length?' of '+all.length:''}</span></h2><div class="rd-filters">${filters}</div></div>
-    <div class="rq-wrap"><table class="rq-t" id="rd-queue"><thead><tr><th>Tier</th><th>Client</th><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
-    <p class="rd-hint">Ordered by the client's service level, then the nearest date. Reply and delivery dates count business days, Monday to Friday, from the day the request came in. The reply clock stops at the first reply or action; delivery stops when the work is done or sent for approval.</p>
+  // Grouped by client, in the order of each client's most urgent item.
+  const groups=[],gi=new Map();
+  rows.forEach(r=>{const k=r.board.clientId;if(!gi.has(k)){gi.set(k,groups.length);groups.push({b:r.board,rows:[]});}groups[gi.get(k)].rows.push(r);});
+  const collapsed=new Set(_rdQ.collapsed||[]),limit=Math.max(25,Number(_rdQ.more)||25);
+  let shown=0,hiddenRows=0;const qParts=[];
+  groups.forEach(g=>{
+    const cid=g.b.clientId,late=g.rows.filter(r=>r.late).length,closed=collapsed.has(cid),lv=_rsLevel(g.b.retainer.priority)||_rsLevel('Standard');
+    if(shown>=limit&&!closed){hiddenRows+=g.rows.length;return;}
+    qParts.push(`<tr class="rq-g${late?' late':''}" data-rq-group="${cid}"><th colspan="5" scope="rowgroup"><div class="rq-g-in">
+      <button type="button" class="rq-g-btn" aria-expanded="${!closed}" onclick="_rdToggleGroup('${cid}')"><span class="rq-g-car" aria-hidden="true">${closed?'+':'−'}</span>${_rcLogoHtml((DB.clients||[]).find(x=>x.id===cid),22)}<b>${escHtml(cName(cid))}</b></button>
+      ${_rdLevelHtml(lv)}<span class="rq-g-n">${g.rows.length} open${late?`, <b>${late} late</b>`:''}</span>
+      <button type="button" class="rq-g-open" onclick="openRetainedClient('${cid}')">Client page</button></div></th></tr>`);
+    if(closed)return;
+    g.rows.forEach(r=>{if(shown<limit){qParts.push(qRow(r));shown++;}else hiddenRows++;});
+  });
+  const qBody=rows.length?qParts.join(''):`<tr class="rq-none"><td colspan="5">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`Nothing due in the next seven days. <button type="button" class="rs-lvl-use" onclick="_rdSetQ('show','all')">Show all open work</button>`:'Nothing matches these filters.'}</td></tr>`;
+  const more=hiddenRows?`<button type="button" class="btn btn-ghost btn-sm rq-more" id="rq-more" onclick="_rdSetQ('more',${limit+25})">Show ${Math.min(25,hiddenRows)} more (${hiddenRows} not shown)</button>`:'';
+  const queue=`<section class="rd-sheet rd-tabpane" id="rd-pane-queue" aria-labelledby="rd-tab-queue"${_rdQ.tab==='clients'?' hidden':''}>
+    <div class="rd-sheet-head"><div class="rd-filters">${filters}</div></div>
+    <div class="rq-wrap"><table class="rq-t rq-grp" id="rd-queue"><thead><tr><th>Work</th><th>Owner</th><th>Reply by</th><th>Deliver by</th><th>Status</th></tr></thead><tbody>${qBody}</tbody></table></div>
+    ${more}
+    <p class="rd-hint">Grouped by client, most urgent first; a group closes from its name. Reply and delivery dates count business days, Monday to Friday, less WA public holidays, from the day the request came in. The reply clock stops at the first reply or action; delivery stops when the work is done or sent for approval.</p>
   </section>`;
   // Clients
   const regCol=typeof _regClientSummary==='function'&&boards.some(b=>_regClientSummary(b.clientId));
   const cRow=b=>{
-    const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null,fee=_rsFeeFor(r,ym);
+    const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null;
     const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
       return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'&&u.u.period==='quarter'?'':' in '+month}"><span>${escHtml(u.cat.short)}${u.u.unit==='hours'&&u.u.label?' '+escHtml(u.u.label):''}</span>${_rsSq(u.u)||'<i class="rd-m-none"></i>'}<b>${u.u.unit==='hours'?_rsHrs(u.used)+'/'+_rsHrs(u.allowance)+'h':u.used+'/'+u.allowance}</b></span>`;}).join('');
     const reg=regCol?_regClientSummary(b.clientId):'';
     return`<tr data-rd-client="${b.clientId}">
-      <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),34)}<b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
+      <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),26)}<b>${escHtml(cName(b.clientId))}</b></span><small>${escHtml([(b.retainer.bundle||bn)?(b.retainer.bundle||bn)+' bundle':_retainerBundle(keys),lead?'Lead '+lead.name:''].filter(Boolean).join('. '))}</small></button></td>
       <td class="rd-c-lv">${_rdLevelHtml(lv)}</td>
       <td class="rd-c-m"><div class="rd-ms">${meters||'<span class="rq-na">No services</span>'}</div></td>
       ${regCol?`<td class="rd-c-reg">${reg||'<span class="rq-na">None yet</span>'}</td>`:''}
       <td class="rd-c-act"><button class="btn btn-ghost btn-sm" data-rd-reg="${b.clientId}" onclick="openRetainedClient('${b.clientId}')" aria-label="Open ${escHtml(cName(b.clientId))}">Open</button></td>
     </tr>`;
   };
-  const clients=`<section class="rd-sheet" aria-labelledby="rd-c-h">
-    <div class="rd-sheet-head"><h2 class="rd-h" id="rd-c-h">Clients <span class="rd-n">${boards.length}</span></h2></div>
-    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Support tier</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${boards.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(cRow).join('')}</tbody></table></div>
+  const maxRatio=b=>Math.max(0,...usage.filter(u=>u.board.id===b.id).map(u=>u.ratio||0));
+  const cq=String(_rdQ.cq||'').trim().toLowerCase();
+  let cBoards=boards.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  if(_rdQ.csort==='used')cBoards.sort((a,b)=>maxRatio(b)-maxRatio(a));
+  else if(_rdQ.csort==='tier')cBoards.sort((a,b)=>((_rsLevel(b.retainer.priority)||{rank:1}).rank-(_rsLevel(a.retainer.priority)||{rank:1}).rank));
+  if(cq)cBoards=cBoards.filter(b=>cName(b.clientId).toLowerCase().includes(cq));
+  const clients=`<section class="rd-sheet rd-tabpane" id="rd-pane-clients" aria-labelledby="rd-tab-clients"${_rdQ.tab==='clients'?'':' hidden'}>
+    <div class="rd-sheet-head"><div class="rd-filters">
+      <label class="rd-f"><span>Search</span><input type="search" class="form-input" id="rd-csearch" value="${escHtml(_rdQ.cq||'')}" placeholder="Client name" oninput="_rdClientSearch(this.value)"></label>
+      <label class="rd-f"><span>Order</span><select class="form-input" id="rd-csort" onchange="_rdSetQ('csort',this.value)">${[['added','Order added'],['used','Most allowance used'],['tier','Support tier']].map(([k,l])=>`<option value="${k}"${(_rdQ.csort||'added')===k?' selected':''}>${l}</option>`).join('')}</select></label>
+    </div></div>
+    <div class="rq-wrap"><table class="rd-ct" id="rd-clients"><thead><tr><th>Client</th><th>Support tier</th><th>${month} allowances</th>${regCol?'<th>Registers</th>':''}<th></th></tr></thead><tbody>${cBoards.map(cRow).join('')||`<tr class="rq-none"><td colspan="5">No client matches "${escHtml(_rdQ.cq||'')}".</td></tr>`}</tbody></table></div>
   </section>`;
-  const sum=`<p class="rd-sum"><b>${escHtml(_rsMonthYear(ym))}.</b> ${boards.length} retained client${boards.length===1?'':'s'}, ${all.length} open item${all.length===1?'':'s'} in the queue${lateN?`, <span class="rd-late">${lateN} late</span>`:''}.</p>`;
-  return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}${queue}${clients}</div>`;
+  const tab=(k,l,n)=>`<button type="button" role="tab" class="rd-tab${(_rdQ.tab||'queue')===k?' on':''}" id="rd-tab-${k}" aria-selected="${(_rdQ.tab||'queue')===k}" aria-controls="rd-pane-${k}" onclick="_rdSetQ('tab','${k}')">${l} <span class="rd-n">${n}</span></button>`;
+  const tabs=`<div class="rd-tabs" role="tablist" aria-label="Retained Services">${tab('queue','Queue',rows.length!==all.length?rows.length+' of '+all.length:all.length)}${tab('clients','Clients',boards.length)}</div>`;
+  return`<div class="rd">${_rdMastHtml(boards,all,lateN,usage,newBtn)}${attHtml}<div class="rd-tabbox">${tabs}${queue}${clients}</div></div>`;
 }
 
 // ── Month-end report (PDF): the month in review for the client, from the same figures the portal shows ──
@@ -8827,9 +8962,11 @@ function _regAttention(boards){
   const out=[];
   boards.forEach(b=>{
     const n=_regCounts(b.clientId),cn=escHtml(((DB.clients||[]).find(c=>c.id===b.clientId)||{}).name||'Client');
-    if(n.dNeed)out.push({tone:n.dNeedOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+    if(n.dNeed)out.push({tone:n.dNeedOver?'bad':'warn',id:'rd-att-regd-'+b.clientId,clientId:b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+      short:`${n.dNeed} document${n.dNeed===1?' is':'s are'} due for review with no task yet${n.dNeedOver?` (${n.dNeedOver} overdue)`:''}`,
       text:`${cn}: ${n.dNeed} document${n.dNeed===1?' is':'s are'} due for review with no task yet${n.dNeedOver?` (${n.dNeedOver} overdue)`:''}.`});
-    if(n.tNeed)out.push({tone:n.tNeedExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+    if(n.tNeed)out.push({tone:n.tNeedExp?'bad':'warn',id:'rd-att-regt-'+b.clientId,clientId:b.clientId,act:`openRetainedClient('${b.clientId}')`,btn:'Open',
+      short:`${n.tNeed} ${n.tNeed===1?'person has':'people have'} training expired or expiring with no renewal task yet${n.tNeedExp?` (${n.tNeedExp} with expired training)`:''}`,
       text:`${cn}: ${n.tNeed} ${n.tNeed===1?'person has':'people have'} training expired or expiring with no renewal task yet${n.tNeedExp?` (${n.tNeedExp} with expired training)`:''}.`});
   });
   return out;
@@ -9344,7 +9481,7 @@ function regAddRenewalTasks(clientId,ids){
   try{requireInternalUser(currentUser);}catch(e){return 0;}
   const tg=_regTrnTarget(clientId);if(!tg)return 0;
   const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
-  let n=0,order=_wsNextOrder(tg.service.groupId);
+  let n=0,order=_wsNextOrder(tg.service.groupId);const _n0=(DB.tasks||[]).length;
   ids.forEach(id=>{
     const p=(DB.registerPeople||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!p||_regPersonInHand(p))return;
     const due=_regPersonDue(p,today);if(!due.length)return;
@@ -9358,7 +9495,7 @@ function regAddRenewalTasks(clientId,ids){
     n++;
   });
   if(n){
-    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} training renewal task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
+    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} training renewal task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`,{kind:'tasks',boardId:tg.board.id,clientId,taskIds:DB.tasks.slice(_n0).map(t=>t.id)});
     saveDB(DB);
   }
   return n;
@@ -9395,7 +9532,7 @@ function regAddReviewTasks(clientId,ids){
   try{requireInternalUser(currentUser);}catch(e){return 0;}
   const tg=_regImsTarget(clientId);if(!tg)return 0;
   const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
-  let n=0,order=_wsNextOrder(tg.service.groupId);
+  let n=0,order=_wsNextOrder(tg.service.groupId);const _n0=(DB.tasks||[]).length;
   ids.forEach(id=>{
     const d=(DB.registerDocs||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!d||_regDocInHand(d))return;
     // Only a review that is due (overdue, or within 90 days) becomes a task.
@@ -9409,7 +9546,7 @@ function regAddReviewTasks(clientId,ids){
     n++;
   });
   if(n){
-    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} document revision task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
+    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} document revision task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`,{kind:'tasks',boardId:tg.board.id,clientId,taskIds:DB.tasks.slice(_n0).map(t=>t.id)});
     saveDB(DB);
   }
   return n;
@@ -9517,7 +9654,7 @@ function _wrServiceLabel(r){
 function _wrNotifyNewRequest(clientId,msg){
   const rb=(DB.boards||[]).find(b=>b.clientId===clientId&&!b.archived&&_isRetainedBoard(b));
   const to=rb?allStaff().filter(u=>u.role!=='client'&&u.active!==false&&(u.role==='admin'||u.id===rb.retainer.leadId)):[];
-  if(to.length)to.forEach(u=>notify(u.id,null,'work_request',msg));else _notifyAllStaff('work_request',msg);
+  if(to.length)to.forEach(u=>notify(u.id,null,'work_request',msg,{kind:'client',clientId}));else allStaff().filter(u=>u.role!=='client'&&u.active!==false).forEach(u=>notify(u.id,null,'work_request',msg,{kind:'client',clientId}));
 }
 // Add to Workboard, pre-filled from the client's Service choice (plan R3).
 function _wrPrefill(r,boards){
@@ -11450,6 +11587,7 @@ function onDrop(e,newStatus){
   task.status=newStatus;
   task.updatedAt=new Date().toISOString();
   _applyStatusProgress(task,newStatus,wasStatus);
+  _taskAudit(task.id,'status',wasStatus,newStatus);
   saveDB(DB);
   renderView('board');
 }
@@ -20209,14 +20347,14 @@ const NOTIF_TYPES={
 };
 
 // Central notification creator — never self-notifies.
-function notify(recipientId, taskId, type, message){
+function notify(recipientId, taskId, type, message, link){
   if(!recipientId||recipientId===currentUser?.id)return;
   // Not for someone who has left, nor about a task they cannot open (audit M12, 2026-10-17).
   const _who=(DB.users||DB.staff||[]).find(u=>u.id===recipientId);
   if(_who&&_who.active===false)return;
   if(_who&&taskId){const _t=(DB.tasks||[]).find(t=>t.id===taskId);if(_t&&!canViewTask(_who,_t))return;}
   if(!DB.notifications)DB.notifications=[];
-  DB.notifications.push({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()});
+  DB.notifications.push(Object.assign({id:'n'+uid(),recipientId,taskId,type,message,read:false,createdAt:new Date().toISOString()},link?{link}:{}));
   updateNotifBadge();
   // Email for high-value types (fire-and-forget, never blocks UI)
   const _emailTypes=['mention','task_assigned','owner_changed','currently_with'];
@@ -20303,7 +20441,7 @@ function renderNotifications(){
     const goToTask=(n.type==='mention'||n.type==='comment')
       ?`notifGoToTask('${n.id}','${task?.id}','comments')`
       :`notifGoToTask('${n.id}','${task?.id}')`;
-    return{at:new Date(n.createdAt||n.timestamp).getTime()||0,html:`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task?'pointer':'default'}" onclick="${task?goToTask:''}">
+    return{at:new Date(n.createdAt||n.timestamp).getTime()||0,html:`<div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f4f8;background:${bg};align-items:flex-start;transition:background 0.1s;cursor:${task||_notifLink(n)?'pointer':'default'}" onclick="${task?goToTask:_notifLink(n)?`notifGoLink('${n.id}')`:''}">
       <div style="width:32px;height:32px;border-radius:8px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:${meta.color}">${meta.icon}</div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
@@ -20388,6 +20526,7 @@ function notifGoToTask(notifId,taskId,tab){
   wsMtSearch='';wsMtPersonFilter='';
   if(task.archived)wsShowArchived=true;
   if(task.parentTaskId)wsExpanded.add(task.parentTaskId);
+  if(_wsMonthOn()&&!_wsMonthFilter([task.parentTaskId?(DB.tasks.find(x=>x.id===task.parentTaskId)||task):task]).length)_wsMonthShowAll();
   renderView('workspace');
   setTimeout(()=>{
     const row=document.querySelector(`tr[data-tid="${taskId}"]`);
@@ -20397,6 +20536,35 @@ function notifGoToTask(notifId,taskId,tab){
     setTimeout(()=>row.classList.remove('ws-row-jump'),1800);
   },50);
   openTaskPanel(taskId,tab);
+}
+// Where a notification with no single task leads: its own link, else (older ones) the client its text names.
+function _notifLink(n){
+  if(!n)return null;
+  if(n.link&&(n.link.kind==='tasks'||n.link.kind==='client'))return n.link;
+  if(n.taskId)return null;
+  const m=/added for (.+)$/.exec(n.message||'')||(n.type==='work_request'&&/^New work request from (.+?): "/.exec(n.message||''));
+  const c=m&&(DB.clients||[]).find(x=>x.name===m[1].trim());
+  return c?{kind:'client',clientId:c.id}:null;
+}
+function notifGoLink(notifId){
+  const n=(DB.notifications||[]).find(x=>x.id===notifId),l=_notifLink(n);if(!l)return;
+  notifMarkRead(notifId);
+  if(l.kind==='tasks'){
+    const ids=(l.taskIds||[]).filter(id=>(DB.tasks||[]).some(t=>t.id===id&&!t.archived));
+    const b=(DB.workboards||[]).find(w=>w.id===l.boardId&&!w.archived);
+    if(b&&ids.length){
+      if(ids.length===1)return notifGoToTask(notifId,ids[0]);
+      openWorkboard(b.id);if(currentWorkboard?.id!==b.id)return;
+      activeFilters=freshFilters();saveFilters();wsMtSearch='';wsMtPersonFilter='';
+      if(typeof _wsMonthShowAll==='function')_wsMonthShowAll();
+      renderView('workspace');
+      setTimeout(()=>{let first=null;ids.forEach(id=>{const row=document.querySelector(`tr[data-tid="${id}"]`);if(!row)return;first=first||row;row.classList.add('ws-row-jump');setTimeout(()=>row.classList.remove('ws-row-jump'),2600);});if(first)first.scrollIntoView({behavior:'smooth',block:'center'});},60);
+      return;
+    }
+  }
+  const cid=l.clientId;
+  if(cid&&(DB.workboards||[]).some(w=>w.clientId===cid&&!w.archived&&_isRetainedBoard(w)))openRetainedClient(cid);
+  else navigate('clients');
 }
 function notifMarkAllRead(){
   DB.notifications.filter(n=>n.recipientId===currentUser.id).forEach(n=>n.read=true);
@@ -22606,6 +22774,7 @@ function wsBulkSetStatus(status){
     t.status=status;
     t.updatedAt=new Date().toISOString();
     _applyStatusProgress(t,status,_was);
+    _taskAudit(t.id,'status',_was,status);
   });
   saveDB(DB);renderView('workspace');
 }
@@ -22621,6 +22790,7 @@ function wsBulkMoveToGroup(groupId){
   [...wsSelected].forEach(id=>{
     const t=DB.tasks.find(x=>x.id===id);
     if(!t||t.groupId===groupId)return;
+    _taskAudit(t.id,'groupId',t.groupId,groupId);
     t.groupId=groupId;t.updatedAt=now;n++;
     DB.tasks.filter(s=>s.parentTaskId===t.id).forEach(s=>{s.groupId=groupId;s.updatedAt=now;});
   });
@@ -22661,7 +22831,7 @@ function wsBulkAssignTo(staffId){
   if(!staffId)return;
   [...wsSelected].forEach(id=>{
     const t=DB.tasks.find(x=>x.id===id);
-    if(t){t.ownerId=staffId;t.updatedAt=new Date().toISOString();}
+    if(t){_taskAudit(t.id,'ownerId',t.ownerId,staffId);t.ownerId=staffId;t.updatedAt=new Date().toISOString();}
   });
   saveDB(DB);renderView('workspace');
 }
@@ -23709,6 +23879,7 @@ function renderWorkspace(ctx){
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h12" stroke="currentColor" stroke-width="1.3"/><path d="M5 3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3"/></svg>
       ${wsShowArchived?'Hide Archived':'Archived'}
     </button>
+    ${_wsMonthSelectHtml()}
     <div style="position:relative">
       <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('ws-col-menu')" style="gap:4px">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="1" x2="5" y2="13" stroke="currentColor" stroke-width="1.4"/><line x1="9" y1="1" x2="9" y2="13" stroke="currentColor" stroke-width="1.4"/></svg>
@@ -24577,6 +24748,7 @@ function renderTpDetails(task){
     ${tpSection('comments','Comments',renderTpComments(task.id),{count:cmtCount||''})}
     ${tpSection('actionreq','Client Action',renderTpActionRequests(task.id),{count:(DB.actionRequests||[]).filter(r=>r.taskId===task.id&&r.status==='open').length||''})}
     ${tpSection('client','Client Thread',renderClientCommsThread(task.id,false),{count:clientMsgCount||''})}
+    ${tpSection('audit','Audit trail',`<div id="tp-trail-box">${_tpTrailHtml(task,_tpTrailAll)}</div>`,{count:_tpTrail(task).length||''})}
     <div style="margin-top:6px;padding-top:12px;border-top:1px solid #f0f4f8;font-size:10px;color:#a0b4c7">
       Created ${task.createdAt?new Date(task.createdAt).toLocaleDateString():'&mdash;'} &middot;
       Updated ${task.updatedAt?new Date(task.updatedAt).toLocaleDateString():'&mdash;'}
@@ -24686,24 +24858,45 @@ function renderTpComments(taskId){
   </div>`;
 }
 
-function renderTpActivity(task){
-  const comments=(DB.comments||[]).filter(c=>c.taskId===task.id).sort((a,b)=>(a.timestamp||a.createdAt||'').localeCompare(b.timestamp||b.createdAt||''));
-  const items=[];
-  if(task.createdAt) items.push({type:'created',ts:task.createdAt,label:'Task created'});
-  comments.forEach(c=>{
-    const author=DB.staff.find(s=>s.id===c.authorId)||{name:'Unknown',initials:'?',color:'#8da2b2'};
-    items.push({type:'comment',ts:c.timestamp||c.createdAt||'',label:escHtml(author.name)+' commented: "'+escHtml(c.body.slice(0,60))+(c.body.length>60?'...':'')+'"'});
+// Everything about one task, newest first: changes recorded in the audit log, comments, client messages, hours
+// logged, files, client actions, created and completed. Staff only (the task panel is).
+let _tpTrailAll=false;
+function _tpTrail(task){
+  const out=[],who=id=>{if(!id)return'Someone';const u=getStaff(id);if(u)return u.name;const cu=(DB.users||[]).find(x=>x.id===id);return cu&&cu.role==='client'?'Client':(cu?cu.name:'Someone');};
+  const ids=new Set([task.id,...(DB.tasks||[]).filter(t=>t.parentTaskId===task.id).map(t=>t.id)]);
+  const sub=id=>id!==task.id?(()=>{const s=(DB.tasks||[]).find(t=>t.id===id);return s?' on subitem "'+(s.name||s.title||'')+'"':'';})():'';
+  if(task.createdAt)out.push({at:task.createdAt,who:task.createdBy?who(task.createdBy):'',text:'Created the task'});
+  const word={created:'Created the task',deleted:'Deleted',reordered:null,moved_to_new_group:'Moved to a new group',manual_move:'Moved the dates on the Gantt',dates_changed:'Changed the dates',dates_locked:'Locked the dates',
+    auto_shifted:'Dates shifted by a dependency',assignees_changed:'Changed who is assigned',currentlyWith_changed:'Changed who it is with',client_action_requested:'Asked the client for an action',
+    client_action_completed:'The client completed an action',client_portal_visibility_changed:'Changed what the client sees'};
+  (DB.auditLog||[]).forEach(e=>{
+    if(e.entityType!=='Task'||!ids.has(e.entityId))return;
+    let b={},a={};try{b=JSON.parse(e.beforeValueJson||'{}')||{};a=JSON.parse(e.afterValueJson||'{}')||{};}catch(x){}
+    let text;
+    if(String(e.action).startsWith('updated:')){const f=e.action.slice(8),lab=a.label||b.label||_TASK_AUDIT_FIELDS[f]||f;
+      text=f==='description'?'Edited the description':`${lab}: ${b.displayValue!=null?b.displayValue:'none'} to ${a.displayValue!=null?a.displayValue:'none'}`;}
+    else if(e.action==='currentlyWith_changed')text=`With: ${_taskAuditShow('currentlyWith',b.currentlyWith)} to ${_taskAuditShow('currentlyWith',a.currentlyWith)}`;
+    else{text=word[e.action];if(text===null)return;text=text||String(e.action).replace(/_/g,' ');}
+    out.push({at:e.createdAt,who:who(e.actorId),text:text+sub(e.entityId)});
   });
-  if(task.completedAt) items.push({type:'completed',ts:task.completedAt,label:'Task completed'});
-  items.sort((a,b)=>a.ts.localeCompare(b.ts));
-  if(!items.length) return'<div style="text-align:center;padding:24px 0;color:#8da2b2;font-size:13px">No activity yet</div>';
-  return`<div>${items.map(item=>`<div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start">
-    <div style="width:8px;height:8px;border-radius:50%;background:${item.type==='comment'?'#97bcbd':item.type==='completed'?'#22c55e':'#e2eaf2'};flex-shrink:0;margin-top:5px;border:1px solid rgba(0,0,0,0.1)"></div>
-    <div style="flex:1">
-      <div style="font-size:12px;color:#1a2940">${item.label}</div>
-      <div style="font-size:10px;color:#a0b4c7;margin-top:2px">${new Date(item.ts).toLocaleString()}</div>
-    </div>
-  </div>`).join('')}</div>`;
+  (DB.tasks||[]).forEach(x=>{if(!ids.has(x.id))return;(x.auditTrail||[]).forEach(e=>out.push({at:e.at,who:who(e.by),text:(e.field==='description'?'Edited the description':`${e.label}: ${e.from} to ${e.to}`)+sub(x.id)}));});
+  (DB.comments||[]).forEach(c=>{if(ids.has(c.taskId))out.push({at:c.timestamp||c.createdAt,who:who(c.authorId),text:'Commented: "'+String(c.body||'').slice(0,80)+(String(c.body||'').length>80?'...':'')+'"'+sub(c.taskId)});});
+  (DB.clientComments||[]).forEach(c=>{if(ids.has(c.taskId))out.push({at:c.createdAt||c.timestamp,who:c.authorRole==='client'?'Client':(c.authorName||who(c.authorId)),text:(c.authorRole==='client'?'Wrote in the client thread':'Replied to the client')+': "'+String(c.body||'').slice(0,80)+'"'});});
+  (DB.timeEntries||[]).forEach(e=>{if(ids.has(e.taskId)&&Number(e.hours)>0)out.push({at:e.createdAt||e.date,who:who(e.staffId),text:`Logged ${_rsHrs(e.hours)} h for ${String(e.date||'').slice(0,10).split('-').reverse().join('/')}${e.status==='rejected'?' (rejected)':''}`+sub(e.taskId)});});
+  (DB.taskFiles||[]).forEach(f=>{if(ids.has(f.taskId))out.push({at:f.uploadedAt||f.createdAt,who:who(f.uploadedBy||f.ownerId),text:'Added the file '+(f.name||'')});});
+  (DB.actionRequests||[]).forEach(r=>{if(ids.has(r.taskId)){out.push({at:r.createdAt,who:who(r.createdBy),text:'Asked the client: '+(r.title||'an action')});if(r.completedAt)out.push({at:r.completedAt,who:'Client',text:'Completed: '+(r.title||'the action')});}});
+  if(task.completedAt)out.push({at:task.completedAt,who:'',text:'Completed'});
+  return out.filter(x=>x.at).sort((x,y)=>String(y.at).localeCompare(String(x.at)));
+}
+function _tpTrailHtml(task,all){
+  const rows=_tpTrail(task),show=all?rows:rows.slice(0,10);
+  if(!rows.length)return'<p class="tp-trail-none">Nothing recorded yet.</p>';
+  const when=t=>{const d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'});};
+  return`<ol class="tp-trail" id="tp-trail">${show.map(r=>`<li><span class="tp-trail-t">${escHtml(r.text)}</span><span class="tp-trail-m">${r.who?escHtml(r.who)+', ':''}${escHtml(when(r.at))}</span></li>`).join('')}</ol>
+    ${rows.length>10?`<button type="button" class="tp-trail-more" id="tp-trail-more" onclick="_tpTrailAll=!_tpTrailAll;const s=document.getElementById('tp-trail-box');if(s&&_tpCurrentTask)s.innerHTML=_tpTrailHtml(_tpCurrentTask,_tpTrailAll)">${all?'Show the last 10':'Show all '+rows.length}</button>`:''}`;
+}
+function renderTpActivity(task){
+  return`<div class="tp-trail-tab">${_tpTrailHtml(task,true)}</div>`;
 }
 
 function renderTpDependencies(task){
@@ -26034,6 +26227,7 @@ function tpSaveField(field,value){
   // Captured before the write. prevStatus below is read after it and is therefore the new
   // value; the approval check at the foot of this function relies on that, so leave it be.
   const _tpWasStatus=field==='status'?_tpCurrentTask.status:null;
+  const _auOld=_tpCurrentTask[field]===undefined?null:JSON.parse(JSON.stringify(_tpCurrentTask[field])),_auOldStatus=_tpCurrentTask.status;
   _tpCurrentTask[field]=value;
   _tpCurrentTask.updatedAt=new Date().toISOString();
   const prevStatus=field==='status'?(_tpCurrentTask.status):null;
@@ -26067,6 +26261,8 @@ function tpSaveField(field,value){
   if(field==='description'){
     _notifyMentions(value,_tpCurrentTask.id,taskTitle(_tpCurrentTask),new Set([currentUser?.id,_tpCurrentTask.ownerId]));
   }
+  _taskAudit(_tpCurrentTask.id,field,_auOld,value);
+  if(field!=='status'&&_tpCurrentTask.status!==_auOldStatus)_taskAudit(_tpCurrentTask.id,'status',_auOldStatus,_tpCurrentTask.status);
   const idx=DB.tasks.findIndex(t=>t.id===_tpCurrentTask.id);
   if(idx>=0) DB.tasks[idx]=_tpCurrentTask;
   saveDB(DB);
@@ -27393,7 +27589,7 @@ function wsCellSave(taskId,field,value,keepOpen){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!canEditTask(currentUser,task||{}))return; // AC: block clients and archived tasks
   if(task){
-    const oldVal=task[field];
+    const oldVal=task[field],_auOldStatus=task.status;
     task[field]=value;
     task.updatedAt=new Date().toISOString();
     // The Main Table status dropdown routes here. It synced progress to status but never
@@ -27434,6 +27630,8 @@ function wsCellSave(taskId,field,value,keepOpen){
     // Keep name/title in sync
     if(field==='name') task.title=value;
     if(field==='title') task.name=value;
+    if(field!=='currentlyWith')_taskAudit(taskId,field,oldVal,value);
+    if(field!=='status'&&task.status!==_auOldStatus)_taskAudit(taskId,'status',_auOldStatus,task.status);
     // Rollup: if this task is a subitem, sync parent's stored percentComplete
     if(task.parentTaskId&&(field==='percentComplete'||field==='status')){
       const _parent=DB.tasks.find(t=>t.id===task.parentTaskId);

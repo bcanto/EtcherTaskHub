@@ -34,6 +34,12 @@ Tick each one on the live site. Use a test client (or Daltech), not a real clien
 - [ ] Request Work tab: only ad hoc and other boards, with a pointer to the Retained Services tab.
 - [ ] Nowhere in the portal: who logged hours, fees, the hours log, registers or renewal tasks.
 
+## Added the evening of 22 October
+- [ ] On a retained board, the **Month** list next to Columns says "This month (N earlier hidden)": tasks finished before this month are hidden, not archived. Pick an earlier month to see what was finished then (the group headers show that month's figures), or All months.
+- [ ] Click a "document revision task(s) added" notification: the board opens on those tasks, highlighted. An older one opens the client page. A new client request notification opens the client page.
+- [ ] Open a task, change its status, priority and progress: the **Audit trail** at the bottom of Details lists each change with who and when (the Activity tab shows the same). Moving the progress slider twice in a row is one entry.
+- [ ] Retained Services dashboard: **Queue** and **Clients** tabs. The queue is grouped by client (close a group from its name), shows 25 rows then Show more. Clients has a search and an order (order added, most allowance used, support tier). Needs attention is one line per client.
+
 ## Security switches (when ready; steps in docs/security/client-portal-security.md)
 - [ ] Supabase: Confirm email on, leaked password protection on, minimum password length 12.
 - [ ] Supabase: real SMTP, and the site in the redirect URLs. Then Vercel `CLIENT_EMAIL_LINK=1`, and test with your own second email.
