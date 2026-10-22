@@ -7,7 +7,7 @@ module.exports = [
   { id: 'rt2-any-group', suite: 'retained2-test', file: 'api/_portal.js', note: 'a request may name another client\'s group',
     find: "if (g && own(arr(blob.boards).find(x => x.id === (g.boardId || g.workboardId)))) return s;", replace: "if (g) return s;" },
   { id: 'rt2-notify-all', suite: 'retained2-test', file: 'api/_portal.js', note: 'a retainer client\'s request notifies everyone',
-    find: "if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else", replace: "if (false) to.forEach(id => rec.notify(id, null, 'work_request', rmsg)); else" },
+    find: "if (to.size) to.forEach(id => rec.notify(id, null, 'work_request', rmsg, rlink)); else", replace: "if (false) to.forEach(id => rec.notify(id, null, 'work_request', rmsg, rlink)); else" },
   { id: 'rt2-no-names', suite: 'retained2-test', file: 'api/_portal.js', note: 'client tasks carry no staff names',
     find: '  s.ownerName = staffName(blob, t.ownerId);\n', replace: '' },
   { id: 'rt2-all-boards', suite: 'retained2-test', file: 'index.html', note: 'Add to Workboard lists every client\'s boards',

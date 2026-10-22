@@ -126,7 +126,9 @@ H.run('retained5-test', 3265, async (t) => {
     return {
       title: document.getElementById('view-title').textContent, n: rows.length, first: rows[0] && rows[0].dataset.rq,
       lateRow: !!(row('rq-std-old') && row('rq-std-old').classList.contains('late')), lateTxt: txt('rq-std-old'), top: txt('rq-top'), high: txt('rq-high'),
-      bars: row('rq-top') ? row('rq-top').querySelectorAll('.rq-lv rect.on').length : 0, bars1: row('rq-std-old') ? row('rq-std-old').querySelectorAll('.rq-lv rect.on').length : 0,
+      // The tier is drawn on the client's group row (the queue is grouped by client, 2026-10-22).
+      bars: (g => g ? g.querySelectorAll('.rq-lv rect.on').length : 0)(row('rq-top') && document.querySelector(`#rd-queue tr[data-rq-group="${row('rq-top').dataset.rqClient}"]`)),
+      bars1: (g => g ? g.querySelectorAll('.rq-lv rect.on').length : 0)(row('rq-std-old') && document.querySelector(`#rd-queue tr[data-rq-group="${row('rq-std-old').dataset.rqClient}"]`)),
       side: !!document.getElementById('nav-retained-dash'), badge: (document.querySelector('#nav-retained-dash .rd-nav-badge') || {}).textContent || '', lateN: _rqLateCount(),
       active: document.getElementById('nav-retained-dash').classList.contains('active'),
     };

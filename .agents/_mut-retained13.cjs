@@ -14,7 +14,7 @@ module.exports = [
   { id: 'rt13-urgent', suite: 'retained13-test', file: 'index.html', note: 'Most urgent first does nothing',
     find: "  if(v.order==='urgent'){const u=", replace: "  if(false){const u=" },
   { id: 'rt13-dash', suite: 'retained13-test', file: 'index.html', note: 'the dashboard sorts clients by name again',
-    find: "<tbody>${boards.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(cRow).join('')}</tbody>", replace: "<tbody>${boards.slice().sort((a,b)=>cName(a.clientId).localeCompare(cName(b.clientId))).map(cRow).join('')}</tbody>" },
+    find: "  let cBoards=boards.slice().sort((a,b)=>(a.order||0)-(b.order||0));", replace: "  let cBoards=boards.slice().sort((a,b)=>cName(a.clientId).localeCompare(cName(b.clientId)));" },
   { id: 'rt13-ren', suite: 'retained13-test', file: 'index.html', note: 'renewals in hand carry no mark',
     find: "      const ren=rn&&rn.quals.has(name)&&(s.k==='exp'||due(s.k));", replace: "      const ren=false;" },
   { id: 'rt13-ren-list', suite: 'retained13-test', file: 'index.html', note: 'the Expiring list says nothing about renewals',

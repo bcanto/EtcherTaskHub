@@ -104,7 +104,7 @@ H.run('retained12-test', 3274, async (t) => {
     currentUser = keepUser;
     return out;
   }, made.id);
-  t.ok(names.clientsHead.includes('Support tier') && names.queueHead[0] === 'Tier' && /Highest Priority/.test(names.tierBadge) && names.filter, `the dashboard says Support tier and shows the tier's name (got ${JSON.stringify(names).slice(0, 300)})`);
+  t.ok(names.clientsHead.includes('Support tier') && names.queueHead[0] === 'Work' && /Highest Priority/.test(names.tierBadge) && names.filter, `the dashboard says Support tier and shows the tier's name (got ${JSON.stringify(names).slice(0, 300)})`);
   t.ok(/Support tier/.test(names.plan) && !/Service level/.test(names.plan), 'the plan says Support tier');
   t.ok(/Support tier ?Highest Priority/.test(names.portal), `the client's portal says Support tier: Highest Priority (got "${names.portal.slice(0, 200)}")`);
 });
