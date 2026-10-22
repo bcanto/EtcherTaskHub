@@ -69,7 +69,7 @@ H.run('retained-test', 3177, async (t) => {
   await ev(id => openWorkboard(id), made.id); await t.sleep(1200);
   const meter = () => ev(() => [...document.querySelectorAll('.ws-grp-meter')].map(m => m.textContent.replace(/\s+/g, ' ').trim()));
   const m0 = await meter();
-  t.ok(m0.length === 3 && /^0 of 12 document reviews used in /.test(m0[0]), 'each service group header shows its meter, starting at 0');
+  t.ok(m0.length === 3 && /^0 of 12 document revisions used in /.test(m0[0]), 'each service group header shows its meter, starting at 0');
   await ev(id => {
     const b = DB.workboards.find(w => w.id === id), g = b.retainer.services[0].groupId, now = new Date().toISOString(), lastMonth = new Date(Date.now() - 40 * 864e5).toISOString();
     const T = (o) => Object.assign({ id: 't' + uid(), name: 'x', title: 'x', boardId: id, workboardId: id, groupId: g, status: 'todo', priority: 'med', archived: false, createdAt: now, updatedAt: now }, o);

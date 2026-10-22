@@ -45,7 +45,7 @@ H.run('retained8-test', 3269, async (t) => {
     const row = document.querySelector(`tr.ws-grp-hdr[data-gid="${g}"]`);
     return row ? { sq: row.querySelectorAll('.ws-grp-meter .rs-sq i').length, on: row.querySelectorAll('.ws-grp-meter .rs-sq i.on').length, pct: !!row.querySelector('.ws-grp-pct'), bar: !!row.querySelector('.ws-grp-bar'), text: row.querySelector('.ws-grp-meter').textContent, back: (document.getElementById('reg-back') || {}).textContent, stripBack: [...document.querySelectorAll('.ws-tabstrip button')].some(b => /Boards|Retained Services/.test(b.textContent)) } : null;
   }, fx.ims);
-  t.ok(hdr && hdr.sq === 20 && hdr.on === 4 && /4 of 20 document reviews used in/.test(hdr.text), `the service group shows its allowance as squares and words (got ${JSON.stringify(hdr)})`);
+  t.ok(hdr && hdr.sq === 20 && hdr.on === 4 && /4 of 20 document revisions used in/.test(hdr.text), `the service group shows its allowance as squares and words (got ${JSON.stringify(hdr)})`);
   t.ok(hdr && !hdr.pct && !hdr.bar, 'and no generic progress bar or percentage');
   t.ok(hdr && /Retained Services/.test(hdr.back || '') && !hdr.stripBack, 'a retained board leads back through its header (Retained Services), not a second back button in the view tabs');
   const shotBoard = await ui.shot('retained8-board');
@@ -95,7 +95,7 @@ H.run('retained8-test', 3269, async (t) => {
   t.ok(ov.logo && ov.cells.length === 4 && /open request/.test(ov.cells[1]) && /documents? to review/.test(ov.cells[2]) && /training expired or expiring/.test(ov.cells[3]), `the header has the client's logo and four figures (got ${JSON.stringify(ov.cells)})`);
   const dl = await ev(() => { _rdHome(); const m = document.querySelector('.rd-mast'); const out = { mast: !!m, cells: m ? m.querySelectorAll('.rc-cell').length : 0, logos: document.querySelectorAll('#rd-clients .rd-cl-id .rc-logo').length }; openRetainedClient('c2'); return out; });
   t.ok(dl.mast && dl.cells === 4 && dl.logos === 2, 'the dashboard has the same summary card, and every client row its logo');
-  t.ok(/3 documents are due for review with no task yet/.test(ov.sugg), `three documents (two overdue, one due within 30 days) are suggested as review tasks (got "${ov.sugg.trim().slice(0, 90)}")`);
+  t.ok(/3 documents are due for review with no revision task yet/.test(ov.sugg), `three documents (two overdue, one due within 30 days) are suggested as review tasks (got "${ov.sugg.trim().slice(0, 90)}")`);
   const shotOv = await ui.shot('retained8-client');
   t.eq(shotOv.phone, 0, 'the client\'s page fits a phone');
   // The header card clips what sticks out, so a too-wide tab row would hide tabs rather than scroll the page:
@@ -115,7 +115,7 @@ H.run('retained8-test', 3269, async (t) => {
     return { n: ts.length, again, groups: [...new Set(ts.map(x => x.groupId))], owner: [...new Set(ts.map(x => x.ownerId))], over: by('HR-POL-001'), soon: by('WHSE-PRO-001'), sugg: !!document.getElementById('rc-add-tasks') };
   }, fx);
   t.ok(add.n === 3 && add.groups.length === 1 && add.groups[0] === fx.ims && add.owner.length === 1 && add.owner[0] === fx.owner, 'one review task per due document, in IMS and Document Control, for its owner');
-  t.ok(add.over && add.over.endDate === fx.today && /Review HR-POL-001 Performance Management Policy/.test(add.over.name) && add.soon && add.soon.endDate === fx.day20, 'an overdue review is due today; one due soon keeps its review date');
+  t.ok(add.over && add.over.endDate === fx.today && /Revise HR-POL-001 Performance Management Policy/.test(add.over.name) && add.soon && add.soon.endDate === fx.day20, 'an overdue review is due today; one due soon keeps its review date');
   t.eq(add.again, 0, 'a document with a task gets no second one');
   t.ok(!add.sugg, 'with every due review in hand, the suggestion goes');
   const reg = await ev(() => {
@@ -134,7 +134,7 @@ H.run('retained8-test', 3269, async (t) => {
     return { before, after, cell, panel, inHand: _regDocInHand(d) };
   }, fx);
   t.ok(done.after === done.before + 1, 'a finished review counts as a document review');
-  t.ok(/Reviewed .*update the register/.test(done.cell) && /Review tasks*Reviewed/.test(done.panel) && done.inHand, 'the register says it was reviewed and the register needs updating');
+  t.ok(/Revised .*update the register/.test(done.cell) && /Revision tasks*Revised/.test(done.panel) && done.inHand, 'the register says it was reviewed and the register needs updating');
   const reissue = await ev(() => {
     const day = n => { const x = new Date(); x.setDate(x.getDate() + n); return toDateStr(x); };
     _regApply('c2', { kind: 'docs', rows: [{ name: 'HR-POL-001 - Performance Management Policy', code: 'HR-POL-001', title: 'Performance Management Policy', issueDate: day(0), reviewMonths: 12, nextReview: day(365), note: '' }] }, false, 'Daltech register v2.xlsx');
@@ -150,5 +150,5 @@ H.run('retained8-test', 3269, async (t) => {
   // ── Dashboard: the warning and the Registers column follow the tasks ──
   const dash = await ev(() => { _rdHome(); renderView('retained'); return { d2: !!document.getElementById('rd-att-regd-c2'), d1: (document.getElementById('rd-att-regd-c1') || {}).textContent || '', col2: (document.querySelector('#rd-clients tr[data-rd-client="c2"] .rd-c-reg') || {}).textContent || '' }; });
   t.ok(!dash.d2 && /1 document is due for review with no task yet \(1 overdue\)/.test(dash.d1), 'the dashboard flags only documents with no review task');
-  t.ok(/Documents: (up to date|reviews in hand)/.test(dash.col2), `the Clients sheet says Daltech's reviews are in hand (got "${dash.col2}")`);
+  t.ok(/Documents: (up to date|revisions in hand)/.test(dash.col2), `the Clients sheet says Daltech's reviews are in hand (got "${dash.col2}")`);
 });

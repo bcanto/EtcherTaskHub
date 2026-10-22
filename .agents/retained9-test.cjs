@@ -60,9 +60,9 @@ H.run('retained9-test', 3270, async (t) => {
     _ensureJsPdf(() => { const doc = _mrPdf(data, null), s = doc.output(); res({ regs: data.regs, text: [...s.matchAll(/\(((?:\\.|[^\\)])*)\)\s*Tj/g)].map(m => m[1]).join(' ') }); });
   }), fx);
   t.ok(rep.regs && rep.regs.reviewed.length === 1 && rep.regs.renewed === 1 && rep.regs.docs === 2 && rep.regs.people === 3, `the report counts this month's reviews and renewals (got ${JSON.stringify(rep.regs && { r: rep.regs.reviewed.length, n: rep.regs.renewed })})`);
-  t.ok(/Document control and training/.test(rep.text) && /1 document review completed in/.test(rep.text) && /QMS-POL-001 Quality Policy/.test(rep.text) && /1 training renewal completed in/.test(rep.text), 'the PDF has the section, with the reviewed document named');
+  t.ok(/Document control and training/.test(rep.text) && /1 document revision completed in/.test(rep.text) && /QMS-POL-001 Quality Policy/.test(rep.text) && /1 training renewal completed in/.test(rep.text), 'the PDF has the section, with the reviewed document named');
   const sect = (rep.text.split('Document control and training')[1] || '').split('From your retainer lead')[0];
-  t.ok(sect && /across 3 people/.test(sect) && !/EXAMPLE|SAMPLE|DEMO|Alex|Jordan|Casey/.test(sect.split('Document reviewed')[0]), 'the section counts people and names none (finished renewal tasks still show under Delivered, as the client\'s own work)');
+  t.ok(sect && /across 3 people/.test(sect) && !/EXAMPLE|SAMPLE|DEMO|Alex|Jordan|Casey/.test(sect.split('Document revised')[0]), 'the section counts people and names none (finished renewal tasks still show under Delivered, as the client\'s own work)');
   const shot = await ui.shot('retained9-client');
   t.eq(shot.phone, 0, 'the client\'s page with renewals fits a phone');
 });

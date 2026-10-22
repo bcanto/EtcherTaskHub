@@ -61,7 +61,7 @@ H.run('retained11-test', 3272, async (t) => {
 
   // ── Request Work from the portal, into the staff queue ──
   const sent = await cev(async g => {
-    cpNavigate('requests'); await new Promise(r => setTimeout(r, 400));
+    cpNavigate('retained'); await new Promise(r => setTimeout(r, 400));
     document.getElementById('cp-req-title').value = 'Update the lifting plan'; document.getElementById('cp-req-service').value = 'g:' + g; cpReqServiceHint();
     const hint = document.getElementById('cp-req-hint').textContent;
     cpSubmitRequest(); await new Promise(r => setTimeout(r, 400));

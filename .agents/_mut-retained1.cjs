@@ -11,7 +11,7 @@ module.exports = [
   { id: 'rt1-no-client', suite: 'retained-test', file: 'index.html', note: 'the new board is not linked to the client',
     find: "visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,", replace: "visibility:'all_internal',personalBoard:false,clientId:'',folderId:null," },
   { id: 'rt1-hidden-counts', suite: 'retained-test', file: 'index.html', note: 'hidden work counts toward the allowance',
-    find: "t.groupId===groupId&&(t.boardId||t.workboardId)===boardId&&!_cpTaskHidden(t)).forEach", replace: "t.groupId===groupId&&(t.boardId||t.workboardId)===boardId).forEach" },
+    find: "function _retainerUsed(boardId,groupId,ym){\n  ym=ym||_rsYm();\n  let n=0;\n  (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===groupId&&(t.boardId||t.workboardId)===boardId&&!_cpTaskHidden(t)).forEach", replace: "function _retainerUsed(boardId,groupId,ym){\n  ym=ym||_rsYm();\n  let n=0;\n  (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===groupId&&(t.boardId||t.workboardId)===boardId).forEach" },
   { id: 'rt1-any-month', suite: 'retained-test', file: 'index.html', note: 'subitems finished in any month count',
     find: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)&&_rsDoneYm(x)===ym).length;', replace: 'if(subs.length)n+=subs.filter(x=>_rsDone(x)).length;' },
   { id: 'rt1-staff-allowance', suite: 'retained-test', file: 'index.html', note: 'staff can change allowances',

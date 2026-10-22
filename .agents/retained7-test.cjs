@@ -191,7 +191,7 @@ H.run('retained7-test', 3267, async (t) => {
   });
   t.ok(/2 documents are due for review with no task yet \(1 overdue\)/.test(dash.d), `the dashboard flags documents due for review with no task (got "${dash.d}")`);
   t.ok(/(person has|people have) training expired or expiring with no renewal task yet/.test(dash.t) && /with expired training/.test(dash.t), `and people with expired or expiring training and no renewal task (got "${dash.t}")`);
-  t.ok(/Documents: 2 need a review task/.test(dash.col) && /Training: \d+ expired/.test(dash.col), 'the Clients sheet shows each register\'s state');
+  t.ok(/Documents: 2 need a revision task/.test(dash.col) && /Training: \d+ expired/.test(dash.col), 'the Clients sheet shows each register\'s state');
   const blob = await ev(() => ({ users: DB.users, clients: DB.clients, boards: DB.workboards, groups: DB.groups, tasks: DB.tasks, registerDocs: DB.registerDocs, registerPeople: DB.registerPeople, registerComments: DB.registerComments, registers: DB.registers }));
   const slice = JSON.stringify(P.sliceForClient(blob, 'c1', 'cu1'));
   t.ok(slice.length > 200 && !/registerDocs|registerPeople|registerComments|Quality Policy|White Card course|Sent to the client for review|9000001|FIFO - PERTH/.test(slice), 'the client portal slice carries none of it');

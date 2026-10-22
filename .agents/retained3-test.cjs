@@ -56,7 +56,7 @@ H.run('retained3-test', 3179, async (t) => {
     saveDB(DB); }, id);
   await ev(() => { currentUser = { id: 'c1', name: 'General Cranes', role: 'client', type: 'client', clientId: 'c1', initials: 'GCR', color: '#c2410c' }; launchClientView(); cpNavigate('retained'); }); await t.sleep(800);
   const hist = await ev(() => { const h = document.querySelector('.cp-rt-hist'); return h ? h.textContent.replace(/\s+/g, ' ') : ''; });
-  t.ok(/Earlier months/.test(hist) && /1 document reviews/.test(hist), `the portal shows the last two months, read only (got "${hist.slice(0, 120)}")`);
+  t.ok(/Earlier months/.test(hist) && /1 document revisions/.test(hist), `the portal shows the last two months, read only (got "${hist.slice(0, 120)}")`);
   const shot = await ui.shot('retained-history');
   t.eq(shot.phone, 0, 'the tab with its history fits a phone');
 

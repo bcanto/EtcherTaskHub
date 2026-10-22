@@ -296,7 +296,8 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-rt-svc+.cp-rt-svc{border-top:1px solid #e2eaf2}
 .cp-rt-side{padding:12px 16px;border-right:1px solid #eef2f6;background:#fbfcfd;display:grid;gap:6px;align-content:start;box-shadow:inset 3px 0 0 var(--rt-c)}
 .cp-rt-side b{font-family:Jost,sans-serif;font-size:14px;color:#0d1c33}.cp-rt-side small{color:#5b6f84;margin-top:-4px}
-.cp-rt-cells{display:flex;flex-wrap:wrap;gap:2px;max-width:200px}.cp-rt-cells i{width:8px;height:8px;border-radius:2px;background:#e3e9f0}.cp-rt-cells i.on{background:var(--rt-c)}
+.cp-rt-cells{display:flex;flex-wrap:wrap;gap:2px;max-width:200px}.cp-rt-cells i{width:8px;height:8px;border-radius:2px;background:#e3e9f0}.cp-rt-cells i.on{background:#16a34a}.cp-rt-req{margin-top:22px}.cp-req-ret{margin:-14px 0 20px;font-size:12.5px;color:#3d5269}
+.cp-rt-part{margin-top:8px;font-size:11.5px;font-weight:600;color:#3d5269}
 .cp-rt-used{font-size:12px;color:#4a5568}.cp-rt-used b{font-size:12px;color:#0d1c33}
 .cp-rt-jobs{min-width:0}
 .cp-rt-row{display:grid;grid-template-columns:minmax(0,1fr) auto 130px 56px;gap:12px;align-items:center;width:100%;border:0;border-bottom:1px solid #eef2f6;background:none;text-align:left;padding:9px 16px;cursor:pointer;font:inherit}
@@ -993,10 +994,24 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .rs-mt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;border:1px solid #e2eaf2;font-size:12px;color:#6b8399;cursor:pointer}
 .rs-mt.on{border-color:#97bcbd;background:#f2f7f7;color:#1a2940}.rs-mt input{accent-color:#31585a;margin:0}
 .rs-mt:focus-within{box-shadow:0 0 0 2px #31585a}
+.rs-track{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6b8399}.rs-track>span{font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;color:#8da2b2}
+.rs-track button{padding:4px 11px;border:1px solid #d8e0ec;background:#fff;font-size:12px;font-weight:600;color:#3d5269;cursor:pointer}
+.rs-track button:first-of-type{border-radius:7px 0 0 7px}.rs-track button:last-of-type{border-radius:0 7px 7px 0;border-left:0}
+.rs-track button.on{background:#0d1c33;border-color:#0d1c33;color:#fff}.rs-track button:hover:not(.on){background:#f4f7fa}.rs-track button:focus-visible{outline:2px solid #31585a;outline-offset:1px}
+.rs-parts{display:grid;gap:6px}
+.rs-part{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;padding:8px;border-radius:8px;background:#f6f8fb}
+.rs-part .rs-part-l{min-width:0}.rs-pl-t .rs-part input.rs-part-l{width:100%}.rs-part select{width:100%;min-width:0}
+.rs-part-x{grid-column:1/-1;justify-self:end}
+.rs-part .form-input{height:30px;padding:0 8px;font-size:12px}
+.rs-part-h{display:inline-flex;align-items:center;gap:4px}.rs-part-h input{width:60px}.rs-part-h em{font-style:normal;font-size:12px;color:#6b8399}
+.rs-part-x{border:0;background:none;padding:0 2px;font-size:11.5px;color:#8da2b2;text-decoration:underline;cursor:pointer}.rs-part-x:hover{color:#b91c1c}.rs-part-x:focus-visible{outline:2px solid #31585a;border-radius:3px}
+.rs-part-add{justify-self:start}
+.rc-hours-t td small{display:block;font-size:11px;color:#8da2b2}.rc-hours-t td.reg-num small{display:inline;margin-left:5px}
+.rs-pl-sn{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:#1a2940}.rs-pl-sn label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}.rs-pl-sn input{accent-color:#31585a}
 .rs-su2-foot{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid #eef2f6}
 .rs-su2-sum{flex:1;margin:0;font-size:12.5px;color:#6b8399}.rs-su2-sum b{color:#0d1c33}
 /* New retained board: the configurator (bundle, services, support tier, live summary) */
-.rcf-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;border-radius:10px;background:#f6f8fb}
+.rcf-top{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:14px;border-radius:10px;background:#f6f8fb}
 .rcf{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:start}
 .rcf-main{display:grid;gap:22px;min-width:0}
 .rcf-step{display:flex;align-items:center;gap:9px;margin:0 0 10px;font:600 14.5px/1.3 Jost,sans-serif;color:#0d1c33;letter-spacing:-.01em}
@@ -1066,7 +1081,9 @@ html.boot-loggedout #login-skeleton{display:flex!important}
 .ws-grp-meter.full{color:#b45309;font-weight:700}
 .rs-sq{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px;max-width:100%;vertical-align:middle}
 .rs-sq i{flex-shrink:0;width:7px;height:7px;border-radius:1.5px;background:#e3e9f0}
-.rs-sq i.on{background:var(--sq-c)}
+.rs-sq i.on{background:#16a34a}
+.rs-sq i.pg{background:linear-gradient(to top,#f59e0b 50%,#e3e9f0 50%)}
+.rs-sq i.hf{background:linear-gradient(to top,#16a34a 50%,#e3e9f0 50%)}
 .rs-sq i.x{background:none;box-shadow:inset 0 0 0 1.5px #b45309}
 .rs-sq.lg{gap:3px}.rs-sq.lg i{width:10px;height:10px;border-radius:2px}
 .ws-grp-meter .rs-sq{flex-wrap:nowrap}
@@ -1168,6 +1185,7 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .rs-pl-t{width:100%;border-collapse:collapse;font-size:12.5px}
 .rs-pl-t th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8da2b2;padding:0 8px 6px 0}
 .rs-pl-t td{padding:7px 8px 7px 0;border-top:1px solid #eef2f6;vertical-align:middle}
+.rs-pl-t td .rs-track{margin-bottom:6px}.rs-pl-t td select.form-input{min-width:120px}
 .rs-pl-t td small{display:block;color:#8da2b2;font-size:11px}
 .rs-pl-t td.rs-full b{color:#b45309}
 .rs-pl-n{display:flex;align-items:center;gap:8px;font-weight:600}
@@ -2575,6 +2593,8 @@ function loadDB(){
 }
 
 function _migrateDB(data){
+  // IMS counts document revisions (2026-10-22); boards made before stored "document reviews".
+  (data.boards||data.workboards||[]).forEach(b=>{((b&&b.retainer&&b.retainer.services)||[]).forEach(s=>{if(s&&/^document reviews?$/i.test(String(s.unit||'')))s.unit='document revisions';});});
   // Ensure new top-level entities exist
   if(!data.users)         data.users         = data.staff ? JSON.parse(JSON.stringify(data.staff)) : [];
   if(!data.boards)        data.boards        = data.workboards ? JSON.parse(JSON.stringify(data.workboards)) : [];
@@ -7610,7 +7630,7 @@ function moveWbToFolder(wbId,folderId){
 // listed in the sidebar's permanent Retained Services section (R1), set up by an admin (R8, R9).
 // The allowance meter counts finished subitems on client-visible work, by calendar month (R4, R5).
 const RETAINER_CATALOGUE=[
-  {key:'ims', name:'IMS and Document Control',              short:'IMS',          kind:'core',  unit:'document reviews',             allowance:20, color:'#1d6fb8', monthly:['Monthly document register check','Controlled forms housekeeping']},
+  {key:'ims', name:'IMS and Document Control',              short:'IMS',          kind:'core',  unit:'document revisions',           allowance:20, color:'#1d6fb8', monthly:['Monthly document register check','Controlled forms housekeeping']},
   {key:'hseq',name:'HSEQ Admin and Audit Readiness',        short:'HSEQ',         kind:'core',  unit:'reports and register updates', allowance:8,  color:'#0d6e4e', monthly:['Monthly HSEQ report','Licence and ticket register update']},
   {key:'mob', name:'Mobilisation and Contractor Compliance',short:'Mobilisation', kind:'addon', unit:'compliance checks',            allowance:15, color:'#b45309', monthly:['Contractor insurance expiry check']},
   {key:'ci',  name:'Continuous Improvement',                short:'Improvement',  kind:'addon', unit:'improvement actions',          allowance:4,  color:'#6d28d9', monthly:['Monthly improvement review']},
@@ -7728,13 +7748,86 @@ function _retainerUsed(boardId,groupId,ym){
   });
   return n;
 }
+// ── Allowance usage: items or hours (2026-10-22) ──
+// Hour parts a service starts with when it is switched to hours (the user's notes).
+const RS_HOUR_PARTS={
+  hseq:[{label:'HSEQ elements',hours:5,period:'month',who:'all'},{label:'Audits (mini and main)',hours:8,period:'quarter',who:'audit'}],
+  ci:[{label:'Admin',hours:8,period:'month',who:'admin'},{label:'Senior consult',hours:3,period:'month',who:'senior'}],
+};
+const RS_PART_WHO=[['all','Everyone'],['admin','Admin'],['senior','Senior consultants'],['audit','Tasks tagged Audit']];
+function _rsDefaultParts(key,allowance){return(RS_HOUR_PARTS[key]||[{label:'Hours',hours:Math.min(99,allowance||8),period:'month',who:'all'}]).map((p,i)=>Object.assign({id:'hp'+i+'-'+uid().slice(-4)},p));}
+function _rsQuarter(ym){const y=+String(ym).slice(0,4),m=+String(ym).slice(5,7);return y+'-Q'+(Math.floor((m-1)/3)+1);}
+function _rsQuarterName(ym){const q=_rsQuarter(ym);return q.slice(5)+' '+q.slice(0,4);}
+function _rsInPeriod(d,ym,period){d=String(d||'').slice(0,7);if(!d)return false;return period==='quarter'?_rsQuarter(d)===_rsQuarter(ym):d===ym;}
+// Started and not finished: in progress (not started, to do or backlog are not).
+const _RS_IDLE=new Set(['todo','not-started','backlog','']);
+function _rsStarted(t){return !!t&&!_rsDone(t)&&!_RS_IDLE.has(String(t.status||''));}
+function _retainerProgress(boardId,groupId){
+  let n=0;
+  (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===groupId&&(t.boardId||t.workboardId)===boardId&&!_cpTaskHidden(t)).forEach(t=>{
+    const subs=(DB.tasks||[]).filter(x=>x.parentTaskId===t.id&&!x.archived&&!_cpTaskHidden(x));
+    if(subs.length)n+=subs.filter(_rsStarted).length;else if(_rsStarted(t))n++;
+  });
+  return n;
+}
+// Every hour logged on a service's work (its tasks and their subitems the client can see; never rejected entries),
+// with the part it counts to: tasks tagged Audit to an Audit part, senior consultants to a Senior part, everyone
+// else to an Admin part, then Everyone, then the first part.
+function _rsHourRows(b,s,parts){
+  const tasks=new Map();
+  (DB.tasks||[]).forEach(t=>{if(t.archived||_cpTaskHidden(t))return;const top=t.parentTaskId?(DB.tasks||[]).find(x=>x.id===t.parentTaskId):t;
+    if(!top||top.archived||top.groupId!==s.groupId||(top.boardId||top.workboardId)!==b.id)return;tasks.set(t.id,{t,top});});
+  parts=parts||s.parts||[];const seniors=new Set(((b.retainer||{}).seniorIds)||[]);
+  const tagged=x=>(x.tags||[]).some(g=>/^audit$/i.test(String(g).trim()));
+  return(DB.timeEntries||[]).filter(e=>e&&tasks.has(e.taskId)&&e.status!=='rejected'&&Number(e.hours)>0).map(e=>{
+    const{t,top}=tasks.get(e.taskId),senior=seniors.has(e.staffId),aud=tagged(t)||tagged(top);
+    const part=parts.find(x=>x.who==='audit'&&aud)||parts.find(x=>x.who==='senior'&&senior)||parts.find(x=>x.who==='admin'&&!senior)||parts.find(x=>x.who==='all')||parts[0]||null;
+    return{e,t,part,hours:Number(e.hours)||0};
+  });
+}
+function _rsPartsOf(s){return s.mode==='hours'?((s.parts&&s.parts.length)?s.parts:_rsDefaultParts(s.key,s.allowance)):null;}
+// A service's allowance this month (or the month given): parts of {label, cap, used, prog, period, unit}.
+function _rsUsage(b,s,ym){
+  ym=ym||_rsYm();
+  const parts=_rsPartsOf(s);
+  if(parts){
+    const rows=_rsHourRows(b,s,parts);
+    return{mode:'hours',parts:parts.map(p=>({id:p.id,label:p.label||'Hours',cap:Number(p.hours)||0,period:p.period==='quarter'?'quarter':'month',who:p.who||'all',unit:'hours',prog:0,
+      used:Math.round(rows.filter(r=>r.part===p&&_rsInPeriod(r.e.date,ym,p.period)).reduce((n,r)=>n+r.hours,0)*100)/100}))};
+  }
+  return{mode:'items',parts:[{label:'',cap:s.allowance,used:_retainerUsed(b.id,s.groupId,ym),prog:ym===_rsYm()?_retainerProgress(b.id,s.groupId):0,period:'month',unit:s.unit}]};
+}
+function _rsHrs(n){return String(Math.round((Number(n)||0)*100)/100);}
+// "4 of 20 document revisions used, 2 in progress" or "Admin: 5.5 of 8 hours".
+function _rsUseText(u){
+  if(u.unit==='hours')return`${u.label?u.label+': ':''}${_rsHrs(u.used)} of ${_rsHrs(u.cap)} hours${u.period==='quarter'?' this quarter':''}`;
+  return`${u.used} of ${u.cap} ${u.unit} used${u.prog?`, ${u.prog} in progress`:''}`;
+}
+// Squares: one per item or hour. Finished (or an hour logged) is full green, in progress half orange, to go empty;
+// beyond the allowance amber outlines. Over the cap the squares give way to the words.
+function _rsSq(u,cls,capMax){
+  capMax=capMax||60;const cap=Math.round(Number(u.cap)||0);if(!cap||cap>capMax)return'';
+  let h='';
+  if(u.unit==='hours'){
+    const whole=Math.floor(u.used),full=Math.min(whole,cap),half=(u.used-whole>=0.5&&full<cap)?1:0;
+    for(let i=0;i<cap;i++)h+=i<full?'<i class="on"></i>':i<full+half?'<i class="hf"></i>':'<i></i>';
+    for(let i=0,over=Math.min(12,Math.max(0,whole-cap));i<over;i++)h+='<i class="x"></i>';
+  }else{
+    const done=Math.min(u.used,cap),prog=Math.min(u.prog||0,cap-done);
+    for(let i=0;i<cap;i++)h+=i<done?'<i class="on"></i>':i<done+prog?'<i class="pg"></i>':'<i></i>';
+    for(let i=0,over=Math.min(12,Math.max(0,u.used-cap));i<over;i++)h+='<i class="x"></i>';
+  }
+  return`<span class="rs-sq${cls?' '+cls:''}" aria-hidden="true">${h}</span>`;
+}
+function _rsPartFull(u){return u.cap&&u.used>=u.cap;}
+function _rsPartNear(u){return u.cap&&u.used>=u.cap*0.8;}
 function _retainerMeterHtml(sec){
   const wb=currentWorkboard;
   if(wsGroupBy!=='group'||!_isRetainedBoard(wb))return'';
   const s=(wb.retainer.services||[]).find(x=>x.groupId===sec.id);if(!s)return'';
-  const ym=_rsYm(),used=_retainerUsed(wb.id,s.groupId,ym);
-  const cat=_rsCat(s.key)||{color:'#31585a'};
-  return`<span class="ws-grp-meter${used>=s.allowance?' full':''}" title="Finished subitems on work the client can see, this month. Resets on the 1st.">${_rsSquares(used,s.allowance,cat.color,'',40)}<span>${used} of ${s.allowance} ${escHtml(s.unit)} used in ${_rsMonthName(ym)}</span></span>`;
+  const ym=_rsYm(),us=_rsUsage(wb,s,ym);
+  const tip=us.mode==='hours'?'Hours logged on this service\'s work. Monthly parts reset on the 1st, quarterly ones each quarter.':'Finished this month (green) and in progress now (orange), on work the client can see. Resets on the 1st.';
+  return us.parts.map(u=>`<span class="ws-grp-meter${_rsPartFull(u)?' full':''}" title="${tip}">${_rsSq(u,'',40)}<span>${escHtml(_rsUseText(u))}${u.unit!=='hours'?' in '+_rsMonthName(ym):''}</span></span>`).join('');
 }
 
 // ── Sidebar section (collapse is per viewer, like Personal Boards) ──
@@ -7756,7 +7849,8 @@ function openRetainerSetup(){
   const d=new Date();
   _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,bundle:null,svc:{}};
   // Bundle first: nothing is ticked until a bundle is chosen.
-  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true)};});
+  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true),mode:'items',parts:null};});
+  _rsSetup.seniorIds=[];
   _rsSetupFollowLevel();
   _rsSetupRender();
 }
@@ -7825,6 +7919,7 @@ function _rsSetupIssues(m){
     else if(r.have>r.n)out.push(`The ${b.key} bundle takes ${r.n} ${word}${r.n>1?'s':''}. Untick ${r.have-r.n}.`);
   });
   if(!m.leadId)out.push('Choose the retainer lead.');
+  keys.forEach(k=>{const v=m.svc[k];if(v.mode==='hours'&&!(v.parts||[]).some(p=>Number(p.hours)>0))out.push(`Give ${_rsCat(k).name} some hours.`);});
   keys.forEach(k=>{if(!m.svc[k].ownerId)out.push(`Choose an owner for ${_rsCat(k).name}.`);});
   if(!/^[0-9]{4}-[0-9]{2}$/.test(String(m.startMonth||'')))out.push('Choose the month it starts.');
   return out;
@@ -7837,19 +7932,50 @@ function _rsSet(field,key,val,i){
     else if(field==='allowance')v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner')v.ownerId=val||null;
     else if(field==='mt')v.mt[i]=!!val;
+    else if(field==='mode'){v.mode=val==='hours'?'hours':'items';if(v.mode==='hours'&&!(v.parts&&v.parts.length))v.parts=_rsDefaultParts(key,v.allowance);}
+    else if(/^p(Add|Rm|Label|Hours|Period|Who)$/.test(field)){if(v.parts)_rsPartChange(v.parts,field,i,val);}
   }else if(field==='bundle')_rsSetupBundlePick(m,val);
   else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
   else if(field==='fee')m.fee=_rsFeeParse(val);
   else if(field==='startMonth'){if(/^[0-9]{4}-[0-9]{2}$/.test(String(val||'')))m.startMonth=val;}
   else if(['clientId','leadId'].includes(field))m[field]=val;
+  else if(field==='senior')m.seniorIds=val?[val]:[];
   _rsSetupRender();
+}
+// The hour parts editor, for set-up and plan. call(field, partIndex) returns the handler text for a change.
+function _rsPartsEditor(parts,call,keyLabel){
+  const per=(p,i)=>`<select class="form-input" aria-label="Period" data-f="pp-${escHtml(keyLabel)}-${i}" onchange="${call('pPeriod',i)}"><option value="month"${p.period!=='quarter'?' selected':''}>a month</option><option value="quarter"${p.period==='quarter'?' selected':''}>a quarter</option></select>`;
+  const who=(p,i)=>`<select class="form-input" aria-label="Who counts" data-f="pw-${escHtml(keyLabel)}-${i}" onchange="${call('pWho',i)}">${RS_PART_WHO.map(([k,l])=>`<option value="${k}"${(p.who||'all')===k?' selected':''}>${l}</option>`).join('')}</select>`;
+  return`<div class="rs-parts" data-rs-parts="${escHtml(keyLabel)}">${parts.map((p,i)=>`<div class="rs-part" data-rs-part="${i}">
+      <input type="text" class="form-input rs-part-l" value="${escHtml(p.label||'')}" maxlength="60" aria-label="Part name" data-f="pl-${escHtml(keyLabel)}-${i}" onchange="${call('pLabel',i)}">
+      <span class="rs-part-h"><input type="number" class="form-input" min="0.5" max="999" step="0.5" value="${Number(p.hours)||0}" aria-label="Hours" data-f="ph-${escHtml(keyLabel)}-${i}" onchange="${call('pHours',i)}"><em>h</em></span>
+      ${per(p,i)}${who(p,i)}
+      ${parts.length>1?`<button type="button" class="rs-part-x" aria-label="Remove this part" onclick="${call('pRm',i)}">Remove</button>`:''}
+    </div>`).join('')}<button type="button" class="btn btn-ghost btn-sm rs-part-add" onclick="${call('pAdd')}">+ Add part</button></div>`;
+}
+// One change to a parts list (set-up or plan).
+function _rsPartChange(parts,field,i,val){
+  const p=parts[i];
+  if(field==='pAdd'){parts.push({id:'hp'+uid().slice(-6),label:'Hours',hours:4,period:'month',who:'all'});return true;}
+  if(!p)return false;
+  if(field==='pRm'){if(parts.length>1)parts.splice(i,1);return true;}
+  if(field==='pLabel'){p.label=String(val||'').replace(/\s+/g,' ').trim().slice(0,60)||'Hours';return true;}
+  if(field==='pHours'){p.hours=Math.max(0.5,Math.min(999,Math.round((parseFloat(val)||0)*2)/2||0.5));return true;}
+  if(field==='pPeriod'){p.period=val==='quarter'?'quarter':'month';return true;}
+  if(field==='pWho'){if(RS_PART_WHO.some(([k])=>k===val))p.who=val;return true;}
+  return false;
+}
+function _rsTrackSwitch(mode,call,keyLabel){
+  return`<div class="rs-track" role="group" aria-label="Track by"><span>Track by</span>${[['items','Items'],['hours','Hours']].map(([k,l])=>`<button type="button" class="${mode===k?'on':''}" aria-pressed="${mode===k}" data-rs-mode="${k}" data-f="md-${escHtml(keyLabel)}-${k}" onclick="${call(k)}">${l}</button>`).join('')}</div>`;
 }
 function _rsSetupRender(){
   const m=_rsSetup;if(!m)return;
   const b=_rsSetupBundle(m),picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
   const core=picks.filter(s=>s.kind==='core'),adds=picks.filter(s=>s.kind!=='core');
   const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
-  const acts=picks.reduce((n,s)=>n+(m.svc[s.key].allowance||0),0);
+  const itemPicks=picks.filter(s=>m.svc[s.key].mode!=='hours'),hourPicks=picks.filter(s=>m.svc[s.key].mode==='hours');
+  const acts=itemPicks.reduce((n,s)=>n+(m.svc[s.key].allowance||0),0);
+  const hrsMonth=hourPicks.reduce((n,s)=>n+(m.svc[s.key].parts||[]).filter(p=>p.period!=='quarter').reduce((a,p)=>a+(Number(p.hours)||0),0),0);
   const issues=_rsSetupIssues(m),lead=m.leadId?getStaff(m.leadId):null;
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
   const tier=_rsTier(m.priority),bTier=b?RETAINER_LEVELS.find(x=>x.bundle===b.key):null;
@@ -7882,9 +8008,11 @@ function _rsSetupRender(){
         <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</small></span>${badge(st,s)}</label>
       ${v.on?`<div class="rs-card-cfg">
         <div class="rs-cfg-row">
-          <label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" data-f="al-${s.key}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>
+          ${v.mode==='hours'?'':`<label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" data-f="al-${s.key}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>`}
           <label class="rs-cfg"><span>Owner</span><select class="form-input" data-f="ow-${s.key}" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
         </div>
+        ${_rsTrackSwitch(v.mode||'items',k=>`_rsSet('mode','${s.key}','${k}')`,s.key)}
+        ${v.mode==='hours'?`<div class="rs-cfg"><span>Hours</span>${_rsPartsEditor(v.parts||[],(f,i)=>`_rsSet('${f}','${s.key}',this.value,${i==null?0:i})`,s.key)}</div>`:''}
         <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox" data-f="mt-${s.key}-${i}"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
       </div>`:''}
     </div>`;};
@@ -7903,7 +8031,7 @@ function _rsSetupRender(){
       <div><dt>Support tier</dt><dd>${escHtml(tier)}</dd></div>
       <div><dt>Core services</dt><dd>${core.length?`<ul class="rcf-list">${core.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
       <div><dt>Add-on services</dt><dd>${adds.length?`<ul class="rcf-list">${adds.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
-      <div><dt>Monthly activities</dt><dd>${picks.length?`<ul class="rcf-list rcf-acts">${picks.map(s=>`<li><span>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}</span><b>${m.svc[s.key].allowance}</b></li>`).join('')}<li class="rcf-total"><span>Total</span><b id="rs-su-acts">${acts}</b></li></ul>`:'<span class="rcf-none">None</span>'}</dd></div>
+      <div><dt>Monthly activities</dt><dd>${picks.length?`<ul class="rcf-list rcf-acts">${itemPicks.map(s=>`<li><span>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}</span><b>${m.svc[s.key].allowance}</b></li>`).join('')}${itemPicks.length?`<li class="rcf-total"><span>Total items</span><b id="rs-su-acts">${acts}</b></li>`:''}${hourPicks.map(s=>(m.svc[s.key].parts||[]).map(p=>`<li><span>${escHtml(s.short||_rsCat(s.key).short)}: ${escHtml(p.label||'Hours')}${p.period==='quarter'?', a quarter':''}</span><b>${_rsHrs(p.hours)} h</b></li>`).join('')).join('')}${hourPicks.length?`<li class="rcf-total"><span>Hours a month</span><b id="rs-su-hours">${_rsHrs(hrsMonth)}</b></li>`:''}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
       <div><dt>Monthly tasks</dt><dd id="rs-su-tasks">${nTasks}</dd></div>
       <div><dt>Coverage</dt><dd><ul class="rcf-list" id="rs-su-cover">${RETAINER_COVERAGE.map(([k,t])=>li(m.svc[k]&&m.svc[k].on,t)).join('')}</ul></dd></div>
       <div><dt>Retainer lead</dt><dd>${lead?escHtml(lead.name):'<span class="rcf-none">Not chosen</span>'}</dd></div>
@@ -7918,6 +8046,7 @@ function _rsSetupRender(){
     <div class="rcf-top">
       <label class="rs-cfg"><span>Client</span><select class="form-input" id="rs-su-client" data-f="client" onchange="_rsSet('clientId',null,this.value)">${_rsSetupClients().map(x=>`<option value="${x.id}"${x.id===m.clientId?' selected':''}>${escHtml(x.name)}</option>`).join('')}</select></label>
       <label class="rs-cfg"><span>Retainer lead</span><select class="form-input" id="rs-su-lead" data-f="lead" onchange="_rsSet('leadId',null,this.value)">${staffOpts(m.leadId)}</select></label>
+      <label class="rs-cfg"><span>Senior consultant</span><select class="form-input" id="rs-su-senior" data-f="senior" onchange="_rsSet('senior',null,this.value)"><option value="">None</option>${_rsStaff().map(u=>`<option value="${u.id}"${(m.seniorIds||[]).includes(u.id)?' selected':''}>${escHtml(u.name)}</option>`).join('')}</select></label>
       <label class="rs-cfg"><span>Starts</span><select class="form-input" id="rs-su-start" data-f="start" onchange="_rsSet('startMonth',null,this.value)">${_rsStartMonthOptions(m.startMonth)}</select></label>
     </div>
     <div class="rcf">
@@ -7947,13 +8076,13 @@ function retainerCreate(){
   const now=new Date().toISOString(),boardId=uid(),first=m.startMonth+'-01';
   const board={id:boardId,name:c.name,color:c.color||'#7c3aed',visibility:'all_internal',personalBoard:false,clientId:c.id,folderId:null,
     ownerId:currentUser.id,description:'Retained services',archived:false,excludeFromReports:false,createdAt:now,updatedAt:now,
-    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:_rsLevel(m.priority)?m.priority:'Standard',bundle:(_rsSetupBundle(m)||{}).key||null,months:{},endedAt:null,fees:[]}};
+    retainer:{services:[],leadId:m.leadId||null,startMonth:m.startMonth,priority:_rsLevel(m.priority)?m.priority:'Standard',bundle:(_rsSetupBundle(m)||{}).key||null,seniorIds:(m.seniorIds||[]).slice(),months:{},endedAt:null,fees:[]}};
   DB.workboards.push(board);
   let made=0;
   picks.forEach((s,i)=>{
     const v=m.svc[s.key],gid=uid();
     DB.groups.push({id:gid,clientId:c.id,workboardId:boardId,boardId,name:s.name,order:i,color:s.color,createdAt:now});
-    board.retainer.services.push({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null});
+    board.retainer.services.push(Object.assign({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null},v.mode==='hours'?{mode:'hours',parts:JSON.parse(JSON.stringify(v.parts||_rsDefaultParts(s.key,v.allowance)))}:{}));
     s.monthly.forEach((name,j)=>{
       if(!v.mt[j])return;
       const r={freq:'monthly',interval:1,onDay:1,onWeekdayOrdinal:null,onWeekday:null,leadDays:0,weekendAction:'keep',endType:'never',endDate:null,occurrences:null,occurrenceCount:0,
@@ -7982,10 +8111,12 @@ function openRetainerPlan(boardId){
   const lead=r.leadId?getStaff(r.leadId):null;
   const addable=RETAINER_CATALOGUE.filter(c=>!(r.services||[]).some(s=>s.key===c.key));
   const svcRows=(r.services||[]).map(s=>{
-    const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},used=_retainerUsed(b.id,s.groupId,ym),own=s.ownerId?getStaff(s.ownerId):null;
+    const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},own=s.ownerId?getStaff(s.ownerId):null;
     return`<tr><td><span class="rs-pl-n"><i style="background:${cat.color}"></i>${escHtml(cat.name)}</span></td>
-      <td>${admin?`<input type="number" min="1" max="999" value="${s.allowance}" data-rs-allow="${s.key}" onchange="_rsPlanSet('${b.id}','allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(cat.name)}">`:s.allowance}</td>
-      <td class="${used>=s.allowance?'rs-full':''}"><b>${used}</b> of ${s.allowance}<small>${escHtml(s.unit)}</small></td>
+      <td>${admin?_rsTrackSwitch(s.mode==='hours'?'hours':'items',k=>`_rsPlanSet('${b.id}','mode','${s.key}','${k}')`,'pl-'+s.key):''}${s.mode==='hours'
+        ?(admin?_rsPartsEditor(_rsPartsOf(s),(f,i)=>`_rsPlanPart('${b.id}','${s.key}','${f}',${i==null?0:i},this.value)`,'pl-'+s.key):_rsPartsOf(s).map(p=>`<div>${escHtml(p.label)}: ${_rsHrs(p.hours)} h ${p.period==='quarter'?'a quarter':'a month'}</div>`).join(''))
+        :(admin?`<input type="number" min="1" max="999" value="${s.allowance}" data-rs-allow="${s.key}" onchange="_rsPlanSet('${b.id}','allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(cat.name)}">`:s.allowance)}</td>
+      <td>${_rsUsage(b,s,ym).parts.map(u=>`<div class="${_rsPartFull(u)?'rs-full':''}">${u.unit==='hours'?`<b>${_rsHrs(u.used)}</b> of ${_rsHrs(u.cap)}<small>hours${u.label?', '+escHtml(u.label):''}${u.period==='quarter'?', this quarter':''}</small>`:`<b>${u.used}</b> of ${u.cap}<small>${escHtml(u.unit)}${u.prog?`, ${u.prog} in progress`:''}</small>`}</div>`).join('')}</td>
       <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td>${admin?`<td><button class="btn btn-ghost btn-sm" data-rs-remove="${s.key}" onclick="_rsPlanSet('${b.id}','removeService','${s.key}')" aria-label="Remove ${escHtml(cat.name)} from the plan">Remove</button></td>`:''}</tr>`;
   }).join('');
   const body=`<div class="rs-pl">
@@ -7994,10 +8125,11 @@ function openRetainerPlan(boardId){
       <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
       <label class="rs-su-f"><span>Support tier</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(_rsTier(r.priority))}</b>`}</label>
       <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b><small>Set on the pro forma invoice</small></div>
+      <div class="rs-su-f rs-pl-seniors"><span>Senior consultants</span>${admin?`<div class="rs-pl-sn">${_rsStaff().map(u=>`<label><input type="checkbox" data-rs-senior="${u.id}"${(r.seniorIds||[]).includes(u.id)?' checked':''} onchange="_rsPlanSet('${b.id}','senior','${u.id}',this.checked)"> ${escHtml(u.name)}</label>`).join('')}</div>`:`<b>${escHtml((r.seniorIds||[]).map(id=>(getStaff(id)||{}).name).filter(Boolean).join(', ')||'None')}</b>`}<small>Their hours count to Senior parts; everyone else's to Admin.</small></div>
     </div>
     <p class="rs-lvl-note" id="rs-pl-lvlnote">${_rsLevelNote((r.services||[]).map(s=>s.key),r.priority,admin?lv=>`_rsPlanSet('${b.id}','priority',null,'${lv}')`:null)}</p>
     <h4 class="rs-pl-h">Services and allowances</h4>
-    <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Monthly allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
+    <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
     ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
     <p class="rs-pl-hint">${admin?'Changes apply from this month. Removing a service keeps its group and jobs and stops its meter. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
     <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
@@ -8011,7 +8143,7 @@ function openRetainerPlan(boardId){
     <p class="rs-pl-p">Hours logged on this board are covered by the retainer. They stay in timesheets and payroll, and never appear on the hourly pro forma.</p>
     ${admin?`<div class="rs-pl-row"><span class="rs-pl-hint">Ending moves the board to Archive & Bin and takes the Retained Services tab out of the portal. Jobs and history stay.</span><button class="btn btn-danger btn-sm" id="rs-pl-end" onclick="retainerEnd('${b.id}')">End retainer</button></div>`:''}
   </div>`;
-  openGenericModal('Retainer plan',body,'720px');
+  openGenericModal('Retainer plan',body,(b.retainer.services||[]).some(s=>s.mode==='hours')?'980px':'760px');
 }
 function retainerEnd(boardId){
   if(currentUser?.role!=='admin')return;
@@ -8039,6 +8171,8 @@ function _rsPlanSet(boardId,field,key,val){
     const s=key?(r.services||[]).find(x=>x.key===key):null;
     if(field==='allowance'&&s)s.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner'&&s)s.ownerId=val||null;
+    else if(field==='mode'&&s){if(val==='hours'){s.mode='hours';if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);}else if(val==='items')delete s.mode;}
+    else if(field==='senior'){const ids=new Set(r.seniorIds||[]);if(val)ids.add(key);else ids.delete(key);r.seniorIds=[...ids];}
     else if(field==='lead')r.leadId=val||null;
     else if(field==='priority'&&_rsLevel(val))r.priority=val;
     else if(field==='fee'){
@@ -8157,8 +8291,8 @@ function _rqLateCount(){try{return _rqQueue().filter(r=>r.late).length;}catch(e)
 function _rdUsage(boards,ym){
   const out=[];
   boards.forEach(b=>(b.retainer.services||[]).forEach(s=>{
-    const used=_retainerUsed(b.id,s.groupId,ym),cat=_rsCat(s.key)||{name:s.key,short:s.key,color:'#8da2b2'};
-    out.push({board:b,s,cat,used,allowance:s.allowance,ratio:s.allowance?used/s.allowance:0});
+    const cat=_rsCat(s.key)||{name:s.key,short:s.key,color:'#8da2b2'},us=_rsUsage(b,s,ym);
+    us.parts.forEach((u,i)=>out.push({board:b,s,cat,u,pi:us.parts.length>1?i:null,used:u.used,allowance:u.cap,ratio:u.cap?u.used/u.cap:0}));
   }));
   return out;
 }
@@ -8234,8 +8368,8 @@ function renderRetainedDash(){
   }
   usage.filter(u=>u.allowance&&u.ratio>=0.8).sort((a,b)=>b.ratio-a.ratio).forEach(u=>{
     const over=u.used>u.allowance,at=u.used===u.allowance;
-    att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key,
-      text:`${escHtml(cName(u.board.clientId))}, ${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}${over?', over the allowance':at?', the allowance is used up':''}.`,
+    att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key+(u.pi!=null?'-'+u.pi:''),
+      text:`${escHtml(cName(u.board.clientId))}, ${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'?(u.u.period==='quarter'?'':' in '+month):' in '+month}${over?', over the allowance':at?', the allowance is used up':''}.`,
       act:`openRetainerPlan('${u.board.id}')`,btn:'Plan'});
   });
   if(typeof _regAttention==='function')_regAttention(boards).forEach(a=>att.push(a));
@@ -8272,7 +8406,7 @@ function renderRetainedDash(){
   const cRow=b=>{
     const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null,fee=_rsFeeFor(r,ym);
     const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
-      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${u.used} of ${u.allowance} ${escHtml(u.s.unit)} used in ${month}"><span>${escHtml(u.cat.short)}</span>${_rsSquares(u.used,u.allowance,u.cat.color)||'<i class="rd-m-none"></i>'}<b>${u.used}/${u.allowance}</b></span>`;}).join('');
+      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'&&u.u.period==='quarter'?'':' in '+month}"><span>${escHtml(u.cat.short)}${u.u.unit==='hours'&&u.u.label?' '+escHtml(u.u.label):''}</span>${_rsSq(u.u)||'<i class="rd-m-none"></i>'}<b>${u.u.unit==='hours'?_rsHrs(u.used)+'/'+_rsHrs(u.allowance)+'h':u.used+'/'+u.allowance}</b></span>`;}).join('');
     const reg=regCol?_regClientSummary(b.clientId):'';
     return`<tr data-rd-client="${b.clientId}">
       <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),34)}<b>${escHtml(cName(b.clientId))}</b></span></button><small>${bn?bn+' bundle':'Custom mix'}, ${escHtml(_retainerBundle(keys))}${lead?'. Lead '+escHtml(lead.name):''}</small></td>
@@ -8310,7 +8444,7 @@ function _mrData(b,ym){
   // Overdue at month end: due by the last day of the month, open when the month closed.
   const overdue=top.filter(t=>t.endDate&&t.endDate<next&&(!t.createdAt||t.createdAt<next+'T00:00:00')&&!doneBy(t,next+'T00:00:00')).length;
   const reqState=q=>{
-    if(q.status==='declined')return'Not progressing';
+    if(q.status==='declined')return'Declined';
     const t=q.linkedItemType==='task'&&(DB.tasks||[]).find(x=>x.id===q.linkedItemId);
     if(t&&_rsDone(t))return'Delivered';
     if(t&&t.awaitingClient&&_cpIsApprovalAsk(t))return'With you for approval';
@@ -8323,7 +8457,7 @@ function _mrData(b,ym){
   const lead=r.leadId?getStaff(r.leadId):null,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys);
   return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority?_rsTier(r.priority):'',levelLine:_rsLevelLine(r.priority),
     bundle:(bn?bn+' bundle, ':'')+_retainerBundle(keys),lead:lead?lead.name:'',
-    services:(r.services||[]).map(s=>({name:(_rsCat(s.key)||{name:s.key}).name,unit:s.unit,allowance:s.allowance,used:_retainerUsed(b.id,s.groupId,ym)})),
+    services:(r.services||[]).flatMap(s=>{const nm=(_rsCat(s.key)||{name:s.key}).name,us=_rsUsage(b,s,ym);return us.parts.map(u=>({name:nm+(u.unit==='hours'&&u.label&&us.parts.length>1?', '+u.label:''),unit:u.unit==='hours'?(u.period==='quarter'?'hours this quarter':'hours'):u.unit,allowance:u.cap,used:u.unit==='hours'?_rsHrs(u.used):u.used}));}),
     delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date()),regs:_mrRegs(b,ym)};
 }
 // What the registers say for the report: reviews and renewals finished that month, and where things stand today.
@@ -8438,11 +8572,11 @@ function _mrPdf(d,logo){
   if(d.regs){
     const g=d.regs,mn=_rsMonthName(d.month),lines=[];
     y=head('Document control and training',y)+2;
-    if(g.docs)lines.push(`${g.reviewed.length} document review${g.reviewed.length===1?'':'s'} completed in ${mn}. Today ${g.over} of ${g.docs} document${g.docs===1?' is':'s are'} overdue for review and ${g.d30} ${g.d30===1?'is':'are'} due within 30 days.`);
+    if(g.docs)lines.push(`${g.reviewed.length} document revision${g.reviewed.length===1?'':'s'} completed in ${mn}. Today ${g.over} of ${g.docs} document${g.docs===1?' is':'s are'} overdue for review and ${g.d30} ${g.d30===1?'is':'are'} due within 30 days.`);
     if(g.people)lines.push(`${g.renewed} training renewal${g.renewed===1?'':'s'} completed in ${mn}. Today ${g.exp} training record${g.exp===1?' has':'s have'} expired and ${g.t30} expire${g.t30===1?'s':''} within 30 days, across ${g.people} ${g.people===1?'person':'people'}.`);
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...INK);
     lines.forEach(l=>{const ln=doc.splitTextToSize(l,W-M*2);if(y+ln.length*4.6>H-24){doc.addPage();y=20;}doc.text(ln,M,y+3);y+=ln.length*4.6+2;});
-    if(g.reviewed.length){doc.autoTable({...theme,startY:y+2,head:[['Document reviewed','Finished']],body:g.reviewed.map(x=>[x.name,date(x.at)]),columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:28}}});y=doc.lastAutoTable.finalY;}
+    if(g.reviewed.length){doc.autoTable({...theme,startY:y+2,head:[['Document revised','Finished']],body:g.reviewed.map(x=>[x.name,date(x.at)]),columnStyles:{0:{cellWidth:'auto'},1:{cellWidth:28}}});y=doc.lastAutoTable.finalY;}
     y+=9;
   }
   if(d.focus.length){
@@ -8701,7 +8835,7 @@ function _regAttention(boards){
 }
 function _regClientSummary(clientId){
   const n=_regCounts(clientId);if(!n.docs&&!n.people)return'';
-  const doc=n.docs?`<span class="rd-reg${n.dNeedOver?' bad':n.dNeed?' warn':''}">Documents: ${n.dNeed?n.dNeed+' need a review task':n.dOver||n.d30?'reviews in hand':'up to date'}</span>`:'';
+  const doc=n.docs?`<span class="rd-reg${n.dNeedOver?' bad':n.dNeed?' warn':''}">Documents: ${n.dNeed?n.dNeed+' need a revision task':n.dOver||n.d30?'revisions in hand':'up to date'}</span>`:'';
   const trn=n.people?`<span class="rd-reg${n.tExp?' bad':n.t30?' warn':''}">Training: ${n.tExp?n.tExp+' expired':n.t30?n.t30+' expiring soon':'up to date'}</span>`:'';
   return doc+trn;
 }
@@ -8773,14 +8907,14 @@ function _regDocsHtml(c,docs){
       <td class="reg-num" data-l="Review every">${d.reviewMonths?d.reviewMonths+' months':''}</td>
       <td class="reg-num" data-l="Next review">${_regDate(d.nextReview)}</td>
       <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null&&s.k!=='ok'?` <em>${_regDaysText(s)}</em>`:''}</span></td>
-      <td class="reg-tk" data-l="Review task">${_regTaskCell(d,tg)}</td>
+      <td class="reg-tk" data-l="Revision task">${_regTaskCell(d,tg)}</td>
       <td class="reg-cm">${_regCmHtml(cm.get(d.id)||0)}</td></tr>`).join('')
     :'<tr class="rq-none"><td colspan="8">Nothing matches these filters.</td></tr>';
   return`<section class="rd-sheet">${_regIoBar(c,'docs')}
     <div class="reg-bar"><div class="reg-seg" role="group" aria-label="Review status">${segs.map(([k,l,n])=>`<button type="button" class="${v.st===k?'on ':''}${k}" aria-pressed="${v.st===k}" data-reg-st="${k}" onclick="_regSet('st','${k}')">${k?_regIcon(k):''}${l}<b>${n}</b></button>`).join('')}</div>
       <div class="reg-fl">${series.length?`<label class="rd-f"><span>Series</span><select class="form-input" id="reg-series" onchange="_regSet('series',this.value)"><option value="">All series</option>${series.map(s=>`<option value="${escHtml(s)}"${v.series===s?' selected':''}>${escHtml(s)}</option>`).join('')}</select></label>`:''}
       <label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or note" oninput="_regSearch(this.value)"></label></div></div>
-    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th>Review task</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th>Revision task</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
   </section>`;
 }
 function _regQualsOrder(people,meta){
@@ -8890,7 +9024,7 @@ function _regDrawerRender(){
     head=`${d.code?`<span class="reg-dr-code">${escHtml(d.code)}</span>`:''}<h3 id="reg-dr-title">${escHtml(d.title||d.name)}</h3>`;
     info=`<dl class="reg-dl"><dt>Status</dt><dd><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null?` <em>${_regDaysText(s)}</em>`:''}</span></dd>
       <dt>Issued</dt><dd>${_regDate(d.issueDate)||'Not given'}</dd><dt>Review every</dt><dd>${d.reviewMonths?d.reviewMonths+' months':'Not given'}</dd><dt>Next review</dt><dd>${_regDate(d.nextReview)||'Not set'}</dd>
-      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}<dt>Review task</dt><dd>${_regTaskCell(d,_regImsTarget(d.clientId))||'<span class="rq-na">None</span>'}</dd></dl>`;
+      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}<dt>Revision task</dt><dd>${_regTaskCell(d,_regImsTarget(d.clientId))||'<span class="rq-na">None</span>'}</dd></dl>`;
     list=_regComments('doc',d.id);
   }else{
     const p=(DB.registerPeople||[]).find(x=>x.id===dr.rowId);if(!p){_regDrawerClose();return;}
@@ -9128,13 +9262,27 @@ function _rcQueueRow(r){
     <td class="rq-c-own" data-l="Owner">${own?escHtml(own.name):'<span class="rq-na">Unassigned</span>'}</td>
     <td class="rq-c-st"><span class="rq-st" style="background:${_safeCss(r.status.bg,'#f1f5f9')};color:${_safeCss(r.status.color,'#475569')}">${escHtml(r.status.label||'')}</span></td></tr>`;
 }
+// Hours logged this month on the retained services, newest first, with who logged them and what they count to.
+function _rcHoursHtml(b,ym){
+  const rows=[];
+  (b.retainer.services||[]).forEach(s=>{const cat=_rsCat(s.key)||{name:s.key,short:s.key},parts=_rsPartsOf(s);
+    _rsHourRows(b,s,parts||[]).forEach(x=>{if(String(x.e.date||'').slice(0,7)===ym)rows.push({x,cat,part:parts?x.part:null});});});
+  rows.sort((a,z)=>String(z.x.e.date).localeCompare(String(a.x.e.date))||String(z.x.e.createdAt||'').localeCompare(String(a.x.e.createdAt||'')));
+  const total=rows.reduce((n,r)=>n+r.x.hours,0),st={draft:'Draft',submitted:'Submitted',approved:'Approved'};
+  const body=rows.length?rows.map(({x,cat,part})=>{const who=getStaff(x.e.staffId);
+    return`<tr data-rc-hour="${escHtml(x.e.id)}"><td class="reg-num">${_regDate(String(x.e.date).slice(0,10))}</td><td>${escHtml(who?who.name:'Unknown')}</td><td>${escHtml(x.t.name||x.t.title||'Task')}</td><td>${escHtml(cat.short||cat.name)}${part?`<small>${escHtml(part.label||'')}</small>`:''}</td><td class="reg-num"><b>${_rsHrs(x.hours)}</b><small>${st[x.e.status]||''}</small></td></tr>`;}).join('')
+    :`<tr class="rq-none"><td colspan="5">No hours logged on these services in ${_rsMonthName(ym)} yet.</td></tr>`;
+  return`<section class="rd-sheet rc-hours" aria-labelledby="rc-hours-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-hours-h">Hours logged in ${_rsMonthName(ym)} <span class="rd-n">${_rsHrs(total)} h</span></h3></div>
+    <div class="rq-wrap"><table class="rq-t rc-hours-t" id="rc-hours"><thead><tr><th>Date</th><th>Logged by</th><th>Task</th><th>Counts to</th><th>Hours</th></tr></thead><tbody>${body}</tbody></table></div>
+    <p class="rd-hint">Staff only. Hours logged on a service's tasks fill its hour squares; the client sees the totals, never who logged them.</p></section>`;
+}
 function _rcOverviewHtml(c,b,docs,people){
   const today=_regToday(),ym=_rsYm(),month=_rsMonthName(ym);
   let monthHtml='';
   if(b){
     const svc=(b.retainer.services||[]).map(s=>{
-      const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},used=_retainerUsed(b.id,s.groupId,ym),own=s.ownerId?getStaff(s.ownerId):null;
-      return`<li class="${used>=s.allowance?'full':used>=s.allowance*0.8?'near':''}" data-rc-svc="${s.key}"><div class="rc-svc-n"><b>${escHtml(cat.name)}</b>${own?`<small>${escHtml(own.name)}</small>`:''}</div>${_rsSquares(used,s.allowance,cat.color,'lg')}<span class="rc-svc-u"><b>${used} of ${s.allowance}</b> ${escHtml(s.unit)}</span></li>`;
+      const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},us=_rsUsage(b,s,ym),own=s.ownerId?getStaff(s.ownerId):null;
+      return us.parts.map((u,i)=>`<li class="${_rsPartFull(u)?'full':_rsPartNear(u)?'near':''}" data-rc-svc="${s.key}"${us.parts.length>1?` data-rc-part="${i}"`:''}><div class="rc-svc-n"><b>${escHtml(cat.name)}</b>${u.unit==='hours'&&u.label?`<small>${escHtml(u.label)}${u.period==='quarter'?', '+_rsQuarterName(ym):''}</small>`:own?`<small>${escHtml(own.name)}</small>`:''}</div>${_rsSq(u,'lg')}<span class="rc-svc-u">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours`:`<b>${u.used} of ${u.cap}</b> ${escHtml(u.unit)}${u.prog?`, ${u.prog} in progress`:''}`}</span></li>`).join('');
     }).join('');
     const top=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t));
     const delivered=top.filter(t=>_rsDone(t)&&_rsDoneYm(t)===ym).length;
@@ -9147,7 +9295,7 @@ function _rcOverviewHtml(c,b,docs,people){
   const work=`<section class="rd-sheet" aria-labelledby="rc-q-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-q-h">Requests and work <span class="rd-n">${rows.length}</span></h3></div>
     ${rows.length?`<div class="rq-wrap"><table class="rq-t rc-q" id="rc-queue"><thead><tr><th>Work</th><th>Reply by</th><th>Deliver by</th><th>Owner</th><th>Status</th></tr></thead><tbody>${rows.slice(0,12).map(_rcQueueRow).join('')}</tbody></table></div>${rows.length>12?`<p class="rd-hint">And ${rows.length-12} more in the queue.</p>`:''}`
       :'<p class="rd-hint">Nothing open for this client.</p>'}</section>`;
-  return`<div class="rc-grid"><div class="rc-col">${monthHtml}${work}</div><div class="rc-col">${_rcDocsHtml(c,b,docs,today)}${_rcTrainingHtml(c,people,today)}</div></div>`;
+  return`<div class="rc-grid"><div class="rc-col">${monthHtml}${work}${b?_rcHoursHtml(b,ym):''}</div><div class="rc-col">${_rcDocsHtml(c,b,docs,today)}${_rcTrainingHtml(c,people,today)}</div></div>`;
 }
 // Document control on the Overview: what is due, and the reviews still without a task, one click from being work.
 function _rcDocsHtml(c,b,docs,today){
@@ -9157,7 +9305,7 @@ function _rcDocsHtml(c,b,docs,today){
   const need=due.filter(x=>!_regDocInHand(x.d)),tg=_regImsTarget(c.id),N=need.length;
   const sum=[cnt('over')?`<b class="bad">${cnt('over')} overdue</b>`:'',cnt('d30')?`<b class="warn">${cnt('d30')} due within 30 days</b>`:'',`${cnt('d60')+cnt('d90')+cnt('ok')} current`,cnt('none')?`${cnt('none')} with no date`:''].filter(Boolean).join(', ');
   const sugg=!N?'':tg
-    ?`<div class="rc-sugg" id="rc-sugg"><p><b>${N} document${N===1?' is':'s are'} due for review with no task yet.</b> Add ${N===1?'it':'them'} to IMS and Document Control: each task is due on the review date and counts as a document review when done.</p><button class="btn btn-primary btn-sm" id="rc-add-tasks" onclick="_regAddTasks('${c.id}','due')">Add ${N} review task${N===1?'':'s'}</button></div>`
+    ?`<div class="rc-sugg" id="rc-sugg"><p><b>${N} document${N===1?' is':'s are'} due for review with no revision task yet.</b> Add ${N===1?'it':'them'} to IMS and Document Control: each task is due on the review date and counts as a document review when done.</p><button class="btn btn-primary btn-sm" id="rc-add-tasks" onclick="_regAddTasks('${c.id}','due')">Add ${N} revision task${N===1?'':'s'}</button></div>`
     :`<div class="rc-sugg" id="rc-sugg"><p><b>${N} document${N===1?' is':'s are'} due for review.</b> ${b?'Add IMS and Document Control to the plan':'Set up a retainer'} to turn reviews into tasks.</p></div>`;
   const list=due.slice(0,8).map(({d,s})=>`<li class="${s.k}" data-rc-doc="${d.id}"><button type="button" class="rq-w" onclick="_regOpenDoc('${d.id}')"><b>${d.code?`<span class="reg-code">${escHtml(d.code)}</span> `:''}${escHtml(d.title||d.name)}</b><small>Next review ${_regDate(d.nextReview)}, <span class="reg-st ${s.k}">${escHtml(s.label)}</span></small></button>${_regTaskCell(d,tg)}</li>`).join('');
   return`<section class="rd-sheet rc-docs" aria-labelledby="rc-docs-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-docs-h">Document control <span class="rd-n">${docs.length}</span></h3><button type="button" class="rs-lvl-use" onclick="_regSet('tab','docs')">Full register</button></div>
@@ -9195,7 +9343,7 @@ function regAddRenewalTasks(clientId,ids){
   try{requireInternalUser(currentUser);}catch(e){return 0;}
   const tg=_regTrnTarget(clientId);if(!tg)return 0;
   const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
-  let n=0,order=(DB.tasks||[]).filter(t=>t.groupId===tg.service.groupId&&!t.parentTaskId).length;
+  let n=0,order=_wsNextOrder(tg.service.groupId);
   ids.forEach(id=>{
     const p=(DB.registerPeople||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!p||_regPersonInHand(p))return;
     const due=_regPersonDue(p,today);if(!due.length)return;
@@ -9246,12 +9394,12 @@ function regAddReviewTasks(clientId,ids){
   try{requireInternalUser(currentUser);}catch(e){return 0;}
   const tg=_regImsTarget(clientId);if(!tg)return 0;
   const today=_regToday(),now=new Date().toISOString(),owner=tg.service.ownerId||tg.board.retainer.leadId||null;
-  let n=0,order=(DB.tasks||[]).filter(t=>t.groupId===tg.service.groupId&&!t.parentTaskId).length;
+  let n=0,order=_wsNextOrder(tg.service.groupId);
   ids.forEach(id=>{
     const d=(DB.registerDocs||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived);if(!d||_regDocInHand(d))return;
     // Only a review that is due (overdue, or within 90 days) becomes a task.
     const k=_regDocState(d,today).k;if(k==='ok'||k==='none')return;
-    const name=('Review '+(d.code?d.code+' ':'')+(d.title||d.name)).slice(0,200);
+    const name=('Revise '+(d.code?d.code+' ':'')+(d.title||d.name)).slice(0,200);
     DB.tasks.push({id:'t'+uid(),name,title:name,clientId,boardId:tg.board.id,workboardId:tg.board.id,groupId:tg.service.groupId,parentTaskId:null,
       status:'todo',priority:'med',ownerId:owner,currentlyWith:owner,currentlyWithType:owner?'staff':'none',currentlyWithUserId:owner,
       startDate:today,endDate:d.nextReview&&d.nextReview>today?d.nextReview:today,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:order++,
@@ -9260,24 +9408,24 @@ function regAddReviewTasks(clientId,ids){
     n++;
   });
   if(n){
-    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} document review task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
+    if(owner&&owner!==currentUser.id&&typeof notify==='function')notify(owner,null,'task_assigned',`${n} document revision task${n===1?' was':'s were'} added for ${((DB.clients||[]).find(x=>x.id===clientId)||{}).name||'a retained client'}`);
     saveDB(DB);
   }
   return n;
 }
 function _regTaskCell(d,tg){
   const t=_regDocTask(d);
-  if(t&&!_rsDone(t)){const sm=getStatusMeta(t.status);return`<button type="button" class="reg-task" data-reg-task="${t.id}" onclick="openTaskPanel('${t.id}')" title="Open the review task">${escHtml(sm.label||'Open')}${t.endDate?`, due ${escHtml(_rdShort(t.endDate).replace(/^\w+,? /,''))}`:''}</button>`;}
-  if(t&&_regDocInHand(d))return`<span class="reg-task done" data-reg-task="${t.id}">Reviewed ${escHtml(_rdShort(String(t.completedAt||t.updatedAt).slice(0,10)).replace(/^\w+,? /,''))}, update the register</span>`;
+  if(t&&!_rsDone(t)){const sm=getStatusMeta(t.status);return`<button type="button" class="reg-task" data-reg-task="${t.id}" onclick="openTaskPanel('${t.id}')" title="Open the revision task">${escHtml(sm.label||'Open')}${t.endDate?`, due ${escHtml(_rdShort(t.endDate).replace(/^\w+,? /,''))}`:''}</button>`;}
+  if(t&&_regDocInHand(d))return`<span class="reg-task done" data-reg-task="${t.id}">Revised ${escHtml(_rdShort(String(t.completedAt||t.updatedAt).slice(0,10)).replace(/^\w+,? /,''))}, update the register</span>`;
   const k=_regDocState(d,_regToday()).k;
-  if(tg&&(k==='over'||k==='d30'||k==='d60'||k==='d90'))return`<button type="button" class="btn btn-ghost btn-sm reg-add-task" data-reg-add="${d.id}" onclick="_regAddTasks('${d.clientId}','${d.id}')">Add review task</button>`;
+  if(tg&&(k==='over'||k==='d30'||k==='d60'||k==='d90'))return`<button type="button" class="btn btn-ghost btn-sm reg-add-task" data-reg-add="${d.id}" onclick="_regAddTasks('${d.clientId}','${d.id}')">Add revision task</button>`;
   return'';
 }
 function _regAddTasks(clientId,which){
   const today=_regToday();
   const ids=which==='due'?(DB.registerDocs||[]).filter(d=>d.clientId===clientId&&!d.archived&&_regNeedsTask(d,today)).map(d=>d.id):[which];
   const n=regAddReviewTasks(clientId,ids);
-  if(n){showToast(`${n} review task${n===1?'':'s'} added to IMS and Document Control.`,'success');renderSidebarWorkboards();}
+  if(n){showToast(`${n} revision task${n===1?'':'s'} added to IMS and Document Control.`,'success');renderSidebarWorkboards();}
   if(_regDr&&_regDr.kind==='doc')_regDrawerRender();
   _regRerender();
 }
@@ -9346,10 +9494,11 @@ function _rsClientRetainer(b){
   if(_portalServerMode())return b.retainer;
   const r=b.retainer,ym=_rsYm(),prev=_rsPrevYm(ym),months=r.months||{};
   const nm=id=>{const u=id?getStaff(id):null;return u?u.name:null;};
-  return{services:(r.services||[]).map(s=>({key:s.key,groupId:s.groupId,unit:s.unit,allowance:s.allowance,core:!!s.core,ownerName:nm(s.ownerId),used:_retainerUsed(b.id,s.groupId,ym)})),
+  const part=u=>({label:u.label,cap:u.cap,used:u.used,prog:u.prog,period:u.period,unit:u.unit});
+  return{services:(r.services||[]).map(s=>{const us=_rsUsage(b,s,ym);return{key:s.key,groupId:s.groupId,unit:s.unit,allowance:s.allowance,core:!!s.core,ownerName:nm(s.ownerId),used:us.parts[0].used,mode:us.mode,prog:us.mode==='items'?us.parts[0].prog:0,parts:us.parts.map(part)};}),
     leadName:nm(r.leadId),startMonth:r.startMonth||null,priority:r.priority||null,month:ym,
     focusTaskIds:((months[ym]||{}).focusTaskIds||[]).slice(0,3),reviewMonth:prev,reviewNote:(months[prev]||{}).note||null,
-    history:[prev,_rsPrevYm(prev)].map(m=>({month:m,services:(r.services||[]).map(s=>({key:s.key,used:_retainerUsed(b.id,s.groupId,m)}))}))};
+    history:[prev,_rsPrevYm(prev)].map(m=>({month:m,services:(r.services||[]).map(s=>{const us=_rsUsage(b,s,m);return{key:s.key,used:us.mode==='hours'?_rsHrs(us.parts.filter(u=>u.period==='month').reduce((n,u)=>n+u.used,0)):us.parts[0].used,unit:us.mode==='hours'?'hours':null};})}))};
 }
 // What a request asked for, in words, on both sides.
 function _wrServiceLabel(r){
@@ -9388,8 +9537,10 @@ function _rsEntryRetained(e,task){
   return _isRetainedBoard((DB.boards||[]).find(b=>b.id===_taskBoardId(task)));
 }
 // Request Work: the Service choices and the hint under them.
-function _cpServiceOptions(clientId){
+function _cpServiceOptions(clientId,scope){
   const boards=_cpClientBoards(clientId),rb=boards.find(b=>_isRetainedBoard(b));
+  if(scope==='retained')return rb?((_rsClientRetainer(rb)||{}).services||[]).map((s,i)=>`<option value="g:${s.groupId}"${i===0?' selected':''}>${escHtml((_rsCat(s.key)||{name:s.key}).name)}</option>`).join(''):'';
+  if(scope==='adhoc')return boards.filter(b=>!_isRetainedBoard(b)).map(b=>`<option value="b:${b.id}">${escHtml(b.name)}</option>`).join('')+'<option value="adhoc" selected>Ad hoc</option>';
   const ret=rb?((_rsClientRetainer(rb)||{}).services||[]).map(s=>`<option value="g:${s.groupId}">${escHtml((_rsCat(s.key)||{name:s.key}).name)}</option>`).join(''):'';
   const other=boards.filter(b=>!_isRetainedBoard(b)).map(b=>`<option value="b:${b.id}">${escHtml(b.name)}</option>`).join('');
   return(ret?`<optgroup label="Your retainer">${ret}</optgroup>`:'')+`<optgroup label="Other work">${other}<option value="adhoc" selected>Ad hoc</option></optgroup>`;
@@ -9400,6 +9551,8 @@ function _cpServiceHint(clientId,ref){
   const rb=_cpClientBoards(clientId).find(b=>_isRetainedBoard(b));
   const s=rb&&((_rsClientRetainer(rb)||{}).services||[]).find(x=>'g:'+x.groupId===ref);
   if(!s)return'';
+  if(s.mode==='hours'&&(s.parts||[]).length){const cap=s.parts.filter(u=>u.period!=='quarter').reduce((n,u)=>n+u.cap,0),usedH=s.parts.filter(u=>u.period!=='quarter').reduce((n,u)=>n+u.used,0),leftH=Math.max(0,Math.round((cap-usedH)*100)/100);
+    return leftH?`Covered by your retainer: ${_rsHrs(leftH)} of ${_rsHrs(cap)} hours left this month.`:`This month's hours are used up, so we will quote before starting.`;}
   const left=Math.max(0,s.allowance-s.used);
   return left?`Covered by your retainer: ${left} of ${s.allowance} ${s.unit} left this month.`:`This month's ${s.unit} are used up, so we will quote before starting.`;
 }
@@ -9418,8 +9571,9 @@ function renderCpRetained(clientId,tasks,b){
   const row=t=>{const st=cpBroadStatus(t.status),s=steps(t);
     return`<button type="button" class="cp-rt-row" onclick="cpOpenTaskModal('${t.id}')"><span class="cp-rt-t">${escHtml(t.title)}${s?`<small>${s}</small>`:''}</span><span class="cp-badge" style="background:${st.bg};color:${st.color}">${escHtml(st.label)}</span><span class="cp-rt-with">${t.awaitingClient?'You':escHtml(t.withName||t.ownerName||'Etcher')}</span><span class="cp-rt-due">${due(t)}</span></button>`;};
   const svc=s=>{const c=cat(s.key),list=top.filter(t=>t.groupId===s.groupId);
-    const cells=Array.from({length:Math.min(s.allowance,60)},(_,i)=>`<i${i<s.used?' class="on"':''}></i>`).join('');
-    return`<div class="cp-rt-svc" style="--rt-c:${c.color}"><div class="cp-rt-side"><b>${escHtml(c.name)}</b><small>${c.kind==='core'?'Core service':'Add-on'}</small><div class="cp-rt-cells" aria-hidden="true">${cells}</div><div class="cp-rt-used"><b>${s.used} of ${s.allowance}</b> ${escHtml(s.unit)} used${s.used>s.allowance?'. Extra work is quoted first':''}</div></div>
+    const parts=(s.parts&&s.parts.length)?s.parts:[{label:'',cap:s.allowance,used:s.used,prog:s.prog||0,period:'month',unit:s.unit}];
+    const meter=parts.map(u=>`${u.unit==='hours'&&u.label?`<div class="cp-rt-part">${escHtml(u.label)}${u.period==='quarter'?', this quarter':''}</div>`:''}${_rsSq(u,'cp-rt-cells')}<div class="cp-rt-used">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours used`:`<b>${u.used} of ${u.cap}</b> ${escHtml(u.unit)} used${u.prog?`, ${u.prog} in progress`:''}`}${u.used>u.cap?'. Extra work is quoted first':''}</div>`).join('');
+    return`<div class="cp-rt-svc" style="--rt-c:${c.color}"><div class="cp-rt-side"><b>${escHtml(c.name)}</b><small>${c.kind==='core'?'Core service':'Add-on'}</small>${meter}</div>
       <div class="cp-rt-jobs">${list.length?list.map(row).join(''):'<div class="cp-rt-none">Nothing this month.</div>'}</div></div>`;};
   const focus=(rt.focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean);
   const inPm=d=>!!d&&_rsYm(new Date(d))===rt.reviewMonth;
@@ -9436,8 +9590,9 @@ function renderCpRetained(clientId,tasks,b){
     </div>
     <div class="cp-section-title" style="margin:22px 0 10px">Services this month</div>
     <div class="cp-stat-card cp-rt-ledger">${(rt.services||[]).map(svc).join('')}</div>
-    ${(rt.history||[]).length&&(rt.services||[]).length?`<div class="cp-stat-card cp-rt-hist"><b>Earlier months</b><table><thead><tr><th>Service</th>${rt.history.map(h=>`<th>${_rsMonthName(h.month)}</th>`).join('')}</tr></thead><tbody>${rt.services.map(s=>`<tr><td>${escHtml(cat(s.key).name)}</td>${rt.history.map(h=>{const x=(h.services||[]).find(y=>y.key===s.key);return`<td>${x?x.used:0} ${escHtml(s.unit)}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
+    ${(rt.history||[]).length&&(rt.services||[]).length?`<div class="cp-stat-card cp-rt-hist"><b>Earlier months</b><table><thead><tr><th>Service</th>${rt.history.map(h=>`<th>${_rsMonthName(h.month)}</th>`).join('')}</tr></thead><tbody>${rt.services.map(s=>`<tr><td>${escHtml(cat(s.key).name)}</td>${rt.history.map(h=>{const x=(h.services||[]).find(y=>y.key===s.key);return`<td>${x?x.used:0} ${escHtml(x&&x.unit?x.unit:s.unit)}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
     <div class="cp-stat-card cp-rt-review"><b>${_rsMonthName(rt.reviewMonth)} in review</b><div class="cp-rt-nums"><span><b>${delivered}</b> delivered</span><span><b>${reqs}</b> requests sent</span><span><b>${overdue}</b> overdue now</span></div>${rt.reviewNote?`<p>${escHtml(rt.reviewNote)}${rt.leadName?`<span>${escHtml(rt.leadName)}, retainer lead</span>`:''}</p>`:''}</div>
+    <div class="cp-rt-req" id="cp-rt-req">${_cpReqFormHtml(clientId,'retained')}</div>
   </div>`;
 }
 
@@ -10591,7 +10746,7 @@ function triageConfirmRoute(itemId){
     id:'t'+uid(),workboardId:boardId,boardId,groupId,
     title,name:title,description:desc,status:'not-started',priority,
     ownerId,startDate:null,endDate:dueDate,
-    archived:false,order:0,tags:['email-intake'],
+    archived:false,order:_wsNextOrder(groupId),tags:['email-intake'],
     emailSource:{from:item.from,fromName:item.fromName,subject:item.subject,receivedAt:item.receivedAt,originalEmailId:item.originalEmailId},
     createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
     percentComplete:0,percentMode:'manual',lockedDates:false,dependencies:[],
@@ -10676,7 +10831,7 @@ function triageConfirmBulkRoute(){
       id:'t'+uid(),workboardId:boardId,boardId,groupId,
       title,name:title,description:item.suggestedDescription||item.snippet||'',status:'not-started',priority,
       ownerId,startDate:null,endDate:dueDate,
-      archived:false,order:0,tags:['email-intake'],
+      archived:false,order:_wsNextOrder(groupId),tags:['email-intake'],
       emailSource:{from:item.from,fromName:item.fromName,subject:item.subject,receivedAt:item.receivedAt,originalEmailId:item.originalEmailId},
       createdAt:now,updatedAt:now,
       percentComplete:0,percentMode:'manual',lockedDates:false,dependencies:[],
@@ -13053,7 +13208,7 @@ function renderWorkRequestCard(r){
     pending:   {label:'New',             bg:'#f1f5f9',color:'#64748b'},
     reviewing: {label:'Reviewing',       bg:'#dbeafe',color:'#1d4ed8'},
     scoped:    {label:'In Scope',        bg:'#dcfce7',color:'#15803d'},
-    declined:  {label:'Not Progressing', bg:'#fee2e2',color:'#b91c1c'},
+    declined:  {label:'Declined', bg:'#fee2e2',color:'#b91c1c'},
   };
   const sm=statusMeta[r.status]||statusMeta.pending;
   const date=new Date(r.submittedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
@@ -13081,7 +13236,7 @@ function renderWorkRequestCard(r){
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div id="wr-sm-${r.id}" class="hidden" style="position:fixed;background:#fff;border:1px solid #e2eaf2;border-radius:8px;box-shadow:0 6px 20px rgba(13,28,51,0.13);z-index:300;min-width:180px;overflow:hidden">
-              ${[{v:'pending',label:'New',bg:'#f1f5f9',color:'#64748b'},{v:'reviewing',label:'Reviewing',bg:'#dbeafe',color:'#1d4ed8'},{v:'scoped',label:'In Scope',bg:'#dcfce7',color:'#15803d'},{v:'declined',label:'Not Progressing',bg:'#fee2e2',color:'#b91c1c'}].map(opt=>`<div onclick="wrUpdateStatus('${r.id}','${opt.v}',null)" style="padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:${opt.color};background:${r.status===opt.v?opt.bg:'#fff'};transition:background 0.1s" onmouseover="this.style.background='${opt.bg}'" onmouseout="this.style.background='${r.status===opt.v?opt.bg:'#fff'}'"><span style="width:7px;height:7px;border-radius:50%;background:${opt.color};flex-shrink:0"></span>${opt.label}</div>`).join('')}
+              ${[{v:'pending',label:'New',bg:'#f1f5f9',color:'#64748b'},{v:'reviewing',label:'Reviewing',bg:'#dbeafe',color:'#1d4ed8'},{v:'scoped',label:'In Scope',bg:'#dcfce7',color:'#15803d'},{v:'declined',label:'Declined',bg:'#fee2e2',color:'#b91c1c'}].map(opt=>`<div onclick="wrUpdateStatus('${r.id}','${opt.v}',null)" style="padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:${opt.color};background:${r.status===opt.v?opt.bg:'#fff'};transition:background 0.1s" onmouseover="this.style.background='${opt.bg}'" onmouseout="this.style.background='${r.status===opt.v?opt.bg:'#fff'}'"><span style="width:7px;height:7px;border-radius:50%;background:${opt.color};flex-shrink:0"></span>${opt.label}</div>`).join('')}
             </div>
           </div>
         </div>
@@ -13104,7 +13259,7 @@ function renderWorkRequestCard(r){
         :`<button onclick="wrOpenAddModal('${r.id}')" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:5px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Add to Workboard
-          </button>`
+          </button>${r.status!=='declined'?`<button onclick="wrOpenDecline('${r.id}')" class="btn btn-ghost btn-sm" data-wr-decline="${r.id}" style="color:#b91c1c">Decline</button>`:''}`
       }
       ${currentUser.role==='admin'?`<button onclick="deleteWorkRequest('${r.id}')" class="btn btn-ghost btn-sm" style="margin-left:auto;color:#b91c1c">✕ Delete</button>`:''}
     </div>
@@ -13181,6 +13336,23 @@ function wrUpdateStatus(requestId, status, note){
   _wrRedraw(r.id);
 }
 
+// Decline a request: the reason goes to the client as the note on their request.
+function wrOpenDecline(requestId){
+  const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);if(!r)return;
+  openGenericModal('Decline this request',`<div style="display:grid;gap:12px">
+      <p style="margin:0;font-size:13px;color:#3d5269;line-height:1.55"><b>${escHtml(r.title||'Request')}</b><br>The client sees it as declined, with your reason.</p>
+      <label class="form-label" for="wr-decline-why">Reason for the client</label>
+      <textarea id="wr-decline-why" class="form-input" rows="3" maxlength="1000" placeholder="For example: this is outside the retainer; we can quote it separately.">${escHtml(r.adminNote||'')}</textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-danger" id="wr-decline-go" onclick="wrDecline('${requestId}')">Decline request</button></div>
+    </div>`,'480px');
+  setTimeout(()=>{const t=document.getElementById('wr-decline-why');if(t)t.focus();},50);
+}
+function wrDecline(requestId){
+  const t=document.getElementById('wr-decline-why'),why=(t?t.value:'').trim();
+  if(!why){if(t){t.style.borderColor='#dc2626';t.focus();}return;}
+  closeGenericModal();
+  wrUpdateStatus(requestId,'declined',why);
+}
 function wrOpenAddModal(requestId){
   const r=(DB.clientWorkRequests||[]).find(x=>x.id===requestId);
   if(!r)return;
@@ -13307,7 +13479,7 @@ function _wrCreateTask(r,client,boardId,groupId,name,ownerId,now){
   const taskId='t'+uid();
   DB.tasks.push({
     id:taskId,name,title:name,
-    clientId:r.clientId,boardId,workboardId:boardId,groupId,
+    clientId:r.clientId,boardId,workboardId:boardId,groupId,order:_wsNextOrder(groupId),
     parentTaskId:null,
     status:'todo',priority:r.priority==='urgent'?'high':'med',
     ownerId:ownerId||null,
@@ -13507,6 +13679,7 @@ function openClientModal(id){
                   <div><label class="form-label">New Password (optional)</label><input id="cm-pw" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Leave blank to keep current"/></div>
                   <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Repeat password"/></div>
                 </div>`
+              :_cmEmailLinkOn()?`<div class="cm-link-note" id="cm-link-note" style="font-size:12px;color:#3d5269;line-height:1.55;background:#f6f8fb;border-radius:8px;padding:10px 12px">We email the client a link. They confirm the address and set their own password, so nobody else knows it. ${id?'Add an email to grant this client portal access.':'Leave the email blank to add the client without portal access.'}</div>`
               :`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                   <div><label class="form-label">Password</label><input id="cm-pw" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Min 8 characters"/></div>
                   <div><label class="form-label">Confirm Password</label><input id="cm-pw2" class="form-input" type="text" autocomplete="off" spellcheck="false" style="-webkit-text-security:disc" placeholder="Repeat password"/></div>
@@ -13527,6 +13700,8 @@ function openClientModal(id){
   if(c.logo)_extractLogoColors(c.logo,colors=>_cmApplyLogoColors(colors,true));
 }
 const _CM_EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Client portal logins by email link (switch CLIENT_EMAIL_LINK, read by supabase-client.js). Never in the local copy.
+function _cmEmailLinkOn(){return !!window._clientEmailLink&&!_localClientPreviewAllowed();}
 function _cmErr(fieldId,msg){_formErr(document.getElementById('cm-form'),fieldId,msg);}
 // The login API's refusal: 409 means the email is already someone else's login.
 async function _cmApiError(resp,fallback){
@@ -13563,7 +13738,20 @@ async function saveClient(id){
       // path only ever produced "Create a new client instead", a dead end for a client that
       // already has tasks/history attached and just needs portal access added later.
       const email=(document.getElementById('cm-email')?.value||'').trim();
-      if(email||pw){
+      if(email&&_cmEmailLinkOn()){
+        if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
+        const btn=document.getElementById('cm-save-btn');
+        if(btn){btn.disabled=true;btn.textContent='Sending…';}
+        try{
+          const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:id,shortCode})});
+          if(!resp.ok)throw await _cmApiError(resp,'Failed to send the portal invitation');
+          newAccountResult=await resp.json();newAccountResult._linkSent=email;
+        }catch(e){
+          _cmErr(e.field||null,e.message);
+          if(btn){btn.disabled=false;btn.textContent='Save';}
+          return;
+        }
+      }else if(email||pw){
         if(!email){_cmErr('cm-email','Enter a portal email to go with that password.');return;}
         if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
         if(!pw){_cmErr('cm-pw','Enter a password to go with that portal email.');return;}
@@ -13626,6 +13814,7 @@ async function saveClient(id){
     if(newAccountResult)writeAuditEvent('Client',id,'portal_login_created',null,{title:c.loginEmail||''});
     else if(pw)writeAuditEvent('Client',id,'portal_password_changed',null,null);
     saveDB(DB);closeGenericModal();renderView('clients');
+    if(newAccountResult&&newAccountResult._linkSent)showToast('We emailed '+newAccountResult._linkSent+' a link to confirm the address and set a password.','success',5000);
   }else{
     const email=(document.getElementById('cm-email')?.value||'').trim();
     const pw=(document.getElementById('cm-pw')?.value||'').trim();
@@ -13641,7 +13830,23 @@ async function saveClient(id){
       saveDB(DB);closeGenericModal();renderView('clients');
       return;
     }
-    if(email||pw){
+    if(email&&_cmEmailLinkOn()){
+      if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
+      const btn=document.getElementById('cm-save-btn');
+      if(btn){btn.disabled=true;btn.textContent='Sending…';btn.dataset.newId=cid;}
+      try{
+        const resp=await fetch('/api/invite-user',{method:'POST',headers:{'Content-Type':'application/json',...await _adminApiAuthHeaders()},body:JSON.stringify({name,email,clientId:cid,shortCode})});
+        if(!resp.ok)throw await _cmApiError(resp,'Failed to send the portal invitation');
+        const result=await resp.json();
+        DB.clients.push({id:cid,name,shortCode,color,logo,loginEmail:email,active:true,portalEnabled:true,supabaseUserId:result.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+        writeAuditEvent('Client',cid,'created',null,{title:name+', portal invitation sent to '+email,name,portalEnabled:true});
+        saveDB(DB);closeGenericModal();renderView('clients');
+        showToast(`We emailed ${email} a link to confirm the address and set a password.`,'success',5000);
+      }catch(e){
+        _cmErr(e.field||null,e.message);
+        if(btn){btn.disabled=false;btn.textContent='Save';}
+      }
+    }else if(email||pw){
       if(!email){_cmErr('cm-email','Enter a portal email to go with that password, or clear the password.');return;}
       if(!_CM_EMAIL_RE.test(email)){_cmErr('cm-email','Enter a valid email address.');return;}
       if(!pw){_cmErr('cm-pw','Enter a password to create the portal login, or clear the email.');return;}
@@ -15775,6 +15980,16 @@ function pfiAddFeeLine(invId){
   saveDB(DB);_pfiRerenderPreserveScroll();
 }
 // A fee line edited here is a billing decision for this invoice only: it never writes back to the retainer.
+// A change to one hour part of a service in the plan (admins).
+function _rsPlanPart(boardId,key,field,i,val){
+  if(currentUser?.role!=='admin')return;
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
+  const s=(b.retainer.services||[]).find(x=>x.key===key);if(!s||s.mode!=='hours')return;
+  if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);
+  if(!_rsPartChange(s.parts,field,i,val))return;
+  b.updatedAt=new Date().toISOString();saveDB(DB);openRetainerPlan(boardId);
+  if(currentView==='workspace')renderView('workspace');
+}
 function pfiSaveFeeLine(invId,flId,field,val){
   try{requireInternalUser(currentUser);}catch(e){return;}
   if(!_canBill(currentUser))return;
@@ -20720,7 +20935,7 @@ function saveTask(){
       percentMode:'manual',
       hourBudget:parseFloat(document.getElementById('tm-budget').value)||0,
       lockedDates:false,
-      order:0,
+      order:_wsNextOrder(_groupId),
       description:document.getElementById('tm-desc')?.innerHTML||'',
       dependencies:[],tags:[],archived:false,
       createdAt:_taskNow,updatedAt:_taskNow,
@@ -21518,6 +21733,11 @@ function wsStartInlineAdd(sectionId,groupId){
 // Shared by the desktop inline-add row and the mobile quick-add sheet, so the two can never
 // construct a task differently. groupId defaults to the last-used group, then the board's
 // first — the same fallback wsSaveInlineTask always used.
+// The next place in a group: after the last top-level task there, so the board keeps the order things were added.
+function _wsNextOrder(groupId){
+  let max=-1;(DB.tasks||[]).forEach(t=>{if(t.groupId===groupId&&!t.parentTaskId&&!t.archived){const o=Number(t.order)||0;if(o>max)max=o;}});
+  return max+1;
+}
 function _wsBuildNewTask(opts){
   const groupId=opts.groupId||wsInlineAddGroupId||getWbDefaultGroup();
   const grp=DB.groups.find(g=>g.id===groupId);
@@ -21529,7 +21749,7 @@ function _wsBuildNewTask(opts){
     currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),
     currentlyWithUserId:cwith==='client'?null:ownerId||null,
     percentComplete:opts.pct||0,startDate:opts.startDate||toDateStr(new Date()),endDate:opts.endDate||'',
-    hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+    hourBudget:'',description:'',dependencies:[],tags:[],archived:false,order:_wsNextOrder(groupId),createdAt:_now,updatedAt:_now,completedAt:null};
 }
 // Shows the "log hours" field once an inline-add row's own status select lands on a done
 // status — for a brand-new item (or subitem) added straight as Completed purely for
@@ -21579,7 +21799,7 @@ function wsHandlePasteMultiline(e){
   const wbId=currentWorkboard?.id||DB.workboards[0]?.id||'';
   lines.forEach(name=>{
     const _now=new Date().toISOString();
-    const _t={id:'t'+uid(),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||toDateStr(new Date()),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
+    const _t={id:'t'+uid(),order:_wsNextOrder(_gid),groupId:_gid,workboardId:wbId,clientId:_grp?.clientId||null,name,status,priority,ownerId,currentlyWith:cwith,currentlyWithType:cwith==='client'?'client':(cwith&&cwith!=='internal'?'staff':'none'),currentlyWithUserId:cwith==='client'?null:ownerId||null,percentComplete:pct,startDate:startDate||toDateStr(new Date()),endDate:endDate||'',hourBudget:'',description:'',dependencies:[],tags:[],archived:false,createdAt:_now,updatedAt:_now,completedAt:null};
     DB.tasks.push(_t);
     notifyTaskCreated(_t);
   });
@@ -26341,6 +26561,7 @@ function _checkRecurringTasks(){
         percentComplete:0,
         completedAt:null,
         recurrence:null,
+        order:_wsNextOrder(base.groupId),
         recurSourceId:source.id,
         createdAt:_now,
         updatedAt:_now,
@@ -30065,6 +30286,57 @@ function _cpRefreshCurrentSection(){
 // ── Work Requests ─────────────────────────────────────────
 let _cpReqFiles=[];
 
+// The request form: 'adhoc' on Request Work (other boards and ad hoc), 'retained' on the Retained Services tab.
+function _cpReqFormHtml(clientId,scope){
+  const ret=scope==='retained',rb=_cpClientBoards(clientId).find(b=>_isRetainedBoard(b)),hasRet=!!rb;
+  const firstRef=rb?(((_rsClientRetainer(rb)||{}).services||[])[0]||{}).groupId:null;
+  const firstRefStr=firstRef?'g:'+firstRef:'adhoc';
+  return `<div class="cp-stat-card">
+    <div class="cp-section-title" style="margin-bottom:6px">${ret?'Request work under your retainer':'Submit a Work Request'}</div>
+    <p style="font-size:13px;color:#5b6f84;margin-bottom:24px;line-height:1.65">${ret?'Pick the service it belongs to. It counts toward that service this month, and we confirm before anything beyond the allowance.':'Tell us what you need. We review it, scope it and follow up. Once it is in scope, it becomes a tracked task in your portal.'}</p>${!ret&&hasRet?`<p class="cp-req-ret">Work under your retainer is requested from the <button type="button" class="cp-sec-link" onclick="cpNavigate('retained')">Retained Services tab</button>.</p>`:''}<input type="hidden" id="cp-req-scope" value="${scope}">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div>
+        <label class="cp-form-label">Request Title <span style="color:#dc2626">*</span></label>
+        <input id="cp-req-title" class="cp-form-input" type="text" placeholder="e.g. Annual crane inspection report, Updated WHS documents…" maxlength="120"/>
+      </div>
+      <div>
+        <label class="cp-form-label">Description</label>
+        <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="What is needed, which site or crew, any deadline, and documents we should use." style="resize:vertical;min-height:100px"></textarea>
+      </div>
+      <div class="cp-req-grid">
+        <div><label class="cp-form-label" for="cp-req-service">Service</label><select id="cp-req-service" class="cp-form-input" style="height:40px;cursor:pointer" onchange="cpReqServiceHint()">${_cpServiceOptions(clientId,scope)}</select></div>
+        <div><label class="cp-form-label" for="cp-req-priority">Urgency</label><select id="cp-req-priority" class="cp-form-input" style="height:40px;cursor:pointer"><option value="normal">Normal</option><option value="week">Needed this week</option><option value="urgent">Urgent, holding up work</option></select></div>
+        <div><label class="cp-form-label" for="cp-req-needed">Needed by <span style="font-weight:400;color:#5b6f84">(optional)</span></label><input id="cp-req-needed" type="date" class="cp-form-input" style="height:40px"/></div>
+      </div>
+      <div id="cp-req-hint" class="cp-req-hint">${escHtml(_cpServiceHint(clientId,ret?firstRefStr:'adhoc'))}</div>
+      <div>
+        <label class="cp-form-label">Supporting Documents (optional)</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#31585a;padding:6px 14px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Attach files
+          </span>
+          <input type="file" multiple onchange="cpReqFileChanged(this)" style="display:none"/>
+        </label>
+        <div id="cp-req-file-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+        <div style="font-size:10px;color:#5b6f84;margin-top:4px">Max 1 MB per file</div>
+      </div>
+      <div>
+        <button onclick="cpSubmitRequest('${clientId}')" class="cp-action-btn approve" style="padding:10px 28px;font-size:14px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Request
+        </button>
+      </div>
+      <div id="cp-req-success" class="hidden" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#15803d">Request submitted!</div>
+          <div style="font-size:12px;color:#166534;margin-top:2px">The Etcher team will review your request and get back to you shortly.</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 function renderCpRequests(clientId){
   _cpReqFiles=[];
   const requests=(DB.clientWorkRequests||[]).filter(r=>r.clientId===clientId).sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
@@ -30073,7 +30345,7 @@ function renderCpRequests(clientId){
     return({'pending':  {label:'Submitted',      bg:'#f1f5f9',color:'#64748b'},
             'reviewing':{label:'Under Review',   bg:'#dbeafe',color:'#1d4ed8'},
             'scoped':   {label:'In Scope',       bg:'#dcfce7',color:'#15803d'},
-            'declined': {label:'Not Progressing',bg:'#fee2e2',color:'#b91c1c'},
+            'declined': {label:'Declined',bg:'#fee2e2',color:'#b91c1c'},
     }[s])||{label:'Submitted',bg:'#f1f5f9',color:'#64748b'};
   }
 
@@ -30102,51 +30374,7 @@ function renderCpRequests(clientId){
     <p style="font-size:13px;color:#1e40af;margin:0;line-height:1.65">Requests will go through Review and Scope before being added to the board. Once tasks are scoped and added to the board, they will continue to show as <strong>In Scope</strong> in the Client Portal.</p>
   </div>`;
 
-  const form=`<div class="cp-stat-card">
-    <div class="cp-section-title" style="margin-bottom:6px">Submit a Work Request</div>
-    <p style="font-size:13px;color:#5b6f84;margin-bottom:24px;line-height:1.65">Tell us what you need. We review it, scope it and follow up. Once it is in scope, it becomes a tracked task in your portal.</p>
-    <div style="display:flex;flex-direction:column;gap:18px">
-      <div>
-        <label class="cp-form-label">Request Title <span style="color:#dc2626">*</span></label>
-        <input id="cp-req-title" class="cp-form-input" type="text" placeholder="e.g. Annual crane inspection report, Updated WHS documents…" maxlength="120"/>
-      </div>
-      <div>
-        <label class="cp-form-label">Description</label>
-        <textarea id="cp-req-desc" class="cp-form-input" rows="4" placeholder="What is needed, which site or crew, any deadline, and documents we should use." style="resize:vertical;min-height:100px"></textarea>
-      </div>
-      <div class="cp-req-grid">
-        <div><label class="cp-form-label" for="cp-req-service">Service</label><select id="cp-req-service" class="cp-form-input" style="height:40px;cursor:pointer" onchange="cpReqServiceHint()">${_cpServiceOptions(clientId)}</select></div>
-        <div><label class="cp-form-label" for="cp-req-priority">Urgency</label><select id="cp-req-priority" class="cp-form-input" style="height:40px;cursor:pointer"><option value="normal">Normal</option><option value="week">Needed this week</option><option value="urgent">Urgent, holding up work</option></select></div>
-        <div><label class="cp-form-label" for="cp-req-needed">Needed by <span style="font-weight:400;color:#5b6f84">(optional)</span></label><input id="cp-req-needed" type="date" class="cp-form-input" style="height:40px"/></div>
-      </div>
-      <div id="cp-req-hint" class="cp-req-hint">${escHtml(_cpServiceHint(clientId,'adhoc'))}</div>
-      <div>
-        <label class="cp-form-label">Supporting Documents (optional)</label>
-        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#31585a;padding:6px 14px;border:1.5px dashed #c8d4e0;border-radius:6px;transition:border-color 0.15s" onmouseover="this.style.borderColor='#97bcbd'" onmouseout="this.style.borderColor='#c8d4e0'">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-            Attach files
-          </span>
-          <input type="file" multiple onchange="cpReqFileChanged(this)" style="display:none"/>
-        </label>
-        <div id="cp-req-file-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-        <div style="font-size:10px;color:#5b6f84;margin-top:4px">Max 1 MB per file</div>
-      </div>
-      <div>
-        <button onclick="cpSubmitRequest('${clientId}')" class="cp-action-btn approve" style="padding:10px 28px;font-size:14px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Submit Request
-        </button>
-      </div>
-      <div id="cp-req-success" class="hidden" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:12px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#15803d">Request submitted!</div>
-          <div style="font-size:12px;color:#166534;margin-top:2px">The Etcher team will review your request and get back to you shortly.</div>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  const form=_cpReqFormHtml(clientId,'adhoc');
 
   const after=`<div class="cp-stat-card cp-req-after"><div class="cp-section-title">After you send it</div><ol>
     <li><b>Received</b><span>Your Etcher team sees it straight away.</span></li>
@@ -30174,6 +30402,7 @@ function cpReqFileChanged(input){
 
 function cpSubmitRequest(_unused){
   if(currentUser?.role!=='client')return;
+  const _reqBack=(document.getElementById('cp-req-scope')||{}).value==='retained'?'retained':'requests';
   const clientId=currentUser.clientId; // always use authenticated user's own clientId
   const title=(document.getElementById('cp-req-title')?.value||'').trim();
   if(!title){
@@ -30195,7 +30424,7 @@ function cpSubmitRequest(_unused){
         const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
         if(t)t.value='';if(d)d.value='';if(fl)fl.innerHTML='';
         const success=document.getElementById('cp-req-success');
-        if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate('requests');},3200);}
+        if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate(_reqBack);},3200);}
       });
       return;
     }
@@ -30215,7 +30444,7 @@ function cpSubmitRequest(_unused){
     const t=document.getElementById('cp-req-title');const d=document.getElementById('cp-req-desc');const fl=document.getElementById('cp-req-file-list');
     if(t)t.value='';if(d)d.value='';if(fl)fl.innerHTML='';
     const success=document.getElementById('cp-req-success');
-    if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate('requests');},3200);}
+    if(success){success.classList.remove('hidden');setTimeout(()=>{success.classList.add('hidden');cpNavigate(_reqBack);},3200);}
   }
 
   if(_cpReqFiles.length===0){persist([]);return;}

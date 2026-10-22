@@ -21,6 +21,15 @@ function fakeSupabase(st) {
       if (!st.clients.has(body.id)) st.clients.set(body.id, body);
       return res(201, null);
     }
+    // Supabase's invite: makes the login with no password and emails a link (recorded here, never sent).
+    if (u.pathname === '/auth/v1/invite' && method === 'POST') {
+      if (st.users.some(x => x.email.toLowerCase() === body.email.toLowerCase())) return res(422, { code: 422, error_code: 'email_exists', msg: 'A user with this email address has already been registered' });
+      const id = 'uid-' + (st.users.length + 1);
+      st.users.push({ id, email: body.email, password: null, invited: true });
+      st.profiles[id] = { role: 'client', client_id: null, email: body.email };
+      (st.invites = st.invites || []).push({ email: body.email, redirect: u.searchParams.get('redirect_to'), name: body.data && body.data.name });
+      return res(200, { id, email: body.email });
+    }
     if (u.pathname === '/auth/v1/admin/users' && method === 'POST') {
       if (st.users.some(x => x.email.toLowerCase() === body.email.toLowerCase())) return res(422, { code: 422, error_code: 'user_already_exists', msg: 'A user with this email address has already been registered' });
       const id = 'uid-' + (st.users.length + 1);
@@ -65,10 +74,10 @@ async function apiTests() {
   const saved = { fetch: global.fetch, log: console.log, error: console.error, env: { ...process.env } };
   Object.assign(process.env, env);
   console.log = () => {}; console.error = () => {};
-  const call = async (st, body) => {
+  const call = async (st, body, headers) => {
     global.fetch = fakeSupabase(st);
     const r = { code: 200, body: null, status(c) { this.code = c; return this; }, json(b) { this.body = b; return this; }, end() { return this; } };
-    await handler({ method: 'POST', headers: { authorization: 'Bearer x' }, body }, r);
+    await handler({ method: 'POST', headers: Object.assign({ authorization: 'Bearer x' }, headers || {}), body }, r);
     return r;
   };
   try {
@@ -106,6 +115,19 @@ async function apiTests() {
     { const st = state({ users: [{ id: 'uid-s', email: 's@etcher.test', password: 'oldstaff11' }], profiles: { 'uid-s': { role: 'staff', client_id: null, email: 's@etcher.test' } } });
       const r = await call(st, { name: 'Sam', email: 's@etcher.test', role: 'staff', password: 'newstaff22' });
       ok(r.code === 200 && st.users[0].password === 'newstaff22' && st.profiles['uid-s'].role === 'staff', 'adding back a staff member whose login exists works, with the new password'); }
+
+    // Email link (2026-10-22, CLIENT_EMAIL_LINK): no password; Supabase invites the client, who confirms the address
+    // and sets their own password. The link returns to the site that asked.
+    { const st = state();
+      const r = await call(st, { name: 'Omega Pty', email: 'ops@omega.test', clientId: 'comega', shortCode: 'omg' }, { origin: 'https://taskhub.example.test' });
+      const p = st.profiles[r.body && r.body.id], inv = (st.invites || [])[0], usr = st.users.find(x => x.email === 'ops@omega.test');
+      ok(r.code === 200 && p && p.role === 'client' && p.client_id === 'comega', 'with no password, the client login is made by an email invitation and belongs to the client (' + r.code + ')');
+      ok(inv && inv.email === 'ops@omega.test' && inv.redirect === 'https://taskhub.example.test' && usr && usr.password === null && !st.calls.includes('POST /auth/v1/admin/users'),
+        'the invitation goes through Supabase\'s invite (an emailed link back to the site), and nobody sets the password for the client (' + JSON.stringify(inv) + ')');
+      const again = await call(st, { name: 'Omega Pty', email: 'ops@omega.test', clientId: 'comega' }, { origin: 'https://taskhub.example.test' });
+      ok(again.code === 200 && again.body.id === r.body.id && st.calls.includes('POST /auth/v1/recover'), 'asking again for the same client sends a fresh link, no second login');
+      const http = await call(state(), { name: 'Pi', email: 'p@pi.test', clientId: 'cpi' }, { origin: 'http://evil.test' });
+      ok(http.code === 200, 'a page that is not https still invites, without sending the link back to it'); }
 
     // Failures read as sentences and leave nothing half-made.
     { const st = state({ fail: { clients: true } });

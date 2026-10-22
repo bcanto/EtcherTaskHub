@@ -11,7 +11,7 @@ module.exports = [
   { id: 'rt10-renew-visible', suite: 'retained10-test', file: 'index.html', note: 'renewal tasks show in the client portal',
     find: "registerQuals:due.map(x=>x.name),clientHidden:true});", replace: "registerQuals:due.map(x=>x.name)});" },
   { id: 'rt10-hidden-counts', suite: 'retained10-test', file: 'api/_portal.js', note: 'hidden work uses the allowance in the portal',
-    find: "t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach", replace: "t.groupId === groupId && taskBoardId(blob, t) === boardId).forEach" },
+    find: "return at ? rsYm(at) : null; };\n  let n = 0;\n  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach", replace: "return at ? rsYm(at) : null; };\n  let n = 0;\n  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId).forEach" },
   { id: 'rt10-col-dupe', suite: 'retained10-test', file: 'index.html', note: 'a column name already on the matrix is added again',
     find: "  if(t.quals.some(q=>q.toLowerCase()===name.toLowerCase()))return false;\n", replace: "" },
   { id: 'rt10-col-client', suite: 'retained10-test', file: 'index.html', note: 'anyone may add a column',

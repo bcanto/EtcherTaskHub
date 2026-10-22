@@ -39,7 +39,7 @@ H.run('retained6-test', 3266, async (t) => {
     return { delivered: d.delivered.map(x => x.name), requests: d.requests.map(x => [x.title, x.state]), overdue: d.overdue, used: d.services.map(s => s.used), focus: d.focus, note: d.note, months: _mrMonths(b), level: d.level, lead: d.lead };
   }, fx.pm);
   t.eq(d.delivered, ['Induction pack', 'Insurance check', 'Late but finished in time'], 'delivered: the client-visible work finished in that month, in order; hidden work and other months stay out');
-  t.eq(d.requests, [['Crane lift SWMS', 'Delivered'], ['Starter pack', 'Being reviewed'], ['ISO quote', 'Not progressing']], 'requests: this client\'s, received that month, with where each stands');
+  t.eq(d.requests, [['Crane lift SWMS', 'Delivered'], ['Starter pack', 'Being reviewed'], ['ISO quote', 'Declined']], 'requests: this client\'s, received that month, with where each stands');
   t.eq(d.overdue, 2, 'overdue at month end: due in the month and still open when it closed (finished later counts, finished in time does not)');
   t.eq(d.used, [2, 1], 'allowances used that month, client-visible work only');
   t.ok(d.focus.length === 1 && d.focus[0].name === 'Focus job' && /40%/.test(d.focus[0].state) && /Procedures are nearly through/.test(d.note), 'the focus and the lead\'s note for that month');

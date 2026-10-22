@@ -69,7 +69,7 @@ H.run('retained12-test', 3274, async (t) => {
   const s7 = await read();
   t.ok(Object.values(s7.st).every(v => v === 'fixed+!') && s7.tier === 'Highest Priority' && /Priority queue/.test(s7.bsum) && /Surge support included/.test(s7.bsum), `Embedded includes all five services, with Highest Priority support (got ${JSON.stringify(s7.st)}, "${s7.bsum}")`);
   t.ok(s7.acts === '53' && s7.tasks === '7' && s7.cover.every(c => c[0] === '+'), `the summary totals 53 monthly activities and 7 monthly tasks, every area covered (got ${s7.acts}, ${s7.tasks})`);
-  t.ok(/Bundle ?Embedded/.test(s7.sum) && /Support tier ?Highest Priority/.test(s7.sum) && /Document reviews ?20/.test(s7.sum) && /Retainer lead ?Bruna Canto/.test(s7.sum) && /Starts ?[A-Z][a-z]+ \d{4}/.test(s7.sum), `the summary names the bundle, tier, activities, lead and start (got "${s7.sum.slice(0, 400)}")`);
+  t.ok(/Bundle ?Embedded/.test(s7.sum) && /Support tier ?Highest Priority/.test(s7.sum) && /Document revisions ?20/.test(s7.sum) && /Retainer lead ?Bruna Canto/.test(s7.sum) && /Starts ?[A-Z][a-z]+ \d{4}/.test(s7.sum), `the summary names the bundle, tier, activities, lead and start (got "${s7.sum.slice(0, 400)}")`);
   t.ok(/5 services included/.test(s7.value) && /7 monthly tasks/.test(s7.value) && /Highest Priority support/.test(s7.value), 'the value line by Create: services, monthly tasks, support');
 
   // A redraw keeps the place and the focus.

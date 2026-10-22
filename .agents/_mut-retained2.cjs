@@ -3,7 +3,7 @@ module.exports = [
   { id: 'rt2-slice-no-retainer', suite: 'retained2-test', file: 'api/_portal.js', note: 'the client slice drops the retainer',
     find: 'const rt = sliceRetainer(blob, b, new Date()); if (rt) o.retainer = rt; return o;', replace: 'return o;' },
   { id: 'rt2-slice-hidden', suite: 'retained2-test', file: 'api/_portal.js', note: 'hidden work counts in the client\'s meter',
-    find: "t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach", replace: "t.groupId === groupId && taskBoardId(blob, t) === boardId).forEach" },
+    find: "return at ? rsYm(at) : null; };\n  let n = 0;\n  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach", replace: "return at ? rsYm(at) : null; };\n  let n = 0;\n  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId).forEach" },
   { id: 'rt2-any-group', suite: 'retained2-test', file: 'api/_portal.js', note: 'a request may name another client\'s group',
     find: "if (g && own(arr(blob.boards).find(x => x.id === (g.boardId || g.workboardId)))) return s;", replace: "if (g) return s;" },
   { id: 'rt2-notify-all', suite: 'retained2-test', file: 'api/_portal.js', note: 'a retainer client\'s request notifies everyone',
