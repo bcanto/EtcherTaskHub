@@ -26,6 +26,9 @@ H.run('mt-cols-test', 3273, async (t) => {
   // An added column has the same handles as the others.
   const h = await ev(id => { const th = document.querySelector(`.ws-table>thead th[data-cc="${id}"]`); return { resize: !!(th && th.querySelector('.col-resize')), drag: th && th.getAttribute('draggable'), grip: !!(th && th.querySelector('.ws-col-grip')), menu: !!(th && th.querySelector('.mt-col-menu-btn')) }; }, fx.cc);
   t.ok(h.resize && h.drag === 'true' && h.grip && h.menu, `an added column can be resized, dragged and still has its menu (got ${JSON.stringify(h)})`);
+  // Headings sit in the middle of the header row (the tap-target 32px minimum had held them at the top).
+  const mid = await ev(async () => { await new Promise(x => setTimeout(x, 300)); if (typeof _ttEnhance === 'function') _ttEnhance(document.querySelector('.ws-table')); await new Promise(x => setTimeout(x, 200)); return [...document.querySelectorAll('.ws-table>thead>tr>th')].map(th => { const l = th.querySelector('.col-label'); if (!l || !l.firstChild) return null; const rg = document.createRange(); rg.selectNodeContents(l); const a = th.getBoundingClientRect(), b = rg.getBoundingClientRect(); return Math.abs(Math.round((b.top + b.height / 2) - (a.top + a.height / 2))); }).filter(x => x != null); });
+  t.ok(mid.length >= 3 && mid.every(d => d <= 1), `the column headings are centred in the header row (got ${JSON.stringify(mid)})`);
 
   // Moving a built-in column moves its cells too.
   await ev(async () => { _wsDragCol = { grid: 'item', key: 'priority' }; _wsColDrop({ preventDefault() {} }, 'item', 'status'); await new Promise(x => setTimeout(x, 400)); });

@@ -20,4 +20,6 @@ module.exports = [
     find: ".rd{display:grid;gap:16px;min-width:0}", replace: ".rd{display:grid;gap:16px;min-width:0;max-width:1480px}" },
   { id: 'mtc-cap-mast', suite: 'mt-cols-test', file: 'index.html', note: 'the client header stops at 1480px again',
     find: ".rc-mast{overflow:hidden;", replace: ".rc-mast{max-width:1480px;overflow:hidden;" },
+  { id: 'mtc-head-mid', suite: 'mt-cols-test', file: 'index.html', note: 'headings sit at the top of the header row again',
+    find: ".ws-table th .col-label,.ws-subtable th .col-label{min-height:0!important;vertical-align:middle}", replace: ".ws-table th .col-label,.ws-subtable th .col-label{}" },
 ];
