@@ -280,6 +280,7 @@ http.createServer(async (req, res) => {
       // Release-1 B6.3: the "Sign in with Microsoft" button (never offline — there is no Supabase).
       microsoftSignIn:  !OFFLINE && process.env.MICROSOFT_SIGNIN === '1',
       twoStepSignIn:    !OFFLINE && process.env.TWO_STEP_SIGNIN === '1',
+      clientEmailLink:  !OFFLINE && process.env.CLIENT_EMAIL_LINK === '1',
       // Sign out after this many minutes without activity (0 = never). SESSION_IDLE_MINUTES.
       sessionIdleMinutes: Math.max(0, parseInt(process.env.SESSION_IDLE_MINUTES || '0', 10) || 0),
     });

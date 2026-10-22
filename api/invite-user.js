@@ -145,18 +145,20 @@ module.exports = async function handler(req, res) {
     }
 
   } else {
-    // ── Client portal invite (email link flow) ─────────────────────────────
-    const inviteResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    // ── Invite by email: Supabase emails a link; the person confirms the address and sets their own password ──
+    // The link comes back to this site (SITE_URL, else the page that asked), which must be in Supabase's redirect URLs.
+    const site = String(process.env.SITE_URL || (req.headers && req.headers.origin) || '').replace(/\/+$/, '');
+    const inviteResp = await fetch(`${SUPABASE_URL}/auth/v1/invite${/^https:\/\//.test(site) ? '?redirect_to=' + encodeURIComponent(site) : ''}`, {
       method: 'POST',
       headers: adminHeaders,
-      body: JSON.stringify({ email, invite: true, data: { name } }),
+      body: JSON.stringify({ email, data: { name } }),
     });
     const inviteBody = await inviteResp.json();
     console.log('[invite-user] admin invite:', inviteResp.status, inviteBody && inviteBody.id ? 'invited' : (inviteBody.error_code || inviteBody.msg || ''));
 
     if (inviteResp.ok) {
       userId = inviteBody.id;
-    } else if (inviteResp.status === 422 && inviteBody.error_code === 'user_already_exists') {
+    } else if (inviteResp.status === 422 && /user_already_exists|email_exists/.test(String(inviteBody.error_code || inviteBody.code || ''))) {
       existed = true;
       // Look up existing UUID
       let page = 1;

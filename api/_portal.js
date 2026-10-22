@@ -109,6 +109,8 @@ function rsYm(d) {
   catch (e) { return String(d).slice(0, 7); }
 }
 function rsPrevYm(ym) { const [y, m] = ym.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; }
+// IMS counts document revisions (2026-10-22); boards saved before stored "document reviews".
+function rsUnit(u) { return /^document reviews?$/i.test(String(u || '')) ? 'document revisions' : u; }
 function isRetainedBoard(b) { return !!(b && b.retainer && !b.retainer.endedAt && !b.archived); }
 function staffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client'); return u ? u.name : null; }
 function retainerUsed(blob, boardId, groupId, ym) {
@@ -123,16 +125,53 @@ function retainerUsed(blob, boardId, groupId, ym) {
   });
   return n;
 }
-// Only what the portal shows: never fees, hours, rates or staff ids (plan, server slice).
+// Allowances by items or hours (2026-10-22), the same rules as index.html's _rsUsage: in progress means started and
+// not finished; hours are logged on the service's work the client can see (never rejected entries), one part each by
+// who logs (senior consultants, everyone else admin) or tasks tagged Audit; parts are monthly or quarterly.
+const RS_IDLE = new Set(['todo', 'not-started', 'backlog', '']);
+const RS_HOUR_PARTS = {
+  hseq: [{ label: 'HSEQ elements', hours: 5, period: 'month', who: 'all' }, { label: 'Audits (mini and main)', hours: 8, period: 'quarter', who: 'audit' }],
+  ci: [{ label: 'Admin', hours: 8, period: 'month', who: 'admin' }, { label: 'Senior consult', hours: 3, period: 'month', who: 'senior' }],
+};
+function rsQuarter(ym) { const y = +String(ym).slice(0, 4), m = +String(ym).slice(5, 7); return y + '-Q' + (Math.floor((m - 1) / 3) + 1); }
+function rsInPeriod(d, ym, period) { d = String(d || '').slice(0, 7); if (!d) return false; return period === 'quarter' ? rsQuarter(d) === rsQuarter(ym) : d === ym; }
+function retainerProgress(blob, boardId, groupId) {
+  const tasks = arr(blob.tasks), started = x => !RS_DONE.has(x.status) && !RS_IDLE.has(String(x.status || ''));
+  let n = 0;
+  tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach(t => {
+    const subs = tasks.filter(x => x.parentTaskId === t.id && !x.archived && !taskHidden(blob, x));
+    if (subs.length) n += subs.filter(started).length; else if (started(t)) n++;
+  });
+  return n;
+}
+function rsParts(s) { if (s.mode !== 'hours') return null; return arr(s.parts).length ? arr(s.parts) : (RS_HOUR_PARTS[s.key] || [{ label: 'Hours', hours: Math.min(99, s.allowance || 8), period: 'month', who: 'all' }]); }
+function rsUsage(blob, b, s, ym, withProg) {
+  const parts = rsParts(s);
+  if (!parts) return { mode: 'items', parts: [{ label: '', cap: s.allowance, used: retainerUsed(blob, b.id, s.groupId, ym), prog: withProg ? retainerProgress(blob, b.id, s.groupId) : 0, period: 'month', unit: rsUnit(s.unit) }] };
+  const tasks = arr(blob.tasks), byId = new Map(tasks.map(t => [t.id, t])), seniors = new Set(arr((b.retainer || {}).seniorIds));
+  const tagged = x => arr(x && x.tags).some(g => /^audit$/i.test(String(g).trim()));
+  const used = parts.map(() => 0);
+  arr(blob.timeEntries).forEach(e => {
+    if (!e || e.status === 'rejected' || !(Number(e.hours) > 0)) return;
+    const t = byId.get(e.taskId); if (!t || t.archived || taskHidden(blob, t)) return;
+    const top = t.parentTaskId ? byId.get(t.parentTaskId) : t;
+    if (!top || top.archived || top.groupId !== s.groupId || taskBoardId(blob, top) !== b.id) return;
+    const senior = seniors.has(e.staffId), aud = tagged(t) || tagged(top);
+    const p = parts.find(x => x.who === 'audit' && aud) || parts.find(x => x.who === 'senior' && senior) || parts.find(x => x.who === 'admin' && !senior) || parts.find(x => x.who === 'all') || parts[0];
+    const i = parts.indexOf(p); if (i >= 0 && rsInPeriod(e.date, ym, p.period)) used[i] += Number(e.hours) || 0;
+  });
+  return { mode: 'hours', parts: parts.map((p, i) => ({ label: p.label || 'Hours', cap: Number(p.hours) || 0, used: Math.round(used[i] * 100) / 100, prog: 0, period: p.period === 'quarter' ? 'quarter' : 'month', unit: 'hours' })) };
+}
+// Only what the portal shows: never fees, rates, staff ids or who logged what. Hour allowances show their totals only.
 function sliceRetainer(blob, b, now) {
   if (!isRetainedBoard(b)) return undefined;
   const r = b.retainer, ym = rsYm(now), prev = rsPrevYm(ym), months = r.months || {};
   return {
-    services: arr(r.services).map(s => ({ key: s.key, groupId: s.groupId, unit: s.unit, allowance: s.allowance, core: !!s.core, ownerName: staffName(blob, s.ownerId), used: retainerUsed(blob, b.id, s.groupId, ym) })),
+    services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, ym, true); return { key: s.key, groupId: s.groupId, unit: rsUnit(s.unit), allowance: s.allowance, core: !!s.core, ownerName: staffName(blob, s.ownerId), used: us.parts[0].used, mode: us.mode, prog: us.mode === 'items' ? us.parts[0].prog : 0, parts: us.parts }; }),
     leadName: staffName(blob, r.leadId), startMonth: r.startMonth || null, priority: r.priority || null,
     month: ym, focusTaskIds: arr((months[ym] || {}).focusTaskIds).slice(0, 3), reviewMonth: prev, reviewNote: (months[prev] || {}).note || null,
     // The last two months, read only (plan §5).
-    history: [prev, rsPrevYm(prev)].map(m => ({ month: m, services: arr(r.services).map(s => ({ key: s.key, used: retainerUsed(blob, b.id, s.groupId, m) })) })),
+    history: [prev, rsPrevYm(prev)].map(m => ({ month: m, services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, m, false); return { key: s.key, used: us.mode === 'hours' ? String(Math.round(us.parts.filter(u => u.period === 'month').reduce((n, u) => n + u.used, 0) * 100) / 100) : us.parts[0].used, unit: us.mode === 'hours' ? 'hours' : null }; }) })),
   };
 }
 // A request's service must be one of the client's own groups or boards; anything else is ad hoc.

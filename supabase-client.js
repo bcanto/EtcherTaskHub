@@ -28,6 +28,7 @@ window._supabaseReady = (async function _initSupabase() {
     // "Sign in with Microsoft" (release-1 B6.3)
     window._microsoftSignIn = cfg.microsoftSignIn === true;
     window._twoStepSignIn = cfg.twoStepSignIn === true;
+    window._clientEmailLink = cfg.clientEmailLink === true;
     window._sessionIdleMinutes = Math.max(0, Number(cfg.sessionIdleMinutes) || 0);
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
