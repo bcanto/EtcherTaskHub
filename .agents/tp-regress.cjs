@@ -31,7 +31,7 @@ const puppeteer=require('C:/Users/brnca/AppData/Local/Temp/puppeteer-install/nod
   // 5, not 4 — action-requests-test.cjs added a "Client Action" section (renderTpActionRequests)
   // between Comments and Client Thread; see PLAN-client-board-and-actions.md.
   const d=await p.evaluate(()=>({secs:document.querySelectorAll('.tp-sec').length,props:document.querySelectorAll('.tp-prop').length,people:!!document.querySelector('.tp-people'),oldRows:document.querySelectorAll('.tp-field-row').length}));
-  ok(d.secs===5,'5 collapsible sections after tab round-trip (got '+d.secs+')');
+  ok(d.secs===6,'6 collapsible sections after tab round-trip, the Audit trail last (got '+d.secs+')');
   ok(d.props>=6,'compact prop rows present ('+d.props+')');
   ok(d.people,'people stack present');
   ok(d.oldRows===0,'no legacy .tp-field-row rows');
