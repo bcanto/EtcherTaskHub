@@ -305,6 +305,12 @@ h1,h2,h3,h4,h5{font-family:'Jost',sans-serif;letter-spacing:-0.01em}
 .cp-rt-t{font-family:Jost,sans-serif;font-weight:600;font-size:13.5px;color:#0d1c33;min-width:0}.cp-rt-t small{display:block;font-family:Lato,sans-serif;font-weight:400;font-size:12px;color:#5b6f84}
 .cp-rt-with{font-size:12.5px;color:#4a5568;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-rt-due{font-size:12px;color:#5b6f84;text-align:right}
 .cp-rt-none{padding:12px 16px;color:#5b6f84;font-size:13px}
+.cp-req-note{font-size:12px;color:#0d6e4e;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px}
+.cp-req-note.dec{color:#7f1d1d;background:#fef2f2;border-color:#fecaca}
+.cp-req-open{margin-top:10px;font:600 12px 'Lato',sans-serif;color:#31585a;background:#fff;border:1px solid #c8d4e0;border-radius:6px;padding:6px 14px;cursor:pointer;transition:border-color .15s,transform .15s}
+.cp-req-open:hover{border-color:#97bcbd}.cp-req-open:active{transform:scale(.98)}.cp-req-open:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.rs-pl-warn{color:#b45309!important}
+.rc-nc{color:#b45309!important}
 .cp-rt-hist{margin-top:18px;display:grid;gap:8px}.cp-rt-hist>b{font-family:Jost,sans-serif;font-size:14.5px;color:#0d1c33}
 .cp-rt-hist table{width:100%;border-collapse:collapse;font-size:12.5px}.cp-rt-hist th{text-align:left;font-size:10.5px;font-weight:700;color:#5b6f84;text-transform:uppercase;letter-spacing:.05em;padding:0 10px 6px 0}
 .cp-rt-hist td{padding:6px 10px 6px 0;border-top:1px solid #eef2f6;color:#4a5568}
@@ -3882,7 +3888,8 @@ async function _portalAction(type,payload,opts){
 // Clients can't subscribe to app_state realtime any more, so refresh the slice on focus and
 // every 60 s — but never under someone's hands: not while a modal is open or they're typing,
 // and never on the Request Work form or Notifications tab (re-rendering those would wipe a
-// half-written request or re-fire the mark-read write).
+// half-written request or re-fire the mark-read write), nor on the Retained tab while its
+// request form has anything in it.
 let _portalRefreshTimer=null;
 function _startPortalRefresh(){
   if(_portalRefreshTimer)return;
@@ -3893,7 +3900,7 @@ function _startPortalRefresh(){
       const busy=!document.getElementById('cp-task-modal')?.classList.contains('hidden')
         ||!document.getElementById('generic-modal')?.classList.contains('hidden')
         ||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'');
-      if(!busy&&!['requests','notifications'].includes(cpSection))cpNavigate(cpSection);
+      if(!busy&&!['requests','notifications'].includes(cpSection)&&!(cpSection==='retained'&&_cpReqDirty()))cpNavigate(cpSection);
     }).catch(e=>console.warn('[portal refresh]',e.message));
   };
   _portalRefreshTimer=setInterval(tick,60000);
@@ -4650,11 +4657,15 @@ function _applyStatusProgress(task,newStatus,prevStatus){
   // recomputed it, so the progress of those tasks belongs to the calculation that owns it.
   // completedAt is still ours either way.
   const ownedByHours=task.percentMode==='hour_budget'&&!!task.hourBudget;
+  // Client approved: a retainer counts it as finished, in the month it got there. Progress and any finish date stay,
+  // and Completed later keeps that date (2026-10-23; the same rule in api/_portal.js applyStatusProgress).
+  if(newStatus==='approved-client'){if(!task.completedAt&&!task.clientApprovedAt)task.clientApprovedAt=new Date().toISOString();return;}
   if(isDone){
     if(!ownedByHours)task.percentComplete=100;
-    if(!wasDone)task.completedAt=new Date().toISOString();
+    if(!wasDone)task.completedAt=(prevStatus==='approved-client'&&(task.completedAt||task.clientApprovedAt))||new Date().toISOString();
   }else{
     task.completedAt=null;
+    delete task.clientApprovedAt;
     if(ownedByHours)return;
     // Only clear the 100% that completing the task put there. A figure someone typed while
     // it was done — 40% on a completed-approved item — is a deliberate value rather than a
@@ -6087,11 +6098,12 @@ function _wsMonthVal(){if(!_wsMonthOn())return'all';const v=_wsMonthSel[currentW
 function _wsMonthYm(){const v=_wsMonthVal();return /^\d{4}-\d{2}$/.test(v)?v:_rsYm();}
 function _wsMonthSet(v){if(!currentWorkboard)return;_wsMonthSel[currentWorkboard.id]=v;try{localStorage.setItem('etcher_ws_month',JSON.stringify(_wsMonthSel));}catch(e){}renderView('workspace');}
 function _wsMonthShowAll(){if(currentWorkboard&&_wsMonthOn()){_wsMonthSel[currentWorkboard.id]='all';try{localStorage.setItem('etcher_ws_month',JSON.stringify(_wsMonthSel));}catch(e){}}}
-// Whether a top-level task shows for the month on show. Subitems follow their parent.
+// Whether a top-level task shows for the month on show. Subitems follow their parent; a parent finished earlier
+// still shows this month while one of its subitems is open or was finished this month.
 function _wsMonthKeep(t,v,ym,subsOf){
   if(v==='all')return true;
   const doneIn=x=>_rsDone(x)&&_rsDoneYm(x)===ym;
-  if(v==='cur')return !_rsDone(t)||doneIn(t);
+  if(v==='cur')return !_rsDone(t)||doneIn(t)||subsOf(t.id).some(x=>!_rsDone(x)||doneIn(x));
   return doneIn(t)||subsOf(t.id).some(doneIn);
 }
 function _wsMonthFilter(tasks){
@@ -7750,7 +7762,7 @@ function _rsPrevYm(ym){const d=new Date(ym+'-01T12:00:00');d.setMonth(d.getMonth
 function _rsMonthName(ym){return new Date(ym+'-01T12:00:00').toLocaleDateString('en-AU',{month:'long'});}
 // When it was finished: completedAt, else the client's approval, else (a finished task saved without a
 // date, e.g. created already Completed before 2026-10-16) its last update.
-function _rsDoneYm(t){const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||(_rsDone(t)?t.updatedAt:null)||null;return at?_rsYm(new Date(at)):null;}
+function _rsDoneYm(t){const at=t.completedAt||(t.clientApproval&&t.clientApproval.at)||t.clientApprovedAt||(_rsDone(t)?t.updatedAt:null)||null;return at?_rsYm(new Date(at)):null;}
 function _rsStaff(){return allStaff().filter(u=>u.role!=='client'&&u.active!==false);}
 // "2 Core and 3 Add-ons", derived from the services picked; never typed (plan, set-up).
 function _retainerBundle(keys){
@@ -7877,26 +7889,54 @@ function _retainerProgress(boardId,groupId){
 }
 // Every hour logged on a service's work (its tasks and their subitems the client can see; never rejected entries),
 // with the part it counts to: tasks tagged Audit to an Audit part, senior consultants to a Senior part, everyone
-// else to an Admin part, then Everyone, then the first part.
-function _rsHourRows(b,s,parts){
+// else to an Admin part, then Everyone (see _rsPartFor). Senior consultants as they were in the month ym.
+function _rsHourRows(b,s,parts,ym){
   const tasks=new Map();
   (DB.tasks||[]).forEach(t=>{if(t.archived||_cpTaskHidden(t))return;const top=t.parentTaskId?(DB.tasks||[]).find(x=>x.id===t.parentTaskId):t;
     if(!top||top.archived||top.groupId!==s.groupId||(top.boardId||top.workboardId)!==b.id)return;tasks.set(t.id,{t,top});});
-  parts=parts||s.parts||[];const seniors=new Set(((b.retainer||{}).seniorIds)||[]);
+  parts=parts||s.parts||[];const seniors=_rsSeniorsAt(b.retainer||{},ym||_rsYm());
   const tagged=x=>(x.tags||[]).some(g=>/^audit$/i.test(String(g).trim()));
   return(DB.timeEntries||[]).filter(e=>e&&tasks.has(e.taskId)&&e.status!=='rejected'&&Number(e.hours)>0).map(e=>{
     const{t,top}=tasks.get(e.taskId),senior=seniors.has(e.staffId),aud=tagged(t)||tagged(top);
-    const part=parts.find(x=>x.who==='audit'&&aud)||parts.find(x=>x.who==='senior'&&senior)||parts.find(x=>x.who==='admin'&&!senior)||parts.find(x=>x.who==='all')||parts[0]||null;
+    const part=_rsPartFor(parts,aud,senior);
     return{e,t,part,hours:Number(e.hours)||0};
   });
+}
+// Plan history (2026-10-23): a change to a service's allowance, tracking or hour parts, or to the senior consultants,
+// applies from this month; each earlier month is counted with the plan it had. hist entries are {until:'YYYY-MM', ...}.
+function _rsAt(hist,ym){return(hist||[]).filter(h=>h&&h.until>=ym).sort((a,b)=>String(a.until).localeCompare(String(b.until)))[0]||null;}
+function _rsSvcAt(s,ym){
+  const h=s&&_rsAt(s.hist,ym||_rsYm());if(!h)return s;
+  const o=Object.assign({},s,{allowance:h.allowance,unit:h.unit||s.unit,parts:h.parts||null});
+  if(h.mode==='hours')o.mode='hours';else delete o.mode;
+  return o;
+}
+function _rsSeniorsAt(r,ym){const h=_rsAt(r&&r.seniorHist,ym||_rsYm());return new Set((h?h.ids:(r&&r.seniorIds))||[]);}
+// Called before a plan change: keeps the plan as it was for the months before this one (once a month).
+function _rsKeepPlan(r,s){
+  const ym=_rsYm(),until=_rsPrevYm(ym);if(r.startMonth&&r.startMonth>=ym)return;
+  if(s){
+    if((s.hist||[]).some(h=>h.until>=until))return;
+    s.hist=(s.hist||[]).concat({until,mode:s.mode==='hours'?'hours':'items',allowance:s.allowance,unit:s.unit,parts:s.mode==='hours'?JSON.parse(JSON.stringify(_rsPartsOf(s))):null}).slice(-36);
+  }else{
+    if((r.seniorHist||[]).some(h=>h.until>=until))return;
+    r.seniorHist=(r.seniorHist||[]).concat({until,ids:(r.seniorIds||[]).slice()}).slice(-36);
+  }
+}
+// Which part an hour counts to: Audit-tagged work, senior consultants, everyone else as admin, then Everyone, then
+// Admin. An hour that fits no part counts nowhere (untagged work on an Audit-only service; the hours log says so).
+function _rsPartFor(parts,aud,senior){
+  const who=x=>x.who||'all';
+  return parts.find(x=>who(x)==='audit'&&aud)||parts.find(x=>who(x)==='senior'&&senior)||parts.find(x=>who(x)==='admin'&&!senior)
+    ||parts.find(x=>who(x)==='all')||parts.find(x=>who(x)==='admin')||null;
 }
 function _rsPartsOf(s){return s.mode==='hours'?((s.parts&&s.parts.length)?s.parts:_rsDefaultParts(s.key,s.allowance)):null;}
 // A service's allowance this month (or the month given): parts of {label, cap, used, prog, period, unit}.
 function _rsUsage(b,s,ym){
-  ym=ym||_rsYm();
+  ym=ym||_rsYm();s=_rsSvcAt(s,ym);
   const parts=_rsPartsOf(s);
   if(parts){
-    const rows=_rsHourRows(b,s,parts);
+    const rows=_rsHourRows(b,s,parts,ym);
     return{mode:'hours',parts:parts.map(p=>({id:p.id,label:p.label||'Hours',cap:Number(p.hours)||0,period:p.period==='quarter'?'quarter':'month',who:p.who||'all',unit:'hours',prog:0,
       used:Math.round(rows.filter(r=>r.part===p&&_rsInPeriod(r.e.date,ym,p.period)).reduce((n,r)=>n+r.hours,0)*100)/100}))};
   }
@@ -8230,13 +8270,13 @@ function openRetainerPlan(boardId){
       <label class="rs-su-f"><span>Retainer lead</span>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','lead',null,this.value)">${staffOpts(r.leadId)}</select>`:`<b>${escHtml(lead?lead.name:'')}</b>`}</label>
       <label class="rs-su-f"><span>Support tier</span>${admin?`<select class="form-input" id="rs-pl-level" onchange="_rsPlanSet('${b.id}','priority',null,this.value)">${_rsLevelOptions(r.priority)}</select>`:`<b>${escHtml(_rsTier(r.priority))}</b>`}</label>
       <div class="rs-su-f"><span>Fee</span><b>Fixed monthly fee</b><small>Set on the pro forma invoice</small></div>
-      <div class="rs-su-f rs-pl-seniors"><span>Senior consultants</span>${admin?`<div class="rs-pl-sn">${_rsStaff().map(u=>`<label><input type="checkbox" data-rs-senior="${u.id}"${(r.seniorIds||[]).includes(u.id)?' checked':''} onchange="_rsPlanSet('${b.id}','senior','${u.id}',this.checked)"> ${escHtml(u.name)}</label>`).join('')}</div>`:`<b>${escHtml((r.seniorIds||[]).map(id=>(getStaff(id)||{}).name).filter(Boolean).join(', ')||'None')}</b>`}<small>Their hours count to Senior parts; everyone else's to Admin.</small></div>
+      <div class="rs-su-f rs-pl-seniors"><span>Senior consultants</span>${admin?`<div class="rs-pl-sn">${_rsStaff().map(u=>`<label><input type="checkbox" data-rs-senior="${u.id}"${(r.seniorIds||[]).includes(u.id)?' checked':''} onchange="_rsPlanSet('${b.id}','senior','${u.id}',this.checked)"> ${escHtml(u.name)}</label>`).join('')}</div>`:`<b>${escHtml((r.seniorIds||[]).map(id=>(getStaff(id)||{}).name).filter(Boolean).join(', ')||'None')}</b>`}<small>Their hours count to Senior parts; everyone else's to Admin.</small>${!(r.seniorIds||[]).length&&(r.services||[]).some(s=>(_rsPartsOf(s)||[]).some(p=>p.who==='senior'))?'<small class="rs-pl-warn" id="rs-pl-nosenior">No one is ticked, so every hour counts to Admin and the Senior part stays at 0.</small>':''}</div>
     </div>
     <p class="rs-lvl-note" id="rs-pl-lvlnote">${_rsLevelNote((r.services||[]).map(s=>s.key),r.priority,admin?lv=>`_rsPlanSet('${b.id}','priority',null,'${lv}')`:null)}</p>
     <h4 class="rs-pl-h">Services and allowances</h4>
     <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
     ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
-    <p class="rs-pl-hint">${admin?'Changes apply from this month. Removing a service keeps its group and jobs and stops its meter. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
+    <p class="rs-pl-hint">${admin?'Changes apply from this month; earlier months keep the plan they had. Removing a service keeps its group and jobs and stops its meter. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
     <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
     ${focus.length?`<ul class="rs-pl-f">${focus.map(t=>`<li><span>${escHtml(t.name||t.title||'')}</span><b>${getEffectiveTaskPct(t.id)}%</b><button class="btn btn-ghost btn-sm" onclick="_rsPlanSet('${b.id}','focusRm','${t.id}')" aria-label="Remove from the focus">Remove</button></li>`).join('')}</ul>`:'<p class="rs-pl-hint">No focus set, so the block stays hidden in the portal.</p>'}
     ${focus.length<3&&cand.length?`<select class="form-input rs-pl-add" onchange="if(this.value)_rsPlanSet('${b.id}','focusAdd',this.value)"><option value="">+ Pin a task to the focus</option>${cand.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}</select>`:''}
@@ -8274,6 +8314,8 @@ function _rsPlanSet(boardId,field,key,val){
   }else{
     if(!admin)return;
     const s=key?(r.services||[]).find(x=>x.key===key):null;
+    if((field==='allowance'||field==='mode')&&s)_rsKeepPlan(r,s);
+    if(field==='senior')_rsKeepPlan(r,null);
     if(field==='allowance'&&s)s.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
     else if(field==='owner'&&s)s.ownerId=val||null;
     else if(field==='mode'&&s){if(val==='hours'){s.mode='hours';if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);}else if(val==='items')delete s.mode;}
@@ -8302,9 +8344,17 @@ function _rsPlanSet(boardId,field,key,val){
   }
   b.updatedAt=new Date().toISOString();
   saveDB(DB);
-  openRetainerPlan(boardId);
+  _rsPlanReopen(boardId,field!=='note');
   if(currentView==='workspace')renderView('workspace');
   if(field==='note')showToast('Note saved.','success');
+}
+// Redraws the plan window in place: the scroll stays, and so does a review note not saved yet (unless it was just saved).
+function _rsPlanReopen(boardId,keepNote){
+  const box=document.querySelector('#generic-modal .modal-box'),body=document.getElementById('generic-modal-body');
+  const st=[box?box.scrollTop:0,body?body.scrollTop:0],n=keepNote?document.getElementById('rs-pl-note'):null,nv=n?n.value:null;
+  openRetainerPlan(boardId);
+  const n2=document.getElementById('rs-pl-note');if(n2&&nv!=null)n2.value=nv;
+  if(box)box.scrollTop=st[0];if(body)body.scrollTop=st[1];
 }
 
 // ── Retained Services dashboard (Etcher side): the queue by service level, allowances near their limit, each client ──
@@ -8405,6 +8455,16 @@ function _rdUsage(boards,ym){
 // Filters are per viewer and stay on this device.
 let _rdQ=(()=>{const d={client:'',level:'',owner:'',show:'soon',order:'level',tab:'queue',more:25,collapsed:[],cq:'',csort:'added'};try{return Object.assign(d,JSON.parse(localStorage.getItem('rd-queue')||'{}'));}catch(e){return d;}})();
 function _rdSetQ(k,v){_rdQ[k]=v;if(k!=='more'&&k!=='tab'&&k!=='collapsed')_rdQ.more=25;try{localStorage.setItem('rd-queue',JSON.stringify(_rdQ));}catch(e){}renderView('retained');}
+// From the counts and Needs attention: the queue, every filter cleared (the counts are across all clients).
+function _rdShow(v){Object.assign(_rdQ,{tab:'queue',client:'',level:'',owner:''});_rdSetQ('show',v);}
+// A saved filter whose choice has gone (that owner has no open work now, that client's retainer ended) would keep
+// filtering behind a select that reads "Anyone" or "All clients", so it is cleared.
+function _rdDropStale(boards,all){
+  if(_rdQ.client&&!boards.some(b=>b.clientId===_rdQ.client))_rdQ.client='';
+  if(_rdQ.level&&!RETAINER_LEVELS.some(l=>l.key===_rdQ.level))_rdQ.level='';
+  if(_rdQ.owner&&_rdQ.owner===currentUser.id)_rdQ.owner='me';
+  if(_rdQ.owner&&_rdQ.owner!=='me'&&!all.some(r=>r.ownerId===_rdQ.owner))_rdQ.owner='';
+}
 function _rdToggleGroup(cid){const s=new Set(_rdQ.collapsed||[]);if(s.has(cid))s.delete(cid);else s.add(cid);_rdSetQ('collapsed',[...s]);}
 let _rdCqTimer=null;function _rdClientSearch(v){_rdQ.cq=v;clearTimeout(_rdCqTimer);_rdCqTimer=setTimeout(()=>{const el=document.getElementById('rd-csearch'),pos=el?el.selectionStart:null;renderView('retained');const e2=document.getElementById('rd-csearch');if(e2){e2.focus();if(pos!=null)try{e2.setSelectionRange(pos,pos);}catch(e){}}},200);}
 // "soon": every open request, plus other work that is late or due within the next seven days.
@@ -8465,14 +8525,15 @@ function renderRetainedDash(){
   const cColor=id=>_safeCss(((DB.clients||[]).find(c=>c.id===id)||{}).color,'#8da2b2');
   const newBtn=admin?'<button class="btn btn-primary btn-sm" id="rd-new" onclick="openRetainerSetup()">+ New retained board</button>':'';
   if(!boards.length)return`<div class="rd"><div class="rd-sheet rd-empty"><h2 class="rd-h">No retained clients yet</h2><p>A retained client gets one board under Retained Services, a group per service, and the monthly tasks you keep. Their requests, allowances and registers then come together here.</p>${newBtn}</div></div>`;
-  const all=_rqQueue(),rows=_rqSort(_rdFilter(all),_rdQ.order),usage=_rdUsage(boards,ym),month=_rsMonthName(ym);
+  const all=_rqQueue();_rdDropStale(boards,all);
+  const rows=_rqSort(_rdFilter(all),_rdQ.order),usage=_rdUsage(boards,ym),month=_rsMonthName(ym);
   const lateR=all.filter(r=>r.replyState==='late').length,lateD=all.filter(r=>r.deliverState==='late').length,lateN=all.filter(r=>r.late).length;
   // Needs attention: late clocks first, then one line per client (allowances at 80% or more, documents and people with
   // no task yet), so it stays short however many clients there are.
   const att=[];
   if(lateN){
     const parts=[lateR?`${lateR} past the reply time`:'',lateD?`${lateD} past the delivery date`:''].filter(Boolean);
-    att.push({tone:'bad',id:'rd-att-late',text:`${lateN} item${lateN===1?' is':'s are'} late: ${parts.join(', ')}.`,act:"_rdSetQ('show','late')",btn:'Show late'});
+    att.push({tone:'bad',id:'rd-att-late',text:`${lateN} item${lateN===1?' is':'s are'} late: ${parts.join(', ')}.`,act:"_rdShow('late')",btn:'Show late'});
   }
   usage.filter(u=>u.allowance&&u.ratio>=0.8).sort((a,b)=>b.ratio-a.ratio).forEach(u=>{
     const over=u.used>u.allowance,at=u.used===u.allowance;
@@ -8519,7 +8580,7 @@ function renderRetainedDash(){
     if(closed)return;
     g.rows.forEach(r=>{if(shown<limit){qParts.push(qRow(r));shown++;}else hiddenRows++;});
   });
-  const qBody=rows.length?qParts.join(''):`<tr class="rq-none"><td colspan="5">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`Nothing due in the next seven days. <button type="button" class="rs-lvl-use" onclick="_rdSetQ('show','all')">Show all open work</button>`:'Nothing matches these filters.'}</td></tr>`;
+  const qBody=rows.length?qParts.join(''):`<tr class="rq-none"><td colspan="5">${!all.length?'Nothing open. New requests from retained clients land here with their reply and delivery dates.':_rdQ.show==='soon'&&!_rdQ.client&&!_rdQ.level&&!_rdQ.owner?`Nothing due in the next seven days. <button type="button" class="rs-lvl-use" onclick="_rdSetQ('show','all')">Show all open work</button>`:`Nothing matches these filters. <button type="button" class="rs-lvl-use" onclick="_rdShow('soon')">Clear filters</button>`}</td></tr>`;
   const more=hiddenRows?`<button type="button" class="btn btn-ghost btn-sm rq-more" id="rq-more" onclick="_rdSetQ('more',${limit+25})">Show ${Math.min(25,hiddenRows)} more (${hiddenRows} not shown)</button>`:'';
   const queue=`<section class="rd-sheet rd-tabpane" id="rd-pane-queue" aria-labelledby="rd-tab-queue"${_rdQ.tab==='clients'?' hidden':''}>
     <div class="rd-sheet-head"><div class="rd-filters">${filters}</div></div>
@@ -9403,12 +9464,12 @@ function _rcQueueRow(r){
 // Hours logged this month on the retained services, newest first, with who logged them and what they count to.
 function _rcHoursHtml(b,ym){
   const rows=[];
-  (b.retainer.services||[]).forEach(s=>{const cat=_rsCat(s.key)||{name:s.key,short:s.key},parts=_rsPartsOf(s);
-    _rsHourRows(b,s,parts||[]).forEach(x=>{if(String(x.e.date||'').slice(0,7)===ym)rows.push({x,cat,part:parts?x.part:null});});});
+  (b.retainer.services||[]).forEach(s0=>{const s=_rsSvcAt(s0,ym),cat=_rsCat(s.key)||{name:s.key,short:s.key},parts=_rsPartsOf(s);
+    _rsHourRows(b,s,parts||[],ym).forEach(x=>{if(String(x.e.date||'').slice(0,7)===ym)rows.push({x,cat,part:parts?x.part:null,hrs:!!parts});});});
   rows.sort((a,z)=>String(z.x.e.date).localeCompare(String(a.x.e.date))||String(z.x.e.createdAt||'').localeCompare(String(a.x.e.createdAt||'')));
   const total=rows.reduce((n,r)=>n+r.x.hours,0),st={draft:'Draft',submitted:'Submitted',approved:'Approved'};
-  const body=rows.length?rows.map(({x,cat,part})=>{const who=getStaff(x.e.staffId);
-    return`<tr data-rc-hour="${escHtml(x.e.id)}"><td class="reg-num">${_regDate(String(x.e.date).slice(0,10))}</td><td>${escHtml(who?who.name:'Unknown')}</td><td>${escHtml(x.t.name||x.t.title||'Task')}</td><td>${escHtml(cat.short||cat.name)}${part?`<small>${escHtml(part.label||'')}</small>`:''}</td><td class="reg-num"><b>${_rsHrs(x.hours)}</b><small>${st[x.e.status]||''}</small></td></tr>`;}).join('')
+  const body=rows.length?rows.map(({x,cat,part,hrs})=>{const who=getStaff(x.e.staffId);
+    return`<tr data-rc-hour="${escHtml(x.e.id)}"><td class="reg-num">${_regDate(String(x.e.date).slice(0,10))}</td><td>${escHtml(who?who.name:'Unknown')}</td><td>${escHtml(x.t.name||x.t.title||'Task')}</td><td>${escHtml(cat.short||cat.name)}${part?`<small>${escHtml(part.label||'')}</small>`:hrs?'<small class="rc-nc">Not counted: no part takes it</small>':''}</td><td class="reg-num"><b>${_rsHrs(x.hours)}</b><small>${st[x.e.status]||''}</small></td></tr>`;}).join('')
     :`<tr class="rq-none"><td colspan="5">No hours logged on these services in ${_rsMonthName(ym)} yet.</td></tr>`;
   return`<section class="rd-sheet rc-hours" aria-labelledby="rc-hours-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-hours-h">Hours logged in ${_rsMonthName(ym)} <span class="rd-n">${_rsHrs(total)} h</span></h3></div>
     <div class="rq-wrap"><table class="rq-t rc-hours-t" id="rc-hours"><thead><tr><th>Date</th><th>Logged by</th><th>Task</th><th>Counts to</th><th>Hours</th></tr></thead><tbody>${body}</tbody></table></div>
@@ -9614,7 +9675,7 @@ function _rdMastHtml(boards,all,lateN,usage,newBtn){
   return`<section class="rc-mast rd-mast" aria-label="Retained Services, ${escHtml(_rsMonthYear(ym))}">
     <div class="rc-mast-id"><div class="rc-name"><h1>${escHtml(_rsMonthYear(ym))}</h1><div class="rc-facts"><span>${boards.length} retained client${boards.length===1?'':'s'}</span><span>Day ${ml.day} of ${ml.dim}</span></div></div>${newBtn?`<div class="rc-acts">${newBtn}</div>`:''}</div>
     ${ml.html}
-    <div class="rc-band">${_rcCell(all.length,'open in the queue','',"_rdSetQ('show','all')",'rd-cell-all')}${_rcCell(lateN,'late',lateN?'bad':'',"_rdSetQ('show','late')",'rd-cell-late')}${_rcCell(near,`allowance${near===1?'':'s'} at 80% or more`,near?'warn':'',null)}${_rcCell(docs,`document${docs===1?'':'s'} to review`,docs?'warn':'',null)}</div>
+    <div class="rc-band">${_rcCell(all.length,'open in the queue','',"_rdShow('all')",'rd-cell-all')}${_rcCell(lateN,'late',lateN?'bad':'',"_rdShow('late')",'rd-cell-late')}${_rcCell(near,`allowance${near===1?'':'s'} at 80% or more`,near?'warn':'',null)}${_rcCell(docs,`document${docs===1?'':'s'} to review`,docs?'warn':'',null)}</div>
   </section>`;
 }
 
@@ -9689,8 +9750,12 @@ function _cpServiceHint(clientId,ref){
   const rb=_cpClientBoards(clientId).find(b=>_isRetainedBoard(b));
   const s=rb&&((_rsClientRetainer(rb)||{}).services||[]).find(x=>'g:'+x.groupId===ref);
   if(!s)return'';
-  if(s.mode==='hours'&&(s.parts||[]).length){const cap=s.parts.filter(u=>u.period!=='quarter').reduce((n,u)=>n+u.cap,0),usedH=s.parts.filter(u=>u.period!=='quarter').reduce((n,u)=>n+u.used,0),leftH=Math.max(0,Math.round((cap-usedH)*100)/100);
-    return leftH?`Covered by your retainer: ${_rsHrs(leftH)} of ${_rsHrs(cap)} hours left this month.`:`This month's hours are used up, so we will quote before starting.`;}
+  if(s.mode==='hours'&&(s.parts||[]).length){
+    // Monthly and quarterly parts each say what is left in their own period.
+    const sum=(ps,k)=>ps.reduce((n,u)=>n+(Number(u[k])||0),0),left=ps=>Math.max(0,Math.round((sum(ps,'cap')-sum(ps,'used'))*100)/100);
+    const per=[['month',s.parts.filter(u=>u.period!=='quarter')],['quarter',s.parts.filter(u=>u.period==='quarter')]].filter(x=>x[1].length);
+    if(per.some(x=>left(x[1])>0))return`Covered by your retainer: ${per.map(([p,ps])=>`${_rsHrs(left(ps))} of ${_rsHrs(sum(ps,'cap'))} hours left this ${p}`).join(', and ')}.`;
+    return`This ${per.map(x=>x[0]).join(' and this ')}'s hours are used up, so we will quote before starting.`;}
   const left=Math.max(0,s.allowance-s.used);
   return left?`Covered by your retainer: ${left} of ${s.allowance} ${s.unit} left this month.`:`This month's ${s.unit} are used up, so we will quote before starting.`;
 }
@@ -9699,6 +9764,7 @@ function cpReqServiceHint(){const el=document.getElementById('cp-req-hint'),sv=d
 // allowance and jobs, and last month in review (numbers counted, the lead's note if any).
 function renderCpRetained(clientId,tasks,b){
   const rt=_rsClientRetainer(b);if(!rt)return'';
+  _cpReqFiles=[];   // a fresh form: files picked for one no longer on show never go with the next request
   const mine=tasks.filter(t=>t.boardId===b.id),top=mine.filter(t=>!t.parentId),kids=id=>mine.filter(t=>t.parentId===id);
   const cat=k=>_rsCat(k)||{name:k,short:k,kind:'addon',color:'#6b8399'};
   const team=new Map(),add=(n,role)=>{if(!n)return;if(!team.has(n))team.set(n,[]);team.get(n).push(role);};
@@ -9708,14 +9774,16 @@ function renderCpRetained(clientId,tasks,b){
   const steps=t=>{const k=kids(t.id);return k.length?`${k.filter(x=>_RS_DONE.has(x.status)).length} of ${k.length} steps done`:'';};
   const row=t=>{const st=cpBroadStatus(t.status),s=steps(t);
     return`<button type="button" class="cp-rt-row" onclick="cpOpenTaskModal('${t.id}')"><span class="cp-rt-t">${escHtml(t.title)}${s?`<small>${s}</small>`:''}</span><span class="cp-badge" style="background:${st.bg};color:${st.color}">${escHtml(st.label)}</span><span class="cp-rt-with">${t.awaitingClient?'You':escHtml(t.withName||t.ownerName||'Etcher')}</span><span class="cp-rt-due">${due(t)}</span></button>`;};
-  const svc=s=>{const c=cat(s.key),list=top.filter(t=>t.groupId===s.groupId);
+  // This month: open work and what was finished this month (a task finished earlier still shows while a step is open).
+  const thisM=t=>!_RS_DONE.has(t.status)||_rsDoneYm(t)===rt.month||kids(t.id).some(x=>!_RS_DONE.has(x.status)||_rsDoneYm(x)===rt.month);
+  const svc=s=>{const c=cat(s.key),all=top.filter(t=>t.groupId===s.groupId),list=all.filter(thisM),older=all.length-list.length;
     const parts=(s.parts&&s.parts.length)?s.parts:[{label:'',cap:s.allowance,used:s.used,prog:s.prog||0,period:'month',unit:s.unit}];
     const meter=parts.map(u=>`${u.unit==='hours'&&u.label?`<div class="cp-rt-part">${escHtml(u.label)}${u.period==='quarter'?', this quarter':''}</div>`:''}${_rsSq(u,'cp-rt-cells')}<div class="cp-rt-used">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours used`:`<b>${u.used} of ${u.cap}</b> ${escHtml(u.unit)} used${u.prog?`, ${u.prog} in progress`:''}`}${u.used>u.cap?'. Extra work is quoted first':''}</div>`).join('');
     return`<div class="cp-rt-svc" style="--rt-c:${c.color}"><div class="cp-rt-side"><b>${escHtml(c.name)}</b><small>${c.kind==='core'?'Core service':'Add-on'}</small>${meter}</div>
-      <div class="cp-rt-jobs">${list.length?list.map(row).join(''):'<div class="cp-rt-none">Nothing this month.</div>'}</div></div>`;};
+      <div class="cp-rt-jobs">${list.length?list.map(row).join(''):'<div class="cp-rt-none">Nothing this month.</div>'}${older?`<div class="cp-rt-none cp-rt-older">${older} finished before ${_rsMonthName(rt.month)}</div>`:''}</div></div>`;};
   const focus=(rt.focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean);
   const inPm=d=>!!d&&_rsYm(new Date(d))===rt.reviewMonth;
-  const delivered=top.filter(t=>_RS_DONE.has(t.status)&&inPm(t.completedAt)).length;
+  const delivered=top.filter(t=>_RS_DONE.has(t.status)&&_rsDoneYm(t)===rt.reviewMonth).length;
   const reqs=(DB.clientWorkRequests||[]).filter(r=>r.clientId===clientId&&inPm(r.submittedAt)).length;
   const overdue=top.filter(t=>!_RS_DONE.has(t.status)&&t.endDate&&t.endDate<toDateStr(new Date())).length;
   return`<div class="cp-rt">
@@ -11143,7 +11211,10 @@ function incomingApprovalAction(taskId,newStatus){
     t.currentlyWith='';
     t.currentlyWithUserId=null;
   } else {
+    const _was=t.status;
     t.status=newStatus;
+    // Rework clears the finish date, so finishing again counts in the month it is finished.
+    _applyStatusProgress(t,newStatus,_was);_taskAudit(t.id,'status',_was,newStatus);
     // keep awaitingClient in sync with the new status
     t.awaitingClient=newStatus==='ready-approval'||newStatus==='waiting-client';
     if(newStatus==='waiting-client'){
@@ -16124,9 +16195,10 @@ function _rsPlanPart(boardId,key,field,i,val){
   if(currentUser?.role!=='admin')return;
   const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
   const s=(b.retainer.services||[]).find(x=>x.key===key);if(!s||s.mode!=='hours')return;
+  _rsKeepPlan(b.retainer,s);
   if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);
   if(!_rsPartChange(s.parts,field,i,val))return;
-  b.updatedAt=new Date().toISOString();saveDB(DB);openRetainerPlan(boardId);
+  b.updatedAt=new Date().toISOString();saveDB(DB);_rsPlanReopen(boardId,true);
   if(currentView==='workspace')renderView('workspace');
 }
 function pfiSaveFeeLine(invId,flId,field,val){
@@ -30476,7 +30548,7 @@ function _cpRefreshCurrentSection(){
   const boardIdx=_cpBuildBoardTaskIndex(clientId);
   const body=document.getElementById('cp-body');
   if(!body)return;
-  if(cpSection==='retained'){const rb=boards.find(b=>_isRetainedBoard(b));if(rb)body.innerHTML=renderCpRetained(clientId,tasks,rb);}
+  if(cpSection==='retained'){if(_cpReqDirty())return;const rb=boards.find(b=>_isRetainedBoard(b));if(rb)body.innerHTML=renderCpRetained(clientId,tasks,rb);}
   else if(cpSection==='tasks')body.innerHTML=renderCpTasks(clientId,tasks,boards,boardIdx);
   else if(cpSection==='workboard')body.innerHTML=renderCpBoard(clientId,tasks,boards,boardIdx);
   else if(cpSection==='overview'){const client=DB.clients.find(c=>c.id===clientId);body.innerHTML=renderCpOverview(clientId,tasks,boards,client,boardIdx);}
@@ -30484,6 +30556,8 @@ function _cpRefreshCurrentSection(){
 
 // ── Work Requests ─────────────────────────────────────────
 let _cpReqFiles=[];
+// Whether the request form on show has anything in it (typed text, a date, files picked).
+function _cpReqDirty(){const v=id=>((document.getElementById(id)||{}).value||'').trim();return !!(v('cp-req-title')||v('cp-req-desc')||v('cp-req-needed')||_cpReqFiles.length);}
 
 // The request form: 'adhoc' on Request Work (other boards and ad hoc), 'retained' on the Retained Services tab.
 function _cpReqFormHtml(clientId,scope){
@@ -30536,6 +30610,11 @@ function _cpReqFormHtml(clientId,scope){
     </div>
   </div>`;
 }
+// The task a request became, when the client can see it (the server sends taskId; offline, the link itself).
+function _cpReqTask(r){
+  const id=r.taskId||(r.linkedItemType==='task'?r.linkedItemId:null);
+  return id?(DB.tasks||[]).find(t=>t.id===id&&!t.archived&&!_cpTaskHidden(t))||null:null;
+}
 function renderCpRequests(clientId){
   _cpReqFiles=[];
   const requests=(DB.clientWorkRequests||[]).filter(r=>r.clientId===clientId).sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
@@ -30545,13 +30624,16 @@ function renderCpRequests(clientId){
             'reviewing':{label:'Under Review',   bg:'#dbeafe',color:'#1d4ed8'},
             'scoped':   {label:'In Scope',       bg:'#dcfce7',color:'#15803d'},
             'declined': {label:'Declined',bg:'#fee2e2',color:'#b91c1c'},
+            'withyou':  {label:'With you',bg:'#fef3c7',color:'#92400e'},
+            'delivered':{label:'Delivered',bg:'#a7f3d0',color:'#065f46'},
     }[s])||{label:'Submitted',bg:'#f1f5f9',color:'#64748b'};
   }
 
   const myRequests=requests.length?`<div style="margin-bottom:40px">
     <div class="cp-section-title">My Requests</div>
     ${requests.map(r=>{
-      const sm=reqStatusMeta(r.status);
+      const rt=_cpReqTask(r),dec=r.status==='declined';
+      const sm=reqStatusMeta(dec?'declined':rt&&_RS_DONE.has(rt.status)?'delivered':rt&&rt.awaitingClient?'withyou':r.status);
       return`<div class="cp-req-card">
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:${r.description||r.adminNote?10:0}px">
           <div style="flex:1;min-width:0">
@@ -30562,15 +30644,16 @@ function renderCpRequests(clientId){
           <span class="cp-badge" style="background:${sm.bg};color:${sm.color};flex-shrink:0">${sm.label}</span>
         </div>
         ${r.description?`<div style="font-size:13px;color:#4a5568;line-height:1.6;padding:10px 14px;background:#f8fafb;border-radius:6px;margin-bottom:${r.adminNote?8:0}px;white-space:pre-wrap;word-break:break-word">${escHtml(r.description)}</div>`:''}
-        ${r.adminNote?`<div style="font-size:12px;color:#0d6e4e;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><span style="font-weight:700;display:block;margin-bottom:2px">Note from Etcher</span>${escHtml(r.adminNote)}</div></div>`:''}
-        ${r.attachments?.length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${r.attachments.map(a=>`<a href="${_safeDataHref(a.data)}" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</a>`).join('')}</div>`:''}
+        ${r.adminNote?`<div class="cp-req-note${dec?' dec':''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><span style="font-weight:700;display:block;margin-bottom:2px">${dec?'Why we declined':'Note from Etcher'}</span>${escHtml(r.adminNote)}</div></div>`:''}
+        ${rt?`<button type="button" class="cp-req-open" data-req-task="${rt.id}" onclick="cpOpenTaskModal(this.dataset.reqTask)">Open the work</button>`:''}
+        ${r.attachments?.length?`<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">${r.attachments.map(a=>`<${a.data?'a':'span'}${a.data?` href="${_safeDataHref(a.data)}" download="${escHtml(a.name)}"`:' title="Sent with your request"'} style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#f0f4f8;border-radius:4px;font-size:11px;color:#4d6275;text-decoration:none;border:1px solid #e2eaf2"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escHtml(a.name)}</${a.data?'a':'span'}>`).join('')}</div>`:''}
       </div>`;
     }).join('')}
   </div>`:'';
 
   const infoBanner=`<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
-    <p style="font-size:13px;color:#1e40af;margin:0;line-height:1.65">Requests will go through Review and Scope before being added to the board. Once tasks are scoped and added to the board, they will continue to show as <strong>In Scope</strong> in the Client Portal.</p>
+    <p style="font-size:13px;color:#1e40af;margin:0;line-height:1.65">Requests will go through Review and Scope before being added to the board. Once a request is scoped and added to the board it shows as <strong>In Scope</strong>, then <strong>Delivered</strong> when the work is finished.</p>
   </div>`;
 
   const form=_cpReqFormHtml(clientId,'adhoc');
