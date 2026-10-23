@@ -112,6 +112,8 @@ function rsPrevYm(ym) { const [y, m] = ym.split('-').map(Number); return m === 1
 // IMS counts document revisions (2026-10-22); boards saved before stored "document reviews".
 function rsUnit(u) { return /^document reviews?$/i.test(String(u || '')) ? 'document revisions' : u; }
 function isRetainedBoard(b) { return !!(b && b.retainer && !b.retainer.endedAt && !b.archived); }
+// "Your team": only people still at Etcher.
+function activeStaffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client' && x.active !== false); return u ? u.name : null; }
 function staffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client'); return u ? u.name : null; }
 function retainerUsed(blob, boardId, groupId, ym) {
   const tasks = arr(blob.tasks);
@@ -148,8 +150,19 @@ function rsPartFor(parts, aud, senior) {
   return parts.find(x => who(x) === 'audit' && aud) || parts.find(x => who(x) === 'senior' && senior) || parts.find(x => who(x) === 'admin' && !senior)
     || parts.find(x => who(x) === 'all') || parts.find(x => who(x) === 'admin') || null;
 }
-function rsQuarter(ym) { const y = +String(ym).slice(0, 4), m = +String(ym).slice(5, 7); return y + '-Q' + (Math.floor((m - 1) / 3) + 1); }
-function rsInPeriod(d, ym, period) { d = String(d || '').slice(0, 7); if (!d) return false; return period === 'quarter' ? rsQuarter(d) === rsQuarter(ym) : d === ym; }
+// Quarters run from the retainer's start month (index.html _rsQuarterStart); a month counts its quarter up to its own end.
+function rsQuarterStart(ym, start) {
+  const k = +String(ym).slice(0, 4) * 12 + (+String(ym).slice(5, 7)) - 1;
+  if (/^\d{4}-\d{2}$/.test(String(start || ''))) { const sk = +start.slice(0, 4) * 12 + (+start.slice(5, 7)) - 1; return sk + Math.floor((k - sk) / 3) * 3; }
+  return k - (k % 12) % 3;
+}
+function rsInPeriod(d, ym, period, start) { d = String(d || '').slice(0, 7); if (!d) return false; return period === 'quarter' ? rsQuarterStart(d, start) === rsQuarterStart(ym, start) && d <= ym : d === ym; }
+// A closed month's figures as they were kept (index.html _rsLocked / _rsLockMonths); totals only, nothing about who.
+function rsLocked(b, s, ym) {
+  const L = ((((b || {}).retainer || {}).months || {})[ym] || {}).lock, x = L && arr(L.services).find(y => y.key === s.key);
+  if (!x) return null;
+  return { mode: x.mode === 'hours' ? 'hours' : 'items', parts: arr(x.parts).map(p => ({ label: p.label || '', cap: Number(p.cap) || 0, used: Number(p.used) || 0, prog: 0, period: p.period === 'quarter' ? 'quarter' : 'month', unit: p.unit === 'hours' ? 'hours' : rsUnit(p.unit) })) };
+}
 function retainerProgress(blob, boardId, groupId) {
   const tasks = arr(blob.tasks), started = x => !RS_DONE.has(x.status) && !RS_IDLE.has(String(x.status || ''));
   let n = 0;
@@ -161,6 +174,7 @@ function retainerProgress(blob, boardId, groupId) {
 }
 function rsParts(s) { if (s.mode !== 'hours') return null; return arr(s.parts).length ? arr(s.parts) : (RS_HOUR_PARTS[s.key] || [{ label: 'Hours', hours: Math.min(99, s.allowance || 8), period: 'month', who: 'all' }]); }
 function rsUsage(blob, b, s, ym, withProg) {
+  const lk = rsLocked(b, s, ym); if (lk) return lk;
   s = rsSvcAt(s, ym);
   const parts = rsParts(s);
   if (!parts) return { mode: 'items', parts: [{ label: '', cap: s.allowance, used: retainerUsed(blob, b.id, s.groupId, ym), prog: withProg ? retainerProgress(blob, b.id, s.groupId) : 0, period: 'month', unit: rsUnit(s.unit) }] };
@@ -174,7 +188,7 @@ function rsUsage(blob, b, s, ym, withProg) {
     if (!top || top.archived || top.groupId !== s.groupId || taskBoardId(blob, top) !== b.id) return;
     const senior = seniors.has(e.staffId), aud = tagged(t) || tagged(top);
     const p = rsPartFor(parts, aud, senior);
-    const i = parts.indexOf(p); if (i >= 0 && rsInPeriod(e.date, ym, p.period)) used[i] += Number(e.hours) || 0;
+    const i = parts.indexOf(p); if (i >= 0 && rsInPeriod(e.date, ym, p.period, (b.retainer || {}).startMonth)) used[i] += Number(e.hours) || 0;
   });
   return { mode: 'hours', parts: parts.map((p, i) => ({ label: p.label || 'Hours', cap: Number(p.hours) || 0, used: Math.round(used[i] * 100) / 100, prog: 0, period: p.period === 'quarter' ? 'quarter' : 'month', unit: 'hours' })) };
 }
@@ -183,11 +197,12 @@ function sliceRetainer(blob, b, now) {
   if (!isRetainedBoard(b)) return undefined;
   const r = b.retainer, ym = rsYm(now), prev = rsPrevYm(ym), months = r.months || {};
   return {
-    services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, ym, true); return { key: s.key, groupId: s.groupId, unit: rsUnit(s.unit), allowance: s.allowance, core: !!s.core, ownerName: staffName(blob, s.ownerId), used: us.parts[0].used, mode: us.mode, prog: us.mode === 'items' ? us.parts[0].prog : 0, parts: us.parts }; }),
-    leadName: staffName(blob, r.leadId), startMonth: r.startMonth || null, priority: r.priority || null,
+    services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, ym, true); return { key: s.key, groupId: s.groupId, unit: rsUnit(s.unit), allowance: s.allowance, core: !!s.core, ownerName: activeStaffName(blob, s.ownerId), used: us.parts[0].used, mode: us.mode, prog: us.mode === 'items' ? us.parts[0].prog : 0, parts: us.parts }; }),
+    leadName: activeStaffName(blob, r.leadId), startMonth: r.startMonth || null, priority: r.priority || null,
     month: ym, focusTaskIds: arr((months[ym] || {}).focusTaskIds).slice(0, 3), reviewMonth: prev, reviewNote: (months[prev] || {}).note || null,
     // The last two months, read only (plan §5).
-    history: [prev, rsPrevYm(prev)].map(m => ({ month: m, services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, m, false); return { key: s.key, used: us.mode === 'hours' ? String(Math.round(us.parts.filter(u => u.period === 'month').reduce((n, u) => n + u.used, 0) * 100) / 100) : us.parts[0].used, unit: us.mode === 'hours' ? 'hours' : null }; }) })),
+    history: [prev, rsPrevYm(prev)].map(m => ({ month: m, services: arr(r.services).map(s => { const us = rsUsage(blob, b, s, m, false); const q = us.parts.filter(u => u.period === 'quarter'), h = ps => String(Math.round(ps.reduce((n, u) => n + u.used, 0) * 100) / 100);
+      return { key: s.key, used: us.mode === 'hours' ? h(us.parts.filter(u => u.period !== 'quarter')) : us.parts[0].used, unit: us.mode === 'hours' ? 'hours' : null, qtr: us.mode === 'hours' && q.length ? h(q) : null }; }) })),
   };
 }
 // A request's service must be one of the client's own groups or boards; anything else is ad hoc.

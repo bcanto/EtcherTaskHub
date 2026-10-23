@@ -52,6 +52,20 @@ Tick each one on the live site. Use a test client (or Daltech), not a real clien
 - [ ] Portal: each service lists this month's work, with "N finished before (month)" under it. A request whose work is finished shows **Delivered** and an **Open the work** button; a declined one shows "Why we declined" in red.
 - [ ] Portal: a request sent with files lists the file names (no download; the client already has them).
 
+## The rest of the audit (23 October, second batch)
+- [ ] Months close on the 10th of the next month. After that, archive a task finished in a closed month: that month's figure on the board's Month list and in the portal's Earlier months stays the same.
+- [ ] A service with quarterly hours: the quarter runs from the retainer's start month (a February start has Feb to Apr). The client page's hours log says which quarter.
+- [ ] Portal, Earlier months: an hours service shows the month's hours, and the quarter's hours under it. Months before the retainer started are not shown.
+- [ ] Open a task and tick it done, cycle its status, complete it from My Week, drag it to another group, move it on the Gantt: each shows in the task's Audit trail once. Saving the full task window lists only what you changed.
+- [ ] Dragging a task to another group takes its subitems along.
+- [ ] Click an old notification for a board that was deleted: the board you were on stays open.
+- [ ] Open work from a notification: the Month list shows All months for that visit; open the board again and it is back to This month.
+- [ ] New retained board with a start month in the past: the monthly jobs start this month (no pile of overdue copies).
+- [ ] Try to restore an ended retained board while the client has a running one: it says to end the running one first.
+- [ ] Retainer plan: Remove asks first. A lead or senior consultant who has left shows as "(left)".
+- [ ] Retained Services dashboard: Needs attention shows eight lines, then Show more. The "allowances at 80%" count opens Clients, most used first. On a client page with more than 12 jobs, "See them in the queue" opens the queue for that client. Arrow keys move along the tabs.
+- [ ] Portal: on a phone, each job shows its due date. Attach files can be reached with the Tab key. A note about a request opens My Requests. Someone who has left is not under Your team.
+
 ## Security switches (when ready; steps in docs/security/client-portal-security.md)
 - [ ] Supabase: Confirm email on, leaked password protection on, minimum password length 12.
 - [ ] Supabase: real SMTP, and the site in the redirect URLs. Then Vercel `CLIENT_EMAIL_LINK=1`, and test with your own second email.

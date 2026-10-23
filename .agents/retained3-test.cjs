@@ -51,6 +51,7 @@ H.run('retained3-test', 3179, async (t) => {
 
   // Portal history.
   await ev(b => { const w = DB.workboards.find(x => x.id === b), g = w.retainer.services.find(s => s.key === 'ims').groupId, lm = new Date(Date.now() - 32 * 864e5).toISOString();
+    w.retainer.startMonth = _rsPrevYm(_rsPrevYm(_rsYm()));   // started two months ago: the portal shows no months before the start
     DB.tasks.push({ id: 'rt3-p', name: 'Procedures', title: 'Procedures', boardId: b, workboardId: b, groupId: g, clientId: 'c1', status: 'in-progress', archived: false });
     DB.tasks.push({ id: 'rt3-s1', name: 'One', title: 'One', parentTaskId: 'rt3-p', status: 'done', completedAt: lm, archived: false });
     saveDB(DB); }, id);
