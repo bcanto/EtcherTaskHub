@@ -40,6 +40,18 @@ Tick each one on the live site. Use a test client (or Daltech), not a real clien
 - [ ] Open a task, change its status, priority and progress: the **Audit trail** at the bottom of Details lists each change with who and when (the Activity tab shows the same). Moving the progress slider twice in a row is one entry.
 - [ ] Retained Services dashboard: **Queue** and **Clients** tabs. The queue is grouped by client (close a group from its name), shows 25 rows then Show more. Clients has a search and an order (order added, most allowance used, support tier). Needs attention is one line per client.
 
+## Fixes from the audit (23 October)
+- [ ] Retainer plan: switch a service from Items to Hours, then pick last month in the board's Month list: last month still reads by items. The plan says "earlier months keep the plan they had".
+- [ ] Untick every senior consultant on a plan with a Senior consult part: a warning says every hour counts to Admin. Last month's senior hours stay where they were.
+- [ ] Log an hour on an untagged task under a service whose only part is "Tasks tagged Audit": the client page's hours log says "Not counted".
+- [ ] Set a task finished last month to Client Approved, then Completed: it stays counted in last month, and its progress stays at 100%.
+- [ ] On a retained board, This month: a task finished last month with a subitem finished this month still shows.
+- [ ] Retained Services dashboard, Clients tab: click the "late" count: the Queue opens on late work with every filter cleared.
+- [ ] Retainer plan: type a review note, change an owner before saving: the note is still there.
+- [ ] Portal, Retained Services tab: type a request title, click Attach files and cancel: the title is still there a minute later.
+- [ ] Portal: each service lists this month's work, with "N finished before (month)" under it. A request whose work is finished shows **Delivered** and an **Open the work** button; a declined one shows "Why we declined" in red.
+- [ ] Portal: a request sent with files lists the file names (no download; the client already has them).
+
 ## Security switches (when ready; steps in docs/security/client-portal-security.md)
 - [ ] Supabase: Confirm email on, leaked password protection on, minimum password length 12.
 - [ ] Supabase: real SMTP, and the site in the redirect URLs. Then Vercel `CLIENT_EMAIL_LINK=1`, and test with your own second email.

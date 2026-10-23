@@ -116,7 +116,7 @@ function staffName(blob, id) { const u = id && arr(blob.users).find(x => x.id ==
 function retainerUsed(blob, boardId, groupId, ym) {
   const tasks = arr(blob.tasks);
   // Same rule as index.html _rsDoneYm: a finished task saved without a date counts by its last update.
-  const doneYm = x => { const at = x.completedAt || (x.clientApproval && x.clientApproval.at) || (RS_DONE.has(x.status) ? x.updatedAt : null); return at ? rsYm(at) : null; };
+  const doneYm = x => { const at = x.completedAt || (x.clientApproval && x.clientApproval.at) || x.clientApprovedAt || (RS_DONE.has(x.status) ? x.updatedAt : null); return at ? rsYm(at) : null; };
   let n = 0;
   tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === groupId && taskBoardId(blob, t) === boardId && !taskHidden(blob, t)).forEach(t => {
     const subs = tasks.filter(x => x.parentTaskId === t.id && !x.archived && !taskHidden(blob, x));
@@ -133,6 +133,21 @@ const RS_HOUR_PARTS = {
   hseq: [{ label: 'HSEQ elements', hours: 5, period: 'month', who: 'all' }, { label: 'Audits (mini and main)', hours: 8, period: 'quarter', who: 'audit' }],
   ci: [{ label: 'Admin', hours: 8, period: 'month', who: 'admin' }, { label: 'Senior consult', hours: 3, period: 'month', who: 'senior' }],
 };
+function rsAt(hist, ym) { return arr(hist).filter(h => h && h.until >= ym).sort((a, b) => String(a.until).localeCompare(String(b.until)))[0] || null; }
+function rsSvcAt(s, ym) {
+  const h = rsAt(s.hist, ym); if (!h) return s;
+  const o = Object.assign({}, s, { allowance: h.allowance, unit: h.unit || s.unit, parts: h.parts || null });
+  if (h.mode === 'hours') o.mode = 'hours'; else delete o.mode;
+  return o;
+}
+function rsSeniorsAt(r, ym) { const h = rsAt(r && r.seniorHist, ym); return new Set(arr(h ? h.ids : r && r.seniorIds)); }
+// Which part an hour counts to (index.html _rsPartFor): Audit-tagged work, senior consultants, everyone else as admin,
+// then Everyone, then Admin. Hours that fit no part are not counted (an untagged task on an Audit-only service).
+function rsPartFor(parts, aud, senior) {
+  const who = x => x.who || 'all';
+  return parts.find(x => who(x) === 'audit' && aud) || parts.find(x => who(x) === 'senior' && senior) || parts.find(x => who(x) === 'admin' && !senior)
+    || parts.find(x => who(x) === 'all') || parts.find(x => who(x) === 'admin') || null;
+}
 function rsQuarter(ym) { const y = +String(ym).slice(0, 4), m = +String(ym).slice(5, 7); return y + '-Q' + (Math.floor((m - 1) / 3) + 1); }
 function rsInPeriod(d, ym, period) { d = String(d || '').slice(0, 7); if (!d) return false; return period === 'quarter' ? rsQuarter(d) === rsQuarter(ym) : d === ym; }
 function retainerProgress(blob, boardId, groupId) {
@@ -146,9 +161,10 @@ function retainerProgress(blob, boardId, groupId) {
 }
 function rsParts(s) { if (s.mode !== 'hours') return null; return arr(s.parts).length ? arr(s.parts) : (RS_HOUR_PARTS[s.key] || [{ label: 'Hours', hours: Math.min(99, s.allowance || 8), period: 'month', who: 'all' }]); }
 function rsUsage(blob, b, s, ym, withProg) {
+  s = rsSvcAt(s, ym);
   const parts = rsParts(s);
   if (!parts) return { mode: 'items', parts: [{ label: '', cap: s.allowance, used: retainerUsed(blob, b.id, s.groupId, ym), prog: withProg ? retainerProgress(blob, b.id, s.groupId) : 0, period: 'month', unit: rsUnit(s.unit) }] };
-  const tasks = arr(blob.tasks), byId = new Map(tasks.map(t => [t.id, t])), seniors = new Set(arr((b.retainer || {}).seniorIds));
+  const tasks = arr(blob.tasks), byId = new Map(tasks.map(t => [t.id, t])), seniors = rsSeniorsAt(b.retainer || {}, ym);
   const tagged = x => arr(x && x.tags).some(g => /^audit$/i.test(String(g).trim()));
   const used = parts.map(() => 0);
   arr(blob.timeEntries).forEach(e => {
@@ -157,7 +173,7 @@ function rsUsage(blob, b, s, ym, withProg) {
     const top = t.parentTaskId ? byId.get(t.parentTaskId) : t;
     if (!top || top.archived || top.groupId !== s.groupId || taskBoardId(blob, top) !== b.id) return;
     const senior = seniors.has(e.staffId), aud = tagged(t) || tagged(top);
-    const p = parts.find(x => x.who === 'audit' && aud) || parts.find(x => x.who === 'senior' && senior) || parts.find(x => x.who === 'admin' && !senior) || parts.find(x => x.who === 'all') || parts[0];
+    const p = rsPartFor(parts, aud, senior);
     const i = parts.indexOf(p); if (i >= 0 && rsInPeriod(e.date, ym, p.period)) used[i] += Number(e.hours) || 0;
   });
   return { mode: 'hours', parts: parts.map((p, i) => ({ label: p.label || 'Hours', cap: Number(p.hours) || 0, used: Math.round(used[i] * 100) / 100, prog: 0, period: p.period === 'quarter' ? 'quarter' : 'month', unit: 'hours' })) };
@@ -213,7 +229,7 @@ function isApprovalAsk(blob, t) {
 // assignees, internal descriptions, tags, time entries, rates, invoices, client notes, the
 // staff roster, other clients.
 const TASK_FIELDS = ['id', 'name', 'title', 'status', 'percentComplete', 'startDate', 'endDate', 'priority',
-  'approvalType', 'clientDescription', 'parentTaskId', 'groupId', 'order', 'createdAt', 'updatedAt', 'completedAt'];
+  'approvalType', 'clientDescription', 'parentTaskId', 'groupId', 'order', 'createdAt', 'updatedAt', 'completedAt', 'clientApprovedAt'];
 
 function pick(obj, fields) {
   const out = {};
@@ -241,6 +257,14 @@ function sliceTask(blob, t) {
   return s;
 }
 
+// A client's own work requests: what the portal shows, files by name only (their data can run to megabytes and the client
+// already has them), no staff ids, and the task it became when the client can see that task.
+function sliceWorkRequest(r, taskIds) {
+  const o = clone(pick(r, ['id', 'clientId', 'title', 'description', 'priority', 'urgency', 'neededBy', 'serviceRef', 'submittedAt', 'status', 'adminNote', 'respondedAt', 'updatedAt']));
+  o.attachments = arr(r.attachments).map(a => ({ name: String((a && a.name) || 'File'), type: (a && a.type) || '', size: Number(a && a.size) || 0 }));
+  if (r.linkedItemType === 'task' && taskIds.has(r.linkedItemId)) o.taskId = r.linkedItemId;
+  return o;
+}
 function sliceActionRequest(r) {
   return pick(r, ['id', 'taskId', 'clientId', 'kind', 'title', 'body', 'dueDate', 'status', 'createdAt', 'updatedAt', 'respondedAt', 'responseNote']);
 }
@@ -292,7 +316,7 @@ function sliceForClient(blob, clientId, userId) {
     taskFiles: arr(blob.taskFiles).filter(f => taskIds.has(f.taskId) && !f.columnId && (f.uploadedByClientId === clientId || (f.internalOnly !== true && !(taskById.get(f.taskId) || {}).clientAttachmentsHidden)))
       .map(f => ({ ...pick(f, ['id', 'taskId', 'name', 'type', 'size', 'url', 'internalOnly', 'uploadedByClientId', 'actionRequestId', 'addedAt', 'uploadedAt']), stored: !!f.storagePath })),
     actionRequests: arr(blob.actionRequests).filter(r => taskIds.has(r.taskId)).map(sliceActionRequest),
-    clientWorkRequests: arr(blob.clientWorkRequests).filter(r => r.clientId === clientId).map(clone),
+    clientWorkRequests: arr(blob.clientWorkRequests).filter(r => r.clientId === clientId).map(r => sliceWorkRequest(r, taskIds)),
     notifications: arr(blob.notifications).filter(n => userId && n.recipientId === userId).map(clone),
     labelConfig: blob.labelConfig ? clone(blob.labelConfig) : { statuses: {}, priorities: {} },
     users: [], staff: [],
@@ -344,11 +368,14 @@ function applyStatusProgress(task, newStatus, prevStatus, now) {
   const wasDone = DONE_STATUSES.includes(prevStatus);
   const isDone = DONE_STATUSES.includes(newStatus);
   const ownedByHours = task.percentMode === 'hour_budget' && !!task.hourBudget;
+  // Client approved: a retainer counts it as finished in the month it got there (index.html _applyStatusProgress).
+  if (newStatus === 'approved-client') { if (!task.completedAt && !task.clientApprovedAt) task.clientApprovedAt = now; return; }
   if (isDone) {
     if (!ownedByHours) task.percentComplete = 100;
-    if (!wasDone) task.completedAt = now;
+    if (!wasDone) task.completedAt = (prevStatus === 'approved-client' && (task.completedAt || task.clientApprovedAt)) || now;
   } else {
     task.completedAt = null;
+    delete task.clientApprovedAt;
     if (ownedByHours) return;
     if (wasDone && task.percentComplete === 100) task.percentComplete = 0;
   }
