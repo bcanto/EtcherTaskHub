@@ -92,7 +92,7 @@ H.run('retained8-test', 3269, async (t) => {
   t.ok(ov.sq === 20 && ov.on === 4, 'the month shows each service as squares');
   t.ok(/Update the induction pack/.test(ov.work), 'its requests and work are listed');
   t.ok(/Embedded bundle/.test(ov.facts) && JSON.stringify(ov.acts) === '["Plan","Month report"]', 'the header carries the level, bundle and lead, with Plan and Month report (Board is a tab)');
-  t.ok(ov.logo && ov.cells.length === 4 && /open request/.test(ov.cells[1]) && /documents? to review/.test(ov.cells[2]) && /training expired or expiring/.test(ov.cells[3]), `the header has the client's logo and four figures (got ${JSON.stringify(ov.cells)})`);
+  t.ok(ov.logo && ov.cells.length === 4 && /open request/.test(ov.cells[1]) && /documents? due for review/.test(ov.cells[2]) && /training expired or expiring/.test(ov.cells[3]), `the header has the client's logo and four figures (got ${JSON.stringify(ov.cells)})`);
   const dl = await ev(() => { _rdHome(); const m = document.querySelector('.rd-mast'); const out = { mast: !!m, cells: m ? m.querySelectorAll('.rc-cell').length : 0, logos: document.querySelectorAll('#rd-clients .rd-cl-id .rc-logo').length }; openRetainedClient('c2'); return out; });
   t.ok(dl.mast && dl.cells === 4 && dl.logos === 2, 'the dashboard has the same summary card, and every client row its logo');
   t.ok(/3 documents are due for review with no revision task yet/.test(ov.sugg), `three documents (two overdue, one due within 30 days) are suggested as review tasks (got "${ov.sugg.trim().slice(0, 90)}")`);
@@ -149,6 +149,6 @@ H.run('retained8-test', 3269, async (t) => {
 
   // ── Dashboard: the warning and the Registers column follow the tasks ──
   const dash = await ev(() => { _rdHome(); renderView('retained'); return { d2: !!document.getElementById('rd-att-regd-c2'), d1: (document.getElementById('rd-att-regd-c1') || {}).textContent || '', col2: (document.querySelector('#rd-clients tr[data-rd-client="c2"] .rd-c-reg') || {}).textContent || '' }; });
-  t.ok(!dash.d2 && /1 document is due for review with no task yet \(1 overdue\)/.test(dash.d1), 'the dashboard flags only documents with no review task');
+  t.ok(!dash.d2 && /1 document is due for review with no revision task yet \(1 overdue\)/.test(dash.d1), 'the dashboard flags only documents with no review task');
   t.ok(/Documents: (up to date|revisions in hand)/.test(dash.col2), `the Clients sheet says Daltech's reviews are in hand (got "${dash.col2}")`);
 });
