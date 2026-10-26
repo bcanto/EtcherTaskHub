@@ -9,12 +9,22 @@
      session and nothing in the URL needs resolving — the sign-in skeleton is correct with no
      further async check. Anything else keeps the app skeleton (the async default, matching
      the old behaviour) since only a real session check can settle it. See the two skeletons
-     and the follow-up script right after them in <body> for the other half of this. -->
+     and the follow-up script right after them in <body> for the other half of this.
+     The skeleton also has to match WHERE the page is going, not just whether anyone is signed in:
+       boot-share    a ?share= progress link: the public share page, no sign-in and no app around it
+       boot-signin   an invite / password-reset / sign-up / magic link: it lands on a sign-in style page
+       boot-client   a saved session that belongs to a client (etcher_boot_kind, written when the portal opens):
+                     the client portal has no sidebar, so the app skeleton would be the wrong shape
+       boot-pending  everything else with a session to check (staff), the app skeleton as before -->
 <script>(function(){try{
-  var q=location.search+location.hash;
-  var pending=/[?&#]share=|access_token=|type=(recovery|invite|signup|magiclink)|[?&]code=/.test(q)
-    ||!!(localStorage.getItem('etcher_supabase_auth')||localStorage.getItem('etcher_session_v1'));
-  document.documentElement.classList.add(pending?'boot-pending':'boot-loggedout');
+  var q=location.search+location.hash,cls;
+  var saved=!!(localStorage.getItem('etcher_supabase_auth')||localStorage.getItem('etcher_session_v1'));
+  var kind=localStorage.getItem('etcher_boot_kind');
+  if(/[?&#]share=/.test(q))cls='boot-share';
+  else if(/type=(recovery|invite|signup|magiclink)/.test(q))cls='boot-signin';
+  else if(saved||/access_token=|[?&]code=/.test(q))cls=kind==='client'?'boot-client':'boot-pending';
+  else cls='boot-loggedout';
+  document.documentElement.classList.add(cls);
 }catch(e){document.documentElement.classList.add('boot-pending');}})();</script>
 <!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve to anything but 0
      (WebKit spec) — the mobile shell's bottom-sheet/tab-bar/FAB padding for the home
@@ -880,9 +890,11 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
 .login-bg::after{content:'';position:absolute;bottom:-20%;right:-10%;width:50%;height:60%;border-radius:50%;background:radial-gradient(ellipse,rgba(10,45,82,0.8) 0%,transparent 70%);pointer-events:none}
 /* Which boot skeleton paints first — set by the inline script at the very top of <head>,
    before this body content is even parsed. See the comment there for why. */
-#login-skeleton{display:none}
-html.boot-loggedout #loading-screen{display:none!important}
-html.boot-loggedout #login-skeleton{display:flex!important}
+#login-skeleton,#portal-skeleton,#share-skeleton{display:none}
+html.boot-loggedout #loading-screen,html.boot-signin #loading-screen,html.boot-client #loading-screen,html.boot-share #loading-screen{display:none!important}
+html.boot-loggedout #login-skeleton,html.boot-signin #login-skeleton{display:flex!important}
+html.boot-client #portal-skeleton{display:flex!important}
+html.boot-share #share-skeleton{display:block!important}
 .login-card{background:#fff;border-radius:var(--r-xl);width:680px;max-width:95vw;box-shadow:0 40px 120px rgba(0,0,0,0.42),0 12px 40px rgba(0,0,0,0.2),0 0 0 1px rgba(255,255,255,0.04);display:flex;overflow:hidden;position:relative;z-index:1}
 .login-left{background:linear-gradient(160deg,#0d1c33 0%,#0a2442 100%);padding:44px 32px;width:250px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .login-left::before{content:'';position:absolute;bottom:-80px;right:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(151,188,189,0.1) 0%,transparent 65%);pointer-events:none}
@@ -1498,6 +1510,30 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .ws-tab{display:inline-flex;align-items:center;gap:5px;padding:0 16px;height:40px;font-family:'Jost',sans-serif;font-size:13px;font-weight:500;color:#8da2b2;cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s var(--ease),border-color 0.2s var(--ease);white-space:nowrap;flex-shrink:0;user-select:none}
 .ws-tab.active{color:var(--navy);border-bottom-color:#97bcbd;font-weight:600}
 .ws-tab:hover:not(.active){color:var(--navy)}
+/* ── Colour palette picker (one palette everywhere a colour is chosen; client add/edit auto-picks instead) ── */
+.cpk{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cpk-dot,.cpk-plus{width:22px;height:22px;border-radius:50%;flex-shrink:0;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:#fff;position:relative;transition:transform 0.16s cubic-bezier(.34,1.56,.64,1)}
+.cpk-dot,.cpk-swatch{min-width:0;min-height:0}
+.cpk-dot{border:none;box-shadow:0 1px 2px rgba(13,28,51,0.16),0 2px 6px rgba(13,28,51,0.08)}
+.cpk-dot:hover,.cpk-plus:hover{transform:scale(1.14)}
+.cpk-dot:active,.cpk-plus:active{transform:scale(0.92)}
+.cpk-dot:focus-visible,.cpk-plus:focus-within{outline:2px solid var(--navy);outline-offset:2px}
+.cpk-dot svg,.cpk-plus .ck svg{opacity:0;transform:scale(0.5);transition:opacity 0.12s,transform 0.16s cubic-bezier(.34,1.56,.64,1)}
+.cpk-dot.on svg,.cpk-plus.on .ck svg{opacity:1;transform:scale(1)}
+.cpk-plus{border:1.5px dashed #b6c6d3;background:#fff;color:#6b8399;font-size:15px;line-height:1}
+.cpk-plus.on{border-color:transparent;color:#fff;box-shadow:0 1px 2px rgba(13,28,51,0.16),0 2px 6px rgba(13,28,51,0.08)}
+.cpk-plus .ck{display:none}
+.cpk-plus.on .ck{display:inline-flex}
+.cpk-plus.on .sg{display:none}
+.cpk-plus input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
+.cpk.cpk-sm{gap:6px}
+.cpk.cpk-sm .cpk-dot,.cpk.cpk-sm .cpk-plus{width:18px;height:18px}
+.cpk-pop{position:fixed;z-index:100000;background:#fff;border:1px solid #e2eaf2;border-radius:12px;padding:12px;width:max-content;max-width:calc(100vw - 16px);box-shadow:0 2px 4px rgba(13,28,51,0.06),0 12px 32px rgba(13,28,51,0.16)}
+.cpk-pop .cpk{width:262px;max-width:100%}
+.cpk-swatch{width:26px;height:26px;border-radius:7px;border:1.5px solid rgba(13,28,51,0.14);padding:0;cursor:pointer;flex-shrink:0;transition:transform 0.16s cubic-bezier(.34,1.56,.64,1)}
+.cpk-swatch:hover{transform:scale(1.1)}
+.cpk-swatch:active{transform:scale(0.93)}
+.cpk-swatch:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
 .ws-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--sh-lg);padding:6px 0;min-width:148px}
 .ws-dropdown-item{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text-1);transition:background 0.12s;display:flex;align-items:center;gap:8px}
 .ws-dropdown-item:hover{background:#f5f8ff}
@@ -1795,7 +1831,7 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .dash-stat-btn.active .dash-stat-arrow{transform:rotate(180deg)}
 /* ── Cell dropdown ── */
 #ws-cell-dd{position:fixed;z-index:650;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-md);box-shadow:var(--sh-lg);min-width:180px;overflow:hidden;display:none}
-.ws-cell-dd-item{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text-1);display:flex;align-items:center;gap:8px;transition:background 0.1s}
+.ws-cell-dd-item{padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text-1);display:flex;align-items:center;gap:8px;transition:background 0.1s}
 .ws-cell-dd-item:hover{background:#f4f7ff}
 .ws-dd-active{background:#f0f7f0!important}
 /* Fixed-column generic tables (ISO registers): compact cells stay on one line. */
@@ -1961,6 +1997,81 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
     </div>
   </div>
 </div>
+<!-- Client-portal skeleton — shown instead of the app skeleton when html.boot-client is set (a saved session that
+     belongs to a client; see the script at the very top of <head>). Mirrors the portal shell: the navy header, the
+     tab strip and the month summary, and has no sidebar because the portal has none. -->
+<div id="portal-skeleton" style="position:fixed;inset:0;z-index:99999;flex-direction:column;background:var(--bg);transition:opacity 0.35s ease">
+  <div style="background:#0d1c33;height:60px;display:flex;align-items:center;padding:0 32px;gap:14px;flex-shrink:0;box-shadow:0 2px 12px rgba(13,28,51,0.18)">
+    <div class="_sk" style="height:28px;width:112px"></div>
+    <div style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 2px"></div>
+    <div class="_sk" style="height:16px;width:140px"></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <div class="_sk" style="height:10px;width:84px;opacity:0.5"></div>
+      <div class="_sk" style="height:30px;width:78px;border-radius:6px;opacity:0.6"></div>
+    </div>
+  </div>
+  <div style="background:#fff;border-bottom:1.5px solid #e2eaf2;padding:0 24px;display:flex;align-items:center;gap:22px;height:47px;flex-shrink:0;box-shadow:0 1px 4px rgba(13,28,51,0.04)">
+    <div class="_skl" style="height:11px;width:62px"></div>
+    <div class="_skl" style="height:11px;width:40px;opacity:0.7"></div>
+    <div class="_skl" style="height:11px;width:44px;opacity:0.7"></div>
+    <div class="_skl" style="height:11px;width:64px;opacity:0.7"></div>
+    <div class="_skl" style="height:11px;width:80px;opacity:0.7"></div>
+  </div>
+  <div style="flex:1;overflow:hidden">
+    <div style="max-width:1340px;margin:0 auto;padding:24px 24px 48px;box-sizing:border-box;width:100%">
+      <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;margin-bottom:26px;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:16px 20px 10px">
+          <div class="_skl" style="height:22px;width:190px"></div>
+          <div class="_skl" style="height:10px;width:120px;opacity:0.7"></div>
+        </div>
+        <div class="_skl" style="height:4px;margin:0 20px 14px;border-radius:3px"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #eef2f7">
+          <div style="padding:16px 20px"><div class="_skl" style="height:22px;width:64px;margin-bottom:10px"></div><div class="_skl" style="height:9px;width:96px;opacity:0.7"></div></div>
+          <div style="padding:16px 20px;border-left:1px solid #eef2f7"><div class="_skl" style="height:22px;width:70px;margin-bottom:10px"></div><div class="_skl" style="height:9px;width:84px;opacity:0.7"></div></div>
+          <div style="padding:16px 20px;border-left:1px solid #eef2f7"><div class="_skl" style="height:22px;width:34px;margin-bottom:10px"></div><div class="_skl" style="height:9px;width:104px;opacity:0.7"></div></div>
+          <div style="padding:16px 20px;border-left:1px solid #eef2f7"><div class="_skl" style="height:22px;width:34px;margin-bottom:10px"></div><div class="_skl" style="height:9px;width:120px;opacity:0.7"></div></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px">
+        <div>
+          <div class="_skl" style="height:13px;width:120px;margin-bottom:12px"></div>
+          <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:6px 20px">
+            <div style="padding:14px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:62%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:38%;opacity:0.7"></div></div>
+            <div style="padding:14px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:55%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:32%;opacity:0.7"></div></div>
+            <div style="padding:14px 0"><div class="_skl" style="height:12px;width:68%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:36%;opacity:0.7"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="_skl" style="height:13px;width:100px;margin-bottom:12px"></div>
+          <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:6px 20px">
+            <div style="padding:14px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:70%;margin-bottom:8px"></div><div class="_skl" style="height:6px;width:100%;opacity:0.7"></div></div>
+            <div style="padding:14px 0"><div class="_skl" style="height:12px;width:58%;margin-bottom:8px"></div><div class="_skl" style="height:6px;width:100%;opacity:0.7"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared-link skeleton — shown when the address is a ?share= progress link: a public page with no sign-in and
+     no app around it, so neither the sidebar skeleton nor the sign-in one fits. -->
+<div id="share-skeleton" style="position:fixed;inset:0;z-index:99999;background:#f4f7fb;transition:opacity 0.35s ease">
+  <div style="max-width:900px;margin:0 auto;padding:32px 24px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px">
+      <div class="_skl" style="height:40px;width:40px;border-radius:10px"></div>
+      <div><div class="_skl" style="height:20px;width:220px;margin-bottom:8px"></div><div class="_skl" style="height:10px;width:140px;opacity:0.7"></div></div>
+    </div>
+    <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:20px 24px;margin-bottom:16px">
+      <div class="_skl" style="height:10px;width:100%;margin-bottom:12px;border-radius:5px"></div>
+      <div class="_skl" style="height:10px;width:30%;opacity:0.7"></div>
+    </div>
+    <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:6px 24px">
+      <div style="padding:16px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:58%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:30%;opacity:0.7"></div></div>
+      <div style="padding:16px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:48%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:26%;opacity:0.7"></div></div>
+      <div style="padding:16px 0"><div class="_skl" style="height:12px;width:64%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:34%;opacity:0.7"></div></div>
+    </div>
+  </div>
+</div>
 <script>
 // Whichever skeleton the CSS above chose to paint (see the classifying script at the top of
 // <head>), this settles it: html.boot-loggedout is a synchronous, certain "no saved session and
@@ -1970,8 +2081,7 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
 // exactly as before.
 (function(){try{
   if(!document.documentElement.classList.contains('boot-loggedout'))return;
-  var ls=document.getElementById('loading-screen');if(ls)ls.remove();
-  var lsk=document.getElementById('login-skeleton');if(lsk)lsk.remove();
+  ['loading-screen','login-skeleton','portal-skeleton','share-skeleton'].forEach(function(id){var e=document.getElementById(id);if(e)e.remove();});
 }catch(e){}})();
 </script>
 
@@ -3924,7 +4034,7 @@ function _saveSession(){
   try{localStorage.setItem(_SESSION_KEY,JSON.stringify({id:currentUser.id,type:currentUser.type,role:currentUser.role,clientId:currentUser.clientId||null,savedAt:Date.now()}));}catch(_){}
 }
 function _clearSession(){
-  try{localStorage.removeItem(_SESSION_KEY);}catch(_){}
+  try{localStorage.removeItem(_SESSION_KEY);localStorage.removeItem('etcher_boot_kind');}catch(_){}
 }
 // Fallback: restore session from localStorage (no Supabase configured)
 function _restoreSession(){
@@ -4088,6 +4198,7 @@ async function _supabaseRestoreSession(session){
 
 function _showSetPasswordForm(session){
   if(document.getElementById('set-pw-overlay'))return;
+  _hideLoadingScreen();   // the form is what was loading: the skeleton must not stay over it
   const overlay=document.createElement('div');
   overlay.id='set-pw-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:#f0f4f8;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Jost,sans-serif';
@@ -4375,7 +4486,7 @@ function openConfirm(title,msg,okLabel,cb,danger=true){
 }
 // WorkBoard state
 let currentWorkboard=null;
-let selectedWbColor='#0d1c33';
+let selectedWbColor='#23a9a3';
 let _wbDragId=null;
 let _wbDragStartedAt=0;
 // Blocks (Workspace) view state
@@ -5469,13 +5580,19 @@ function toggleLoginPw(){
   inp.type=inp.type==='password'?'text':'password';
   if(btn)btn.textContent=inp.type==='password'?'Show':'Hide';
 }
+// Whichever boot skeleton was painted (app, client portal, sign-in or shared link) fades out and goes.
 function _hideLoadingScreen(){
-  const ls=document.getElementById('loading-screen');
-  if(!ls)return;
-  ls.style.opacity='0';
-  ls.style.pointerEvents='none';
-  setTimeout(()=>ls.remove(),420);
+  ['loading-screen','login-skeleton','portal-skeleton','share-skeleton'].forEach(id=>{
+    const ls=document.getElementById(id);
+    if(!ls)return;
+    ls.style.opacity='0';
+    ls.style.pointerEvents='none';
+    setTimeout(()=>ls.remove(),420);
+  });
 }
+// What kind of session this browser holds, read by the very first script in <head> so the boot skeleton can be the
+// client portal's (no sidebar) rather than the app's. Written when the app or the portal opens, forgotten at sign-out.
+function _rememberBootKind(kind){try{localStorage.setItem('etcher_boot_kind',kind);}catch(_){}}
 // Read notifications older than 90 days are cleared for the person signed in (audit H9, 2026-10-17): they were never
 // removed, so the record grew for ever. Unread ones stay. Each is remembered as removed so another computer's copy does
 // not bring it back.
@@ -5490,6 +5607,7 @@ function _pruneOldNotifications(){
 }
 function launchApp(){
   _hideLoadingScreen();
+  _rememberBootKind('staff');
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.remove('hidden');
   updateSidebarUser();
@@ -5566,6 +5684,7 @@ function _deepLinkOpenTask(taskId){
 }
 function launchClientView(){
   _hideLoadingScreen();
+  _rememberBootKind('client');
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').classList.add('hidden');
   const portal=document.getElementById('client-portal');
@@ -5793,7 +5912,7 @@ function navigate(view){
   });
   if(view!=='retained'&&typeof _regDrawerClose==='function')_regDrawerClose();
   const viewTitles={myweek:'My Week',quotes:'Quotes',dashboard:'Dashboard',schedule:'Schedule',workspace:'Blocks',board:'Kanban',list:'Task List',gantt:'Gantt',capacity:'Capacity',clients:'Client Manager',time:'Timesheets',reports:'Reports',notes:'Client Notes',staff:'Staff',notifications:'Notifications',audit:'Audit Trail','my-week':'My Week',digest:'Digest',archive:'Archive & Bin',retained:'Retained Services'};
-  const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
+  const workboardViews=new Set(['workspace','board','list','gantt']);
   // Inside a workboard the tab strip already shows the board name (with its colour dot and
   // actions menu), so repeating it in the page title is pure duplication.
   const _inWb=workboardViews.has(view)&&currentWorkboard;
@@ -5846,7 +5965,7 @@ function renderMobileTabbar(view){
   if(!bar||!currentUser)return;
   const shown=id=>{const el=document.getElementById(id);return!!el&&el.style.display!=='none';};
   const hasBoard=(DB.workboards||[]).some(wb=>!wb.archived&&canViewBoard(currentUser,wb));
-  const workboardViews=new Set(['workspace','board','list','gantt','capacity']);
+  const workboardViews=new Set(['workspace','board','list','gantt']);
   const tab=(active,onclick,label,path)=>`<button class="mobile-tab${active?' active':''}" onclick="${onclick}">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>
     ${label}</button>`;
@@ -6359,30 +6478,12 @@ function _metaOverride(base,ov){
 function getStatusMeta(key){return _metaOverride(STATUS_META[key]||{label:_safeLabel(key),color:'#64748b',bg:'#f1f5f9',dot:'#94a3b8'},(DB?.labelConfig?.statuses||{})[key]);}
 function getAllStatuses(){const builtin=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled'];const custom=Object.keys((DB?.labelConfig?.statuses)||{}).filter(k=>/^cst_[A-Za-z0-9_-]{1,40}$/.test(k));return[...builtin,...custom];}
 function statusBadge(s){const sm=getStatusMeta(s);return`<span class="badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>`;}
-// ── Bright preset palette for statuses, priorities and labels ──
-// One cohesive family: each entry pairs a saturated ink with a tinted ground and a dot, so
-// a chip stays legible whether it's rendered as text-on-tint or as a solid fill.
-const BRIGHT_PRESETS=[
-  {name:'Slate',     color:'#475569', bg:'#f1f5f9', dot:'#94a3b8', solid:'#64748b'},
-  {name:'Sky',       color:'#0369a1', bg:'#e0f2fe', dot:'#38bdf8', solid:'#0284c7'},
-  {name:'Indigo',    color:'#4338ca', bg:'#e0e7ff', dot:'#818cf8', solid:'#4f46e5'},
-  {name:'Violet',    color:'#6d28d9', bg:'#ede9fe', dot:'#a78bfa', solid:'#7c3aed'},
-  {name:'Magenta',   color:'#a21caf', bg:'#fae8ff', dot:'#e879f9', solid:'#c026d3'},
-  {name:'Rose',      color:'#be123c', bg:'#ffe4e6', dot:'#fb7185', solid:'#e11d48'},
-  {name:'Red',       color:'#b91c1c', bg:'#fef2f2', dot:'#f87171', solid:'#dc2626'},
-  {name:'Orange',    color:'#c2410c', bg:'#fff7ed', dot:'#fb923c', solid:'#ea580c'},
-  {name:'Amber',     color:'#b45309', bg:'#fffbeb', dot:'#fbbf24', solid:'#d97706'},
-  {name:'Lime',      color:'#4d7c0f', bg:'#f7fee7', dot:'#a3e635', solid:'#65a30d'},
-  {name:'Green',     color:'#15803d', bg:'#dcfce7', dot:'#4ade80', solid:'#16a34a'},
-  {name:'Emerald',   color:'#0d6e4e', bg:'#d1fae5', dot:'#34d399', solid:'#059669'},
-  {name:'Teal',      color:'#0f766e', bg:'#ccfbf1', dot:'#2dd4bf', solid:'#0d9488'},
-  {name:'Cyan',      color:'#0e7490', bg:'#cffafe', dot:'#22d3ee', solid:'#0891b2'},
-  {name:'Stone',     color:'#78716c', bg:'#f5f5f4', dot:'#a8a29e', solid:'#57534e'},
-];
-function _lcSet(kind,key,preset){
+// A status / priority colour is one hex: the chip ground and the dot are derived from it, the same as the
+// colour picker inside the status and priority menus does.
+function _lcSet(kind,key,hex){
   DB.labelConfig=DB.labelConfig||{statuses:{},priorities:{}};
   DB.labelConfig[kind]=DB.labelConfig[kind]||{};
-  DB.labelConfig[kind][key]={...(DB.labelConfig[kind][key]||{}),color:preset.color,bg:preset.bg,dot:preset.dot,updatedAt:new Date().toISOString()};
+  DB.labelConfig[kind][key]={...(DB.labelConfig[kind][key]||{}),color:hex,bg:hexToRgba(hex,0.13),dot:hex,updatedAt:new Date().toISOString()};
   saveDB(DB);
   _lcRefresh();
 }
@@ -6401,13 +6502,7 @@ function _lcRefresh(){
   if(el)el.innerHTML=_lcBodyHtml();
 }
 function _lcRow(kind,key,meta){
-  const swatches=BRIGHT_PRESETS.map(p=>{
-    const on=meta.color===p.color&&meta.bg===p.bg;
-    return`<span onclick="_lcSet('${kind}','${key}',${escHtml(JSON.stringify(p)).replace(/"/g,'&quot;')})"
-      title="${p.name}" style="width:17px;height:17px;border-radius:5px;background:${p.solid};cursor:pointer;flex-shrink:0;
-      box-shadow:${on?'0 0 0 2px #fff,0 0 0 4px '+p.solid:'none'};transition:transform 0.1s"
-      onmouseover="this.style.transform='scale(1.18)'" onmouseout="this.style.transform='none'"></span>`;
-  }).join('');
+  const swatches=`<button type="button" class="cpk-swatch" style="background:${meta.dot||meta.color}" onclick="cpkOpenPopover(this,'${meta.color}',c=>_lcSet('${kind}','${key}',c))" title="Change colour" aria-label="Change colour for ${escHtml(meta.label||key)}"></button>`;
   const overridden=!!(DB.labelConfig?.[kind]||{})[key];
   return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f4f8">
     <span style="min-width:132px;flex-shrink:0"><span class="badge" style="background:${meta.bg};color:${meta.color};font-size:11px">${escHtml(meta.label||key)}</span></span>
@@ -7319,7 +7414,7 @@ document.addEventListener('keydown',e=>{
 // runtime (so it covers every screen, not a guess from inline styles) and only ever grows an element, never shrinks
 // one. A colour swatch is left alone — its title is the hex code itself, never a human label, and a dense colour grid
 // (custom labels, board colours) is a deliberate, accepted pattern.
-function _ttIsSwatch(el){return/^#[0-9a-fA-F]{3,8}$/.test((el.getAttribute('title')||'').trim())||el.hasAttribute('data-swatch');}
+function _ttIsSwatch(el){return/^#[0-9a-fA-F]{3,8}$/.test((el.getAttribute('title')||'').trim())||el.hasAttribute('data-swatch')||el.classList.contains('cpk-dot')||el.classList.contains('cpk-swatch');}
 // Table cells and rows already have a decent-height click target from the row itself, and turning one into a flex
 // box would corrupt the table's layout — only their minimum height is raised, never their display or width.
 const _TT_TABLE=new Set(['TR','TD','TH']);
@@ -7328,6 +7423,9 @@ function _ttEnhance(root){
   const cand=root.matches&&(root.matches('button,[onclick]'))?[root,...root.querySelectorAll('button,[onclick]')]:[...root.querySelectorAll('button,[onclick]')];
   for(const el of cand){
     if(el.hasAttribute('data-tt')||_ttIsSwatch(el))continue;
+    // The cell menus (status, priority, owner...) are lists of full-width rows that already have their own padding:
+    // growing a row also centred its contents, which threw the list out of line.
+    if(el.closest('#ws-cell-dd'))continue;
     const r=el.getBoundingClientRect();
     if(r.width<=0||r.height<=0)continue;   // not yet laid out or hidden; the observer will catch it once visible
     el.setAttribute('data-tt','1');
@@ -9894,31 +9992,86 @@ function renderCpRetained(clientId,tasks,b){
 function openCreateWbForm(){
   const f=document.getElementById('create-wb-form');
   if(f){f.classList.remove('hidden');document.getElementById('new-wb-name')?.focus();}
-  selectWbColor('#0d1c33');
+  selectWbColor(PICK_COLOURS[7][0]);
 }
 function closeCreateWbForm(){
   const f=document.getElementById('create-wb-form');if(f)f.classList.add('hidden');
   const n=document.getElementById('new-wb-name');if(n)n.value='';
   const ex=document.getElementById('new-wb-exclude');if(ex)ex.checked=false;
 }
-// The board colours offered when creating a board (2026-10-17: 8 became 24, plus any colour from the "+" picker).
-const WB_COLOURS=[
-  ['#0d1c33','Navy'],['#31585a','Deep teal'],['#97bcbd','Teal'],['#475569','Slate'],['#94a3b8','Grey'],['#1d4ed8','Royal blue'],
-  ['#3b82f6','Blue'],['#0ea5e9','Sky'],['#06b6d4','Cyan'],['#14b8a6','Turquoise'],['#10b981','Emerald'],['#15803d','Forest'],
-  ['#84cc16','Lime'],['#eab308','Yellow'],['#f59e0b','Amber'],['#f97316','Orange'],['#c2410c','Rust'],['#ef4444','Red'],
-  ['#be123c','Crimson'],['#ec4899','Pink'],['#d946ef','Magenta'],['#8b5cf6','Purple'],['#6366f1','Indigo'],['#92400e','Brown'],
+// ── The one colour palette (2026-10-26) ──
+// Every place that asks for a colour offers these 16 plus a "+" for any colour: new board, board colour, group,
+// status / priority / label colours, staff, calendar events. Client add / edit is the one exception: it auto-picks
+// from the logo. Only a plain #rrggbb is ever kept because the value goes straight into style attributes.
+const PICK_COLOURS=[
+  ['#e64644','Red'],['#f56d2a','Orange'],['#f1962d','Amber'],['#e4ac31','Gold'],['#7ac72c','Lime'],['#1eb75a','Green'],
+  ['#18ae7a','Emerald'],['#23a9a3','Teal'],['#24a9c1','Cyan'],['#2b97e1','Sky'],['#4870ee','Blue'],['#6457e7','Indigo'],
+  ['#8351ee','Violet'],['#a24aef','Purple'],['#d442e6','Magenta'],['#e7498a','Pink'],
 ];
-function selectWbColor(c){
-  // Only a plain #rrggbb colour is ever kept: it goes into style attributes across the app.
-  if(!/^#[0-9a-fA-F]{6}$/.test(String(c||'')))return;
+const WB_COLOURS=PICK_COLOURS;
+const _cpkCb={};
+const _CPK_TICK='<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.4 6.4l2.5 2.5 4.7-5.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function _cpkOk(c){return/^#[0-9a-fA-F]{6}$/.test(String(c||''));}
+// id: element id of the picker; value: the colour shown as chosen; onPick(hex): optional, called when one is chosen.
+// A value outside the palette (an old board colour, a client colour) shows on the "+" circle as the chosen one.
+function colourPickerHtml(id,value,onPick,opts){
+  value=_cpkOk(value)?value.toLowerCase():PICK_COLOURS[7][0];
+  if(typeof onPick==='function')_cpkCb[id]=onPick;else delete _cpkCb[id];
+  const inPal=PICK_COLOURS.some(c=>c[0]===value);
+  return`<div class="cpk${opts&&opts.small?' cpk-sm':''}" id="${id}" data-value="${value}" role="radiogroup" aria-label="Colour">${PICK_COLOURS.map(([c,n])=>`<button type="button" class="cpk-dot${c===value?' on':''}" data-c="${c}" style="background:${c}" role="radio" aria-checked="${c===value}" title="${n}" aria-label="${n}" onclick="cpkPick('${id}','${c}')">${_CPK_TICK}</button>`).join('')}<label class="cpk-plus${inPal?'':' on'}" title="Any colour" style="${inPal?'':'background:'+value}"><span class="sg">+</span><span class="ck">${_CPK_TICK}</span><input type="color" value="${value}" aria-label="Any colour" oninput="cpkPick('${id}',this.value,true)" onchange="cpkPick('${id}',this.value)"/></label></div>`;
+}
+function cpkValue(id){const el=document.getElementById(id);return el?el.dataset.value||'':'';}
+// Updates what the picker shows and holds, without calling onPick.
+function cpkSet(id,c){
+  if(!_cpkOk(c))return;
   c=c.toLowerCase();
-  selectedWbColor=c;
-  document.querySelectorAll('[id^="wbc-"]').forEach(el=>{el.style.outline='2px solid transparent';el.style.transform='scale(1)';});
-  const sw=document.getElementById('wbc-'+c.replace('#',''));
-  const custom=document.getElementById('wbc-custom');
-  if(sw){sw.style.outline='2px solid #97bcbd';sw.style.transform='scale(1.25)';}
-  else if(custom){custom.style.outline='2px solid #97bcbd';custom.style.background=c;custom.style.borderColor=c;}
-  if(sw&&custom){custom.style.background='';custom.style.borderColor='';}
+  const root=document.getElementById(id);if(!root)return;
+  root.dataset.value=c;
+  let hit=false;
+  root.querySelectorAll('.cpk-dot').forEach(b=>{const on=b.dataset.c===c;if(on)hit=true;b.classList.toggle('on',on);b.setAttribute('aria-checked',on?'true':'false');});
+  const plus=root.querySelector('.cpk-plus');
+  if(plus){plus.classList.toggle('on',!hit);plus.style.background=hit?'':c;const inp=plus.querySelector('input');if(inp)inp.value=c;}
+}
+// live=true is the "+" colour wheel being dragged: show it, but only save when it is let go (so a popover does not
+// vanish under the wheel and nothing is saved on every pixel of the drag).
+function cpkPick(id,c,live){
+  if(!_cpkOk(c))return;
+  c=c.toLowerCase();
+  cpkSet(id,c);
+  const root=document.getElementById(id);
+  if(live&&root&&root.closest('.cpk-pop'))return;
+  const f=_cpkCb[id];if(f)f(c);
+}
+function cpkClosePopover(){
+  const p=document.getElementById('cpk-pop');if(p)p.remove();
+  document.removeEventListener('mousedown',_cpkAway,true);
+  document.removeEventListener('keydown',_cpkKey,true);
+}
+function _cpkAway(e){const p=document.getElementById('cpk-pop');if(p&&!p.contains(e.target))cpkClosePopover();}
+function _cpkKey(e){if(e.key==='Escape'){e.stopPropagation();cpkClosePopover();}}
+// For the small spots (a dot in a menu, a board card, a group header): the palette opens in a floating card.
+function cpkOpenPopover(anchor,value,onPick){
+  cpkClosePopover();
+  const pop=document.createElement('div');
+  pop.className='cpk-pop';pop.id='cpk-pop';
+  pop.innerHTML=colourPickerHtml('cpk-pop-picker',value,c=>{cpkClosePopover();onPick(c);});
+  // A click in here must not reach the page-level "click anywhere closes the menu" handlers behind it.
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.body.appendChild(pop);
+  const r=anchor.getBoundingClientRect(),w=pop.offsetWidth,h=pop.offsetHeight;
+  let top=r.bottom+6,left=r.left;
+  if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-6);
+  if(left+w>window.innerWidth-8)left=window.innerWidth-w-8;
+  if(left<8)left=8;
+  pop.style.top=top+'px';pop.style.left=left+'px';
+  setTimeout(()=>{document.addEventListener('mousedown',_cpkAway,true);document.addEventListener('keydown',_cpkKey,true);},0);
+}
+// A small swatch button that holds a colour in data-value (used where a colour is chosen before something is added).
+function cpkPickInto(btn){cpkOpenPopover(btn,btn.dataset.value,c=>{btn.dataset.value=c;btn.style.background=c;});}
+function selectWbColor(c){
+  if(!_cpkOk(c))return;
+  selectedWbColor=c.toLowerCase();
+  cpkSet('new-wb-colour',selectedWbColor);
 }
 function submitCreateWb(){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -10529,8 +10682,8 @@ function openEventModal(eventId,presetDate){
             <option value="site_visit" ${e?.type==='site_visit'?'selected':''}>Site Visit</option>
           </select>
         </div>
-        <div><label class="form-label">Color</label>
-          <input id="sched-color" type="color" class="form-input" value="${e?.color||defColor}" style="height:36px;padding:2px 4px"/>
+        <div><label class="form-label">Colour</label>
+          ${colourPickerHtml('sched-color',e?.color||defColor,null,{small:true})}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -10579,8 +10732,7 @@ function schedTypeChanged(){
   const t=document.getElementById('sched-type').value;
   const row=document.getElementById('sched-teams-row');
   if(row)row.style.display=t==='teams'?'':'none';
-  const colorEl=document.getElementById('sched-color');
-  if(colorEl&&SCHED_TYPE_COLORS[t])colorEl.value=SCHED_TYPE_COLORS[t];
+  if(SCHED_TYPE_COLORS[t])cpkSet('sched-color',SCHED_TYPE_COLORS[t]);
 }
 
 function saveSchedEvent(existingId){
@@ -10608,7 +10760,7 @@ function saveSchedEvent(existingId){
     description:(document.getElementById('sched-desc').value||'').trim(),
     attendees,
     ownerId:(_prevEvt&&_prevEvt.ownerId)||currentUser.id,
-    color:document.getElementById('sched-color').value,
+    color:cpkValue('sched-color')||SCHED_TYPE_COLORS.personal,
     teamsLink:teamsEl?teamsEl.value.trim():'',
     updatedAt:new Date().toISOString(),   // the edit wins the merge instead of a colleague's older copy (audit H2, 2026-10-17)
   };
@@ -11377,16 +11529,7 @@ function renderDashboard(){
       </div>
       <div>
         <label class="form-label">Colour</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div style="display:grid;grid-template-columns:repeat(12,18px);gap:5px">
-          ${WB_COLOURS.map(([c,n])=>`<div id="wbc-${c.replace('#','')}" onclick="selectWbColor('${c}')"
-            style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;transition:transform 0.12s,outline 0.12s;outline:2px solid transparent;outline-offset:2px"
-            title="${n}" aria-label="${n}"></div>`).join('')}
-          </div>
-          <label id="wbc-custom" title="Any colour" style="position:relative;width:24px;height:41px;border-radius:5px;border:1.5px dashed #c8d7e1;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#6b8399;outline:2px solid transparent;outline-offset:2px">+
-            <input id="wbc-custom-input" type="color" value="#0d1c33" aria-label="Any colour" oninput="selectWbColor(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0"/>
-          </label>
-        </div>
+        <div style="width:min(512px,100%)">${colourPickerHtml('new-wb-colour',selectedWbColor,c=>{selectedWbColor=c;})}</div>
       </div>
       <div>
         <label class="form-label">Client</label>
@@ -11450,11 +11593,10 @@ function renderDashboard(){
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
               Rename
             </button>
-            <label onclick="event.stopPropagation()" title="Change colour" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:7px;cursor:pointer;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s;position:relative" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
+            <button type="button" onclick="event.stopPropagation();cpkOpenPopover(this,'${wb.color}',c=>saveWbColor('${wb.id}',c))" title="Change colour" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;border-radius:7px;cursor:pointer;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
               <span style="width:14px;height:14px;border-radius:50%;background:${wb.color};border:2px solid rgba(0,0,0,0.1);flex-shrink:0;display:block"></span>
               Colour
-              <input type="color" value="${wb.color}" onchange="saveWbColor('${wb.id}',this.value)" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer"/>
-            </label>
+            </button>
             <button onclick="event.stopPropagation();duplicateWorkboard('${wb.id}')" title="Duplicate" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;cursor:pointer;border-radius:7px;color:#4a5568;font-size:9px;font-weight:600;font-family:'Jost',sans-serif;transition:background 0.12s" onmouseover="this.style.background='#edf1f6'" onmouseout="this.style.background='none'">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M2 11V3a2 2 0 0 1 2-2h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               Duplicate
@@ -20319,7 +20461,7 @@ function openStaffModal(id){
           <option value="staff" ${s.role==='staff'?'selected':''}>Staff — standard access</option>
           <option value="admin" ${s.role==='admin'?'selected':''}>Admin — full access</option>
         </select></div>
-        <div><label class="form-label">Colour</label><input id="sm-color" type="color" class="form-input" value="${s.color||'#7aa3a4'}" style="height:36px;padding:2px 4px"/></div>
+        <div><label class="form-label">Colour</label>${colourPickerHtml('sm-color',s.color||'#7aa3a4',null,{small:true})}</div>
       </div>
       ${currentUser.role==='admin'?`<div id="sm-billing-wrap" style="${s.role==='staff'?'':'display:none'}"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155"><input id="sm-billing" type="checkbox" ${s.billing?'checked':''}/> Billing — can approve time and create pro forma invoices</label></div>`:''}
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
@@ -20389,7 +20531,7 @@ async function saveStaff(id){
   const email=document.getElementById('sm-email').value.trim();
   if(!name||!email){showAlert('Name and email are required.','Validation');return;}
   const role=document.getElementById('sm-role').value;
-  const color=document.getElementById('sm-color').value;
+  const color=cpkValue('sm-color')||'#7aa3a4';
   const initials=document.getElementById('sm-init').value.trim()||name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
   if(id){
     // Edit existing — validate + apply any password change BEFORE touching name/role/colour
@@ -21699,7 +21841,6 @@ function renderWbTabs(activeView){
     {v:'board',    icon:'⊞',label:'Kanban'},
     {v:'list',     icon:'☰',label:'List'},
     {v:'gantt',    icon:'▬',label:'Gantt'},
-    {v:'capacity', icon:'◫',label:'Capacity'},
   ];
   const _rcB=_isRetainedBoard(wb)?(DB.clients||[]).find(x=>x.id===wb.clientId):null;
   return`${_rcB?`<div class="rc-mast-board">${_rcMastHtml(_rcB,wb,'board')}</div>`:''}
@@ -23270,12 +23411,7 @@ function openAddGroupModal(){
             (defaults to client colour)
           </span>
         </label>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input id="ag-color" type="color" value="${defaultColor}"
-            oninput="document.getElementById('ag-color-val').textContent=this.value"
-            style="width:44px;height:36px;padding:2px 3px;border:1.5px solid #e2eaf2;border-radius:7px;cursor:pointer;background:#fff"/>
-          <span id="ag-color-val" style="font-size:12px;font-family:monospace;color:#6b8399">${defaultColor}</span>
-        </div>
+        ${colourPickerHtml('ag-color',defaultColor,null,{small:true})}
       </div>
       <div id="ag-error" style="display:none;font-size:12px;font-weight:600;color:#dc2626;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:8px 12px"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:2px">
@@ -23290,17 +23426,14 @@ function openAddGroupModal(){
 function agSyncColor(select){
   const opt=select.options[select.selectedIndex];
   const color=opt.getAttribute('data-color')||'#97bcbd';
-  const inp=document.getElementById('ag-color');
-  const lbl=document.getElementById('ag-color-val');
-  if(inp)inp.value=color;
-  if(lbl)lbl.textContent=color;
+  cpkSet('ag-color',color);
 }
 
 function saveNewGroup(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const clientId=boardClientId(currentWorkboard); // groups follow the board
   const name=(document.getElementById('ag-name')?.value||'').trim();
-  const color=document.getElementById('ag-color')?.value||'#97bcbd';
+  const color=cpkValue('ag-color')||'#97bcbd';
   const errEl=document.getElementById('ag-error');
   const showErr=msg=>{if(errEl){errEl.textContent=msg;errEl.style.display='block';}};
   if(!clientId)return showErr('Please select a client.');
@@ -24170,7 +24303,7 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
           wsGroupBy==='group'?''
           :`<span class="ws-grp-client" style="font-size:11px;color:#8da2b2;border:none;background:none">${sec.sub?'\u00b7 '+escHtml(sec.sub):''}</span>`}
 
-        ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><label onclick="event.stopPropagation()" class="ws-grp-rename-btn" title="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s;position:relative" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span><input type="color" value="${sec.color}" onchange="event.stopPropagation();wsSetGroupColor('${sec.id}',this.value)" style="opacity:0;position:absolute;width:0;height:0"/></label><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
+        ${wsGroupBy==='group'?`<button onclick="event.stopPropagation();wsStartRenameGroup('${sec.id}')" class="ws-grp-rename-btn" title="Rename group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#0d1c33'" onmouseout="this.style.color='#b0bec5'">✎</button><button type="button" onclick="event.stopPropagation();cpkOpenPopover(this,'${sec.color}',c=>wsSetGroupColor('${sec.id}',c))" class="ws-grp-rename-btn" title="Change group colour" aria-label="Change group colour" style="display:inline-flex;align-items:center;cursor:pointer;background:none;border:none;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0" onfocus="this.style.opacity=1" onblur="this.style.opacity=0"><span style="width:10px;height:10px;border-radius:2px;background:${sec.color};border:1.5px solid rgba(0,0,0,0.15);display:inline-block"></span></button><button onclick="event.stopPropagation();wsDeleteGroup('${sec.id}')" class="ws-grp-rename-btn" title="Delete group" style="background:none;border:none;cursor:pointer;color:#b0bec5;font-size:12px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#b0bec5'">✕</button>`:''}
         <span class="ws-grp-count">${sec.tasks.length}</span>
         ${_retainerMeterHtml(sec)||`<div class="ws-grp-bar">${statusMixBar(mix,64)||`<div class="progress-bar" style="width:64px"><div class="progress-fill" style="width:${pct}%;background:${sec.color}"></div></div>`}</div>
         <span class="ws-grp-pct">${pct}%</span>`}
@@ -27427,10 +27560,7 @@ function wsBuildDropdownHtml(taskId,field){
       ${getAllStatuses().map(k=>{const sm=getStatusMeta(k);const isCust=k.startsWith('cst_');return`
         <div class="ws-cell-dd-item${task.status===k?' ws-dd-active':''}" style="justify-content:space-between">
           <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer" onclick="wsStatusPick('${taskId}','${k}')">
-            <label style="position:relative;width:14px;height:14px;flex-shrink:0;cursor:pointer;border-radius:3px;overflow:hidden" onclick="event.stopPropagation()" title="Change colour">
-              <span style="position:absolute;inset:0;background:${sm.dot||sm.color}"></span>
-              <input type="color" value="${sm.color}" onchange="wsLabelColor('status','${k}',this.value)" style="opacity:0;position:absolute;inset:0;cursor:pointer"/>
-            </label>
+            <button type="button" class="cpk-swatch" style="width:14px;height:14px;border-radius:3px;border-width:0;background:${sm.dot||sm.color}" onclick="event.stopPropagation();cpkOpenPopover(this,'${sm.color}',c=>wsLabelColor('status','${k}',c))" title="Change colour" aria-label="Change colour"></button>
             <span style="background:${sm.bg};color:${sm.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">${escHtml(sm.label)}</span>
           </div>
           ${isCust?`<div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
@@ -27442,7 +27572,7 @@ function wsBuildDropdownHtml(taskId,field){
       <div style="padding:8px 14px" onclick="event.stopPropagation()">
         <div style="display:flex;gap:5px;align-items:center">
           <input type="text" id="ws-dd-new-status" placeholder="New status…" style="flex:1;font-size:11px;border:1.5px solid #e2eaf2;border-radius:6px;padding:4px 8px;color:#1a2940;outline:none;font-family:'Lato',sans-serif;min-width:0" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" onkeydown="if(event.key==='Enter'){event.stopPropagation();wsAddCustomLabel('status');}"/>
-          <input type="color" id="ws-dd-new-status-color" value="#6b8399" style="width:26px;height:26px;border:1.5px solid #e2eaf2;border-radius:5px;cursor:pointer;padding:1px;flex-shrink:0"/>
+          <button type="button" class="cpk-swatch" id="ws-dd-new-status-color" data-value="#6b8399" style="background:#6b8399" onclick="event.stopPropagation();cpkPickInto(this)" title="Colour for the new status" aria-label="Colour for the new status"></button>
           <button onclick="event.stopPropagation();wsAddCustomLabel('status')" style="background:#f0f7f7;color:#0d6e4e;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:4px 8px;white-space:nowrap">+ Add</button>
         </div>
       </div>
@@ -27453,10 +27583,7 @@ function wsBuildDropdownHtml(taskId,field){
       ${getAllPriorities().map(p=>{const m=getPrioMeta(p);const isCust=p.startsWith('cp_');return`
         <div class="ws-cell-dd-item${task.priority===p?' ws-dd-active':''}" style="justify-content:space-between">
           <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer" onclick="wsCellSave('${taskId}','priority','${p}')">
-            <label style="position:relative;width:14px;height:14px;flex-shrink:0;cursor:pointer;border-radius:3px;overflow:hidden" onclick="event.stopPropagation()" title="Change colour">
-              <span style="position:absolute;inset:0;background:${m.color}"></span>
-              <input type="color" value="${m.color}" onchange="wsLabelColor('priority','${p}',this.value)" style="opacity:0;position:absolute;inset:0;cursor:pointer"/>
-            </label>
+            <button type="button" class="cpk-swatch" style="width:14px;height:14px;border-radius:3px;border-width:0;background:${m.color}" onclick="event.stopPropagation();cpkOpenPopover(this,'${m.color}',c=>wsLabelColor('priority','${p}',c))" title="Change colour" aria-label="Change colour"></button>
             <span style="background:${m.bg};color:${m.color};padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700">${m.icon} ${escHtml(m.label)}</span>
           </div>
           ${isCust?`<div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
@@ -27468,7 +27595,7 @@ function wsBuildDropdownHtml(taskId,field){
       <div style="padding:8px 14px" onclick="event.stopPropagation()">
         <div style="display:flex;gap:5px;align-items:center">
           <input type="text" id="ws-dd-new-priority" placeholder="New priority…" style="flex:1;font-size:11px;border:1.5px solid #e2eaf2;border-radius:6px;padding:4px 8px;color:#1a2940;outline:none;font-family:'Lato',sans-serif;min-width:0" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" onkeydown="if(event.key==='Enter'){event.stopPropagation();wsAddCustomLabel('priority');}"/>
-          <input type="color" id="ws-dd-new-priority-color" value="#6b8399" style="width:26px;height:26px;border:1.5px solid #e2eaf2;border-radius:5px;cursor:pointer;padding:1px;flex-shrink:0"/>
+          <button type="button" class="cpk-swatch" id="ws-dd-new-priority-color" data-value="#6b8399" style="background:#6b8399" onclick="event.stopPropagation();cpkPickInto(this)" title="Colour for the new priority" aria-label="Colour for the new priority"></button>
           <button onclick="event.stopPropagation();wsAddCustomLabel('priority')" style="background:#f0f7f7;color:#0d6e4e;border:none;border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:4px 8px;white-space:nowrap">+ Add</button>
         </div>
       </div>
@@ -28294,7 +28421,7 @@ function wsAddCustomLabel(fieldType){
   const lbl=document.getElementById(`ws-dd-new-${fieldType}`);
   const clrEl=document.getElementById(`ws-dd-new-${fieldType}-color`);
   const label=lbl?.value.trim();if(!label)return;
-  const color=clrEl?.value||'#6b8399';
+  const color=_cpkOk(clrEl?.dataset.value)?clrEl.dataset.value:'#6b8399';
   if(!DB.labelConfig)DB.labelConfig={statuses:{},priorities:{}};
   const ns=isSt?'statuses':'priorities';
   if(!DB.labelConfig[ns])DB.labelConfig[ns]={};
@@ -28954,7 +29081,7 @@ function mtColMenu(colId,evt){
 // Monday's signature column: you define your own set of labels, each with a title and a
 // colour, and the cell fills with the chosen one. Options live on the column; the cell
 // value is just an option id.
-const LABEL_SWATCHES=['#0d6e4e','#1d6fb8','#6d28d9','#b45309','#b91c1c','#0f766e','#be185d','#4d7c0f','#7c2d12','#475569'];
+const LABEL_SWATCHES=PICK_COLOURS.map(c=>c[0]);
 function mtLabelOptions(cc){
   if(!cc.options||!cc.options.length){
     // Sensible starting set so a new column is usable immediately.
@@ -29012,13 +29139,10 @@ function mtOpenLabelEditor(colId){
 }
 function mtLabelEditorRows(cc){
   return(cc.options||[]).map(o=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-    <div style="position:relative;width:26px;height:26px;border-radius:6px;background:${o.color};flex-shrink:0;cursor:pointer" title="Change colour">
-      <input type="color" value="${o.color}" onchange="mtSetLabelColor('${cc.id}','${o.id}',this.value)" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer"/>
-    </div>
+    <button type="button" class="cpk-swatch" style="background:${o.color}" onclick="cpkOpenPopover(this,'${o.color}',c=>mtSetLabelColor('${cc.id}','${o.id}',c))" title="Change colour" aria-label="Change colour"></button>
     <input type="text" value="${escHtml(o.label)}" onchange="mtSetLabelText('${cc.id}','${o.id}',this.value)"
       style="flex:1;padding:6px 9px;border:1.5px solid #e2eaf2;border-radius:6px;font-family:Lato,sans-serif;font-size:13px;outline:none"
       onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"/>
-    <div style="display:flex;gap:3px">${LABEL_SWATCHES.slice(0,5).map(c=>`<span onclick="mtSetLabelColor('${cc.id}','${o.id}','${c}')" style="width:14px;height:14px;border-radius:4px;background:${c};cursor:pointer" title="${c}"></span>`).join('')}</div>
     <button onclick="mtDeleteLabelOption('${cc.id}','${o.id}')" title="Delete label" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:14px;padding:2px 4px">✕</button>
   </div>`).join('')||`<div style="color:#8da2b2;font-size:12px;padding:6px 0">No labels yet.</div>`;
 }
@@ -30887,7 +31011,16 @@ document.addEventListener('keydown',e=>{
   document.getElementById('share-page').classList.remove('hidden');
   window._shareRouteActive=true; // stops _startApp and Supabase auth handler from interfering
   // Show loading state while we fetch from Supabase
-  document.getElementById('share-page-body').innerHTML=`<div style="text-align:center;padding:80px 20px;color:#5b6f84;font-family:'Lato',sans-serif;font-size:14px">Loading…</div>`;
+  // The same shape as #share-skeleton, so the boot skeleton hands over to this with no visible change.
+  document.getElementById('share-page-body').innerHTML=`<div role="status" aria-label="Loading">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px"><div class="_skl" style="height:40px;width:40px;border-radius:10px"></div><div><div class="_skl" style="height:20px;width:220px;margin-bottom:8px"></div><div class="_skl" style="height:10px;width:140px;opacity:0.7"></div></div></div>
+    <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:20px 24px;margin-bottom:16px"><div class="_skl" style="height:10px;width:100%;margin-bottom:12px"></div><div class="_skl" style="height:10px;width:30%;opacity:0.7"></div></div>
+    <div style="background:#fff;border:1px solid #e8eef5;border-radius:12px;padding:6px 24px">
+      <div style="padding:16px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:58%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:30%;opacity:0.7"></div></div>
+      <div style="padding:16px 0;border-bottom:1px solid #eef2f7"><div class="_skl" style="height:12px;width:48%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:26%;opacity:0.7"></div></div>
+      <div style="padding:16px 0"><div class="_skl" style="height:12px;width:64%;margin-bottom:8px"></div><div class="_skl" style="height:9px;width:34%;opacity:0.7"></div></div>
+    </div></div>`;
+  _hideLoadingScreen();   // the share page is up; whichever boot skeleton painted first has done its job
   // Wait for supabase-client.js (deferred) to finish initialising — up to 2 s
   await new Promise(resolve=>{
     if(window._supabase!==undefined)return resolve();
