@@ -2208,7 +2208,8 @@ th:hover .mt-col-menu-btn,.mt-col-menu-btn:focus{opacity:1}
       <!-- WorkBoards -->
       <div id="nav-workboards-header" style="display:flex;align-items:center;padding:12px 19px 5px;justify-content:space-between">
         <span class="section-header nav-sec-toggle" style="padding:0;margin:0" onclick="toggleNavSection('workboards')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavSection('workboards')}">WorkBoards<span class="nav-sec-chevron" id="nav-chev-workboards">&#9662;</span></span>
-        <div style="position:relative" onclick="event.stopPropagation()">
+        <div style="position:relative;display:flex;align-items:center;gap:4px" onclick="event.stopPropagation()">
+          <button id="sb-focus-btn" type="button" onclick="toggleSidebarFocus()" title="Show only the open board in the side menu (for sharing your screen)" aria-label="Show only the open board" aria-pressed="false" style="background:none;border:none;cursor:pointer;color:#5a8a8c;padding:2px 4px;border-radius:4px;line-height:0;display:inline-flex;align-items:center"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 8s2.3-4.5 6.5-4.5S14.5 8 14.5 8 12.2 12.5 8 12.5 1.5 8 1.5 8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/></svg></button>
           <button id="wb-add-btn" onclick="toggleWbAddMenu()" title="Add WorkBoard or Folder"
             style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;color:#5a7a96;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:all 0.15s;flex-shrink:0"
             onmouseover="this.style.background='rgba(151,188,189,0.2)';this.style.color='#97bcbd'"
@@ -7702,6 +7703,25 @@ function renderSidebarWorkboards(){
     :`<div class="nav-item" style="color:#8da2b2;cursor:default;font-size:11px">No retained boards yet${currentUser?.role==='admin'?'. Add one from the Dashboard.':''}</div>`);
 
   container.innerHTML=html||`<div style="padding:3px 20px 6px;font-size:11px;color:#1e3450;font-style:italic">No boards yet — click +</div>`;
+  _applySidebarFocus(container,retList);
+}
+// Side-menu focus (for sharing a screen with a client): only the board that is open stays in the list, every other
+// board name, folder and retained client is hidden. Click the eye again to bring them back. Kept for the tab only.
+function _sidebarFocusOn(){try{return sessionStorage.getItem('etcher_sb_focus')==='1';}catch(_){return false;}}
+function _applySidebarFocus(container,retList){
+  const on=_sidebarFocusOn();
+  const b=document.getElementById('sb-focus-btn');
+  if(b){b.setAttribute('aria-pressed',on?'true':'false');b.style.color=on?'#97bcbd':'#5a8a8c';b.style.background=on?'rgba(151,188,189,0.16)':'none';}
+  if(!on)return;
+  const act=container.querySelector('[data-wb-row].active')||(retList&&retList.querySelector('[data-wb-row].active'));
+  container.innerHTML='';
+  if(act){act.setAttribute('draggable','false');act.removeAttribute('ondragstart');container.appendChild(act);}
+  else container.innerHTML='<div style="padding:5px 20px 8px;font-size:11px;color:#5a8a8c;font-style:italic">Open a board to show it here</div>';
+  if(retList){const rd=retList.querySelector('#nav-retained-dash');retList.innerHTML='';if(rd)retList.appendChild(rd);}
+}
+function toggleSidebarFocus(){
+  try{sessionStorage.setItem('etcher_sb_focus',_sidebarFocusOn()?'0':'1');}catch(_){}
+  renderSidebarWorkboards();
 }
 function _wbDragStart(e,wbId){
   _wbDragId=wbId;
