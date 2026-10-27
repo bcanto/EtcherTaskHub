@@ -29242,7 +29242,7 @@ function renderCustomColCell(taskId,cc){
         :`<span style="color:#c8d5e0;display:inline-flex;align-items:center" title="Add a file or link">${clipSvg}</span>`;
     }
     default: // text, longtext
-      return`<span style="font-size:12px;color:${val?'#1a2940':'#c8d4e0'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;display:block">${val?escHtml(String(val)):'—'}</span>`;
+      return`<span style="font-size:12px;color:${val?'#1a2940':'#c8d4e0'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block">${val?escHtml(String(val)):'—'}</span>`;
   }
 }
 
