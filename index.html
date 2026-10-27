@@ -28388,7 +28388,7 @@ function wsCellSaveDate(taskId,field,value){
 }
 function wsCellClose(){
   const dd=document.getElementById('ws-cell-dd');
-  if(dd)dd.style.display='none';
+  if(dd){dd.style.display='none';dd.style.width='';}
   _wsCellTask=null;_wsCellField=null;_wsShowLinkInput=false;_wsCalMonth=null;_wsCalAnchor=null;
 }
 // Add/remove a co-assignee from the owner dropdown's checkboxes. Deliberately does
@@ -29256,9 +29256,13 @@ function mtOpenCellEdit(taskId,colId,evt){
   const body=document.getElementById('ws-cell-dd-body');
   if(!dd||!body)return;
   const r=evt.currentTarget.getBoundingClientRect();
+  // Text columns open a big box to read and edit the whole note; every other column keeps the small menu.
+  const big=cc.type==='text'||cc.type==='longtext';
+  const bw=big?Math.min(480,window.innerWidth-16):260,bh=big?330:300;
+  dd.style.width=big?bw+'px':'';
   let left=r.left,top=r.bottom+4;
-  if(left+260>window.innerWidth)left=window.innerWidth-264;
-  if(top+300>window.innerHeight)top=r.top-4;
+  if(left+bw+4>window.innerWidth)left=Math.max(8,window.innerWidth-bw-8);
+  if(top+bh>window.innerHeight)top=Math.max(8,big?window.innerHeight-bh-8:r.top-4);
   dd.style.left=left+'px';dd.style.top=top+'px';
   dd.style.display='block';
   _wsCellTask=taskId;_wsCellField='cc_'+colId;
@@ -29267,24 +29271,22 @@ function mtOpenCellEdit(taskId,colId,evt){
   body.innerHTML=cc.type==='labels'?mtLabelPickerHtml(taskId,cc,val)
     :cc.type==='file'?wsBuildDropdownHtml(taskId,'cc_'+colId)
     :mtBuildCustomCellHtml(taskId,cc,val);
+  if(big)setTimeout(()=>{const t=body.querySelector('textarea');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}},0);
 }
 
 function mtBuildCustomCellHtml(taskId,cc,val){
   const label=`<div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding:12px 14px 0">${escHtml(cc.name)}</div>`;
   switch(cc.type){
     case 'text':
-      return label+`<div style="padding:0 14px 12px"><input type="text" value="${escHtml(val)}" placeholder="Enter text…"
-        onclick="event.stopPropagation()" autofocus
-        style="width:100%;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 8px;font-size:13px;outline:none;box-sizing:border-box"
-        onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
-        onkeydown="if(event.key==='Enter'){mtSetCustomVal('${taskId}','${cc.id}',this.value);}"
-        onchange="mtSetCustomVal('${taskId}','${cc.id}',this.value)"/></div>`;
     case 'longtext':
-      return label+`<div style="padding:0 14px 12px"><textarea rows="3" placeholder="Enter text…"
-        onclick="event.stopPropagation()" autofocus
-        style="width:100%;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 8px;font-size:12px;outline:none;resize:vertical;box-sizing:border-box;min-height:70px"
+      // One big box for both: the whole note is readable, it wraps, and it saves when you click away or press Done.
+      return label+`<div style="padding:0 14px 12px"><textarea id="mt-note-box" placeholder="Enter text…"
+        onclick="event.stopPropagation()"
+        style="width:100%;height:230px;border:1.5px solid #e2eaf2;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.55;font-family:inherit;color:#1a2940;outline:none;resize:vertical;box-sizing:border-box;min-height:120px"
         onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'"
-        onchange="mtSetCustomVal('${taskId}','${cc.id}',this.value)">${escHtml(val)}</textarea></div>`;
+        onkeydown="if(event.key==='Escape'){event.stopPropagation();wsCellClose();}if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){mtSetCustomVal('${taskId}','${cc.id}',this.value);}"
+        onchange="mtSetCustomVal('${taskId}','${cc.id}',this.value)">${escHtml(val)}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><span style="font-size:11px;color:#8da2b2">Saves when you click away</span><button type="button" class="btn btn-teal btn-sm" onclick="event.stopPropagation();mtSetCustomVal('${taskId}','${cc.id}',document.getElementById('mt-note-box').value)">Done</button></div></div>`;
     case 'number':
       return label+`<div style="padding:0 14px 12px"><input type="number" value="${escHtml(val)}" placeholder="0"
         onclick="event.stopPropagation()" autofocus
