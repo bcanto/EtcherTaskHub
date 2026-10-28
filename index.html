@@ -24446,7 +24446,6 @@ function renderSubitemGrid(parent,childTasks,custCols,groupColor){
   </table>`;
 }
 function renderSubRow(t,visSub,subCust){
-  const owner=getStaff(t.ownerId);
   const sm=getStatusMeta(t.status);
   const isSelected=wsSelected.has(t.id);
   const isDone=taskIsStruck(t);
@@ -24476,7 +24475,7 @@ function renderSubRow(t,visSub,subCust){
     ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)" title="${escHtml(m.cc.name)}">${renderCustomColCell(t.id,m.cc)}</td>`:(c=>{
       if(c.key==='ref')return`<td style="text-align:center"><span class="ws-ref" title="Click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`;
       if(c.key==='status')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" style="background:${sm.bg};text-align:center"><span style="font-size:11px;font-weight:700;color:${sm.color}">${sm.label}</span></td>`;
-      if(c.key==='owner')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="text-align:center">${owner?avatarHtml(owner,22):'<span style="color:#d4dde8">○</span>'}</td>`;
+      if(c.key==='owner')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" title="${escHtml(assigneeTitleAttr(t)||'Unassigned')}" style="text-align:center">${assigneeStackHtml(t,22)||avatarHtml(getStaff(t.ownerId),22)}</td>`;
       if(c.key==='cwith')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px">${cw?avatarHtml(cw,20):'<span style="color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399">${cw?.name?.split(' ')[0]||''}</span></div></td>`;
       if(c.key==='duedate')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><span style="font-size:11px;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}</div></td>`;
       if(c.key==='progress')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">${isDone?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`:pct===0?`<span style="font-size:12px;color:#d4dde8">—</span>`:`<div class="progress-bar" style="width:32px"><div class="progress-fill" style="width:${pct}%;background:#97bcbd"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span>`}</div></td>`;
