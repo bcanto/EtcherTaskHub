@@ -1055,7 +1055,8 @@ html.boot-share #share-skeleton{display:block!important}
 .rs-part .rs-part-l{min-width:0}.rs-pl-t .rs-part input.rs-part-l{width:100%}.rs-part select{width:100%;min-width:0}
 .rs-part-x{grid-column:1/-1;justify-self:end}
 .rs-part .form-input{height:30px;padding:0 8px;font-size:12px}
-.rs-part-h{display:inline-flex;align-items:center;gap:4px}.rs-part-h input{width:60px}.rs-part-h em{font-style:normal;font-size:12px;color:#6b8399}
+.rs-part-h{display:inline-flex;align-items:center;gap:4px;min-width:0}.rs-part-h input{width:60px;flex-shrink:0}.rs-part-h em{font-style:normal;font-size:12px;color:#6b8399}
+.rs-part .rs-part-h select.rs-part-k{width:auto;min-width:0;max-width:170px;flex:1 1 auto}
 .rs-part-x{border:0;background:none;padding:0 2px;font-size:11.5px;color:#8da2b2;text-decoration:underline;cursor:pointer}.rs-part-x:hover{color:#b91c1c}.rs-part-x:focus-visible{outline:2px solid #31585a;border-radius:3px}
 .rs-part-add{justify-self:start}
 .rc-hours-t td small{display:block;font-size:11px;color:#8da2b2}.rc-hours-t td.reg-num small{display:inline;margin-left:5px}
@@ -1131,6 +1132,7 @@ html.boot-share #share-skeleton{display:block!important}
 @media (max-width:760px){.rs-su2-terms{grid-template-columns:repeat(2,minmax(0,1fr))}.rs-cards{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:440px){.rs-su2-terms,.rs-cfg-row{grid-template-columns:minmax(0,1fr)}.rs-su2-foot{flex-wrap:wrap}.rs-su2-sum{flex-basis:100%}}
 .ws-grp-meter.full{color:#b45309;font-weight:700}
+.rs-due{color:#b45309;font-weight:700;white-space:nowrap}
 .rs-sq{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px;max-width:100%;vertical-align:middle}
 .rs-sq i{flex-shrink:0;width:7px;height:7px;border-radius:1.5px;background:#e3e9f0}
 .rs-sq i.on{background:#16a34a}
@@ -1783,7 +1785,7 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 .tp-people-more{margin-left:-6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#e2eaf2;color:#5b7080;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
 .tp-people-empty{font-size:12.5px;color:#94a3b8}
 /* people picker popover */
-#tp-people-pop{position:fixed;z-index:660;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(13,28,51,0.16);width:250px;max-height:320px;overflow:auto;padding:6px;display:none}
+#tp-people-pop{position:fixed;z-index:660;background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(13,28,51,0.16);width:260px;overflow:hidden;padding:4px 0;display:none}
 .tp-pp-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--text-1);transition:background 0.1s}
 .tp-pp-row:hover{background:#f4f7ff}
 .tp-pp-lead{margin-left:auto;font-size:9px;font-weight:700;color:#0d6e4e;background:#eaf4ee;border-radius:8px;padding:1px 6px}
@@ -8138,17 +8140,34 @@ const RS_HOUR_PARTS={
   ci:[{label:'Admin',hours:8,period:'month',who:'admin'},{label:'Senior consult',hours:3,period:'month',who:'senior'}],
 };
 const RS_PART_WHO=[['all','Everyone'],['admin','Admin'],['senior','Senior consultants'],['audit','Tasks tagged Audit']];
+// One plain Items part a month for Everyone: what an items service is (TH-11).
+function _rsItemsPart(amount,unit){return{id:'ip'+uid().slice(-6),label:'',kind:'items',amount:Number(amount)||1,unit:unit||'items',period:'month',who:'all'};}
 function _rsDefaultParts(key,allowance){return(RS_HOUR_PARTS[key]||[{label:'Hours',hours:Math.min(99,allowance||8),period:'month',who:'all'}]).map((p,i)=>Object.assign({id:'hp'+i+'-'+uid().slice(-4)},p));}
 // Quarters run from the retainer's start month (2026-10-23): a February start has February to April, May to July and so
 // on (calendar quarters when there is no start). Hours before the start fall in quarters of their own, never the first one.
-function _rsQuarterStart(ym,start){
+// Years run the same way (TH-11, 30 Oct 2026): a November start has November to October (calendar years when there is no
+// start). A part's period is 'month', 'quarter' or 'year'; months are numbered from year 0 so periods can be compared.
+function _rsPeriodStart(ym,period,start){
   const k=+String(ym).slice(0,4)*12+(+String(ym).slice(5,7))-1;
-  if(/^\d{4}-\d{2}$/.test(String(start||''))){const sk=+start.slice(0,4)*12+(+start.slice(5,7))-1;return sk+Math.floor((k-sk)/3)*3;}
-  return k-(k%12)%3;
+  if(period!=='quarter'&&period!=='year')return k;
+  const n=period==='year'?12:3;
+  if(/^\d{4}-\d{2}$/.test(String(start||''))){const sk=+start.slice(0,4)*12+(+start.slice(5,7))-1;return sk+Math.floor((k-sk)/n)*n;}
+  return n===12?k-k%12:k-(k%12)%3;
 }
+function _rsQuarterStart(ym,start){return _rsPeriodStart(ym,'quarter',start);}
 function _rsQuarter(ym,start){return'Q'+_rsQuarterStart(ym,start);}
+function _rsKYm(k){return Math.floor(k/12)+'-'+String(k%12+1).padStart(2,'0');}
+// The last month of the period ym is in.
+function _rsPeriodEnd(ym,period,start){return period==='quarter'||period==='year'?_rsKYm(_rsPeriodStart(ym,period,start)+(period==='year'?11:2)):String(ym).slice(0,7);}
 function _rsQuarterName(ym,start){const s0=_rsQuarterStart(ym,start),f=k=>new Date(Math.floor(k/12),k%12,1,12).toLocaleDateString('en-AU',{month:'short'});return f(s0)+' to '+f(s0+2);}
-function _rsInPeriod(d,ym,period,start){d=String(d||'').slice(0,7);if(!d)return false;return period==='quarter'?_rsQuarter(d,start)===_rsQuarter(ym,start)&&d<=ym:d===ym;}
+// "Nov to Jan" for a quarter, "Nov 2026 to Oct 2027" for a year.
+function _rsPeriodName(ym,period,start){
+  if(period==='quarter')return _rsQuarterName(ym,start);
+  if(period!=='year')return _rsMonthYear(ym);
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],s0=_rsPeriodStart(ym,'year',start),f=k=>M[k%12]+' '+Math.floor(k/12);
+  return f(s0)+' to '+f(s0+11);
+}
+function _rsInPeriod(d,ym,period,start){d=String(d||'').slice(0,7);if(!d)return false;return period==='quarter'||period==='year'?_rsPeriodStart(d,period,start)===_rsPeriodStart(ym,period,start)&&d<=ym:d===ym;}
 // Started and not finished: in progress (not started, to do or backlog are not).
 const _RS_IDLE=new Set(['todo','not-started','backlog','']);
 function _rsStarted(t){return !!t&&!_rsDone(t)&&!_RS_IDLE.has(String(t.status||''));}
@@ -8168,12 +8187,28 @@ function _rsHourRows(b,s,parts,ym){
   (DB.tasks||[]).forEach(t=>{if(t.archived)return;const top=t.parentTaskId?byId.get(t.parentTaskId):t;
     if(!top||top.archived||top.groupId!==s.groupId||(top.boardId||top.workboardId)!==b.id||_cpTaskHidden(t))return;tasks.set(t.id,{t,top});});
   parts=parts||s.parts||[];const seniors=_rsSeniorsAt(b.retainer||{},ym||_rsYm());
-  const tagged=x=>(x.tags||[]).some(g=>/^audit$/i.test(String(g).trim()));
+  const tagged=_rsTagged;
   return(DB.timeEntries||[]).filter(e=>e&&tasks.has(e.taskId)&&e.status!=='rejected'&&Number(e.hours)>0).map(e=>{
     const{t,top}=tasks.get(e.taskId),senior=seniors.has(e.staffId),aud=tagged(t)||tagged(top);
-    const part=_rsPartFor(parts,aud,senior);
+    const part=_rsPartFor(parts,aud,senior,'hours');
     return{e,t,part,hours:Number(e.hours)||0};
   });
+}
+function _rsTagged(x){return(x&&x.tags||[]).some(g=>/^audit$/i.test(String(g).trim()));}
+// Items (TH-11): each finished piece of work the client can see is one item. A top-level task with subitems is its
+// subitems, as before, except a task tagged Audit on a service with an Audit items part: that is one audit, counted when
+// the task itself is completed, however many subitems it has. An item goes to one part by the same rule as an hour
+// (Audit-tagged work, then a senior consultant's or anyone else's by the item's lead owner, then Everyone), and only
+// an Items part counts it: work that lands on an Hours part is counted by its hours instead.
+function _rsItemUnits(b,s,parts,ym){
+  const seniors=_rsSeniorsAt(b.retainer||{},ym||_rsYm()),out=[];
+  const auditItems=parts.some(p=>_rsKind(p)==='items'&&(p.who||'all')==='audit');
+  (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===s.groupId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t)).forEach(t=>{
+    const subs=_rsKids(t.id);
+    const one=x=>{const done=_rsDone(x);out.push({t:x,part:_rsPartFor(parts,_rsTagged(x)||_rsTagged(t),seniors.has(x.ownerId||t.ownerId),'items'),done,doneYm:done?_rsDoneYm(x):null,started:_rsStarted(x)});};
+    if(!subs.length||(auditItems&&_rsTagged(t)))one(t);else subs.forEach(one);
+  });
+  return out;
 }
 // Plan history (2026-10-23): a change to a service's allowance, tracking or hour parts, or to the senior consultants,
 // applies from this month; each earlier month is counted with the plan it had. hist entries are {until:'YYYY-MM', ...}.
@@ -8181,7 +8216,7 @@ function _rsAt(hist,ym){return(hist||[]).filter(h=>h&&h.until>=ym).sort((a,b)=>S
 function _rsSvcAt(s,ym){
   const h=s&&_rsAt(s.hist,ym||_rsYm());if(!h)return s;
   const o=Object.assign({},s,{allowance:h.allowance,unit:h.unit||s.unit,parts:h.parts||null});
-  if(h.mode==='hours')o.mode='hours';else delete o.mode;
+  if(h.mode==='hours'||h.mode==='mixed')o.mode=h.mode;else delete o.mode;
   return o;
 }
 function _rsSeniorsAt(r,ym){const h=_rsAt(r&&r.seniorHist,ym||_rsYm());return new Set((h?h.ids:(r&&r.seniorIds))||[]);}
@@ -8190,7 +8225,8 @@ function _rsKeepPlan(r,s){
   const ym=_rsYm(),until=_rsPrevYm(ym);if(r.startMonth&&r.startMonth>=ym)return;
   if(s){
     if((s.hist||[]).some(h=>h.until>=until))return;
-    s.hist=(s.hist||[]).concat({until,mode:s.mode==='hours'?'hours':'items',allowance:s.allowance,unit:s.unit,parts:s.mode==='hours'?JSON.parse(JSON.stringify(_rsPartsOf(s))):null}).slice(-36);
+    const own=s.mode==='hours'||s.mode==='mixed';   // a plain items service keeps no parts of its own
+    s.hist=(s.hist||[]).concat({until,mode:own?s.mode:'items',allowance:s.allowance,unit:s.unit,parts:own?JSON.parse(JSON.stringify(_rsPartsOf(s))):null}).slice(-36);
   }else{
     if((r.seniorHist||[]).some(h=>h.until>=until))return;
     r.seniorHist=(r.seniorHist||[]).concat({until,ids:(r.seniorIds||[]).slice()}).slice(-36);
@@ -8198,10 +8234,11 @@ function _rsKeepPlan(r,s){
 }
 // Which part an hour counts to: Audit-tagged work, senior consultants, everyone else as admin, then Everyone, then
 // Admin. An hour that fits no part counts nowhere (untagged work on an Audit-only service; the hours log says so).
-function _rsPartFor(parts,aud,senior){
-  const who=x=>x.who||'all';
-  return parts.find(x=>who(x)==='audit'&&aud)||parts.find(x=>who(x)==='senior'&&senior)||parts.find(x=>who(x)==='admin'&&!senior)
-    ||parts.find(x=>who(x)==='all')||parts.find(x=>who(x)==='admin')||null;
+// kind ('hours' or 'items', TH-11) breaks a tie between two parts with the same filter: an hour prefers the Hours one.
+function _rsPartFor(parts,aud,senior,kind){
+  const who=x=>x.who||'all',pick=f=>{const c=parts.filter(f);return c.find(x=>!kind||_rsKind(x)===kind)||c[0]||null;};
+  return pick(x=>who(x)==='audit'&&aud)||pick(x=>who(x)==='senior'&&senior)||pick(x=>who(x)==='admin'&&!senior)
+    ||pick(x=>who(x)==='all')||pick(x=>who(x)==='admin')||null;
 }
 // Month locking (2026-10-23): on the 10th of the next month (late timesheets have landed by then) each service's figures
 // for a month are kept on the retainer (months[ym].lock). After that, archiving, moving or deleting work, or deleting
@@ -8229,25 +8266,52 @@ function _rsLockMonths(){
   if(n)saveDB(DB);
   return n;
 }
-function _rsPartsOf(s){return s.mode==='hours'?((s.parts&&s.parts.length)?s.parts:_rsDefaultParts(s.key,s.allowance)):null;}
-// A service's allowance this month (or the month given): parts of {label, cap, used, prog, period, unit}.
+// Every service is a list of parts (TH-11, 30 Oct 2026), each counted in Items or Hours, a month, a quarter or a year.
+// Stored shapes, all still read and none rewritten: an items service (no mode: allowance and unit) is one Items part
+// a month for Everyone; mode 'hours' is parts of hours (saved before parts had a kind); mode 'mixed' is parts that
+// each say their kind. A plan is only saved in the new shape when someone changes it, from that month on.
+function _rsKind(p){return p&&p.kind==='items'?'items':'hours';}
+function _rsPeriodOf(p){return p&&(p.period==='quarter'||p.period==='year')?p.period:'month';}
+function _rsPartsOf(s){
+  if(s&&(s.mode==='hours'||s.mode==='mixed')){const ps=(s.parts&&s.parts.length)?s.parts:s.mode==='hours'?_rsDefaultParts(s.key,s.allowance):[];if(ps.length)return ps;}
+  return[{id:'items',label:'',kind:'items',amount:s?s.allowance:0,unit:s?s.unit:'items',period:'month',who:'all'}];
+}
+// A service's allowance this month (or the month given): mode 'items', 'hours' or 'mixed', and parts of
+// {label, cap, used, prog, period, unit, who, due}. unit is 'hours' or the items' name ("document revisions").
 function _rsUsage(b,s,ym){
   ym=ym||_rsYm();
   const lk=_rsLocked(b,s,ym);if(lk)return lk;
   s=_rsSvcAt(s,ym);
-  const parts=_rsPartsOf(s);
-  if(parts){
-    const rows=_rsHourRows(b,s,parts,ym);
-    return{mode:'hours',parts:parts.map(p=>({id:p.id,label:p.label||'Hours',cap:Number(p.hours)||0,period:p.period==='quarter'?'quarter':'month',who:p.who||'all',unit:'hours',prog:0,
-      used:Math.round(rows.filter(r=>r.part===p&&_rsInPeriod(r.e.date,ym,p.period,(b.retainer||{}).startMonth)).reduce((n,r)=>n+r.hours,0)*100)/100}))};
-  }
-  return{mode:'items',parts:[{label:'',cap:s.allowance,used:_retainerUsed(b.id,s.groupId,ym),prog:ym===_rsYm()?_retainerProgress(b.id,s.groupId):0,period:'month',unit:s.unit}]};
+  const parts=_rsPartsOf(s),start=(b.retainer||{}).startMonth,kinds=new Set(parts.map(_rsKind)),now=_rsYm();
+  // A plain items service (its one part made up by _rsPartsOf, id 'items') is counted exactly as it always was.
+  const plain=parts.length===1&&parts[0].id==='items';
+  const rows=kinds.has('hours')?_rsHourRows(b,s,parts,ym):[],units=kinds.has('items')&&!plain?_rsItemUnits(b,s,parts,ym):[];
+  return{mode:kinds.size>1?'mixed':[...kinds][0],parts:parts.map(p=>{
+    const period=_rsPeriodOf(p),u=_rsKind(p)==='hours'
+      ?{id:p.id,label:p.label||'Hours',cap:Number(p.hours)||0,period,who:p.who||'all',unit:'hours',prog:0,
+        used:Math.round(rows.filter(r=>r.part===p&&_rsInPeriod(r.e.date,ym,period,start)).reduce((n,r)=>n+r.hours,0)*100)/100}
+      :plain?{label:'',cap:s.allowance,used:_retainerUsed(b.id,s.groupId,ym),prog:ym===_rsYm()?_retainerProgress(b.id,s.groupId):0,period:'month',unit:s.unit,who:'all'}
+      :{id:p.id,label:p.label||'',cap:Number(p.amount)||0,period,who:p.who||'all',unit:p.unit||'items',
+        used:units.filter(x=>x.part===p&&x.done&&_rsInPeriod(x.doneYm,ym,period,start)).length,prog:ym===now?units.filter(x=>x.part===p&&x.started).length:0};
+    u.due=_rsDue(u,ym,start,now);
+    return u;
+  })};
 }
+// TH-11: a quarterly or yearly allowance not used up in the last month of its period is due by that month's last day
+// (no roll-over: what is left then is lost). Only for the period running now.
+function _rsDue(u,ym,start,now){
+  if(u.period==='month'||ym!==(now||_rsYm())||_rsPeriodEnd(ym,u.period,start)!==ym||!(u.used<u.cap))return null;
+  const y=+ym.slice(0,4),m=+ym.slice(5,7);return ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');
+}
+function _rsDueText(u){return u&&u.due?'Due by '+new Date(u.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';}
 function _rsHrs(n){return String(Math.round((Number(n)||0)*100)/100);}
-// "4 of 20 document revisions used, 2 in progress" or "Admin: 5.5 of 8 hours".
+function _rsPeriodWords(u){return u.period==='quarter'?'this quarter':u.period==='year'?'this year':'';}
+function _rsNoun(u){return u.unit==='items'&&Number(u.cap)===1?'item':u.unit;}
+// "4 of 20 document revisions used, 2 in progress", "Admin: 5.5 of 8 hours" or "Audit: 0 of 1 item used this quarter".
 function _rsUseText(u){
-  if(u.unit==='hours')return`${u.label?u.label+': ':''}${_rsHrs(u.used)} of ${_rsHrs(u.cap)} hours${u.period==='quarter'?' this quarter':''}`;
-  return`${u.used} of ${u.cap} ${u.unit} used${u.prog?`, ${u.prog} in progress`:''}`;
+  const pw=_rsPeriodWords(u);
+  if(u.unit==='hours')return`${u.label?u.label+': ':''}${_rsHrs(u.used)} of ${_rsHrs(u.cap)} hours${pw?' '+pw:''}`;
+  return`${u.label?u.label+': ':''}${u.used} of ${u.cap} ${_rsNoun(u)} used${u.prog?`, ${u.prog} in progress`:''}${pw?' '+pw:''}`;
 }
 // Squares: one per item or hour. Finished (or an hour logged) is full green, in progress half orange, to go empty;
 // beyond the allowance amber outlines. Over the cap the squares give way to the words.
@@ -8272,8 +8336,23 @@ function _retainerMeterHtml(sec){
   if(wsGroupBy!=='group'||!_isRetainedBoard(wb))return'';
   const s=(wb.retainer.services||[]).find(x=>x.groupId===sec.id);if(!s)return'';
   const ym=_wsMonthYm(),us=_rsUsage(wb,s,ym);
-  const tip=us.mode==='hours'?'Hours logged on this service\'s work. Monthly parts reset on the 1st, quarterly ones each quarter.':'Finished this month (green) and in progress now (orange), on work the client can see. Resets on the 1st.';
-  return us.parts.map(u=>`<span class="ws-grp-meter${_rsPartFull(u)?' full':''}" title="${tip}">${_rsSq(u,'',40)}<span>${escHtml(_rsUseText(u))}${u.unit!=='hours'?' in '+_rsMonthName(ym):''}</span></span>`).join('');
+  const tip=u=>u.unit==='hours'?'Hours logged on this service\'s work. Monthly parts reset on the 1st, quarterly and yearly ones at the start of their period.':`Finished${u.period==='month'?' this month':' this '+u.period} (green) and in progress now (orange), on work the client can see. ${u.period==='month'?'Resets on the 1st.':'Resets at the start of each '+u.period+'; nothing carries over.'}`;
+  return us.parts.map(u=>`<span class="ws-grp-meter${_rsPartFull(u)?' full':''}${u.due?' due':''}" title="${tip(u)}">${_rsSq(u,'',40)}<span>${escHtml(_rsUseLine(u,ym))}</span>${u.due?`<b class="rs-due">${_rsDueText(u)}</b>`:''}</span>`).join('');
+}
+// One part's figures in words, the same on the board, the dashboard and the client page: "in October" after a
+// monthly items part, "this quarter" or "this year" after the others.
+function _rsUseLine(u,ym){return _rsUseText(u)+(u.unit!=='hours'&&u.period==='month'?' in '+_rsMonthName(ym):'');}
+// A part as the plan reads it for staff: "Audit: 1 item a quarter, Tasks tagged Audit".
+function _rsPartPlanText(p){
+  const k=_rsKind(p),n=k==='hours'?Number(p.hours)||0:Number(p.amount)||0,unit=k==='hours'?'hours':(p.unit||'items');
+  const who=(p.who||'all')!=='all'?', '+((RS_PART_WHO.find(([w])=>w===p.who)||[])[1]||''):'';
+  return`${p.label?p.label+': ':''}${k==='hours'?_rsHrs(n):n} ${_rsNoun({unit,cap:n})} ${(RS_PART_PERIODS.find(([v])=>v===_rsPeriodOf(p))||[])[1]}${who}`;
+}
+// The plan's "Used in" figures for one part, with "Due by" when a quarter or year is ending with some left.
+function _rsUsedCell(u){
+  const fig=u.unit==='hours'?`<b>${_rsHrs(u.used)}</b> of ${_rsHrs(u.cap)}`:`<b>${u.used}</b> of ${u.cap}`;
+  const words=[_rsNoun(u),u.label,_rsPeriodWords(u),u.prog?u.prog+' in progress':''].filter(Boolean).map(escHtml).join(', ');
+  return`${fig}<small>${words}</small>${u.due?`<small class="rs-due">${_rsDueText(u)}</small>`:''}`;
 }
 
 // ── Sidebar section (collapse is per viewer, like Personal Boards) ──
@@ -8295,7 +8374,7 @@ function openRetainerSetup(){
   const d=new Date();
   _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,bundle:null,svc:{}};
   // Bundle first: nothing is ticked until a bundle is chosen.
-  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true),mode:'items',parts:null};});
+  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true),mode:'items',parts:[_rsItemsPart(s.allowance,s.unit)]};});
   _rsSetup.seniorIds=[];
   _rsSetupFollowLevel();
   _rsSetupRender();
@@ -8365,7 +8444,7 @@ function _rsSetupIssues(m){
     else if(r.have>r.n)out.push(`The ${b.key} bundle takes ${r.n} ${word}${r.n>1?'s':''}. Untick ${r.have-r.n}.`);
   });
   if(!m.leadId)out.push('Choose the retainer lead.');
-  keys.forEach(k=>{const v=m.svc[k];if(v.mode==='hours'&&!(v.parts||[]).some(p=>Number(p.hours)>0))out.push(`Give ${_rsCat(k).name} some hours.`);});
+  keys.forEach(k=>{const v=m.svc[k];if(v.mode!=='items'&&!(v.parts||[]).some(p=>(_rsKind(p)==='hours'?Number(p.hours):Number(p.amount))>0))out.push(`Give ${_rsCat(k).name} an allowance.`);});
   keys.forEach(k=>{if(!m.svc[k].ownerId)out.push(`Choose an owner for ${_rsCat(k).name}.`);});
   if(!/^[0-9]{4}-[0-9]{2}$/.test(String(m.startMonth||'')))out.push('Choose the month it starts.');
   return out;
@@ -8375,11 +8454,15 @@ function _rsSet(field,key,val,i){
   if(key){
     const v=m.svc[key];if(!v)return;
     if(field==='on')_rsSetupToggle(m,key,!!val);
-    else if(field==='allowance')v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
+    else if(field==='allowance'){v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));if(v.mode==='items')v.parts=[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];}
     else if(field==='owner')v.ownerId=val||null;
     else if(field==='mt')v.mt[i]=!!val;
-    else if(field==='mode'){v.mode=val==='hours'?'hours':'items';if(v.mode==='hours'&&!(v.parts&&v.parts.length))v.parts=_rsDefaultParts(key,v.allowance);}
-    else if(/^p(Add|Rm|Label|Hours|Period|Who)$/.test(field)){if(v.parts)_rsPartChange(v.parts,field,i,val);}
+    else if(field==='mode'){v.mode=val==='hours'?'hours':'items';v.parts=v.mode==='hours'?_rsDefaultParts(key,v.allowance):[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];}
+    else if(/^p(Add|Rm|Label|Hours|Amount|Kind|Period|Who)$/.test(field)){
+      // Every service has parts (TH-11); the shape it ends up with is what retainerCreate saves.
+      if(!(v.parts&&v.parts.length))v.parts=[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];
+      if(_rsPartChange(v.parts,field,i,val)){v.mode=_rsShape(v.parts,(_rsCat(key)||{}).unit);if(v.mode==='items')v.allowance=Number(v.parts[0].amount)||v.allowance;}
+    }
   }else if(field==='bundle')_rsSetupBundlePick(m,val);
   else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
   else if(field==='fee')m.fee=_rsFeeParse(val);
@@ -8388,28 +8471,63 @@ function _rsSet(field,key,val,i){
   else if(field==='senior')m.seniorIds=val?[val]:[];
   _rsSetupRender();
 }
-// The hour parts editor, for set-up and plan. call(field, partIndex) returns the handler text for a change.
+// The parts editor, for set-up and plan (TH-11: every service has parts, and each part is Items or Hours, a month, a
+// quarter or a year). call(field, partIndex) returns the handler text for a change.
+const RS_PART_PERIODS=[['month','a month'],['quarter','a quarter'],['year','a year']];
 function _rsPartsEditor(parts,call,keyLabel){
-  const per=(p,i)=>`<select class="form-input" aria-label="Period" data-f="pp-${escHtml(keyLabel)}-${i}" onchange="${call('pPeriod',i)}"><option value="month"${p.period!=='quarter'?' selected':''}>a month</option><option value="quarter"${p.period==='quarter'?' selected':''}>a quarter</option></select>`;
-  const who=(p,i)=>`<select class="form-input" aria-label="Who counts" data-f="pw-${escHtml(keyLabel)}-${i}" onchange="${call('pWho',i)}">${RS_PART_WHO.map(([k,l])=>`<option value="${k}"${(p.who||'all')===k?' selected':''}>${l}</option>`).join('')}</select>`;
-  return`<div class="rs-parts" data-rs-parts="${escHtml(keyLabel)}">${parts.map((p,i)=>`<div class="rs-part" data-rs-part="${i}">
-      <input type="text" class="form-input rs-part-l" value="${escHtml(p.label||'')}" maxlength="60" aria-label="Part name" data-f="pl-${escHtml(keyLabel)}-${i}" onchange="${call('pLabel',i)}">
-      <span class="rs-part-h"><input type="number" class="form-input" min="0.5" max="999" step="0.5" value="${Number(p.hours)||0}" aria-label="Hours" data-f="ph-${escHtml(keyLabel)}-${i}" onchange="${call('pHours',i)}"><em>h</em></span>
+  const k=escHtml(keyLabel);
+  const per=(p,i)=>`<select class="form-input" aria-label="Period" data-f="pp-${k}-${i}" onchange="${call('pPeriod',i)}">${RS_PART_PERIODS.map(([v,l])=>`<option value="${v}"${_rsPeriodOf(p)===v?' selected':''}>${l}</option>`).join('')}</select>`;
+  const who=(p,i)=>`<select class="form-input" aria-label="Who counts" data-f="pw-${k}-${i}" onchange="${call('pWho',i)}">${RS_PART_WHO.map(([v,l])=>`<option value="${v}"${(p.who||'all')===v?' selected':''}>${l}</option>`).join('')}</select>`;
+  const amt=(p,i)=>_rsKind(p)==='hours'
+    ?`<input type="number" class="form-input" min="0.5" max="999" step="0.5" value="${Number(p.hours)||0}" aria-label="Hours" data-f="ph-${k}-${i}" onchange="${call('pAmount',i)}">`
+    :`<input type="number" class="form-input" min="1" max="999" step="1" value="${Number(p.amount)||0}" aria-label="Number of items" data-f="pa-${k}-${i}" onchange="${call('pAmount',i)}">`;
+  const kind=(p,i)=>`<select class="form-input rs-part-k" aria-label="Count in items or hours" data-f="pk-${k}-${i}" data-rs-kind="${_rsKind(p)}" onchange="${call('pKind',i)}"><option value="items"${_rsKind(p)==='items'?' selected':''}>${escHtml(_rsKind(p)==='items'&&p.unit?p.unit:'items')}</option><option value="hours"${_rsKind(p)==='hours'?' selected':''}>hours</option></select>`;
+  return`<div class="rs-parts" data-rs-parts="${k}">${parts.map((p,i)=>`<div class="rs-part" data-rs-part="${i}">
+      <input type="text" class="form-input rs-part-l" value="${escHtml(p.label||'')}" maxlength="60" placeholder="Name" aria-label="Part name" data-f="pl-${k}-${i}" onchange="${call('pLabel',i)}">
+      <span class="rs-part-h">${amt(p,i)}${kind(p,i)}</span>
       ${per(p,i)}${who(p,i)}
       ${parts.length>1?`<button type="button" class="rs-part-x" aria-label="Remove this part" onclick="${call('pRm',i)}">Remove</button>`:''}
     </div>`).join('')}<button type="button" class="btn btn-ghost btn-sm rs-part-add" onclick="${call('pAdd')}">+ Add part</button></div>`;
 }
-// One change to a parts list (set-up or plan).
+// One change to a parts list (set-up or plan). pHours is kept for older callers; the editor sends pAmount.
 function _rsPartChange(parts,field,i,val){
   const p=parts[i];
-  if(field==='pAdd'){parts.push({id:'hp'+uid().slice(-6),label:'Hours',hours:4,period:'month',who:'all'});return true;}
+  if(field==='pAdd'){parts.push({id:'hp'+uid().slice(-6),label:'Hours',kind:'hours',hours:4,period:'month',who:'all'});return true;}
   if(!p)return false;
+  const hrs=v=>Math.max(0.5,Math.min(999,Math.round((parseFloat(v)||0)*2)/2||0.5)),items=v=>Math.max(1,Math.min(999,parseInt(v)||1));
   if(field==='pRm'){if(parts.length>1)parts.splice(i,1);return true;}
-  if(field==='pLabel'){p.label=String(val||'').replace(/\s+/g,' ').trim().slice(0,60)||'Hours';return true;}
-  if(field==='pHours'){p.hours=Math.max(0.5,Math.min(999,Math.round((parseFloat(val)||0)*2)/2||0.5));return true;}
-  if(field==='pPeriod'){p.period=val==='quarter'?'quarter':'month';return true;}
+  if(field==='pLabel'){p.label=String(val||'').replace(/\s+/g,' ').trim().slice(0,60)||(_rsKind(p)==='hours'?'Hours':'');return true;}
+  if(field==='pHours'){p.hours=hrs(val);return true;}
+  if(field==='pAmount'){if(_rsKind(p)==='hours')p.hours=hrs(val);else p.amount=items(val);return true;}
+  if(field==='pKind'){
+    if(val==='items'&&_rsKind(p)!=='items'){p.kind='items';if(!(Number(p.amount)>0))p.amount=items(Math.round(Number(p.hours)||1));if(!p.unit)p.unit='items';if(p.label==='Hours')p.label='Items';}
+    else if(val==='hours'&&_rsKind(p)!=='hours'){p.kind='hours';if(!(Number(p.hours)>0))p.hours=hrs(Math.min(99,Number(p.amount)||4));if(!p.label||p.label==='Items')p.label='Hours';}
+    return true;
+  }
+  if(field==='pPeriod'){p.period=val==='quarter'||val==='year'?val:'month';return true;}
   if(field==='pWho'){if(RS_PART_WHO.some(([k])=>k===val))p.who=val;return true;}
   return false;
+}
+// How a parts list is stored (TH-11). A list that is still one plain monthly Items part for Everyone stays a plain
+// items service; all Hours parts stay mode 'hours' (as saved before); anything else is 'mixed'.
+function _rsShape(parts,unit){
+  if(parts.every(p=>_rsKind(p)==='hours'))return'hours';
+  const p=parts[0];
+  return parts.length===1&&_rsPeriodOf(p)==='month'&&(p.who||'all')==='all'&&!p.label&&(!unit||p.unit===unit)?'items':'mixed';
+}
+// A service's own editable parts, with their kinds written down: a plain items service gets one Items part.
+function _rsOwnParts(s){
+  if(s.mode!=='mixed'||!(s.parts&&s.parts.length)){
+    s.parts=JSON.parse(JSON.stringify(_rsPartsOf(s))).map(p=>Object.assign(p,{kind:_rsKind(p),id:p.id&&p.id!=='items'?p.id:'ip'+uid().slice(-6)}));
+  }
+  return s.parts;
+}
+// After a parts change: store the shape it now has. A plain items service goes back to allowance and unit only.
+function _rsSetShape(s){
+  const shape=_rsShape(s.parts||[],s.unit);
+  if(shape==='items'){s.allowance=Number(s.parts[0].amount)||s.allowance;delete s.mode;delete s.parts;return;}
+  s.mode=shape;
+  const it=s.parts.find(p=>_rsKind(p)==='items');if(it)s.allowance=Number(it.amount)||s.allowance;   // what older screens read
 }
 function _rsTrackSwitch(mode,call,keyLabel){
   return`<div class="rs-track" role="group" aria-label="Track by"><span>Track by</span>${[['items','Items'],['hours','Hours']].map(([k,l])=>`<button type="button" class="${mode===k?'on':''}" aria-pressed="${mode===k}" data-rs-mode="${k}" data-f="md-${escHtml(keyLabel)}-${k}" onclick="${call(k)}">${l}</button>`).join('')}</div>`;
@@ -8419,9 +8537,12 @@ function _rsSetupRender(){
   const b=_rsSetupBundle(m),picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
   const core=picks.filter(s=>s.kind==='core'),adds=picks.filter(s=>s.kind!=='core');
   const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
-  const itemPicks=picks.filter(s=>m.svc[s.key].mode!=='hours'),hourPicks=picks.filter(s=>m.svc[s.key].mode==='hours');
-  const acts=itemPicks.reduce((n,s)=>n+(m.svc[s.key].allowance||0),0);
-  const hrsMonth=hourPicks.reduce((n,s)=>n+(m.svc[s.key].parts||[]).filter(p=>p.period!=='quarter').reduce((a,p)=>a+(Number(p.hours)||0),0),0);
+  // Every part of every picked service (TH-11): items parts with their number, hours parts with their hours.
+  const sParts=s=>{const v=m.svc[s.key];return v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,s.unit)];};
+  const itemRows=picks.flatMap(s=>sParts(s).filter(p=>_rsKind(p)==='items').map(p=>({s,p}))),hourRows=picks.flatMap(s=>sParts(s).filter(p=>_rsKind(p)==='hours').map(p=>({s,p})));
+  const acts=itemRows.filter(x=>_rsPeriodOf(x.p)==='month').reduce((n,x)=>n+(Number(x.p.amount)||0),0);
+  const hrsMonth=hourRows.filter(x=>_rsPeriodOf(x.p)==='month').reduce((n,x)=>n+(Number(x.p.hours)||0),0);
+  const perWords=p=>_rsPeriodOf(p)==='quarter'?', a quarter':_rsPeriodOf(p)==='year'?', a year':'';
   const issues=_rsSetupIssues(m),lead=m.leadId?getStaff(m.leadId):null;
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
   const tier=_rsTier(m.priority),bTier=b?RETAINER_LEVELS.find(x=>x.bundle===b.key):null;
@@ -8454,11 +8575,9 @@ function _rsSetupRender(){
         <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</small></span>${badge(st,s)}</label>
       ${v.on?`<div class="rs-card-cfg">
         <div class="rs-cfg-row">
-          ${v.mode==='hours'?'':`<label class="rs-cfg"><span>Monthly allowance</span><span class="rs-num"><input type="number" min="1" max="999" value="${v.allowance}" data-f="al-${s.key}" onchange="_rsSet('allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(s.name)}"><em>${escHtml(s.unit)}</em></span></label>`}
           <label class="rs-cfg"><span>Owner</span><select class="form-input" data-f="ow-${s.key}" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
         </div>
-        ${_rsTrackSwitch(v.mode||'items',k=>`_rsSet('mode','${s.key}','${k}')`,s.key)}
-        ${v.mode==='hours'?`<div class="rs-cfg"><span>Hours</span>${_rsPartsEditor(v.parts||[],(f,i)=>`_rsSet('${f}','${s.key}',this.value,${i==null?0:i})`,s.key)}</div>`:''}
+        <div class="rs-cfg"><span>Allowance</span>${_rsPartsEditor(v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,s.unit)],(f,i)=>`_rsSet('${f}','${s.key}',this.value,${i==null?0:i})`,s.key)}</div>
         <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox" data-f="mt-${s.key}-${i}"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
       </div>`:''}
     </div>`;};
@@ -8477,7 +8596,7 @@ function _rsSetupRender(){
       <div><dt>Support tier</dt><dd>${escHtml(tier)}</dd></div>
       <div><dt>Core services</dt><dd>${core.length?`<ul class="rcf-list">${core.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
       <div><dt>Add-on services</dt><dd>${adds.length?`<ul class="rcf-list">${adds.map(s=>li(1,s.name)).join('')}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
-      <div><dt>Monthly activities</dt><dd>${picks.length?`<ul class="rcf-list rcf-acts">${itemPicks.map(s=>`<li><span>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}</span><b>${m.svc[s.key].allowance}</b></li>`).join('')}${itemPicks.length?`<li class="rcf-total"><span>Total items</span><b id="rs-su-acts">${acts}</b></li>`:''}${hourPicks.map(s=>(m.svc[s.key].parts||[]).map(p=>`<li><span>${escHtml(s.short||_rsCat(s.key).short)}: ${escHtml(p.label||'Hours')}${p.period==='quarter'?', a quarter':''}</span><b>${_rsHrs(p.hours)} h</b></li>`).join('')).join('')}${hourPicks.length?`<li class="rcf-total"><span>Hours a month</span><b id="rs-su-hours">${_rsHrs(hrsMonth)}</b></li>`:''}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
+      <div><dt>Monthly activities</dt><dd>${picks.length?`<ul class="rcf-list rcf-acts">${itemRows.map(({s,p})=>{const n=p.label||p.unit||s.unit;return`<li><span>${escHtml(n.charAt(0).toUpperCase()+n.slice(1))}${perWords(p)}</span><b>${Number(p.amount)||0}</b></li>`;}).join('')}${itemRows.length?`<li class="rcf-total"><span>Total items</span><b id="rs-su-acts">${acts}</b></li>`:''}${hourRows.map(({s,p})=>`<li><span>${escHtml(s.short||_rsCat(s.key).short)}: ${escHtml(p.label||'Hours')}${perWords(p)}</span><b>${_rsHrs(p.hours)} h</b></li>`).join('')}${hourRows.length?`<li class="rcf-total"><span>Hours a month</span><b id="rs-su-hours">${_rsHrs(hrsMonth)}</b></li>`:''}</ul>`:'<span class="rcf-none">None</span>'}</dd></div>
       <div><dt>Monthly tasks</dt><dd id="rs-su-tasks">${nTasks}</dd></div>
       <div><dt>Coverage</dt><dd><ul class="rcf-list" id="rs-su-cover">${RETAINER_COVERAGE.map(([k,t])=>li(m.svc[k]&&m.svc[k].on,t)).join('')}</ul></dd></div>
       <div><dt>Retainer lead</dt><dd>${lead?escHtml(lead.name):'<span class="rcf-none">Not chosen</span>'}</dd></div>
@@ -8530,7 +8649,7 @@ function retainerCreate(){
   picks.forEach((s,i)=>{
     const v=m.svc[s.key],gid=uid();
     DB.groups.push({id:gid,clientId:c.id,workboardId:boardId,boardId,name:s.name,order:i,color:s.color,createdAt:now});
-    board.retainer.services.push(Object.assign({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null},v.mode==='hours'?{mode:'hours',parts:JSON.parse(JSON.stringify(v.parts||_rsDefaultParts(s.key,v.allowance)))}:{}));
+    board.retainer.services.push(Object.assign({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null},v.mode==='hours'||v.mode==='mixed'?{mode:v.mode,parts:JSON.parse(JSON.stringify(v.parts||_rsDefaultParts(s.key,v.allowance)))}:{}));
     s.monthly.forEach((name,j)=>{
       if(!v.mt[j])return;
       const r={freq:'monthly',interval:1,onDay:1,onWeekdayOrdinal:null,onWeekday:null,leadDays:0,weekendAction:'keep',endType:'never',endDate:null,occurrences:null,occurrenceCount:0,
@@ -8564,10 +8683,8 @@ function openRetainerPlan(boardId){
   const svcRows=(r.services||[]).map(s=>{
     const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},own=s.ownerId?getStaff(s.ownerId):null;
     return`<tr><td><span class="rs-pl-n"><i style="background:${cat.color}"></i>${escHtml(cat.name)}</span></td>
-      <td>${admin?_rsTrackSwitch(s.mode==='hours'?'hours':'items',k=>`_rsPlanSet('${b.id}','mode','${s.key}','${k}')`,'pl-'+s.key):''}${s.mode==='hours'
-        ?(admin?_rsPartsEditor(_rsPartsOf(s),(f,i)=>`_rsPlanPart('${b.id}','${s.key}','${f}',${i==null?0:i},this.value)`,'pl-'+s.key):_rsPartsOf(s).map(p=>`<div>${escHtml(p.label)}: ${_rsHrs(p.hours)} h ${p.period==='quarter'?'a quarter':'a month'}</div>`).join(''))
-        :(admin?`<input type="number" min="1" max="999" value="${s.allowance}" data-rs-allow="${s.key}" onchange="_rsPlanSet('${b.id}','allowance','${s.key}',this.value)" aria-label="Monthly allowance for ${escHtml(cat.name)}">`:s.allowance)}</td>
-      <td>${_rsUsage(b,s,ym).parts.map(u=>`<div class="${_rsPartFull(u)?'rs-full':''}">${u.unit==='hours'?`<b>${_rsHrs(u.used)}</b> of ${_rsHrs(u.cap)}<small>hours${u.label?', '+escHtml(u.label):''}${u.period==='quarter'?', this quarter':''}</small>`:`<b>${u.used}</b> of ${u.cap}<small>${escHtml(u.unit)}${u.prog?`, ${u.prog} in progress`:''}</small>`}</div>`).join('')}</td>
+      <td>${admin?_rsPartsEditor(_rsPartsOf(s),(f,i)=>`_rsPlanPart('${b.id}','${s.key}','${f}',${i==null?0:i},this.value)`,'pl-'+s.key):_rsPartsOf(s).map(p=>`<div>${escHtml(_rsPartPlanText(p))}</div>`).join('')}</td>
+      <td>${_rsUsage(b,s,ym).parts.map(u=>`<div class="${_rsPartFull(u)?'rs-full':''}">${_rsUsedCell(u)}</div>`).join('')}</td>
       <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td>${admin?`<td><button class="btn btn-ghost btn-sm" data-rs-remove="${s.key}" onclick="_rsPlanRemove('${b.id}','${s.key}')" aria-label="Remove ${escHtml(cat.name)} from the plan">Remove</button></td>`:''}</tr>`;
   }).join('');
   const body=`<div class="rs-pl">
@@ -8582,7 +8699,7 @@ function openRetainerPlan(boardId){
     <h4 class="rs-pl-h">Services and allowances</h4>
     <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
     ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
-    <p class="rs-pl-hint">${admin?'Changes apply from this month; earlier months keep the plan they had, and each month closes on the 10th of the next with its figures kept. Removing a service keeps its group and jobs and stops its meter. ':''}Usage counts finished subitems on work the client can see, and resets on the 1st.</p>
+    <p class="rs-pl-hint">${admin?'Changes apply from this month; earlier months keep the plan they had, and each month closes on the 10th of the next with its figures kept. Removing a service keeps its group and jobs and stops its meter. ':''}Each part counts in items or hours. Items are finished work the client can see: a task's subitems, or a task tagged Audit once, when it is completed. Monthly parts reset on the 1st; quarterly and yearly parts run from the Starts month and reset at the start of each period. Nothing carries over.</p>
     <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
     ${focus.length?`<ul class="rs-pl-f">${focus.map(t=>`<li><span>${escHtml(t.name||t.title||'')}</span><b>${getEffectiveTaskPct(t.id)}%</b><button class="btn btn-ghost btn-sm" onclick="_rsPlanSet('${b.id}','focusRm','${t.id}')" aria-label="Remove from the focus">Remove</button></li>`).join('')}</ul>`:'<p class="rs-pl-hint">No focus set, so the block stays hidden in the portal.</p>'}
     ${focus.length<3&&cand.length?`<select class="form-input rs-pl-add" onchange="if(this.value)_rsPlanSet('${b.id}','focusAdd',this.value)"><option value="">+ Pin a task to the focus</option>${cand.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}</select>`:''}
@@ -8594,7 +8711,7 @@ function openRetainerPlan(boardId){
     <p class="rs-pl-p">Hours logged on this board are covered by the retainer. They stay in timesheets and payroll, and never appear on the hourly pro forma.</p>
     ${admin?`<div class="rs-pl-row"><span class="rs-pl-hint">Ending moves the board to Archive & Bin and takes the Retained Services tab out of the portal. Jobs and history stay.</span><button class="btn btn-danger btn-sm" id="rs-pl-end" onclick="retainerEnd('${b.id}')">End retainer</button></div>`:''}
   </div>`;
-  openGenericModal('Retainer plan',body,(b.retainer.services||[]).some(s=>s.mode==='hours')?'980px':'760px');
+  openGenericModal('Retainer plan',body,admin?'980px':'760px');
 }
 function retainerEnd(boardId){
   if(currentUser?.role!=='admin')return;
@@ -8626,9 +8743,14 @@ function _rsPlanSet(boardId,field,key,val){
     const s=key?(r.services||[]).find(x=>x.key===key):null;
     if((field==='allowance'||field==='mode')&&s)_rsKeepPlan(r,s);
     if(field==='senior')_rsKeepPlan(r,null);
-    if(field==='allowance'&&s)s.allowance=Math.max(1,Math.min(999,parseInt(val)||1));
+    // 'allowance' and 'mode' are from before every service had parts (TH-11): the allowance is the first Items part's
+    // amount, and 'mode' turns the whole service into Hours parts or back into one Items part.
+    if(field==='allowance'&&s){const n=Math.max(1,Math.min(999,parseInt(val)||1));if(s.mode==='mixed'){const it=(s.parts||[]).find(p=>_rsKind(p)==='items');if(it)it.amount=n;}s.allowance=n;}
     else if(field==='owner'&&s)s.ownerId=val||null;
-    else if(field==='mode'&&s){if(val==='hours'){s.mode='hours';if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);}else if(val==='items')delete s.mode;}
+    else if(field==='mode'&&s){
+      if(val==='hours'&&s.mode!=='hours'){s.mode='hours';if(!(s.parts&&s.parts.length&&s.parts.every(p=>_rsKind(p)==='hours')))s.parts=_rsDefaultParts(s.key,s.allowance);}
+      else if(val==='items'){if(s.mode==='mixed')s.parts=s.parts.filter(p=>_rsKind(p)==='hours');delete s.mode;}
+    }
     else if(field==='senior'){const ids=new Set(r.seniorIds||[]);if(val)ids.add(key);else ids.delete(key);r.seniorIds=[...ids];}
     else if(field==='lead')r.leadId=val||null;
     else if(field==='priority'&&_rsLevel(val))r.priority=val;
@@ -8860,7 +8982,7 @@ function renderRetainedDash(){
   usage.filter(u=>u.allowance&&u.ratio>=0.8).sort((a,b)=>b.ratio-a.ratio).forEach(u=>{
     const over=u.used>u.allowance,at=u.used===u.allowance;
     att.push({tone:over||at?'bad':'warn',id:'rd-att-'+u.board.id+'-'+u.s.key+(u.pi!=null?'-'+u.pi:''),clientId:u.board.clientId,
-      short:`${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'?(u.u.period==='quarter'?'':' in '+month):' in '+month}${over?', over the allowance':at?', the allowance is used up':''}`});
+      short:`${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.period==='month'?' in '+month:''}${over?', over the allowance':at?', the allowance is used up':''}`});
   });
   if(typeof _regAttention==='function')_regAttention(boards).forEach(a=>att.push(a));
   const attBy=new Map();att.filter(a=>a.clientId).forEach(a=>{if(!attBy.has(a.clientId))attBy.set(a.clientId,[]);attBy.get(a.clientId).push(a);});
@@ -8917,7 +9039,7 @@ function renderRetainedDash(){
   const cRow=b=>{
     const r=b.retainer,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys),lv=_rsLevel(r.priority)||_rsLevel('Standard'),lead=r.leadId?getStaff(r.leadId):null;
     const meters=usage.filter(u=>u.board.id===b.id).map(u=>{const cls=u.used>=u.allowance?' full':u.ratio>=0.8?' near':'';
-      return`<span class="rd-m${cls}" title="${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.unit==='hours'&&u.u.period==='quarter'?'':' in '+month}"><span>${escHtml(u.cat.short)}${u.u.unit==='hours'&&u.u.label?' '+escHtml(u.u.label):''}</span>${_rsSq(u.u)||'<i class="rd-m-none"></i>'}<b>${u.u.unit==='hours'?_rsHrs(u.used)+'/'+_rsHrs(u.allowance)+'h':u.used+'/'+u.allowance}</b></span>`;}).join('');
+      return`<span class="rd-m${cls}${u.u.due?' due':''}" title="${escHtml(u.cat.name)}: ${escHtml(_rsUseText(u.u))}${u.u.period==='month'?' in '+month:''}${u.u.due?'. '+_rsDueText(u.u):''}"><span>${escHtml(u.cat.short)}${u.u.label?' '+escHtml(u.u.label):''}</span>${_rsSq(u.u)||'<i class="rd-m-none"></i>'}<b>${u.u.unit==='hours'?_rsHrs(u.used)+'/'+_rsHrs(u.allowance)+'h':u.used+'/'+u.allowance}</b>${u.u.due?`<b class="rs-due">${_rsDueText(u.u)}</b>`:''}</span>`;}).join('');
     const reg=regCol?_regClientSummary(b.clientId):'';
     return`<tr data-rd-client="${b.clientId}">
       <td class="rd-c-name"><button type="button" class="rq-w rd-cl-open" data-rd-open="${b.clientId}" onclick="openRetainedClient('${b.clientId}')"><span class="rd-cl-id">${_rcLogoHtml((DB.clients||[]).find(x=>x.id===b.clientId),26)}<b>${escHtml(cName(b.clientId))}</b></span><small>${escHtml([(b.retainer.bundle||bn)?(b.retainer.bundle||bn)+' bundle':_retainerBundle(keys),lead?'Lead '+lead.name:''].filter(Boolean).join('. '))}</small></button></td>
@@ -8978,7 +9100,7 @@ function _mrData(b,ym){
   const lead=r.leadId?getStaff(r.leadId):null,keys=(r.services||[]).map(s=>s.key),bn=_rsBundleName(keys);
   return{client:c.name||'Client',month:ym,monthLabel:_rsMonthYear(ym),level:r.priority?_rsTier(r.priority):'',levelLine:_rsLevelLine(r.priority),
     bundle:(bn?bn+' bundle, ':'')+_retainerBundle(keys),lead:lead?lead.name:'',
-    services:(r.services||[]).flatMap(s=>{const nm=(_rsCat(s.key)||{name:s.key}).name,us=_rsUsage(b,s,ym);return us.parts.map(u=>({name:nm+(u.unit==='hours'&&u.label&&us.parts.length>1?', '+u.label:''),unit:u.unit==='hours'?(u.period==='quarter'?'hours this quarter':'hours'):u.unit,allowance:u.cap,used:u.unit==='hours'?_rsHrs(u.used):u.used}));}),
+    services:(r.services||[]).flatMap(s=>{const nm=(_rsCat(s.key)||{name:s.key}).name,us=_rsUsage(b,s,ym);return us.parts.map(u=>({name:nm+(u.label&&us.parts.length>1?', '+u.label:''),unit:_rsNoun(u)+(_rsPeriodWords(u)?' '+_rsPeriodWords(u):''),allowance:u.cap,used:u.unit==='hours'?_rsHrs(u.used):u.used,due:_rsDueText(u)}));}),
     delivered,requests,overdue,focus,note:(months[ym]||{}).note||'',prepared:toDateStr(new Date()),regs:_mrRegs(b,ym)};
 }
 // What the registers say for the report: reviews and renewals finished that month, and where things stand today.
@@ -8995,7 +9117,7 @@ function _mrRegs(b,ym){
   return{docs:docs.length,reviewed,over,d30,people:people.length,renewed,exp,t30};
 }
 function _mrSummaryHtml(d){
-  const svc=d.services.map(s=>`<li><span>${escHtml(s.name)}</span><b>${s.used} of ${s.allowance}</b><small>${escHtml(s.unit)}</small></li>`).join('');
+  const svc=d.services.map(s=>`<li><span>${escHtml(s.name)}</span><b>${s.used} of ${s.allowance}</b><small>${escHtml(s.unit)}</small>${s.due?`<small class="rs-due">${escHtml(s.due)}</small>`:''}</li>`).join('');
   return`<p class="mr-fig"><b>${d.delivered.length}</b> delivered, <b>${d.requests.length}</b> request${d.requests.length===1?'':'s'} received, <b>${d.overdue}</b> overdue at month end.</p>
     <ul class="mr-svc">${svc}</ul>
     <p class="rs-pl-hint">${d.note?'Includes the note from '+escHtml(d.lead||'the retainer lead')+'.':'No note for this month. The plan takes one for last month.'}${d.focus.length?` Focus: ${d.focus.length} task${d.focus.length===1?'':'s'}.`:''}</p>`;
@@ -9073,7 +9195,7 @@ function _mrPdf(d,logo){
   // Services, with a gauge drawn in the last column.
   y=head('Services and allowances',y);
   doc.autoTable({...theme,startY:y,head:[['Service','Allowance','Used','']],
-    body:d.services.map(s=>[s.name,`${s.allowance} ${s.unit}`,`${s.used}`,'']),
+    body:d.services.map(s=>[s.name,`${s.allowance} ${s.unit}${s.due?'. '+s.due:''}`,`${s.used}`,'']),
     columnStyles:{0:{cellWidth:62},1:{cellWidth:58},2:{cellWidth:18,halign:'right',fontStyle:'bold'},3:{cellWidth:'auto'}},
     didDrawCell:h=>{if(h.section!=='body'||h.column.index!==3)return;const s=d.services[h.row.index];if(!s)return;
       const x=h.cell.x+3,w=h.cell.width-6,yy=h.cell.y+h.cell.height/2-1.1,p=s.allowance?Math.min(1,s.used/s.allowance):0;
@@ -9788,16 +9910,24 @@ function _rcQueueRow(r){
 // Hours logged this month on the retained services, newest first, with who logged them and what they count to.
 function _rcHoursHtml(b,ym){
   const rows=[];
-  (b.retainer.services||[]).forEach(s0=>{const s=_rsSvcAt(s0,ym),cat=_rsCat(s.key)||{name:s.key,short:s.key},parts=_rsPartsOf(s);
-    _rsHourRows(b,s,parts||[],ym).forEach(x=>{if(String(x.e.date||'').slice(0,7)===ym)rows.push({x,cat,part:parts?x.part:null,hrs:!!parts});});});
+  (b.retainer.services||[]).forEach(s0=>{const s=_rsSvcAt(s0,ym),cat=_rsCat(s.key)||{name:s.key,short:s.key},parts=_rsPartsOf(s),hrs=parts.some(p=>_rsKind(p)==='hours');
+    _rsHourRows(b,s,parts,ym).forEach(x=>{if(String(x.e.date||'').slice(0,7)===ym)rows.push({x,cat,part:hrs&&x.part&&_rsKind(x.part)==='hours'?x.part:null,item:hrs&&x.part&&_rsKind(x.part)==='items'?x.part:null,hrs});});});
   rows.sort((a,z)=>String(z.x.e.date).localeCompare(String(a.x.e.date))||String(z.x.e.createdAt||'').localeCompare(String(a.x.e.createdAt||'')));
   const total=rows.reduce((n,r)=>n+r.x.hours,0),st={draft:'Draft',submitted:'Submitted',approved:'Approved'};
-  const body=rows.length?rows.map(({x,cat,part,hrs})=>{const who=getStaff(x.e.staffId);
-    return`<tr data-rc-hour="${escHtml(x.e.id)}"><td class="reg-num">${_regDate(String(x.e.date).slice(0,10))}</td><td>${escHtml(who?who.name:'Unknown')}</td><td>${escHtml(x.t.name||x.t.title||'Task')}</td><td>${escHtml(cat.short||cat.name)}${part?`<small>${escHtml(part.label||'')}</small>`:hrs?'<small class="rc-nc">Not counted: no part takes it</small>':'<small>Tracked by items, so hours fill no squares</small>'}</td><td class="reg-num"><b>${_rsHrs(x.hours)}</b><small>${st[x.e.status]||''}</small></td></tr>`;}).join('')
+  const body=rows.length?rows.map(({x,cat,part,item,hrs})=>{const who=getStaff(x.e.staffId);
+    return`<tr data-rc-hour="${escHtml(x.e.id)}"><td class="reg-num">${_regDate(String(x.e.date).slice(0,10))}</td><td>${escHtml(who?who.name:'Unknown')}</td><td>${escHtml(x.t.name||x.t.title||'Task')}</td><td>${escHtml(cat.short||cat.name)}${part?`<small>${escHtml(part.label||'')}</small>`:item?`<small>${escHtml(item.label||'Items')}: counted as an item, not by its hours</small>`:hrs?'<small class="rc-nc">Not counted: no part takes it</small>':'<small>Tracked by items, so hours fill no squares</small>'}</td><td class="reg-num"><b>${_rsHrs(x.hours)}</b><small>${st[x.e.status]||''}</small></td></tr>`;}).join('')
     :`<tr class="rq-none"><td colspan="5">No hours logged on these services in ${_rsMonthName(ym)} yet.</td></tr>`;
   return`<section class="rd-sheet rc-hours" aria-labelledby="rc-hours-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-hours-h">Hours logged in ${_rsMonthName(ym)} <span class="rd-n">${_rsHrs(total)} h</span></h3></div>
     <div class="rq-wrap"><table class="rq-t rc-hours-t" id="rc-hours"><thead><tr><th>Date</th><th>Logged by</th><th>Task</th><th>Counts to</th><th>Hours</th></tr></thead><tbody>${body}</tbody></table></div>
-    <p class="rd-hint">Staff only. Hours logged on a service's tasks fill its hour squares; the client sees the totals, never who logged them.${(b.retainer.services||[]).some(s=>(_rsPartsOf(_rsSvcAt(s,ym))||[]).some(p=>p.period==='quarter'))?` Quarterly parts count the whole quarter (${escHtml(_rsQuarterName(ym,b.retainer.startMonth))}); this list is ${_rsMonthName(ym)} only.`:''}</p></section>`;
+    <p class="rd-hint">Staff only. Hours logged on a service's tasks fill its hour squares; the client sees the totals, never who logged them.${_rcHoursPeriodHint(b,ym)}</p></section>`;
+}
+// Under the hours log: quarterly and yearly hour parts count their whole period, while the list is this month only.
+function _rcHoursPeriodHint(b,ym){
+  const hp=(b.retainer.services||[]).flatMap(s=>_rsPartsOf(_rsSvcAt(s,ym)).filter(p=>_rsKind(p)==='hours'));
+  const q=hp.some(p=>_rsPeriodOf(p)==='quarter'),y=hp.some(p=>_rsPeriodOf(p)==='year'),st=b.retainer.startMonth;
+  if(!q&&!y)return'';
+  const bits=[q?`Quarterly parts count the whole quarter (${escHtml(_rsQuarterName(ym,st))})`:'',y?`${q?'yearly':'Yearly'} parts the whole year (${escHtml(_rsPeriodName(ym,'year',st))})`:''].filter(Boolean);
+  return` ${bits.join(', and ')}; this list is ${_rsMonthName(ym)} only.`;
 }
 function _rcOverviewHtml(c,b,docs,people){
   const today=_regToday(),ym=_rsYm(),month=_rsMonthName(ym);
@@ -9805,7 +9935,7 @@ function _rcOverviewHtml(c,b,docs,people){
   if(b){
     const svc=(b.retainer.services||[]).map(s=>{
       const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},us=_rsUsage(b,s,ym),own=s.ownerId?getStaff(s.ownerId):null;
-      return us.parts.map((u,i)=>`<li class="${_rsPartFull(u)?'full':_rsPartNear(u)?'near':''}" data-rc-svc="${s.key}"${us.parts.length>1?` data-rc-part="${i}"`:''}><div class="rc-svc-n"><b>${escHtml(cat.name)}</b>${u.unit==='hours'&&u.label?`<small>${escHtml(u.label)}${u.period==='quarter'?', '+_rsQuarterName(ym,b.retainer.startMonth):''}</small>`:own?`<small>${escHtml(own.name)}</small>`:''}</div>${_rsSq(u,'lg')}<span class="rc-svc-u">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours`:`<b>${u.used} of ${u.cap}</b> ${escHtml(u.unit)}${u.prog?`, ${u.prog} in progress`:''}`}</span></li>`).join('');
+      return us.parts.map((u,i)=>`<li class="${_rsPartFull(u)?'full':_rsPartNear(u)?'near':''}" data-rc-svc="${s.key}"${us.parts.length>1?` data-rc-part="${i}"`:''}><div class="rc-svc-n"><b>${escHtml(cat.name)}</b>${u.label||u.period!=='month'?`<small>${escHtml([u.label,u.period!=='month'?_rsPeriodName(ym,u.period,b.retainer.startMonth):''].filter(Boolean).join(', '))}</small>`:own?`<small>${escHtml(own.name)}</small>`:''}</div>${_rsSq(u,'lg')}<span class="rc-svc-u">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours`:`<b>${u.used} of ${u.cap}</b> ${escHtml(_rsNoun(u))}${u.prog?`, ${u.prog} in progress`:''}`}${u.due?` <b class="rs-due">${_rsDueText(u)}</b>`:''}</span></li>`).join('');
     }).join('');
     const top=(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t));
     const delivered=top.filter(t=>_rsDone(t)&&_rsDoneYm(t)===ym).length;
@@ -10017,11 +10147,18 @@ function _rsClientRetainer(b){
   if(_portalServerMode())return b.retainer;
   const r=b.retainer,ym=_rsYm(),prev=_rsPrevYm(ym),months=r.months||{};
   const nm=id=>{const u=id?getStaff(id):null;return u&&u.active!==false?u.name:null;};   // someone who has left is not on "Your team"
-  const part=u=>({label:u.label,cap:u.cap,used:u.used,prog:u.prog,period:u.period,unit:u.unit});
+  const part=u=>({label:u.label,cap:u.cap,used:u.used,prog:u.prog,period:u.period,unit:u.unit,due:u.due||null});
   return{services:(r.services||[]).map(s=>{const us=_rsUsage(b,s,ym);return{key:s.key,groupId:s.groupId,unit:s.unit,allowance:s.allowance,core:!!s.core,ownerName:nm(s.ownerId),used:us.parts[0].used,mode:us.mode,prog:us.mode==='items'?us.parts[0].prog:0,parts:us.parts.map(part)};}),
     leadName:nm(r.leadId),startMonth:r.startMonth||null,priority:r.priority||null,month:ym,
     focusTaskIds:((months[ym]||{}).focusTaskIds||[]).slice(0,3),reviewMonth:prev,reviewNote:(months[prev]||{}).note||null,
-    history:[prev,_rsPrevYm(prev)].map(m=>({month:m,services:(r.services||[]).map(s=>{const us=_rsUsage(b,s,m),q=us.parts.filter(u=>u.period==='quarter');return{key:s.key,used:us.mode==='hours'?_rsHrs(us.parts.filter(u=>u.period!=='quarter').reduce((n,u)=>n+u.used,0)):us.parts[0].used,unit:us.mode==='hours'?'hours':null,qtr:us.mode==='hours'&&q.length?_rsHrs(q.reduce((n,u)=>n+u.used,0)):null};})}))};
+    history:[prev,_rsPrevYm(prev)].map(m=>({month:m,services:(r.services||[]).map(s=>{const us=_rsUsage(b,s,m),q=us.parts.filter(u=>u.period==='quarter');return{key:s.key,used:us.mode==='hours'?_rsHrs(us.parts.filter(u=>u.period==='month').reduce((n,u)=>n+u.used,0)):us.parts[0].used,unit:us.mode==='hours'?'hours':null,qtr:us.mode==='hours'&&q.length?_rsHrs(q.reduce((n,u)=>n+u.used,0)):null,mode:us.mode,parts:us.parts.map(u=>({label:u.label,cap:u.cap,used:u.used,period:u.period,unit:u.unit}))};})}))};
+}
+// One service in one earlier month of the portal history. A plain items or hours service reads as before; one with
+// mixed, several or quarterly/yearly items parts (TH-11) lists its parts.
+function _cpRtHistCell(x,s){
+  const ps=x&&x.parts,plain=!ps||(x.mode==='items'&&ps.length===1&&ps[0].period==='month')||(x.mode==='hours'&&ps.every(p=>p.period!=='year'));
+  if(plain)return`${x?x.used:0} ${escHtml(x&&x.unit?x.unit:s.unit)}${x&&x.qtr!=null?`<small class="cp-rt-q">${escHtml(String(x.qtr))} h on the quarter</small>`:''}`;
+  return ps.map(p=>`<small class="cp-rt-q">${escHtml((p.label?p.label+': ':'')+(p.unit==='hours'?_rsHrs(p.used):p.used)+' '+_rsNoun(p)+(p.period!=='month'?' on the '+p.period:''))}</small>`).join('');
 }
 // What a request asked for, in words, on both sides.
 function _wrServiceLabel(r){
@@ -10074,6 +10211,13 @@ function _cpServiceHint(clientId,ref){
   const rb=_cpClientBoards(clientId).find(b=>_isRetainedBoard(b));
   const s=rb&&((_rsClientRetainer(rb)||{}).services||[]).find(x=>'g:'+x.groupId===ref);
   if(!s)return'';
+  if(s.mode==='mixed'||(s.parts||[]).some(u=>u.period==='year')||(s.mode==='items'&&((s.parts||[]).length>1||(s.parts||[]).some(u=>u.period!=='month')))){
+    // TH-11: items and hours, a month, a quarter or a year: what is left in each.
+    const g=new Map();(s.parts||[]).forEach(u=>{const k=(u.unit==='hours'?'hours':u.unit)+'|'+u.period,x=g.get(k)||{unit:u.unit==='hours'?'hours':u.unit,period:u.period,cap:0,used:0};x.cap+=Number(u.cap)||0;x.used+=Number(u.used)||0;g.set(k,x);});
+    const gs=[...g.values()],left=x=>Math.max(0,Math.round((x.cap-x.used)*100)/100);
+    if(gs.some(x=>left(x)>0))return`Covered by your retainer: ${gs.filter(x=>left(x)>0).map(x=>`${_rsHrs(left(x))} of ${_rsHrs(x.cap)} ${_rsNoun({unit:x.unit,cap:x.cap})} left this ${x.period}`).join(', and ')}.`;
+    return'This allowance is used up, so we will quote before starting.';
+  }
   if(s.mode==='hours'&&(s.parts||[]).length){
     // Monthly and quarterly parts each say what is left in their own period.
     const sum=(ps,k)=>ps.reduce((n,u)=>n+(Number(u[k])||0),0),left=ps=>Math.max(0,Math.round((sum(ps,'cap')-sum(ps,'used'))*100)/100);
@@ -10102,7 +10246,7 @@ function renderCpRetained(clientId,tasks,b){
   const thisM=t=>!_RS_DONE.has(t.status)||_rsDoneYm(t)===rt.month||kids(t.id).some(x=>!_RS_DONE.has(x.status)||_rsDoneYm(x)===rt.month);
   const svc=s=>{const c=cat(s.key),all=top.filter(t=>t.groupId===s.groupId),list=all.filter(thisM),older=all.length-list.length;
     const parts=(s.parts&&s.parts.length)?s.parts:[{label:'',cap:s.allowance,used:s.used,prog:s.prog||0,period:'month',unit:s.unit}];
-    const meter=parts.map(u=>`${u.unit==='hours'&&u.label?`<div class="cp-rt-part">${escHtml(u.label)}${u.period==='quarter'?', this quarter':''}</div>`:''}${_rsSq(u,'cp-rt-cells')}<div class="cp-rt-used">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours used`:`<b>${u.used} of ${u.cap}</b> ${escHtml(u.unit)} used${u.prog?`, ${u.prog} in progress`:''}`}${u.used>u.cap?'. Extra work is quoted first':''}</div>`).join('');
+    const meter=parts.map(u=>`${(u.unit==='hours'&&u.label)||(u.unit!=='hours'&&u.label&&parts.length>1)||u.period!=='month'?`<div class="cp-rt-part">${escHtml([u.label,_rsPeriodWords(u)].filter(Boolean).join(', '))}</div>`:''}${_rsSq(u,'cp-rt-cells')}<div class="cp-rt-used">${u.unit==='hours'?`<b>${_rsHrs(u.used)} of ${_rsHrs(u.cap)}</b> hours used`:`<b>${u.used} of ${u.cap}</b> ${escHtml(_rsNoun(u))} used${u.prog?`, ${u.prog} in progress`:''}`}${u.used>u.cap?'. Extra work is quoted first':''}</div>${u.due?`<div class="cp-rt-used rs-due">${_rsDueText(u)}</div>`:''}`).join('');
     return`<div class="cp-rt-svc" style="--rt-c:${c.color}"><div class="cp-rt-side"><b>${escHtml(c.name)}</b><small>${c.kind==='core'?'Core service':'Add-on'}</small>${meter}</div>
       <div class="cp-rt-jobs">${list.length?list.map(row).join(''):'<div class="cp-rt-none">Nothing this month.</div>'}${older?`<div class="cp-rt-none cp-rt-older">${older} finished before ${_rsMonthName(rt.month)}</div>`:''}</div></div>`;};
   const focus=(rt.focusTaskIds||[]).map(id=>top.find(t=>t.id===id)).filter(Boolean);
@@ -10122,7 +10266,7 @@ function renderCpRetained(clientId,tasks,b){
     </div>
     <div class="cp-section-title" style="margin:22px 0 10px">Services this month</div>
     <div class="cp-stat-card cp-rt-ledger">${(rt.services||[]).map(svc).join('')}</div>
-    ${hist.length&&(rt.services||[]).length?`<div class="cp-stat-card cp-rt-hist"><b>Earlier months</b><table><thead><tr><th>Service</th>${hist.map(h=>`<th>${_rsMonthName(h.month)}</th>`).join('')}</tr></thead><tbody>${rt.services.map(s=>`<tr><td>${escHtml(cat(s.key).name)}</td>${hist.map(h=>{const x=(h.services||[]).find(y=>y.key===s.key);return`<td>${x?x.used:0} ${escHtml(x&&x.unit?x.unit:s.unit)}${x&&x.qtr!=null?`<small class="cp-rt-q">${escHtml(String(x.qtr))} h on the quarter</small>`:''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
+    ${hist.length&&(rt.services||[]).length?`<div class="cp-stat-card cp-rt-hist"><b>Earlier months</b><table><thead><tr><th>Service</th>${hist.map(h=>`<th>${_rsMonthName(h.month)}</th>`).join('')}</tr></thead><tbody>${rt.services.map(s=>`<tr><td>${escHtml(cat(s.key).name)}</td>${hist.map(h=>{const x=(h.services||[]).find(y=>y.key===s.key);return`<td>${_cpRtHistCell(x,s)}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
     ${preStart?'':`<div class="cp-stat-card cp-rt-review"><b>${_rsMonthName(rt.reviewMonth)} in review</b><div class="cp-rt-nums"><span><b>${delivered}</b> delivered</span><span><b>${reqs}</b> requests sent</span><span><b>${overdue}</b> overdue now</span></div>${rt.reviewNote?`<p>${escHtml(rt.reviewNote)}${rt.leadName?`<span>${escHtml(rt.leadName)}, retainer lead</span>`:''}</p>`:''}</div>`}
     <div class="cp-rt-req" id="cp-rt-req">${_cpReqFormHtml(clientId,'retained')}</div>
   </div>`;
@@ -16566,10 +16710,12 @@ function pfiAddFeeLine(invId){
 function _rsPlanPart(boardId,key,field,i,val){
   if(currentUser?.role!=='admin')return;
   const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
-  const s=(b.retainer.services||[]).find(x=>x.key===key);if(!s||s.mode!=='hours')return;
+  const s=(b.retainer.services||[]).find(x=>x.key===key);if(!s)return;
+  // Every service has parts now (TH-11). The plan as it was stays for the months before this one.
   _rsKeepPlan(b.retainer,s);
-  if(!(s.parts&&s.parts.length))s.parts=_rsDefaultParts(s.key,s.allowance);
-  if(!_rsPartChange(s.parts,field,i,val))return;
+  const parts=JSON.parse(JSON.stringify(_rsOwnParts(s)));
+  if(!_rsPartChange(parts,field,i,val))return;
+  s.parts=parts;_rsSetShape(s);
   b.updatedAt=new Date().toISOString();saveDB(DB);_rsPlanReopen(boardId,true);
   if(currentView==='workspace')renderView('workspace');
 }
@@ -21044,7 +21190,8 @@ function clearAllNotifs(){
 // Checkbox list of everyone except the lead owner, for the "Additional Assignees" box.
 function tmBuildAssigneesHtml(ownerId,selectedIds){
   const sel=new Set(selectedIds||[]);
-  const opts=DB.staff.filter(s=>s.id!==ownerId).map(s=>`
+  // The same people as the owner picker (TH-10): staff, plus anyone already on the task.
+  const opts=_wsOwnerChoices({ownerId,assigneeIds:[...sel]}).filter(s=>s.id!==ownerId).map(s=>`
     <label style="display:flex;align-items:center;gap:6px;padding:4px 2px;cursor:pointer;font-size:12px;color:#1a2940">
       <input type="checkbox" class="tm-assignee-cb" value="${s.id}" ${sel.has(s.id)?'checked':''} style="accent-color:#0d1c33"/>${escHtml(s.name)}
     </label>`).join('');
@@ -21111,7 +21258,7 @@ function openTaskModal(id, defaultGroupId){
     return`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${c?escHtml(c.name)+' — ':''} ${escHtml(g.name)}</option>`;
   }).join('');
 
-  const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+DB.staff.map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
+  const staffOptions=(isNew?`<option value="">— Owner —</option>`:'')+_wsOwnerChoices(t).map(s=>`<option value="${s.id}" ${t.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
   const currentlyWithOptions=
     `<option value="" ${!t.currentlyWith||t.currentlyWith==='none'?'selected':''}>— None —</option>`+
     `<option value="client" ${t.currentlyWith==='client'?'selected':''}>Client</option>`+
@@ -25266,17 +25413,9 @@ function tpOpenPeoplePicker(e){
   const task=_tpCurrentTask;if(!task)return;
   let pop=document.getElementById('tp-people-pop');
   if(!pop){pop=document.createElement('div');pop.id='tp-people-pop';document.body.appendChild(pop);}
-  const assigned=new Set(taskAssignees(task));
-  pop.innerHTML=`<div class="tp-pp-hint">Click a name to assign · click the lead to change it</div>`
-    +DB.staff.map(s=>{
-      const on=assigned.has(s.id);
-      const isLead=task.ownerId===s.id;
-      return`<div class="tp-pp-row" onclick="tpPickPerson('${s.id}')">
-        <input type="checkbox" ${on?'checked':''} style="accent-color:#0d1c33;pointer-events:none"/>
-        ${avatarHtml(s,20)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.name)}</span>
-        ${isLead?'<span class="tp-pp-lead">Lead</span>':''}
-      </div>`;
-    }).join('');
+  // The Main Table's owner picker, rules and all (TH-10): a name makes them lead, a tick adds a co-assignee.
+  pop.innerHTML=_ownerPickHtml(task,{lead:id=>`tpPickPerson('${id}')`,tick:id=>`tpToggleCo('${id}',this.checked)`});
+  pop.onclick=ev=>ev.stopPropagation();
   const r=e.currentTarget.getBoundingClientRect();
   pop.style.display='block';
   const h=pop.offsetHeight,w=pop.offsetWidth;
@@ -25287,29 +25426,32 @@ function tpOpenPeoplePicker(e){
   const close=ev=>{if(!pop.contains(ev.target)){pop.style.display='none';document.removeEventListener('click',close,true);}};
   setTimeout(()=>document.addEventListener('click',close,true),0);
 }
-// First click assigns; clicking an already-assigned person promotes them to lead;
-// clicking the current lead unassigns them.
+// Same rules as the Main Table Owner cell (TH-04, TH-10): clicking a name makes them the lead. If they were a
+// co-assignee they stop being one, and the old lead leaves the task unless ticked afterwards. '' is Unassigned.
+// Used to be: a first click only added a co-assignee, so the lead could not be changed from the task panel.
 function tpPickPerson(staffId){
   const task=_tpCurrentTask;if(!task||!canEditTask(currentUser,task))return;
-  const assigned=new Set(taskAssignees(task));
-  if(!assigned.has(staffId)){
-    if(!task.ownerId)tpSaveField('ownerId',staffId);
-    else{setTaskAssignees(task,[...(task.assigneeIds||[]),staffId]);_tpPersistPeople(task,staffId);}
-  }else if(task.ownerId!==staffId){
-    const prevLead=task.ownerId;
-    task.ownerId=staffId;
-    setTaskAssignees(task,[...(task.assigneeIds||[]).filter(i=>i!==staffId),...(prevLead?[prevLead]:[])]);
-    _tpPersistPeople(task);
-  }else{
-    const rest=(task.assigneeIds||[]);
-    task.ownerId=rest[0]||null;
-    setTaskAssignees(task,rest.slice(1));
+  if((task.ownerId||'')!==(staffId||'')){
+    _wsApplyField(task,'ownerId',staffId||'');
     _tpPersistPeople(task);
   }
   const box=document.getElementById('tp-people-box');
   if(box)box.innerHTML=tpPeopleStack(task);
   const pop=document.getElementById('tp-people-pop');
   if(pop)pop.style.display='none';
+  renderView(currentView);
+}
+// A co-assignee tick in the task panel picker. The picker stays open for ticking more than one.
+function tpToggleCo(staffId,checked){
+  const task=_tpCurrentTask;if(!task||!canEditTask(currentUser,task)||task.ownerId===staffId)return;
+  const ids=new Set(task.assigneeIds||[]);
+  if(checked)ids.add(staffId);else ids.delete(staffId);
+  setTaskAssignees(task,[...ids]);
+  _tpPersistPeople(task,checked?staffId:null);
+  const box=document.getElementById('tp-people-box');
+  if(box)box.innerHTML=tpPeopleStack(task);
+  const pop=document.getElementById('tp-people-pop');
+  if(pop&&pop.style.display!=='none')pop.innerHTML=_ownerPickHtml(task,{lead:id=>`tpPickPerson('${id}')`,tick:id=>`tpToggleCo('${id}',this.checked)`});
   renderView(currentView);
 }
 function _tpPersistPeople(task,notifyId){
@@ -27976,6 +28118,30 @@ function _wsOwnerChoices(tasks){
   const keep=new Set([].concat(tasks||[]).flatMap(t=>taskAssignees(t)));
   return allStaff().filter(s=>keep.has(s.id)||(s.role!=='client'&&s.active!==false));
 }
+// The one owner picker (TH-10, 30 Oct 2026): the Main Table Owner cell and the task panel (opened from Kanban, Gantt,
+// the dashboards and Retained Services) show the same list with the same rules. on.lead(id) is the handler text for
+// clicking a name (or '' for Unassigned), on.tick(id) for a co-assignee tick.
+function _ownerPickHtml(task,on){
+  const _assigneeSet=new Set(taskAssignees(task));
+  let html=`<div class="ws-cell-dd-item${!task.ownerId?' ws-dd-active':''}" onclick="${on.lead('')}"><span style="font-size:12px;color:#8da2b2">— Unassigned</span></div>`;
+  html+=`<div class="ws-dd-sep"></div>`;
+  html+=`<div style="padding:6px 14px 4px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Click a name to make them lead. Tick to add a co-assignee.</div>`;
+  // Staff only (DB.staff is every user, client logins included), plus anyone already on the task so an
+  // inactive lead still shows. The list scrolls: it used to run off the bottom of the screen with no way
+  // to reach the names below the fold.
+  html+=`<div class="ws-owner-list" style="max-height:min(340px,calc(100vh - 160px));overflow-y:auto">`+_wsOwnerChoices(task).map(s=>{
+    const isLead=task.ownerId===s.id;
+    const isAssignee=_assigneeSet.has(s.id);
+    return`<div class="ws-cell-dd-item${isLead?' ws-dd-active':''}" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;min-width:0" onclick="${on.lead(s.id)}">
+        ${avatarHtml(s,22)}<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.name)}</span>
+        ${isLead?`<span style="font-size:9px;font-weight:700;color:#0d6e4e;background:#eaf4ee;padding:1px 6px;border-radius:8px;flex-shrink:0">Lead</span>`:''}
+      </div>
+      ${!isLead?`<input type="checkbox" ${isAssignee?'checked':''} onchange="${on.tick(s.id)}" style="accent-color:#0d1c33;cursor:pointer;flex-shrink:0" title="Also assign ${escHtml(s.name)}"/>`:''}
+    </div>`;
+  }).join('')+`</div>`;
+  return html;
+}
 
 function wsBuildDropdownHtml(taskId,field){
   const task=DB.tasks.find(t=>t.id===taskId);
@@ -28027,24 +28193,7 @@ function wsBuildDropdownHtml(taskId,field){
       </div>
     </div>`;
   } else if(field==='owner'){
-    const _assigneeSet=new Set(taskAssignees(task));
-    html=`<div class="ws-cell-dd-item${!task.ownerId?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','ownerId','')"><span style="font-size:12px;color:#8da2b2">— Unassigned</span></div>`;
-    html+=`<div class="ws-dd-sep"></div>`;
-    html+=`<div style="padding:6px 14px 4px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Click a name to make them lead. Tick to add a co-assignee.</div>`;
-    // Staff only (DB.staff is every user, client logins included), plus anyone already on the task so an
-    // inactive lead still shows. The list scrolls: it used to run off the bottom of the screen with no way
-    // to reach the names below the fold.
-    html+=`<div class="ws-owner-list" style="max-height:min(340px,calc(100vh - 160px));overflow-y:auto">`+_wsOwnerChoices(task).map(s=>{
-      const isLead=task.ownerId===s.id;
-      const isAssignee=_assigneeSet.has(s.id);
-      return`<div class="ws-cell-dd-item${isLead?' ws-dd-active':''}" style="justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;min-width:0" onclick="wsCellSave('${taskId}','ownerId','${s.id}')">
-          ${avatarHtml(s,22)}<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.name)}</span>
-          ${isLead?`<span style="font-size:9px;font-weight:700;color:#0d6e4e;background:#eaf4ee;padding:1px 6px;border-radius:8px;flex-shrink:0">Lead</span>`:''}
-        </div>
-        ${!isLead?`<input type="checkbox" ${isAssignee?'checked':''} onchange="wsToggleAssignee('${taskId}','${s.id}',this.checked)" style="accent-color:#0d1c33;cursor:pointer;flex-shrink:0" title="Also assign ${escHtml(s.name)}"/>`:''}
-      </div>`;
-    }).join('')+`</div>`;
+    html=_ownerPickHtml(task,{lead:id=>`wsCellSave('${taskId}','ownerId','${id}')`,tick:id=>`wsToggleAssignee('${taskId}','${id}',this.checked)`});
   } else if(field==='cwith'){
     const cwVal=task.currentlyWith||(task.currentlyWithType==='approver'?'approver':'');
     html=`<div class="ws-cell-dd-item${!cwVal||cwVal==='none'?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','')"><span style="font-size:12px;color:#8da2b2">— None</span></div>`;
