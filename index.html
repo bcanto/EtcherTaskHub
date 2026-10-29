@@ -857,7 +857,7 @@ body.ws-dragging #ws-newgroup-zone{display:flex}
   background:transparent;border:none;border-bottom:1px solid var(--border)}
 .ut-bar.ut-bar-open{border-bottom-color:transparent}
 .ut-bar select:hover,.ut-bar select:focus{background:#eef3f8!important;border-color:transparent!important;outline:none}
-.ut-bar .btn-ghost{border-color:transparent!important;background:transparent!important;height:30px}
+.ut-bar .btn-ghost{border-color:transparent!important;background:transparent!important;height:30px;padding-left:8px;padding-right:8px}   /* tighter sides keep the board toolbar on one row with Hide completed */
 .ut-bar .btn-ghost:hover{background:#eef3f8!important;border-color:transparent!important;color:var(--navy)!important}
 .ut-bar .mt-search{border-color:transparent;background:#f4f7fb;height:30px;padding-top:0;padding-bottom:0}
 .ut-bar .mt-search:hover{background:#eef3f8}
@@ -1464,6 +1464,8 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .ws-table>tbody>tr>td:nth-child(n+3){text-align:center}
 .ws-subtable thead th:nth-child(n+3){text-align:center}
 .ws-subtable tbody td:nth-child(n+3){text-align:center}
+/* Text columns (Notes and the like) read from the left, the same as the task name. */
+.ws-table>tbody>tr>td.mt-cc-text,.ws-subtable tbody td.mt-cc-text{text-align:left}
 .ws-table th{background:#fff;position:sticky;top:-1px;z-index:3;padding:0 10px;height:34px;font-family:'Jost',sans-serif;font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.07em;text-transform:uppercase;border-bottom:1.5px solid var(--border);white-space:nowrap;text-align:left}
 .ws-grp-hdr{cursor:pointer;user-select:none}
 .ws-grp-hdr td{height:36px;background:#f6f8fb;border-top:1px solid #e8edf4;border-bottom:1px solid #e8edf4;padding:0}
@@ -1800,6 +1802,91 @@ mark.ws-hl{background:rgba(151,188,189,0.45);color:inherit;border-radius:3px;pad
 #ws-bulk-bar{transition:opacity 0.18s,transform 0.18s;position:fixed;top:56px;left:220px;right:0;z-index:45;padding:0 28px;pointer-events:none}
 #ws-bulk-bar:empty{display:none}
 #ws-bulk-bar>*{pointer-events:all}
+.ws-bulk-inner{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0d1c33;color:#fff;border-radius:0 0 10px 10px;flex-wrap:wrap;box-shadow:0 8px 22px -8px rgba(13,28,51,0.45),0 2px 6px rgba(13,28,51,0.16)}
+.ws-bulk-count{font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#97bcbd;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ws-bulk-sep{width:1px;height:20px;background:rgba(255,255,255,0.12);flex-shrink:0}
+.ws-bulk-ctl{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif;white-space:nowrap;transition:background 0.12s,border-color 0.12s}
+.ws-bulk-ctl:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.3)}
+.ws-bulk-ctl:active{background:rgba(255,255,255,0.2)}
+.ws-bulk-ctl:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+.ws-bulk-ctl:disabled{opacity:0.45;cursor:not-allowed}
+.ws-bulk-ctl option{background:#1a2940;color:#fff}
+select.ws-bulk-ctl{max-width:150px}
+.ws-bulk-caret{font-size:9px;opacity:0.7}
+.ws-bulk-danger{background:#fef2f2;color:#991b1b;border-color:transparent}
+.ws-bulk-danger:hover{background:#fee2e2;border-color:transparent}
+.ws-bulk-danger:active{background:#fecaca}
+.ws-bulk-clear{margin-left:auto;background:transparent;color:rgba(255,255,255,0.75)}
+.ws-bulk-clear:hover{color:#fff}
+/* No sidebar on a phone: the bar spans the screen and scrolls sideways instead of stacking a dozen rows. */
+@media(max-width:768px){
+  #ws-bulk-bar{left:0;padding:0}
+  .ws-bulk-inner{flex-wrap:nowrap;overflow-x:auto;border-radius:0;padding:8px 12px}
+  .ws-bulk-clear{margin-left:0}
+}
+.ut-bar .ws-hidedone-btn.on,.ws-hidedone-btn.on{background:#f0f7f7!important;color:#0d6e4e!important;border-color:#97bcbd!important}
+.ws-grp-hdr td.ws-grp-cbcell{width:36px;padding:0 0 0 12px;text-align:center}
+.ws-grp-cb{cursor:pointer;accent-color:#97bcbd;vertical-align:middle;margin:0}
+.ws-grp-cb:focus-visible{outline:2px solid #97bcbd;outline-offset:2px}
+/* Fill handle: the small square on a cell's corner that copies its value up or down the column. */
+td[data-fill]{position:relative}
+.ws-fill-h{position:absolute;right:1px;bottom:1px;width:7px;height:7px;background:#0d1c33;border:1.5px solid #fff;border-radius:2px;cursor:crosshair;z-index:2;box-shadow:0 1px 3px rgba(13,28,51,0.35);transition:transform 0.14s cubic-bezier(.2,.8,.2,1)}
+.ws-fill-h:hover{transform:scale(1.3)}
+.ws-fill-h:active{transform:scale(1.1)}
+td.ws-cell-active{box-shadow:inset 0 0 0 2px #97bcbd}
+td.ws-fill-src{box-shadow:inset 0 0 0 2px #0d1c33}
+td.ws-fill-target{box-shadow:inset 0 0 0 999px rgba(151,188,189,0.3),inset 0 0 0 1px #97bcbd}
+body.ws-filling,body.ws-filling *{cursor:crosshair!important;user-select:none!important}
+/* The whole of a cut-off text value, on hover. */
+#mt-text-tip{position:fixed;z-index:700;left:0;top:0;max-width:min(380px,calc(100vw - 16px));max-height:min(300px,50vh);overflow:hidden;background:#0d1c33;color:#fff;font-family:'Lato',sans-serif;font-size:12px;line-height:1.6;padding:9px 12px;border-radius:8px;box-shadow:0 10px 28px -10px rgba(13,28,51,0.5),0 2px 6px rgba(13,28,51,0.2);white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;visibility:hidden;opacity:0;transform:translateY(-3px);transition:opacity 0.14s ease-out,transform 0.16s cubic-bezier(.2,.8,.2,1)}
+#mt-text-tip.show{visibility:visible;opacity:1;transform:none}
+#mt-text-tip.clipped{-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+/* Dependencies column: chips for the tasks this one waits on, coloured and marked by where each one stands. */
+.mt-dep-cell{display:flex;align-items:center;gap:4px;overflow:hidden;min-height:24px}
+.mt-dep-hit{display:inline-flex;align-items:center;min-width:0;max-width:128px;padding:0;background:none;border:none;cursor:pointer;flex-shrink:1;font:inherit}
+.mt-dep-hit:disabled{cursor:default}
+.mt-dep-hit:focus-visible{outline:none}
+.mt-dep-hit:focus-visible .mt-dep-chip{outline:2px solid #97bcbd;outline-offset:1px}
+.mt-dep-chip{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%;height:20px;padding:0 7px;border-radius:10px;border:1px solid;box-sizing:border-box;font-family:'Lato',sans-serif;font-size:11px;font-weight:600;line-height:1;transition:transform 0.12s cubic-bezier(.2,.8,.2,1)}
+.mt-dep-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt-dep-chip svg{flex-shrink:0}
+.mt-dep-hit:hover .mt-dep-chip{box-shadow:inset 0 0 0 1px currentColor}
+.mt-dep-hit:active .mt-dep-chip{transform:scale(0.96)}
+.mt-dep-chip.mt-dep-open{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.mt-dep-chip.mt-dep-done{background:#dcfce7;border-color:#86efac;color:#166534}
+.mt-dep-chip.mt-dep-cancelled{background:#f5f5f4;border-color:#d6d3d1;color:#78716c}
+.mt-dep-chip.mt-dep-cancelled span{text-decoration:line-through}
+.mt-dep-chip.mt-dep-gone{background:#fff;border-style:dashed;border-color:#cbd5e1;color:#94a3b8;cursor:default}
+.mt-dep-more{font-size:10px;font-weight:700;flex-shrink:0;height:18px;min-width:18px;padding:0 5px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;font-variant-numeric:tabular-nums}
+.mt-dep-more-open{background:#fef3c7;color:#92400e}
+.mt-dep-more-done{background:#dcfce7;color:#166534}
+.mt-dep-hit{flex-shrink:1}
+.mt-dep-cell .mt-dep-hit{max-width:none;min-width:56px}
+.mt-dep-blocks{font-family:'Jost',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.02em;color:#3d5269;background:#eef2f7;border-radius:4px;padding:2px 6px;white-space:nowrap;flex-shrink:0;margin-left:auto}
+.mt-dep-pick{min-width:290px;max-width:340px;padding-bottom:6px}
+.mt-dep-hd{padding:10px 12px 4px;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt-dep-row,.mt-dep-res{display:flex;align-items:center;gap:7px;min-width:0;background:none;border:none;font:inherit;font-size:12px;cursor:pointer;text-align:left}
+.mt-dep-row{flex:1;padding:0}
+.mt-dep-res{width:100%;padding:6px 12px}
+.mt-dep-res:hover{background:#f4f7ff}
+.mt-dep-row:focus-visible,.mt-dep-res:focus-visible{outline:2px solid #97bcbd;outline-offset:-2px;border-radius:4px}
+.mt-dep-row:disabled{cursor:default}
+.mt-dep-row svg,.mt-dep-res svg{flex-shrink:0}
+.mt-dep-row.mt-dep-open,.mt-dep-res.mt-dep-open{color:#b45309}
+.mt-dep-row.mt-dep-done,.mt-dep-res.mt-dep-done{color:#15803d}
+.mt-dep-row.mt-dep-cancelled,.mt-dep-res.mt-dep-cancelled,.mt-dep-row.mt-dep-gone{color:#94a3b8}
+.mt-dep-row-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1a2940}
+.mt-dep-row-st{font-size:10px;color:#8da2b2;white-space:nowrap;flex-shrink:0}
+.mt-dep-x{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex-shrink:0;background:none;border:none;border-radius:5px;color:#b0bec5;cursor:pointer}
+.mt-dep-x:hover{color:#dc2626;background:#fef2f2}
+.mt-dep-x:active{background:#fee2e2}
+.mt-dep-x:focus-visible{outline:2px solid #97bcbd;outline-offset:1px}
+.mt-dep-q{width:100%;box-sizing:border-box;border:1.5px solid #e2eaf2;border-radius:6px;padding:6px 9px;font-family:'Lato',sans-serif;font-size:12px;color:#1a2940;outline:none}
+.mt-dep-q:focus{border-color:#97bcbd}
+.mt-dep-err{font-size:11px;color:#b91c1c}
+.mt-dep-err:not(:empty){margin-top:5px}
+.mt-dep-results{max-height:224px;overflow-y:auto}
+.mt-dep-empty{padding:6px 12px;font-size:11.5px;color:#8da2b2}
 .ws-sort-hdr{cursor:pointer;user-select:none}
 .ws-sort-hdr:hover{color:var(--navy)}
 .ws-sort-hint{color:#cbd5e1;margin-left:3px;font-size:9px;opacity:0;transition:opacity 0.12s}
@@ -3248,7 +3335,7 @@ function _filterSig(filters){
     (f.statuses||[]).join('|'),(f.priorities||[]).join('|'),
     (f.excludeStatuses||[]).join('|'),f.excludeCompleted?1:0,
     f.awaitingClient?1:0,f.overdue?1:0,f.hasChecklist?1:0,f.hasDeps?1:0,
-    f.pctMin,f.pctMax].join('~');
+    f.pctMin,f.pctMax,typeof _wsHideDone==='function'&&_wsHideDone()?1:0].join('~');
 }
 // Toolbar state that changes what a cached view draws but does not live in activeFilters:
 // whether the advanced-filter panel is open, and the row-search box. Neither was in any
@@ -4711,6 +4798,33 @@ let wsSelected=new Set();
 let triageSelected=new Set();
 let wsSort={col:null,dir:'asc'};
 let wsShowArchived=false;
+// "Hide completed" on a board's toolbar (Main Table, Kanban, List, Gantt): hides Completed, Completed & Approved
+// and Cancelled tasks. Kept per person and per board in this browser, until it is turned off again.
+let _wsHideDoneIds=null,_wsHideDoneUser=null;
+function _wsHideDoneKey(){return'wsHideDone:'+(currentUser?.id||'anon');}
+function _wsHideDoneList(){
+  if(_wsHideDoneIds&&_wsHideDoneUser===(currentUser?.id||null))return _wsHideDoneIds;
+  let ids=[];
+  try{const v=JSON.parse(localStorage.getItem(_wsHideDoneKey())||'[]');if(Array.isArray(v))ids=v;}catch(_){}
+  _wsHideDoneIds=ids;_wsHideDoneUser=currentUser?.id||null;
+  return ids;
+}
+function _wsHideDone(){return!!currentWorkboard&&_wsHideDoneList().includes(currentWorkboard.id);}
+function wsToggleHideDone(){
+  if(!currentWorkboard)return;
+  const ids=_wsHideDoneList().filter(id=>id!==currentWorkboard.id);
+  if(!_wsHideDone())ids.push(currentWorkboard.id);
+  _wsHideDoneIds=ids;
+  try{localStorage.setItem(_wsHideDoneKey(),JSON.stringify(ids));}catch(_){}
+  renderView(currentView);
+}
+function _wsHideDoneBtn(){
+  const on=_wsHideDone();
+  return`<button class="btn btn-ghost btn-sm ws-hidedone-btn${on?' on':''}" aria-pressed="${on}" onclick="wsToggleHideDone()" style="gap:4px;flex-shrink:0" title="${on?'Completed and cancelled tasks are hidden on this board. Click to show them.':'Hide Completed, Completed &amp; Approved and Cancelled tasks on this board'}">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.6" stroke="currentColor" stroke-width="1.3"/><path d="m4.6 7.1 1.7 1.7 3.2-3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>${on?'<path d="M1.5 12.5 12.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>':''}</svg>
+      Hide completed
+    </button>`;
+}
 let wsMtSearch='';
 let dashWbSearch='';
 // Wrap search matches in the task name with <mark> (input + output are HTML-escaped)
@@ -5010,6 +5124,7 @@ function getFilteredTasks(){
     const _grpNameById=new Map(getWbGroups().map(g=>[g.id,(g.name||'').toLowerCase()]));
     const _tm=x=>(x.name||x.title||'').toLowerCase().includes(q)||_sh(x.description||'').toLowerCase().includes(q)||_sh(x.notes||'').toLowerCase().includes(q)||taskRef(x).toLowerCase().includes(q)||(_grpNameById.get(x.groupId)||'').includes(q);t=t.filter(_tm);const _wbGrpIds=new Set(_grpNameById.keys());const existingIds=new Set(t.map(x=>x.id));const sub=(DB.tasks||[]).filter(x=>(!x.archived||wsShowArchived)&&x.parentTaskId&&_tm(x)&&_wbGrpIds.has(x.groupId)&&canViewTask(currentUser,x)&&!existingIds.has(x.id));if(sub.length)t=[...t,...sub];}
   if(wsMtPersonFilter){t=t.filter(x=>isAssignedTo(x,wsMtPersonFilter)||x.currentlyWith===wsMtPersonFilter||x.currentlyWithUserId===wsMtPersonFilter);}
+  if(_wsHideDone())t=t.filter(x=>!taskIsStruck(x));
   return t;
 }
 // ═══════════════════════════════════════════════════════════
@@ -5136,13 +5251,13 @@ function renderUniversalToolbar(view,opts){
         style="padding-left:28px"/>
       ${search?`<button onclick="wsMtSearch='';renderView('${view}')" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#97bcbd;font-size:14px;line-height:1;padding:0">\xd7</button>`:''}
     </div>
-    <select style="${sel};min-width:90px;max-width:130px" onchange="setFilter('clientId',this.value)">
+    <select style="${sel};min-width:90px;max-width:116px" onchange="setFilter('clientId',this.value)">
       <option value="all"${f.clientId==='all'?' selected':''}>All Clients</option>${clientOpts}
     </select>
     <select style="${sel};min-width:85px;max-width:115px" onchange="setFilter('staffId',this.value)">
       <option value="all"${f.staffId==='all'?' selected':''}>All Owners</option>${staffOpts}
     </select>
-    <select style="${sel};min-width:95px;max-width:130px" onchange="setFilter('groupId',this.value)">
+    <select style="${sel};min-width:95px;max-width:116px" onchange="setFilter('groupId',this.value)">
       <option value="all"${f.groupId==='all'?' selected':''}>All Groups</option>${groupOpts}
     </select>
     <div style="width:1px;height:22px;background:#e2eaf2;flex-shrink:0;margin:0 2px"></div>
@@ -5151,6 +5266,7 @@ function renderUniversalToolbar(view,opts){
       Filters${active?` <span style="background:#0d1c33;color:#fff;border-radius:9px;padding:0 6px;font-size:10px;font-weight:700;line-height:18px;display:inline-block">${active}</span>`:''}
     </button>
     ${viewControls}
+    ${currentWorkboard&&['board','list','gantt'].includes(view)?_wsHideDoneBtn():''}
     <div style="flex:1;min-width:4px"></div>
     ${personChipsHtml}
     ${active||search?`<button onclick="clearFilters();wsMtSearch='';renderView('${view}')" style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;height:28px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:#fee2e2;color:#991b1b;flex-shrink:0">✕ Clear</button>`:''}
@@ -6106,6 +6222,10 @@ function renderView(v){
       case 'workspace': {
         const _keepScroll=document.getElementById('ws-table-scroll')?.scrollTop||0;
         vc.innerHTML=renderWorkspace();_wsCache=null;
+        // The table is rebuilt with an empty bulk bar: refill it from the selection, or a bulk change
+        // (or any cell edit) made while tasks are selected would close it and strand the selection.
+        updateBulkBar();
+        _wsFillRestore();
         requestAnimationFrame(()=>{
           _wsFitTableHeight();
           const _sc=document.getElementById('ws-table-scroll');
@@ -6571,7 +6691,7 @@ function _wsCompactRange(start,end){
   const one=(p,withYear)=>`${p.d} ${_MON[p.m-1]}${withYear?" '"+String(p.y).slice(2):''}`;
   const s=parse(start),e=parse(end);
   if(!s&&!e)return'—';
-  if(!s)return one(e,e.y!==thisYear);
+  if(!s||start===end)return one(e,e.y!==thisYear);   // a due date alone (or a one-day range) reads as one date
   if(!e)return one(s,s.y!==thisYear);
   const sameYear=s.y===e.y, showYear=e.y!==thisYear;
   if(sameYear&&s.m===e.m)return`${s.d} – ${e.d} ${_MON[e.m-1]}${showYear?" '"+String(e.y).slice(2):''}`;
@@ -11819,6 +11939,7 @@ function renderBoard(){
   // no column to render in and vanished from the board entirely. Same canonical list the
   // filter panel uses (renderAdvancedFilterPanel).
   const cols=['todo','ready-to-start','in-progress','waiting-client','review','needs-changes','blocked','ready-approval','approved-client','change-requested','declined-client','completed-approved','done','cancelled']
+    .filter(k=>!(_wsHideDone()&&taskIsStruck({status:k})))   // Hide completed: no empty finished columns either
     .map(k=>{const m=getStatusMeta(k);return{key:k,label:m.label,color:m.color};});
   return renderWbTabs('board')+renderUniversalToolbar('board')+`<div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;margin-top:12px;min-height:calc(100vh - 200px)">
   ${cols.map(col=>{
@@ -13115,7 +13236,8 @@ function capacityTaskFromDb(task){
     clientName:cl?.name||'',
     ownerId:   task.ownerId||null,
     ownerName: owner?.name||null,
-    startDate: task.startDate||null,
+    // A task with only a due date counts as work on that one day (a single date picked in the Timeline).
+    startDate: task.startDate||task.endDate||null,
     endDate:   task.endDate||null,
     status:    task.status||'todo',
     priority:  task.priority||'med',
@@ -13381,7 +13503,7 @@ function renderCapacity(){
   // ── Pre-build DailyCapacity map from ALL non-archived tasks with dates ──
   // Uses all tasks (not the filtered pool) so capacity ribbons reflect true staff load
   // regardless of which filters are active in the current view.
-  const _allCapacityTasks=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate).map(capacityTaskFromDb);
+  const _allCapacityTasks=DB.tasks.filter(t=>!t.archived&&t.endDate).map(capacityTaskFromDb);
   const _dailyCapacities=calculateDailyCapacity(_allCapacityTasks,mcThreshold);
   // Rebuild as O(1)-lookup Map (key: 'staffId:date')
   _mcCapacityMap=new Map(_dailyCapacities.map(d=>[`${d.staffId}:${d.date}`,d]));
@@ -23015,7 +23137,7 @@ function wsToggleDone(id,checked){
 }
 // Select or clear every subitem under one parent, from the subitem grid header.
 function wsSelectAllSubitems(parentId,checked){
-  const kids=DB.tasks.filter(t=>t.parentTaskId===parentId&&!t.archived);
+  const kids=_wsVisibleKids(parentId);   // not the ones Hide completed is hiding
   kids.forEach(k=>{checked?wsSelected.add(k.id):wsSelected.delete(k.id);});
   // Reflect the change on the rows without rebuilding the whole table.
   const host=document.querySelector(`.ws-row[data-tid="${parentId}"]`)?.nextElementSibling;
@@ -23032,15 +23154,26 @@ function wsToggleSelect(id,checked){
   if(checked)wsSelected.add(id);else wsSelected.delete(id);
   updateBulkBar();
 }
+// A parent's subitems that are showing (not archived, not hidden by Hide completed).
+function _wsVisibleKids(parentId){
+  const hide=_wsHideDone();
+  return(DB.tasks||[]).filter(c=>c.parentTaskId===parentId&&!c.archived&&!(hide&&taskIsStruck(c)));
+}
+// The rows a group's checkbox ticks: its tasks as filtered, plus the subitems of any it has open.
+function _wsSectionIds(sec){
+  const ids=[];
+  (sec.tasks||[]).forEach(t=>{
+    ids.push(t.id);
+    if(!t.parentTaskId&&wsExpanded.has(t.id)&&!wsCollapsed.has(sec.id))_wsVisibleKids(t.id).forEach(c=>ids.push(c.id));
+  });
+  return ids;
+}
 function wsSelectAll(checked){
   if(checked){
     getFilteredTasks().forEach(t=>{
       wsSelected.add(t.id);
       // Also select visible subitems when parent is expanded
-      if(wsExpanded.has(t.id)){
-        (DB.tasks||[]).filter(c=>c.parentTaskId===t.id&&!c.archived)
-          .forEach(c=>wsSelected.add(c.id));
-      }
+      if(wsExpanded.has(t.id))_wsVisibleKids(t.id).forEach(c=>wsSelected.add(c.id));
     });
   } else {
     wsSelected.clear();
@@ -23048,7 +23181,38 @@ function wsSelectAll(checked){
   renderView('workspace');
   updateBulkBar();
 }
+function wsSelectGroup(secId,checked){
+  const sec=_wsBuildSections(getFilteredTasks()).find(s=>String(s.id)===String(secId));
+  if(!sec)return;
+  _wsSectionIds(sec).forEach(id=>checked?wsSelected.add(id):wsSelected.delete(id));
+  renderView('workspace');
+}
+// The selected tasks this person may change (archived ones and other boards' are left out).
+function _wsBulkTasks(){
+  return[...wsSelected].map(id=>DB.tasks.find(t=>t.id===id)).filter(t=>t&&canEditTask(currentUser,t));
+}
+// Drops ids that are no longer on this board (deleted, archived while archived rows are hidden, moved away by
+// anyone). That is what closes the bar when the tasks leave the board; a bulk change on its own keeps them.
+function _wsPruneSelection(){
+  const bid=currentWorkboard?.id;
+  [...wsSelected].forEach(id=>{
+    const t=(DB.tasks||[]).find(x=>x.id===id);
+    if(!t||(t.archived&&!wsShowArchived)||(bid&&_taskBoardId(t)!==bid))wsSelected.delete(id);
+  });
+}
 function updateBulkBar(){
+  _wsPruneSelection();
+  // Nothing selected (the usual case, and this runs after every redraw of the table): every box is already drawn
+  // unticked, so skip the work below and leave the redraw as quick as it was.
+  if(!wsSelected.size){
+    const hcb0=document.getElementById('ws-select-all-cb');
+    if(hcb0){hcb0.checked=false;hcb0.indeterminate=false;}
+    document.querySelectorAll('.ws-grp-cb').forEach(cb=>{cb.checked=false;cb.indeterminate=false;});
+    const bar0=document.getElementById('ws-bulk-bar');
+    if(bar0&&bar0.firstChild)bar0.innerHTML='';
+    if(_wsCellTask===_WS_BULK)wsCellClose();
+    return;
+  }
   // Sync header checkbox state
   const hcb=document.getElementById('ws-select-all-cb');
   if(hcb){
@@ -23058,47 +23222,280 @@ function updateBulkBar(){
     hcb.checked=allSel;
     hcb.indeterminate=!allSel&&anySel;
   }
+  // Group checkboxes: ticked when every visible task in the group is selected, part-ticked when some are.
+  const gcbs=document.querySelectorAll('.ws-grp-cb');
+  if(gcbs.length){
+    const secs=new Map(_wsBuildSections(getFilteredTasks()).map(s=>[String(s.id),s]));
+    gcbs.forEach(cb=>{
+      const sec=secs.get(cb.dataset.gid);if(!sec)return;
+      const ids=_wsSectionIds(sec),n=ids.filter(id=>wsSelected.has(id)).length;
+      cb.checked=ids.length>0&&n===ids.length;
+      cb.indeterminate=n>0&&n<ids.length;
+    });
+  }
   const bar=document.getElementById('ws-bulk-bar');
   if(!bar)return;
   const count=wsSelected.size;
-  if(count===0){bar.innerHTML='';return;}
-  bar.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#0d1c33;color:#fff;border-radius:0 0 8px 8px;margin-bottom:0;flex-wrap:wrap;box-shadow:0 4px 20px rgba(13,28,51,0.2)">
-    <span style="font-size:13px;font-weight:700;color:#97bcbd">${count} task${count!==1?'s':''} selected</span>
-    <div style="width:1px;height:20px;background:rgba(255,255,255,0.1)"></div>
-    <select onchange="wsBulkSetStatus(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
-      <option value="" style="background:#1a2940;color:#fff">Set Status…</option>
-      ${Object.entries(STATUS_META).filter(([k])=>!['not-started','waiting-review','completed'].includes(k)).map(([k,v])=>`<option value="${k}" style="background:#1a2940;color:#fff">${v.label}</option>`).join('')}
+  if(count===0){bar.innerHTML='';if(_wsCellTask===_WS_BULK)wsCellClose();return;}
+  const opt=(v,l)=>`<option value="${escHtml(String(v))}">${escHtml(l)}</option>`;
+  const ccs=mtGetBoardCustomCols().filter(cc=>_wsBulkColOk(cc));
+  bar.innerHTML=`<div class="ws-bulk-inner" role="toolbar" aria-label="Change the selected tasks">
+    <span class="ws-bulk-count">${count} task${count!==1?'s':''} selected</span>
+    <div class="ws-bulk-sep"></div>
+    <select class="ws-bulk-ctl" aria-label="Set status" onchange="wsBulkSet('status',this.value);this.value=''">
+      <option value="">Set Status…</option>
+      ${getAllStatuses().filter(k=>!['not-started','waiting-review','completed'].includes(k)).map(k=>opt(k,getStatusMeta(k).label)).join('')}
     </select>
-    <select onchange="wsBulkAssignTo(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
-      <option value="" style="background:#1a2940;color:#fff">Assign To…</option>
-      ${DB.staff.map(s=>`<option value="${s.id}" style="background:#1a2940;color:#fff">${escHtml(s.name)}</option>`).join('')}
+    <select class="ws-bulk-ctl" aria-label="Set priority" onchange="wsBulkSet('priority',this.value);this.value=''">
+      <option value="">Set Priority…</option>
+      ${getAllPriorities().map(p=>opt(p,getPrioMeta(p).label)).join('')}
     </select>
-    <select onchange="wsBulkMoveToGroup(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">
-      <option value="" style="background:#1a2940;color:#fff">Move to group…</option>
-      ${getWbGroups().map(g=>`<option value="${g.id}" style="background:#1a2940;color:#fff">${escHtml(g.name)}</option>`).join('')}
+    <button type="button" class="ws-bulk-ctl" onclick="wsBulkOpen('owner',event)" title="Set the lead owner, and add or remove co-assignees">Set Lead owner <span aria-hidden="true" class="ws-bulk-caret">▾</span></button>
+    <select class="ws-bulk-ctl" aria-label="Set who the tasks are with" onchange="wsBulkSetWith(this.value);this.value=''">
+      <option value="">Set With…</option>
+      <option value="none">No one</option>
+      <option value="client">Client (sends a request)</option>
+      <option value="approver">Approver</option>
+      ${_wsOwnerChoices([]).map(s=>opt(s.id,s.name)).join('')}
     </select>
-    <select onchange="wsBulkMoveToBoard(this.value);this.value=''" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif" title="Forward tasks that ended up on the wrong board — e.g. a mis-routed email triage item">
-      <option value="" style="background:#1a2940;color:#fff">Move to board…</option>
-      ${(DB.workboards||[]).filter(b=>!b.archived&&b.id!==currentWorkboard?.id).map(b=>`<option value="${b.id}" style="background:#1a2940;color:#fff">${escHtml(b.name)}</option>`).join('')}
+    <button type="button" class="ws-bulk-ctl" onclick="wsBulkOpen('timeline',event)" title="Set the due date, and a start date if you want a range">Set Due date <span aria-hidden="true" class="ws-bulk-caret">▾</span></button>
+    <select class="ws-bulk-ctl" aria-label="Set progress" onchange="wsBulkSet('percentComplete',this.value);this.value=''" title="Items with subitems work out their own progress and are left as they are">
+      <option value="">Set Progress…</option>
+      ${[0,10,25,50,75,90,100].map(p=>opt(p,p+'%')).join('')}
     </select>
-    <button onclick="wsBulkArchiveTasks()" style="padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.8);font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Archive</button>
-    <button onclick="wsBulkDeleteTasks()" style="padding:5px 12px;border-radius:6px;border:none;background:#fef2f2;color:#991b1b;font-size:12px;cursor:pointer;font-family:'Lato',sans-serif">Delete</button>
-    <button onclick="wsSelected.clear();updateBulkBar();renderView('workspace')" style="margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.55);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Lato',sans-serif">✕ Clear</button>
+    <select class="ws-bulk-ctl" aria-label="Set client" onchange="wsBulkSetClient(this.value);this.value=''">
+      <option value="">Set Client…</option>
+      <option value="none">No client</option>
+      ${(DB.clients||[]).filter(c=>!c.archived).map(c=>opt(c.id,c.name)).join('')}
+    </select>
+    ${ccs.length?`<button type="button" class="ws-bulk-ctl" onclick="wsBulkOpen('cols',event)" title="Columns added to this board">Other columns <span aria-hidden="true" class="ws-bulk-caret">▾</span></button>`:''}
+    <div class="ws-bulk-sep"></div>
+    <select class="ws-bulk-ctl" aria-label="Move to group" onchange="wsBulkMoveToGroup(this.value);this.value=''">
+      <option value="">Move to group…</option>
+      ${getWbGroups().map(g=>opt(g.id,g.name)).join('')}
+    </select>
+    <select class="ws-bulk-ctl" aria-label="Move to board" onchange="wsBulkMoveToBoard(this.value);this.value=''" title="Forward tasks that ended up on the wrong board, for example a mis-routed email triage item">
+      <option value="">Move to board…</option>
+      ${(DB.workboards||[]).filter(b=>!b.archived&&b.id!==currentWorkboard?.id).map(b=>opt(b.id,b.name)).join('')}
+    </select>
+    <button type="button" class="ws-bulk-ctl" onclick="wsBulkArchiveTasks()">Archive</button>
+    <button type="button" class="ws-bulk-ctl ws-bulk-danger" onclick="wsBulkDeleteTasks()">Delete</button>
+    <button type="button" class="ws-bulk-ctl ws-bulk-clear" onclick="wsBulkClear()" title="Clear the selection and close this bar">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Clear selection
+    </button>
   </div>`;
 }
-function wsBulkSetStatus(status){
+function wsBulkClear(){
+  wsSelected.clear();
+  if(_wsCellTask===_WS_BULK)wsCellClose();
+  renderView('workspace');
+}
+// Applies one field to every selected task through the same path as a cell edit, then saves and draws once.
+// The selection and the bar stay, so the next change can go straight on.
+function wsBulkSet(field,value){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  if(!status)return;
-  [...wsSelected].forEach(id=>{
-    const t=DB.tasks.find(x=>x.id===id);
-    if(!t)return;
-    const _was=t.status;
-    t.status=status;
-    t.updatedAt=new Date().toISOString();
-    _applyStatusProgress(t,status,_was);
-    _taskAudit(t.id,'status',_was,status);
+  if(value===''&&field!=='currentlyWith'&&field!=='ownerId')return;   // '' is a real choice only for "no one"
+  if(field==='percentComplete')value=+value;
+  let ts=_wsBulkTasks(),skipped=0;
+  // A parent's progress is worked out from its subitems (its cell is not editable either).
+  if(field==='percentComplete'){const n=ts.length;ts=ts.filter(t=>!_wsHasKids(t));skipped=n-ts.length;}
+  if(!ts.length){showToast(skipped?'Items with subitems work out their own progress.':'Nothing to change.','info',3000);return;}
+  ts.forEach(t=>_wsApplyField(t,field,value));
+  saveDB(DB);renderView('workspace');
+  const what={status:'Status',priority:'Priority',currentlyWith:'With',percentComplete:'Progress',ownerId:'Lead owner'}[field]||'Value';
+  showToast(`${what} set on ${ts.length} task${ts.length!==1?'s':''}${skipped?`. ${skipped} with subitems left as they are`:''}.`,'success',2600);
+}
+function _wsHasKids(t){return(DB.tasks||[]).some(c=>c.parentTaskId===t.id&&!c.archived);}
+// With: Client goes through the Send to Client form, once for all the selected tasks (each gets its own request).
+function wsBulkSetWith(v){
+  if(!v)return;
+  if(v==='client'){const ids=_wsBulkTasks().map(t=>t.id);if(ids.length)wsHandoffToClient(ids.join(','));return;}
+  wsBulkSet('currentlyWith',v==='none'?'':v);
+}
+// The bulk Timeline writes each date as it is picked (the calendar keeps itself open between the two clicks).
+function _wsBulkWrite(field,val){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const ts=_wsBulkTasks();if(!ts.length)return;
+  ts.forEach(t=>_wsApplyField(t,field,val));
+  saveDB(DB);renderView('workspace');
+  _wsCalMark(_WS_BULK);
+}
+// Client is who sees the task in the client portal, so changing it says so first, like Move to board.
+function wsBulkSetClient(clientId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  if(!clientId)return;
+  const ts=_wsBulkTasks();if(!ts.length)return;
+  const cl=clientId==='none'?null:(DB.clients||[]).find(c=>c.id===clientId);
+  if(clientId!=='none'&&!cl)return;
+  const n=ts.length,s=n!==1?'s':'';
+  openConfirm('Set Client',_wsClientChangeMsg(ts,cl),'Set client',()=>{
+    _wsSetTasksClient(ts,cl?cl.id:null);
+    saveDB(DB);closeConfirm();renderView('workspace');
+    showToast(`Client set on ${n} task${s}.`,'success',2600);
+  });
+}
+// What a client change means in the client portal, said before it happens (bulk bar and fill handle).
+function _wsClientChangeMsg(ts,cl){
+  const n=ts.length,s=n!==1?'s':'',them=n===1?'it':'them';
+  if(!cl)return`Remove the client from ${n} task${s}?`;
+  const losing=[...new Set(ts.map(t=>getTaskClient(t)).filter(c=>c&&c.id!==cl.id).map(c=>c.name))];
+  return`Set the client of ${n} task${s} to ${cl.name}? ${cl.name} will see ${them} in their client portal.`
+    +(losing.length?` ${losing.join(' and ')} will no longer see ${them}.`:'')
+    +(currentWorkboard&&boardClient(currentWorkboard)&&boardClient(currentWorkboard).id!==cl.id?` The task${s} stay${n===1?'s':''} on this board.`:'');
+}
+// A task's subitems share its client, the same way Move to board carries them along.
+function _wsSetTasksClient(ts,clientId){
+  const now=new Date().toISOString();
+  ts.forEach(t=>{
+    _taskAudit(t.id,'clientId',t.clientId||null,clientId);
+    t.clientId=clientId;t.updatedAt=now;
+    if(!t.parentTaskId)(DB.tasks||[]).filter(c=>c.parentTaskId===t.id).forEach(c=>{c.clientId=clientId;c.updatedAt=now;});
+  });
+}
+// Lead owner for every selected task (the new lead stops being a co-assignee, as in the cell picker).
+function wsBulkSetLead(staffId){
+  wsCellClose();
+  wsBulkSet('ownerId',staffId);
+}
+// The co-assignee tick in the bulk owner list: adds the person to every selected task, or takes them off all.
+function wsBulkToggleCo(staffId,on){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const ts=_wsBulkTasks();
+  ts.forEach(t=>{
+    const cur=new Set(t.assigneeIds||[]);
+    if(on){if(t.ownerId===staffId||cur.has(staffId))return;cur.add(staffId);}
+    else{if(!cur.has(staffId))return;cur.delete(staffId);}
+    const prev=t.assigneeIds||[];
+    setTaskAssignees(t,[...cur]);t.updatedAt=new Date().toISOString();
+    writeAuditEvent('Task',t.id,'assignees_changed',{assigneeIds:prev},{assigneeIds:t.assigneeIds});
+    if(on&&staffId!==currentUser?.id)notify(staffId,t.id,'task_assigned',`You were assigned to: ${taskTitle(t)}`);
   });
   saveDB(DB);renderView('workspace');
+  const body=document.getElementById('ws-cell-dd-body');
+  if(body&&_wsCellTask===_WS_BULK&&_wsCellField==='owner')body.innerHTML=_wsBulkOwnerHtml();
+}
+// Opens the bulk bar's richer pickers in the same popover the table cells use.
+function wsBulkOpen(kind,evt){
+  evt.stopPropagation();
+  const dd=document.getElementById('ws-cell-dd'),body=document.getElementById('ws-cell-dd-body');
+  if(!dd||!body)return;
+  if(_wsCellTask===_WS_BULK&&_wsCellField===kind){wsCellClose();return;}   // second click on the same button closes it
+  wsCellClose();
+  const r=evt.currentTarget.getBoundingClientRect();
+  _wsCellTask=_WS_BULK;_wsCellField=kind;
+  body.innerHTML=kind==='owner'?_wsBulkOwnerHtml():kind==='timeline'?_wsBulkTimelineHtml():_wsBulkColsHtml();
+  dd.style.visibility='hidden';dd.style.left=r.left+'px';dd.style.top='0px';dd.style.display='block';
+  requestAnimationFrame(()=>{
+    const h=dd.offsetHeight,w=dd.offsetWidth;
+    let top=r.bottom+6,left=r.left;
+    if(top+h>window.innerHeight-8)top=Math.max(8,window.innerHeight-h-8);
+    if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+    dd.style.top=top+'px';dd.style.left=left+'px';dd.style.visibility='visible';
+  });
+}
+function _wsBulkHead(txt){
+  return`<div style="padding:10px 14px 4px;font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em">${txt}</div>`;
+}
+function _wsBulkOwnerHtml(){
+  const ts=_wsBulkTasks(),n=ts.length;
+  const rows=_wsOwnerChoices(ts).map(s=>{
+    const lead=n&&ts.every(t=>t.ownerId===s.id);
+    const co=ts.filter(t=>t.ownerId!==s.id&&(t.assigneeIds||[]).includes(s.id)).length;
+    const leads=ts.filter(t=>t.ownerId===s.id).length;
+    const all=n&&co+leads===n&&co>0;
+    return`<div class="ws-cell-dd-item${lead?' ws-dd-active':''}" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;min-width:0" onclick="wsBulkSetLead('${s.id}')">
+        ${avatarHtml(s,22)}<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.name)}</span>
+        ${lead?`<span style="font-size:9px;font-weight:700;color:#0d6e4e;background:#eaf4ee;padding:1px 6px;border-radius:8px;flex-shrink:0">Lead</span>`:leads?`<span style="font-size:9px;font-weight:700;color:#4a6572;background:#eef2f7;padding:1px 6px;border-radius:8px;flex-shrink:0">Lead on ${leads}</span>`:''}
+      </div>
+      ${lead?'':`<input type="checkbox" ${all?'checked':''} data-part="${co>0&&!all?1:0}" onchange="wsBulkToggleCo('${s.id}',this.checked)" style="accent-color:#0d1c33;cursor:pointer;flex-shrink:0" title="${co?`Co-assignee on ${co} of ${n}. `:''}Tick to add ${escHtml(s.name)} to every selected task, untick to take them off"/>`}
+    </div>`;
+  }).join('');
+  // Part-ticked boxes are set after the markup lands (indeterminate is a property, not an attribute).
+  setTimeout(()=>document.querySelectorAll('#ws-cell-dd-body input[data-part="1"]').forEach(cb=>{cb.indeterminate=true;}),0);
+  return`<div style="min-width:250px">${_wsBulkHead(`Owner for ${n} task${n!==1?'s':''}`)}
+    <div style="padding:0 14px 6px;font-size:11px;color:#6b8399">Click a name to make them lead. Tick to add a co-assignee.</div>
+    <div class="ws-cell-dd-item" onclick="wsBulkSetLead('')"><span style="font-size:12px;color:#8da2b2">No lead owner</span></div>
+    <div class="ws-dd-sep"></div>
+    <div style="max-height:min(340px,calc(100vh - 220px));overflow-y:auto">${rows}</div>
+  </div>`;
+}
+function _wsBulkTimelineHtml(){
+  const ts=_wsBulkTasks(),n=ts.length,_d=_wsCalDates(_WS_BULK);
+  const _inSty="border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;color:#1a2940;cursor:pointer;width:100%;box-sizing:border-box;outline:none";
+  const _lbSty="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px";
+  return`<div style="padding:12px 14px;min-width:246px" onclick="event.stopPropagation()">
+    <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Due date for ${n} task${n!==1?'s':''}</div>
+    <div style="margin-bottom:8px">
+      <div style="${_lbSty}">Start <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#8da2b2">(optional)</span></div>
+      <input type="date" value="${_d.startDate}" style="${_inSty}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" onchange="if(_dateReady(this.value))_wsCalWrite('${_WS_BULK}','startDate',this.value)"/>
+    </div>
+    <div>
+      <div style="${_lbSty}">End / Due</div>
+      <input type="date" value="${_d.endDate}" style="${_inSty}" onfocus="this.style.borderColor='#97bcbd'" onblur="this.style.borderColor='#e2eaf2'" onchange="if(_dateReady(this.value))_wsCalWrite('${_WS_BULK}','endDate',this.value)"/>
+    </div>
+    <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
+    ${_wsCalHtml(_WS_BULK)}
+    <button onclick="event.stopPropagation();wsCellClose();openConfirm('Clear Dates','Clear the start and due dates of ${n} task${n!==1?'s':''}?','Clear dates',()=>{closeConfirm();_wsBulkWrite('startDate','');_wsBulkWrite('endDate','');})" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates on all ${n}</button>
+  </div>`;
+}
+// Which added columns the bulk bar (and the fill handle) can set: files live in their own store and
+// dependencies are links between tasks, so neither is a value to copy.
+function _wsBulkColOk(cc){return cc&&!['file','dependencies'].includes(cc.type);}
+function _wsBulkColsHtml(){
+  const n=_wsBulkTasks().length;
+  const ccs=mtGetBoardCustomCols().filter(_wsBulkColOk);
+  return`<div style="min-width:220px">${_wsBulkHead(`Set a column on ${n} task${n!==1?'s':''}`)}
+    ${ccs.map(cc=>`<div class="ws-cell-dd-item" onclick="event.stopPropagation();wsBulkOpenCol('${cc.id}')"><span style="font-size:12px;flex:1">${escHtml(cc.name)}</span><span style="font-size:10px;color:#8da2b2">${escHtml(cc.type==='longtext'?'long text':cc.type)}</span></div>`).join('')}
+  </div>`;
+}
+function _wsBulkCcTimeline(colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const s=document.getElementById('ws-bulk-tl-s')?.value||'',e=document.getElementById('ws-bulk-tl-e')?.value||'';
+  if(!s&&!e)return;
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);
+  const ts=_wsBulkTasks().filter(t=>!cc||mtColAppliesTo(cc,!!t.parentTaskId));
+  ts.forEach(t=>{let o={};try{o=JSON.parse(mtGetCustomVal(t.id,colId))||{};}catch(_){}if(s)o.start=s;if(e)o.end=e;_mtWriteCustomVal(t.id,colId,JSON.stringify(o));});
+  saveDB(DB);wsCellClose();renderView('workspace');
+  showToast(`${cc?cc.name:'Column'} set on ${ts.length} task${ts.length!==1?'s':''}.`,'success',2600);
+}
+// One added column's own editor, writing to every selected task (mtSetCustomVal knows the bulk id).
+function wsBulkOpenCol(colId){
+  const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
+  const body=document.getElementById('ws-cell-dd-body');if(!body)return;
+  _wsCellField='col:'+colId;
+  const dd=document.getElementById('ws-cell-dd');
+  if(cc.type==='checkbox'){
+    body.innerHTML=`<div style="min-width:220px">${_wsBulkHead(escHtml(cc.name))}
+      <div class="ws-cell-dd-item" onclick="mtSetCustomVal('${_WS_BULK}','${cc.id}','true')"><span style="font-size:12px">Tick on every selected task</span></div>
+      <div class="ws-cell-dd-item" onclick="mtSetCustomVal('${_WS_BULK}','${cc.id}','false')"><span style="font-size:12px">Untick on every selected task</span></div></div>`;
+    return;
+  }
+  if(cc.type==='timeline'){
+    // Each task keeps its own other date: a box left empty changes nothing.
+    const inS="width:100%;border:1.5px solid #e2eaf2;border-radius:6px;padding:5px 8px;font-size:12px;outline:none;box-sizing:border-box;margin-bottom:8px";
+    const lb="font-size:10px;font-weight:700;color:#97bcbd;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px";
+    body.innerHTML=`<div style="min-width:230px" onclick="event.stopPropagation()">${_wsBulkHead(escHtml(cc.name))}
+      <div style="padding:0 14px 12px">
+        <div style="${lb}">Start</div><input id="ws-bulk-tl-s" type="date" style="${inS}"/>
+        <div style="${lb}">End</div><input id="ws-bulk-tl-e" type="date" style="${inS}"/>
+        <div style="font-size:11px;color:#8da2b2;margin-bottom:8px">Leave a box empty to keep each task's own date.</div>
+        <button type="button" class="btn btn-teal btn-sm" onclick="_wsBulkCcTimeline('${cc.id}')">Apply</button>
+      </div></div>`;
+    return;
+  }
+  const val=mtGetCustomVal(_WS_BULK,colId);
+  const big=cc.type==='text'||cc.type==='longtext';
+  if(big&&dd)dd.style.width=Math.min(480,window.innerWidth-16)+'px';
+  body.innerHTML=cc.type==='labels'?mtLabelPickerHtml(_WS_BULK,cc,val):mtBuildCustomCellHtml(_WS_BULK,cc,val);
+  if(big)setTimeout(()=>body.querySelector('textarea')?.focus(),0);
+  // Keep the popover inside the window once its real size is known.
+  if(dd)requestAnimationFrame(()=>{
+    const r=dd.getBoundingClientRect();
+    if(r.bottom>window.innerHeight-8)dd.style.top=Math.max(8,window.innerHeight-r.height-8)+'px';
+    if(r.right>window.innerWidth-8)dd.style.left=Math.max(8,window.innerWidth-r.width-8)+'px';
+  });
 }
 // Move the selected tasks into another group. Subitems follow their parent, the same way
 // tpSaveField('groupId') cascades them — otherwise they orphan in the client portal.
@@ -23117,7 +23514,7 @@ function wsBulkMoveToGroup(groupId){
     DB.tasks.filter(s=>s.parentTaskId===t.id).forEach(s=>{s.groupId=groupId;s.updatedAt=now;});
   });
   saveDB(DB);
-  wsSelected.clear();updateBulkBar();
+  // The tasks are still on this board, so they stay selected for the next change.
   renderView('workspace');
   showToast(n?`Moved ${n} task${n===1?'':'s'} to “${g.name}”`:'Nothing to move — already in that group','success',3000);
 }
@@ -23149,15 +23546,9 @@ function wsBulkMoveToBoard(boardId){
     showToast(moved?`Moved ${moved} task${moved===1?'':'s'} to "${board.name}"`:'Nothing to move','success',3000);
   });
 }
-function wsBulkAssignTo(staffId){
-  try{requireInternalUser(currentUser);}catch(e){return;}
-  if(!staffId)return;
-  [...wsSelected].forEach(id=>{
-    const t=DB.tasks.find(x=>x.id===id);
-    if(t){_taskAudit(t.id,'ownerId',t.ownerId,staffId);t.ownerId=staffId;t.updatedAt=new Date().toISOString();}
-  });
-  saveDB(DB);renderView('workspace');
-}
+// Older names for two bulk changes, kept for anything that still calls them.
+function wsBulkAssignTo(staffId){if(staffId)wsBulkSet('ownerId',staffId);}
+function wsBulkSetStatus(status){wsBulkSet('status',status);}
 function wsBulkArchiveTasks(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const n=wsSelected.size;
@@ -23255,7 +23646,7 @@ function _wsInlineSubTLHtml(){
   const has=_wsInlineSubTL.start||_wsInlineSubTL.end;
   return`<div style="padding:12px 14px;min-width:246px" onclick="event.stopPropagation()">
     <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Timeline</div>
-    ${fld('Start','start')}${fld('End / Due','end')}
+    ${fld('Start <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#8da2b2">(optional)</span>','start')}${fld('End / Due','end')}
     <div style="height:1px;background:#eef2f7;margin:10px 0"></div>
     ${_wsCalHtml(_WS_INLINE_SUB)}
     ${has?`<button onclick="wsClearDates('${_WS_INLINE_SUB}')" style="margin-top:8px;background:none;border:none;cursor:pointer;font-size:11px;color:#8da2b2;padding:0;display:block">Clear dates</button>`:''}
@@ -23554,7 +23945,7 @@ function _wsCustTh(grid,cc){
   return`<th class="ws-col-draggable" draggable="true"
     ondragstart="_wsColDragStart(event,'${grid}','${id}')" ondragover="_wsColDragOver(event,'${grid}','${id}')"
     ondragleave="_wsColDragLeave(event)" ondrop="_wsColDrop(event,'${grid}','${id}')" ondragend="_wsColDragEnd(event)"
-    data-cc="${id}" style="width:${wsColWidth(grid,cc.id,sub?'110px':'120px')};min-width:70px">
+    data-cc="${id}" style="width:${wsColWidth(grid,cc.id,cc.type==='dependencies'?'210px':sub?'110px':'120px')};min-width:70px">
     <div style="display:flex;align-items:center;gap:3px${sub?';justify-content:center':''}">
       ${sub?'':'<svg class="ws-col-grip" width="8" height="10" viewBox="0 0 8 10" fill="currentColor"><circle cx="2" cy="1.5" r="1.1"/><circle cx="6" cy="1.5" r="1.1"/><circle cx="2" cy="5" r="1.1"/><circle cx="6" cy="5" r="1.1"/><circle cx="2" cy="8.5" r="1.1"/><circle cx="6" cy="8.5" r="1.1"/></svg>'}
       <span class="col-label"${sub?'':' style="flex:1"'} onclick="event.stopPropagation()" ondblclick="event.stopPropagation();wsRenameColInline(this,'${grid}','${id}',true)" title="${escHtml(cc.name)}${lvl}. Double-click to rename, drag to move">${escHtml(cc.name)}</span>
@@ -24196,6 +24587,7 @@ function renderWorkspace(ctx){
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h12" stroke="currentColor" stroke-width="1.3"/><path d="M5 3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3"/></svg>
       ${wsShowArchived?'Hide Archived':'Archived'}
     </button>
+    ${_wsHideDoneBtn()}
     ${_wsMonthSelectHtml()}
     <div style="position:relative">
       <button class="btn btn-ghost btn-sm" data-dd-toggle onclick="event.stopPropagation();wsToggleDropdown('ws-col-menu')" style="gap:4px">
@@ -24312,7 +24704,12 @@ function renderWsSection(sec,cols,visCols,custCols,totalCols){
   return`
   <tr class="ws-grp-hdr" data-gid="${sec.id}" onclick="wsToggleGroup('${sec.id}')"
       ondragover="_wsGrpDragOver(event,'${sec.id}')" ondragleave="_wsGrpDragLeave(event)" ondrop="_wsGrpDrop(event,'${sec.id}')">
-    <td colspan="${totalCols}">
+    <td class="ws-grp-cbcell" onclick="event.stopPropagation()">${(()=>{
+      // Ticks every visible task in the group (filters such as Hide completed already left the rest out).
+      const ids=_wsSectionIds(sec),n=ids.filter(id=>wsSelected.has(id)).length;
+      return`<input type="checkbox" class="ws-grp-cb" data-gid="${escHtml(sec.id)}" ${ids.length&&n===ids.length?'checked':''} ${ids.length?'':'disabled'} onchange="wsSelectGroup(this.dataset.gid,this.checked)" aria-label="Select every task in ${escHtml(sec.label)}" title="Select every task in this group"/>`;
+    })()}</td>
+    <td colspan="${totalCols-1}">
       <div style="display:flex;align-items:center;gap:8px;padding:0 14px;height:36px;border-left:4px solid ${sec.color}">
         ${wsGroupBy==='group'&&currentUser?.role!=='client'&&!wsSort.col?`<span class="ws-grp-grip" draggable="true" onclick="event.stopPropagation()" ondragstart="_wsGrpDragStart(event,'${sec.id}')" ondragend="_wsGrpDragEnd()" title="Drag to reorder this group">⠿</span>`:''}
         <span style="font-size:9px;color:#8da2b2;width:10px;flex-shrink:0">${collapsed?'▶':'▼'}</span>
@@ -24393,6 +24790,9 @@ const SUB_COL_DEFS=[
 ];
 function renderSubitemGrid(parent,childTasks,custCols,groupColor){
   const sc=wsSubColumns;
+  // Hide completed reaches the subitems too.
+  const hiddenDone=_wsHideDone()?childTasks.filter(taskIsStruck).length:0;
+  if(hiddenDone)childTasks=childTasks.filter(c=>!taskIsStruck(c));
   // Same drag-to-reorder as the item tier, kept under its own key so the two grids
   // can be arranged independently.
   const _subOrder=_wsGetColOrder('sub')||_WS_DEFAULT_SUB_COL_ORDER;
@@ -24434,7 +24834,7 @@ function renderSubitemGrid(parent,childTasks,custCols,groupColor){
     </tr></thead>
     <tbody>
       ${childTasks.map(c=>renderSubRow(c,visSub,subCust)).join('')}
-      ${!childTasks.length&&!adding?`<tr><td colspan="${width}" style="padding:8px 12px;color:#b0bec5;font-size:12px">No subitems yet.</td></tr>`:''}
+      ${!childTasks.length&&!adding?`<tr><td colspan="${width}" style="padding:8px 12px;color:#b0bec5;font-size:12px">${hiddenDone?`${hiddenDone} completed subitem${hiddenDone!==1?'s':''} hidden.`:'No subitems yet.'}</td></tr>`:''}
       ${canAdd?(adding?renderSubInlineAdd(parent,visSub,subCust,width):`
       <tr><td colspan="${width}" style="padding:3px 10px">
         <button onclick="event.stopPropagation();wsStartInlineSubitem('${parent.id}')" class="ws-subadd">
@@ -24472,13 +24872,13 @@ function renderSubRow(t,visSub,subCust){
         ${t.clientHidden?`<span title="Hidden from the client portal" style="flex-shrink:0;color:#b45309;display:inline-flex"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>`:''}
       </div>
     </td>
-    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)" title="${escHtml(m.cc.name)}">${renderCustomColCell(t.id,m.cc)}</td>`:(c=>{
+    ${_wsMixCols('sub',visSub,subCust).map(m=>m.cc?`<td class="ws-editable${_mtCcClass(m.cc)}"${_mtCcFill(m.cc)} onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${m.cc.id}',event)" title="${escHtml(m.cc.name)}">${renderCustomColCell(t.id,m.cc)}</td>`:(c=>{
       if(c.key==='ref')return`<td style="text-align:center"><span class="ws-ref" title="Click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`;
-      if(c.key==='status')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" style="background:${sm.bg};text-align:center"><span style="font-size:11px;font-weight:700;color:${sm.color}">${sm.label}</span></td>`;
-      if(c.key==='owner')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" title="${escHtml(assigneeTitleAttr(t)||'Unassigned')}" style="text-align:center">${assigneeStackHtml(t,22)||avatarHtml(getStaff(t.ownerId),22)}</td>`;
-      if(c.key==='cwith')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px">${cw?avatarHtml(cw,20):'<span style="color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399">${cw?.name?.split(' ')[0]||''}</span></div></td>`;
-      if(c.key==='duedate')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><span style="font-size:11px;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}</div></td>`;
-      if(c.key==='progress')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">${isDone?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`:pct===0?`<span style="font-size:12px;color:#d4dde8">—</span>`:`<div class="progress-bar" style="width:32px"><div class="progress-fill" style="width:${pct}%;background:#97bcbd"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span>`}</div></td>`;
+      if(c.key==='status')return`<td class="ws-editable" data-fill="status" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" style="background:${sm.bg};text-align:center"><span style="font-size:11px;font-weight:700;color:${sm.color}">${sm.label}</span></td>`;
+      if(c.key==='owner')return`<td class="ws-editable" data-fill="owner" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" title="${escHtml(assigneeTitleAttr(t)||'Unassigned')}" style="text-align:center">${assigneeStackHtml(t,22)||avatarHtml(getStaff(t.ownerId),22)}</td>`;
+      if(c.key==='cwith')return`<td class="ws-editable" data-fill="cwith" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px">${cw?avatarHtml(cw,20):'<span style="color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399">${cw?.name?.split(' ')[0]||''}</span></div></td>`;
+      if(c.key==='duedate')return`<td class="ws-editable" data-fill="duedate" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:4px"><span style="font-size:11px;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}</div></td>`;
+      if(c.key==='progress')return`<td class="ws-editable" data-fill="progress" onclick="event.stopPropagation();wsCellOpen('${t.id}','progress',event)" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">${isDone?`<span style="font-size:11px;color:#16a34a;font-weight:600">Done</span>`:pct===0?`<span style="font-size:12px;color:#d4dde8">—</span>`:`<div class="progress-bar" style="width:32px"><div class="progress-fill" style="width:${pct}%;background:#97bcbd"></div></div><span style="font-size:11px;color:#6b8399">${pct}%</span>`}</div></td>`;
       if(c.key==='deps')return`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','deps',event)" style="text-align:center">${myDeps.length?`<span style="background:#f0f4ff;border:1px solid #c7d4f8;color:#4361c2;border-radius:12px;padding:1px 7px;font-size:11px;font-weight:700">⛓ ${myDeps.length}</span>`:'<span style="color:#c8d5e0;font-size:11px">+ add</span>'}</td>`;
       return'<td></td>';
     })(m.c)).join('')}
@@ -24550,7 +24950,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
   const _tl=_span||t;
   const tlText=_wsCompactRange(_tl.startDate,_tl.endDate);
   const tlFull=(_tl.startDate||_tl.endDate)
-    ?`${_tl.startDate?formatDate(_tl.startDate):'—'} → ${_tl.endDate?formatDate(_tl.endDate):'—'}`+(_span?` · rolled up from ${childTasks.length} subitem${childTasks.length!==1?'s':''}`:'')
+    ?((_tl.endDate&&(!_tl.startDate||_tl.startDate===_tl.endDate))?`Due ${formatDate(_tl.endDate)}`:`${_tl.startDate?formatDate(_tl.startDate):'—'} → ${_tl.endDate?formatDate(_tl.endDate):'—'}`)+(_span?` · rolled up from ${childTasks.length} subitem${childTasks.length!==1?'s':''}`:'')
     :'No dates set';
   const due=_wsDueState(_span?{...t,startDate:_span.startDate,endDate:_span.endDate}:t);
   const effectivePct=getEffectiveTaskPct(t.id);
@@ -24592,35 +24992,35 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
       // Cells by column; written out in the header's order (built-in and added columns share it).
       const _cells={
       ref:(cols.ref?`<td style="text-align:center"><span class="ws-ref" title="Task reference — click to copy" onclick="event.stopPropagation();wsCopyRef('${t.id}',this)">${escHtml(taskRef(t))||'—'}</span></td>`:''),
-      status:(cols.status?`<td class="ws-editable ws-status-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" title="Change status" style="background:${sm.bg}">
+      status:(cols.status?`<td class="ws-editable ws-status-cell" data-fill="status" onclick="event.stopPropagation();wsCellOpen('${t.id}','status',event)" title="Change status" style="background:${sm.bg}">
       <div style="display:flex;align-items:center;justify-content:center;height:38px;gap:3px;padding:0 8px">
         <span style="font-size:11px;font-weight:700;color:${sm.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sm.label}</span>
         <span class="ws-cell-caret" style="color:${sm.color}">▾</span>
       </div>
     </td>`:''),
-      priority:(cols.priority?`<td class="ws-editable ws-prio-cell" onclick="event.stopPropagation();wsCellOpen('${t.id}','priority',event)" title="Change priority" style="background:${pm.bg}">
+      priority:(cols.priority?`<td class="ws-editable ws-prio-cell" data-fill="priority" onclick="event.stopPropagation();wsCellOpen('${t.id}','priority',event)" title="Change priority" style="background:${pm.bg}">
       <div style="display:flex;align-items:center;justify-content:center;height:38px;gap:3px;padding:0 8px">
         <span style="font-size:11px;font-weight:700;color:${pm.color};white-space:nowrap">${pm.icon} ${pm.label}</span>
         <span class="ws-cell-caret" style="color:${pm.color}">▾</span>
       </div>
     </td>`:''),
-      owner:(cols.owner?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px;text-align:center" title="${owner?escHtml(assigneeTitleAttr(t)):'Unassigned'} — Owner">
+      owner:(cols.owner?`<td class="ws-editable" data-fill="owner" onclick="event.stopPropagation();wsCellOpen('${t.id}','owner',event)" style="padding:0 10px;text-align:center" title="${owner?escHtml(assigneeTitleAttr(t)):'Unassigned'} — Owner">
       <div style="display:flex;align-items:center;justify-content:center;gap:4px">
         ${owner?assigneeStackHtml(t,24):'<span style="font-size:18px;color:#d4dde8">○</span>'}
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''),
-      cwith:(cols.cwith?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
+      cwith:(cols.cwith?`<td class="ws-editable" data-fill="cwith" onclick="event.stopPropagation();wsCellOpen('${t.id}','cwith',event)" title="Currently with — active holder" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px">${cw?avatarHtml(cw,22):'<span style="font-size:16px;color:#d4dde8">○</span>'}<span style="font-size:11px;color:#6b8399;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cw?.name?.split(' ')[0]||''}</span><span class="ws-cell-caret">▾</span></div>
     </td>`:''),
-      duedate:(cols.duedate?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="${escHtml(tlFull)}${due.chip?' · '+due.chip:''} — click to change" style="text-align:center">
+      duedate:(cols.duedate?`<td class="ws-editable" data-fill="duedate" onclick="event.stopPropagation();wsCellOpen('${t.id}','duedate',event)" title="${escHtml(tlFull)}${due.chip?' · '+due.chip:''} — click to change" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:4px">
         <span style="font-size:11px;white-space:nowrap;${due.tone==='over'?'color:#b91c1c;font-weight:700':due.tone==='soon'?'color:#b45309;font-weight:600':due.tone==='stale'?'color:#94a3b8':'color:#6b8399'}">${tlText}</span>
         ${due.chip?`<span class="ws-due-chip ws-due-${due.tone}">${due.chip}</span>`:''}
         <span class="ws-cell-caret">▾</span>
       </div>
     </td>`:''),
-      progress:(cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}" onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
+      progress:(cols.progress?`<td class="${hasChildren&&!isSubitem?'':'ws-editable'}"${hasChildren&&!isSubitem?'':' data-fill="progress"'} onclick="event.stopPropagation();${hasChildren&&!isSubitem?'':'wsCellOpen(\''+t.id+'\',\'progress\',event)'}" title="${hasChildren&&!isSubitem?'Auto-calculated from subitems':'Change progress'}" style="text-align:center">
       <div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px">
         ${hasChildren&&!isSubitem
           // A parent's progress is really the shape of its children — show the composition
@@ -24640,7 +25040,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
       </div>
     </td>`:''),
       hours:(cols.hours?`<td style="font-size:11px;white-space:nowrap"><span style="color:#1a2940;font-weight:600">${hours}h</span><span style="color:#b0bec5">/${t.hourBudget||'—'}h</span></td>`:''),
-      client:(cols.client?`<td>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${escHtml(client.shortCode)}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''),
+      client:(cols.client?`<td${_wsClientFillable()?' data-fill="client"':''}>${client?`<div style="display:flex;align-items:center;gap:4px"><div class="client-dot" style="background:${client.color}"></div><span style="font-size:11px;color:#6b8399">${escHtml(client.shortCode)}</span></div>`:'<span style="color:#d4dde8">—</span>'}</td>`:''),
       tags:(cols.tags?`<td><div style="display:flex;flex-wrap:wrap;gap:3px">${(t.tags||[]).slice(0,3).map(tag=>`<span class="tag-pill" style="cursor:default;font-size:10px;padding:1px 6px">${escHtml(tag)}</span>`).join('')}${(t.tags||[]).length>3?`<span style="font-size:10px;color:#97bcbd">+${(t.tags||[]).length-3}</span>`:''}</div></td>`:''),
       attachments:(cols.attachments?`<td class="ws-editable" onclick="event.stopPropagation();wsCellOpen('${t.id}','attachments',event)" title="Attachments">
       <div style="display:inline-flex;align-items:center;gap:3px">
@@ -24660,7 +25060,7 @@ function renderWsRow(t,cols,visCols,custCols,groupColor,depth,isLast){
     })():''),
       };
       const _cc=cc=>mtColAppliesTo(cc,isSubitem)
-      ?`<td class="ws-editable" onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
+      ?`<td class="ws-editable${_mtCcClass(cc)}"${_mtCcFill(cc)} onclick="event.stopPropagation();mtOpenCellEdit('${t.id}','${cc.id}',event)" title="${escHtml(cc.name)}">
       ${renderCustomColCell(t.id,cc)}
     </td>`
       // Column exists in the shared grid but carries no data at this tier — leave the cell
@@ -27570,6 +27970,13 @@ function restoreWorkboard(id){
 // ═══════════════════════════════════════════════════════════
 let _wsCellTask=null,_wsCellField=null,_wsShowLinkInput=false;
 
+// Who can own work: active staff (never client logins), in the order they were added, plus anyone already on
+// the given task(s) so a lead who has since left still shows and can be swapped out.
+function _wsOwnerChoices(tasks){
+  const keep=new Set([].concat(tasks||[]).flatMap(t=>taskAssignees(t)));
+  return allStaff().filter(s=>keep.has(s.id)||(s.role!=='client'&&s.active!==false));
+}
+
 function wsBuildDropdownHtml(taskId,field){
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!task)return'';
@@ -27623,8 +28030,11 @@ function wsBuildDropdownHtml(taskId,field){
     const _assigneeSet=new Set(taskAssignees(task));
     html=`<div class="ws-cell-dd-item${!task.ownerId?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','ownerId','')"><span style="font-size:12px;color:#8da2b2">— Unassigned</span></div>`;
     html+=`<div class="ws-dd-sep"></div>`;
-    html+=`<div style="padding:6px 14px 4px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Click name for lead owner · check for co-assignee</div>`;
-    html+=DB.staff.map(s=>{
+    html+=`<div style="padding:6px 14px 4px;font-size:9px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.05em">Click a name to make them lead. Tick to add a co-assignee.</div>`;
+    // Staff only (DB.staff is every user, client logins included), plus anyone already on the task so an
+    // inactive lead still shows. The list scrolls: it used to run off the bottom of the screen with no way
+    // to reach the names below the fold.
+    html+=`<div class="ws-owner-list" style="max-height:min(340px,calc(100vh - 160px));overflow-y:auto">`+_wsOwnerChoices(task).map(s=>{
       const isLead=task.ownerId===s.id;
       const isAssignee=_assigneeSet.has(s.id);
       return`<div class="ws-cell-dd-item${isLead?' ws-dd-active':''}" style="justify-content:space-between">
@@ -27634,7 +28044,7 @@ function wsBuildDropdownHtml(taskId,field){
         </div>
         ${!isLead?`<input type="checkbox" ${isAssignee?'checked':''} onchange="wsToggleAssignee('${taskId}','${s.id}',this.checked)" style="accent-color:#0d1c33;cursor:pointer;flex-shrink:0" title="Also assign ${escHtml(s.name)}"/>`:''}
       </div>`;
-    }).join('');
+    }).join('')+`</div>`;
   } else if(field==='cwith'){
     const cwVal=task.currentlyWith||(task.currentlyWithType==='approver'?'approver':'');
     html=`<div class="ws-cell-dd-item${!cwVal||cwVal==='none'?' ws-dd-active':''}" onclick="wsCellSave('${taskId}','currentlyWith','')"><span style="font-size:12px;color:#8da2b2">— None</span></div>`;
@@ -27654,7 +28064,7 @@ function wsBuildDropdownHtml(taskId,field){
     html=`<div style="padding:12px 14px;min-width:246px" onclick="event.stopPropagation()">
       <div style="font-size:10px;font-weight:700;color:#8da2b2;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Timeline</div>
       <div style="margin-bottom:8px">
-        <div style="${_lbSty}">Start</div>
+        <div style="${_lbSty}">Start <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#8da2b2">(optional)</span></div>
         <input type="date" value="${_sd}"
           style="${_inSty}"
           onfocus="this.style.borderColor='#97bcbd'" onblur="wsDateBlur(this,'${taskId}','startDate')"
@@ -27888,6 +28298,7 @@ function wsCellOpen(taskId,field,evt){
   const dd=document.getElementById('ws-cell-dd');
   const body=document.getElementById('ws-cell-dd-body');
   if(!dd||!body)return;
+  _wsFillSetActive(evt.currentTarget);
   const r=evt.currentTarget.getBoundingClientRect();
   body.innerHTML=wsBuildDropdownHtml(taskId,field);
   // Measure the menu's real size before placing it — a cell near the bottom of a long
@@ -27908,7 +28319,16 @@ function wsCellSave(taskId,field,value,keepOpen){
   if(field.startsWith('cc_')){mtSetCustomVal(taskId,field.slice(3),value);return;}
   const task=DB.tasks.find(t=>t.id===taskId);
   if(!canEditTask(currentUser,task||{}))return; // AC: block clients and archived tasks
-  if(task){
+  if(task){_wsApplyField(task,field,value);saveDB(DB);}
+  if(!keepOpen)wsCellClose();
+  renderView('workspace');
+}
+// One Main Table field change on one task, with every side effect a cell edit has (status and progress kept
+// in step, With holder synced and told, new owner told, audit trail, subitem rollup). No save and no redraw:
+// wsCellSave does those for one cell, the bulk bar and the fill handle do them once for many tasks.
+function _wsApplyField(task,field,value){
+  const taskId=task.id;
+  {
     const oldVal=task[field],_auOldStatus=task.status;
     task[field]=value;
     task.updatedAt=new Date().toISOString();
@@ -27943,6 +28363,9 @@ function wsCellSave(taskId,field,value,keepOpen){
     if(field==='currentlyWithType'||field==='currentlyWithUserId'){
       task.currentlyWith=task.currentlyWithType==='client'?'client':(task.currentlyWithUserId||'');
     }
+    // The new lead stops being a co-assignee (setTaskAssignees drops the owner), and the old lead leaves the
+    // task: a lead has no co-assignee tick in the picker, so they can only stay by being ticked afterwards.
+    if(field==='ownerId')setTaskAssignees(task,(task.assigneeIds||[]).filter(id=>id!==oldVal||id===value));
     // Notify new owner when ownerId changes
     if(field==='ownerId'&&value&&value!==oldVal&&value!==currentUser?.id){
       notify(value,taskId,'owner_changed',`You are now the owner of: ${task.name||task.title}`);
@@ -27957,10 +28380,7 @@ function wsCellSave(taskId,field,value,keepOpen){
       const _parent=DB.tasks.find(t=>t.id===task.parentTaskId);
       if(_parent){_parent.percentComplete=getEffectiveTaskPct(task.parentTaskId);_parent.updatedAt=new Date().toISOString();}
     }
-    saveDB(DB);
   }
-  if(!keepOpen)wsCellClose();
-  renderView('workspace');
 }
 // Status-dropdown pick, wrapped so landing on a "done" status (incl. a task added straight as
 // Completed purely for traceability, with no time ever logged against it) can offer a one-line
@@ -28070,24 +28490,29 @@ const _AR_KIND_META={
   decide: {label:'Decide',            verb:'decide on'},
   info:   {label:'FYI — no action needed', verb:'see'},
 };
-function wsHandoffToClient(taskId){
+// taskIds: one task id, or several joined with commas (the bulk bar and the fill handle). With several, the one
+// form sends each task its own request with the same note; each request goes to that task's own client.
+function wsHandoffToClient(taskIds){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  const task=DB.tasks.find(t=>t.id===taskId);
-  if(!task)return;
+  const ids=String(taskIds||'').split(',').filter(Boolean);
+  const tasks=ids.map(id=>DB.tasks.find(t=>t.id===id)).filter(Boolean);
+  if(!tasks.length)return;
+  const task=tasks[0],many=tasks.length>1,taskId=tasks.map(t=>t.id).join(',');
   wsCellClose(); // dismiss the With-cell popover this was opened from, if any
-  const returnToOptions=`<option value="">— No one in particular (notify all staff) —</option>`+
-    (DB.staff||[]).map(s=>`<option value="${s.id}" ${task.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
+  const returnToOptions=(many?`<option value="__owner__" selected>Each task's lead owner</option>`:'')+`<option value="">— No one in particular (notify all staff) —</option>`+
+    (DB.staff||[]).map(s=>`<option value="${s.id}" ${!many&&task.ownerId===s.id?'selected':''}>${escHtml(s.name)}</option>`).join('');
   const kindOptions=Object.entries(_AR_KIND_META).map(([k,m])=>`<option value="${k}">${escHtml(m.label)}</option>`).join('');
   // openGenericModal sets the title via textContent — escaping it here would show "&amp;".
-  openGenericModal(`Send to Client — ${task.name||task.title||'Task'}`,`
+  openGenericModal(many?`Send ${tasks.length} tasks to the client`:`Send to Client — ${task.name||task.title||'Task'}`,`
     <div style="display:grid;gap:14px">
+      ${many?`<div style="font-size:12px;color:#4a6572;line-height:1.5">Each task gets its own request with this note, and goes to its own client.</div>`:''}
       <div>
         <label class="form-label">What kind of action</label>
         <select id="wsh-kind" class="form-input">${kindOptions}</select>
       </div>
       <div>
         <label class="form-label">Title (shown on their board)</label>
-        <input id="wsh-title" class="form-input" placeholder="e.g. Review the draft SWMS" value="${escHtml(task.name||task.title||'')}"/>
+        <input id="wsh-title" class="form-input" placeholder="${many?'Leave empty to use each task\'s own name':'e.g. Review the draft SWMS'}" value="${many?'':escHtml(task.name||task.title||'')}"/>
       </div>
       <div>
         <label class="form-label">What we need <span style="color:#ef4444">*</span></label>
@@ -28114,12 +28539,14 @@ function wsHandoffToClient(taskId){
     </div>
   `,'520px');
 }
-function wsSendClientAction(taskId,skipNoteRequired){
+// taskIds: one id, or several joined with commas (see wsHandoffToClient). The form is read once; every task then
+// gets the same treatment one after another, and the board is drawn once at the end.
+function wsSendClientAction(taskIds,skipNoteRequired){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  const task=DB.tasks.find(t=>t.id===taskId);
-  if(!task)return;
+  const tasks=String(taskIds||'').split(',').filter(Boolean).map(id=>DB.tasks.find(t=>t.id===id)).filter(t=>t&&canEditTask(currentUser,t));
+  if(!tasks.length)return;
   const kind=document.getElementById('wsh-kind')?.value||'review';
-  const title=(document.getElementById('wsh-title')?.value||'').trim()||task.name||task.title||'Action needed';
+  const typedTitle=(document.getElementById('wsh-title')?.value||'').trim();
   let body=(document.getElementById('wsh-body')?.value||'').trim();
   if(!body&&!skipNoteRequired){
     const errEl=document.getElementById('wsh-body-err');if(errEl)errEl.style.display='block';
@@ -28129,15 +28556,42 @@ function wsSendClientAction(taskId,skipNoteRequired){
   if(!body)body='Please review and let us know when this is done.';
   if(window._wshSending)return;   // an attachment is still uploading for the first click
   const dueDate=document.getElementById('wsh-due')?.value||null;
-  // '' is a real choice ("no one in particular → notify all staff") — only fall back to the
-  // owner when the select isn't on the page at all. `value||task.ownerId` used to override it.
-  const _rtEl=document.getElementById('wsh-return');
-  const returnToUserId=_rtEl?(_rtEl.value||null):(task.ownerId||null);
+  const _rtEl=document.getElementById('wsh-return');   // read per task in _wsSendClientActionOne
   const rawLink=(document.getElementById('wsh-link')?.value||'').trim();
   const linkUrl=rawLink?_normalizeLinkUrl(rawLink):null;
   if(rawLink&&!linkUrl){showAlert('That link is not a valid web address (http or https).','Invalid Link');return;}
   const fileInput=document.getElementById('wsh-file');
-
+  const file=fileInput&&fileInput.files&&fileInput.files.length?fileInput.files[0]:null;
+  const _view=currentView;
+  const opts={kind,typedTitle,body,dueDate,rtEl:_rtEl,linkUrl,file};
+  const finishAll=()=>{
+    saveDB(DB);
+    closeGenericModal();
+    wsCellClose();
+    renderView(_view);
+    if(_tpCurrentTask&&tasks.some(t=>t.id===_tpCurrentTask.id))_tpRepaintBody();
+    if(tasks.length>1)showToast(`Sent to the client: ${tasks.length} tasks.`,'success',3000);
+  };
+  // No file: everything happens at once, and the form closes straight away (as it always has).
+  if(!file){tasks.forEach(t=>_wsSendClientActionOne(t,opts));finishAll();return;}
+  // A file: store it for each task in turn, with the form's buttons held until that is done.
+  window._wshSending=true;document.querySelectorAll('#generic-modal-body button').forEach(b=>{b.disabled=true;});
+  (async()=>{
+    try{for(const task of tasks)await _wsSendClientActionOne(task,opts);}
+    finally{window._wshSending=false;}
+    finishAll();
+  })();
+}
+// One task's request: supersede its open one, add the new one (with the link and file), set With to Client, tell
+// the client. Resolves when any file has been stored.
+function _wsSendClientActionOne(task,o){
+  const taskId=task.id;
+  const {kind,body,dueDate,linkUrl}=o;
+  const title=o.typedTitle||task.name||task.title||'Action needed';
+  // '' is a real choice ("no one in particular → notify all staff") — only fall back to the
+  // owner when the select isn't on the page at all, or "each task's lead owner" is picked.
+  const rt=o.rtEl?o.rtEl.value:'__owner__';
+  const returnToUserId=rt==='__owner__'?(task.ownerId||null):(rt||null);
   const clientId=task.clientId||(DB.groups||[]).find(g=>g.id===task.groupId)?.clientId||null;
   const now=new Date().toISOString();
   const reqId='ar'+uid();
@@ -28166,17 +28620,11 @@ function wsSendClientAction(taskId,skipNoteRequired){
     DB.taskFiles.push({id:uid(),taskId,name:url.replace(/^https?:\/\//i,'').split('/')[0],size:0,type:'link',url,addedAt:now,internalOnly:false,actionRequestId:reqId});
   }
 
-  // wsCellSave(...,'currentlyWith','client') is the SAME existing, unchanged path a plain
-  // With-cell click uses — every side effect (type/userId sync, audit event, re-render) stays
-  // in exactly one place. The extra bookkeeping below (the request row's own audit event, the
-  // client notification) is on top of that, not instead of it.
+  // _wsApplyField(...,'currentlyWith','client') is the same path a plain With-cell click takes (wsCellSave) —
+  // every side effect (type/userId sync, audit event) stays in exactly one place. The extra bookkeeping below
+  // (the request row's own audit event, the client notification) is on top of that, not instead of it.
   const finishHandoff=()=>{
-    // wsCellSave ends with renderView('workspace'). From the older task modal (dashboard,
-    // kanban, list, capacity) that would paint the Main Table over whatever view is showing,
-    // so put the current view back afterwards.
-    const _view=currentView;
-    wsCellSave(taskId,'currentlyWith','client');
-    if(_view!=='workspace')renderView(_view);
+    _wsApplyField(task,'currentlyWith','client');
     writeAuditEvent('Task',taskId,'client_action_requested',{},{kind,title,dueDate});
     const recipient=_clientRecipientId(clientId);
     if(recipient){
@@ -28184,29 +28632,23 @@ function wsSendClientAction(taskId,skipNoteRequired){
       DB.notifications.push({id:'n'+uid(),recipientId:recipient,taskId,type:'client_action_requested',read:false,
         message:`Etcher needs you to ${(_AR_KIND_META[kind]||_AR_KIND_META.review).verb}: ${title}`,createdAt:now});
     }
-    // wsCellSave already saved once above; this second save persists the audit event and the
-    // client notification just pushed, which came after it.
-    saveDB(DB);
-    closeGenericModal();
-    if(_tpCurrentTask&&_tpCurrentTask.id===taskId)_tpRepaintBody();
   };
 
-  if(fileInput&&fileInput.files&&fileInput.files.length){
-    const f=fileInput.files[0];
+  const f=o.file;
+  return new Promise(done=>{
+    const finish=()=>{finishHandoff();done();};
+    if(!f){finish();return;}
     const MAX=500*1024;
     if(_staffStorageOn()&&f.size<=10*1048576){
       const fid=uid();
-      window._wshSending=true;
-      document.querySelectorAll('#generic-modal-body button').forEach(b=>{b.disabled=true;});
       _storageUpload(taskId,fid,f).then(path=>{
-        window._wshSending=false;
         if(path)DB.taskFiles.push({id:fid,taskId,name:f.name,size:f.size,type:f.type,storagePath:path,addedAt:now,internalOnly:false,actionRequestId:reqId});
         else showAlert('"'+f.name+'" could not be uploaded — the request was still sent without it.','Upload failed');
-        finishHandoff();
-      });
+        finish();
+      },()=>{showAlert('"'+f.name+'" could not be uploaded — the request was still sent without it.','Upload failed');finish();});
       return;
     }
-    if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was not attached — the request was still sent.`,'File Too Large');finishHandoff();return;}
+    if(f.size>MAX){showAlert(`"${f.name}" exceeds the 500 KB limit and was not attached — the request was still sent.`,'File Too Large');finish();return;}
     const reader=new FileReader();
     reader.onload=e=>{
       const fid=uid();
@@ -28215,13 +28657,11 @@ function wsSendClientAction(taskId,skipNoteRequired){
       }else{
         showAlert('"'+f.name+'" could not be saved — this browser\'s storage is full. The request was still sent without it.','Storage Full');
       }
-      finishHandoff();
+      finish();
     };
-    reader.onerror=()=>{showAlert(`Failed to read "${f.name}" — the request was still sent without it.`,'File Error');finishHandoff();};
+    reader.onerror=()=>{showAlert(`Failed to read "${f.name}" — the request was still sent without it.`,'File Error');finish();};
     reader.readAsDataURL(f);
-  }else{
-    finishHandoff();
-  }
+  });
 }
 function wsCancelActionRequest(reqId){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -28250,18 +28690,27 @@ function _wsCalMonthLabel(y,m){
 // all — the calendar reads and writes through these three, and this id stands in for the
 // row that does not exist yet. Everything else about it is identical.
 const _WS_INLINE_SUB='__inline_sub__';
+// The bulk bar's Timeline reuses the same calendar for every selected task; this id stands in for them.
+const _WS_BULK='__bulk__';
 function _wsCalDates(taskId){
   if(taskId===_WS_INLINE_SUB)return{startDate:_wsInlineSubTL.start||'',endDate:_wsInlineSubTL.end||''};
+  if(taskId===_WS_BULK){
+    // Shown only when every selected task has the same date; otherwise the box stays empty.
+    const ts=_wsBulkTasks(),same=k=>ts.length&&ts.every(t=>(t[k]||'')===(ts[0][k]||''))?(ts[0][k]||''):'';
+    return{startDate:same('startDate'),endDate:same('endDate')};
+  }
   const t=DB.tasks.find(x=>x.id===taskId)||{};
   return{startDate:t.startDate||'',endDate:t.endDate||''};
 }
 function _wsCalEditable(taskId){
   if(taskId===_WS_INLINE_SUB)return true;
+  if(taskId===_WS_BULK)return _wsBulkTasks().length>0;
   const t=DB.tasks.find(x=>x.id===taskId);
   return !!t&&canEditTask(currentUser,t);
 }
 function _wsCalWrite(taskId,field,val){
   if(taskId===_WS_INLINE_SUB){wsInlineSubTLSet(field==='startDate'?'start':'end',val);return;}
+  if(taskId===_WS_BULK){_wsBulkWrite(field,val);return;}
   wsCellSave(taskId,field,val,true);
 }
 function _wsCalHtml(taskId){
@@ -28282,11 +28731,9 @@ function _wsCalHtml(taskId){
     if(isStart||isEnd||isAnchor)cls.push('ws-cal-on');
     else if(inRange)cls.push('ws-cal-in');
     if(ds===today)cls.push('ws-cal-today');
-    cells+='<button type="button" class="'+cls.join(' ')+'" data-d="'+ds+'"'+' onclick="wsCalPick(\''+taskId+'\',\''+ds+'\')"'+' ondblclick="wsCalDouble(\''+taskId+'\',\''+ds+'\')"'+' title="Click to start a range, double-click for this day only">'+d+'</button>';
+    cells+='<button type="button" class="'+cls.join(' ')+'" data-d="'+ds+'"'+' onclick="wsCalPick(\''+taskId+'\',\''+ds+'\')"'+' ondblclick="wsCalDouble(\''+taskId+'\',\''+ds+'\')"'+' title="Click to set the due date">'+d+'</button>';
   }
-  const hint=_wsCalAnchor
-    ? 'Now click the end of the range'
-    : 'Click a day to start a range, or double-click for one day';
+  const hint=_wsCalHint();
   return '<div class="ws-cal">'+
     '<div class="ws-cal-hd">'+
       '<button type="button" class="ws-cal-nav" onclick="wsCalNav(\''+taskId+'\',-1)" title="Previous month">&lsaquo;</button>'+
@@ -28314,9 +28761,7 @@ function _wsCalMark(taskId){
     btn.classList.toggle('ws-cal-today',ds===today);
   });
   const hint=body.querySelector('.ws-cal-hint');
-  if(hint)hint.textContent=_wsCalAnchor
-    ? 'Now click the end of the range'
-    : 'Click a day to start a range, or double-click for one day';
+  if(hint)hint.textContent=_wsCalHint();
   const ins=body.querySelectorAll('input[type=date]');
   if(ins[0])ins[0].value=sd;
   if(ins[1])ins[1].value=ed;
@@ -28324,7 +28769,7 @@ function _wsCalMark(taskId){
 function _wsCalRepaint(taskId){
   const body=document.getElementById('ws-cell-dd-body');
   if(!body||_wsCellTask!==taskId)return;
-  body.innerHTML=taskId===_WS_INLINE_SUB?_wsInlineSubTLHtml():wsBuildDropdownHtml(taskId,'duedate');
+  body.innerHTML=taskId===_WS_INLINE_SUB?_wsInlineSubTLHtml():taskId===_WS_BULK?_wsBulkTimelineHtml():wsBuildDropdownHtml(taskId,'duedate');
 }
 function wsCalNav(taskId,delta){
   const _d=_wsCalDates(taskId);
@@ -28334,23 +28779,31 @@ function wsCalNav(taskId,delta){
   _wsCalMonth=y+'-'+String(m).padStart(2,'0');
   _wsCalRepaint(taskId);
 }
-// First click sets the start and clears the end; the second completes the range. Clicking
-// a day before the anchor is read as picking the range backwards rather than as an error.
+function _wsCalHint(){
+  return _wsCalAnchor
+    ? 'Due date set. Click an earlier day to add a start date.'
+    : 'Click a day to set the due date. Click a second day to make it a range.';
+}
+// First click sets the due date on its own (a single date) and leaves the picker open. A second
+// click makes it a range: an earlier day becomes the start, a later day becomes the due date with
+// the first click as the start. Clicking the same day again keeps the single date and closes.
 function wsCalPick(taskId,ds){
   if(!_wsCalEditable(taskId))return;
   _wsCalMonth=ds.slice(0,7);
   if(!_wsCalAnchor){
     _wsCalAnchor=ds;
-    _wsCalWrite(taskId,'startDate',ds);
-    _wsCalWrite(taskId,'endDate','');
+    if(taskId===_WS_BULK||_wsCalDates(taskId).startDate)_wsCalWrite(taskId,'startDate','');
+    _wsCalWrite(taskId,'endDate',ds);
     _wsCalMark(taskId);   // in place: a rebuild here would eat the second click
     return;
   }
   const a=_wsCalAnchor;
-  const start=ds<a?ds:a, end=ds<a?a:ds;
   _wsCalAnchor=null;
-  _wsCalWrite(taskId,'startDate',start);
-  _wsCalWrite(taskId,'endDate',end);
+  if(ds!==a){
+    const start=ds<a?ds:a, end=ds<a?a:ds;
+    _wsCalWrite(taskId,'startDate',start);
+    _wsCalWrite(taskId,'endDate',end);
+  }
   wsCellClose();
 }
 // Restores a date box that was left mid-keystroke, so it never shows a year the task
@@ -28362,14 +28815,13 @@ function wsDateBlur(el,taskId,field){
   if(!t){el.value='';return;}
   el.value=t[field]||'';
 }
-// Double-clicking a day means "just this day". It only applies while the popover is
-// still open for this task — if the first of the two clicks already completed a range
-// against an earlier anchor, the popover has closed and this is left alone.
+// Double-clicking a day means "due that day". Its two clicks already did that through wsCalPick
+// (the second one on the same day closes the picker), so this only acts if the picker is still open.
 function wsCalDouble(taskId,ds){
   if(_wsCellTask!==taskId)return;
   if(!_wsCalEditable(taskId))return;
   _wsCalAnchor=null;
-  _wsCalWrite(taskId,'startDate',ds);
+  _wsCalWrite(taskId,'startDate','');
   _wsCalWrite(taskId,'endDate',ds);
   wsCellClose();
 }
@@ -28409,8 +28861,240 @@ function wsToggleAssignee(taskId,staffId,checked){
   saveDB(DB);
   renderView('workspace');
 }
-document.addEventListener('click',()=>wsCellClose());
+document.addEventListener('click',()=>{wsCellClose();_wsFillSetActive(null);});
 document.addEventListener('click',()=>document.querySelectorAll('[id^="wr-sm-"]').forEach(m=>m.classList.add('hidden')));
+
+// ── Text columns: left-aligned, and a cut-off value shows in full on hover ──
+function _mtIsTextCc(cc){return cc&&(cc.type==='text'||cc.type==='longtext');}
+function _mtCcClass(cc){return _mtIsTextCc(cc)?' mt-cc-text':'';}
+let _mtTipTd=null,_mtTipTimer=null;
+function _mtTipHide(){clearTimeout(_mtTipTimer);_mtTipTd=null;const el=document.getElementById('mt-text-tip');if(el)el.classList.remove('show');}
+function _mtTipShow(td){
+  const span=td.querySelector('span');
+  if(!span||span.scrollWidth<=span.clientWidth+1)return;   // nothing cut off, nothing to show
+  let el=document.getElementById('mt-text-tip');
+  if(!el){el=document.createElement('div');el.id='mt-text-tip';el.setAttribute('role','tooltip');document.body.appendChild(el);}
+  el.textContent=span.textContent;
+  el.classList.remove('clipped');
+  el.style.left='0px';el.style.top='0px';el.classList.add('show');
+  const r=td.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;
+  if(el.scrollHeight>el.clientHeight+1)el.classList.add('clipped');
+  let top=r.bottom+6,left=r.left;
+  if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-6);
+  if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+  el.style.left=left+'px';el.style.top=top+'px';
+}
+document.addEventListener('mouseover',e=>{
+  const td=e.target.closest?e.target.closest('td.mt-cc-text'):null;
+  if(td===_mtTipTd)return;
+  _mtTipHide();
+  if(!td||_wsFill)return;
+  _mtTipTd=td;
+  _mtTipTimer=setTimeout(()=>{if(_mtTipTd===td&&td.isConnected)_mtTipShow(td);},180);
+});
+document.addEventListener('scroll',_mtTipHide,true);
+document.addEventListener('mousedown',_mtTipHide,true);
+
+// ── Fill handle (drag a cell's corner to copy its value up or down the column, as in Excel) ──
+// A cell carries data-fill="<column>" when its value can be copied. The handle shows on the cell the mouse is
+// over and stays on the last cell clicked. Dragging covers only rows of the same tier (items, or one parent's
+// subitems); group headings in between are skipped because they are not task rows. One click undoes a fill.
+let _wsFill=null,_wsFillHoverTd=null,_wsFillActive=null,_wsFillUndo=null;
+function _wsClientFillable(){return!!currentWorkboard;}
+function _mtCcFill(cc){return _wsBulkColOk(cc)?` data-fill="cc_${cc.id}"`:'';}
+function _wsFillHandleOn(td){
+  if(!td||td.querySelector(':scope>.ws-fill-h'))return;
+  const h=document.createElement('span');
+  h.className='ws-fill-h';h.title='Drag to copy this value to the rows above or below';
+  h.setAttribute('aria-hidden','true');
+  h.addEventListener('mousedown',wsFillStart);
+  h.addEventListener('click',ev=>ev.stopPropagation());
+  td.appendChild(h);
+}
+function _wsFillHandleOff(td){if(td)td.querySelectorAll(':scope>.ws-fill-h').forEach(h=>h.remove());}
+function _wsFillCell(tid,key){
+  const tr=document.querySelector(`tr[data-tid="${CSS.escape(tid)}"]`);
+  return tr?tr.querySelector(`:scope>td[data-fill="${CSS.escape(key)}"]`):null;
+}
+// The last cell clicked keeps an outline and its handle, also after the table is drawn again.
+function _wsFillSetActive(td){
+  document.querySelectorAll('td.ws-cell-active').forEach(c=>{c.classList.remove('ws-cell-active');if(c!==_wsFillHoverTd)_wsFillHandleOff(c);});
+  _wsFillActive=null;
+  if(!td||!td.dataset||!td.dataset.fill||currentUser?.role==='client')return;
+  const tr=td.closest('tr[data-tid]');if(!tr)return;
+  _wsFillActive={tid:tr.dataset.tid,key:td.dataset.fill};
+  td.classList.add('ws-cell-active');_wsFillHandleOn(td);
+}
+function _wsFillRestore(){
+  if(!_wsFillActive)return;
+  const td=_wsFillCell(_wsFillActive.tid,_wsFillActive.key);
+  if(!td){_wsFillActive=null;return;}
+  td.classList.add('ws-cell-active');_wsFillHandleOn(td);
+}
+document.addEventListener('mouseover',e=>{
+  if(_wsFill||currentUser?.role==='client')return;
+  if(e.target.classList&&e.target.classList.contains('ws-fill-h'))return;
+  const td=e.target.closest?e.target.closest('td[data-fill]'):null;
+  if(td===_wsFillHoverTd)return;
+  if(_wsFillHoverTd&&!_wsFillHoverTd.classList.contains('ws-cell-active'))_wsFillHandleOff(_wsFillHoverTd);
+  _wsFillHoverTd=td;
+  if(td&&td.closest('.ws-table,.ws-subtable'))_wsFillHandleOn(td);
+});
+// The rows a drag can reach: every item row of the table, or the sibling subitems in one subitem grid.
+function _wsFillRows(srcTr){
+  if(srcTr.classList.contains('ws-subrow2'))return[...srcTr.parentElement.querySelectorAll(':scope>tr.ws-subrow2[data-tid]')];
+  const tb=srcTr.closest('.ws-table>tbody');
+  return tb?[...tb.querySelectorAll(':scope>tr.ws-row[data-tid]')]:[];
+}
+function wsFillStart(e){
+  if(e.button!==0)return;
+  e.preventDefault();e.stopPropagation();
+  const td=e.currentTarget.parentElement,tr=td&&td.closest('tr[data-tid]');
+  if(!td||!tr)return;
+  try{requireInternalUser(currentUser);}catch(_){return;}
+  wsCellClose();_mtTipHide();
+  const rows=_wsFillRows(tr);
+  _wsFill={key:td.dataset.fill,srcTid:tr.dataset.tid,srcTd:td,rows,srcIdx:rows.indexOf(tr),y:e.clientY,targets:[]};
+  td.classList.add('ws-fill-src');
+  document.body.classList.add('ws-filling');
+  document.addEventListener('mousemove',_wsFillMove);
+  document.addEventListener('mouseup',_wsFillEnd);
+  _wsFillScrollLoop();
+}
+function _wsFillMove(e){if(_wsFill){_wsFill.y=e.clientY;_wsFillMark();}}
+// The row under the pointer (or the nearest end when the pointer is past the first or last row).
+function _wsFillMark(){
+  const f=_wsFill;if(!f||f.srcIdx<0)return;
+  let idx=f.srcIdx;
+  for(let i=0;i<f.rows.length;i++){
+    const r=f.rows[i].getBoundingClientRect();
+    if(f.y>=r.top&&f.y<r.bottom){idx=i;break;}
+    if(i===0&&f.y<r.top){idx=0;break;}
+    if(i===f.rows.length-1&&f.y>=r.bottom)idx=i;
+  }
+  const lo=Math.min(idx,f.srcIdx),hi=Math.max(idx,f.srcIdx);
+  document.querySelectorAll('td.ws-fill-target').forEach(c=>c.classList.remove('ws-fill-target'));
+  f.targets=[];
+  for(let i=lo;i<=hi;i++){
+    if(i===f.srcIdx)continue;
+    const c=f.rows[i].querySelector(`:scope>td[data-fill="${CSS.escape(f.key)}"]`);
+    if(c){c.classList.add('ws-fill-target');f.targets.push(f.rows[i].dataset.tid);}
+  }
+}
+// Scrolls the table while the pointer sits near its top or bottom edge, so a long column can be filled.
+function _wsFillScrollLoop(){
+  if(!_wsFill)return;
+  const sc=document.getElementById('ws-table-scroll');
+  if(sc){
+    const r=sc.getBoundingClientRect(),y=_wsFill.y;
+    const d=y>r.bottom-28?Math.min(18,(y-(r.bottom-28))/2+4):y<r.top+44?-Math.min(18,((r.top+44)-y)/2+4):0;
+    if(d){sc.scrollTop+=d;_wsFillMark();}
+  }
+  requestAnimationFrame(_wsFillScrollLoop);
+}
+function _wsFillEnd(){
+  const f=_wsFill;_wsFill=null;
+  document.removeEventListener('mousemove',_wsFillMove);
+  document.removeEventListener('mouseup',_wsFillEnd);
+  document.body.classList.remove('ws-filling');
+  document.querySelectorAll('td.ws-fill-target').forEach(c=>c.classList.remove('ws-fill-target'));
+  if(f&&f.srcTd)f.srcTd.classList.remove('ws-fill-src');
+  if(f&&f.targets.length)wsFillApply(f.srcTid,f.key,f.targets);
+}
+// The task fields one column holds, saved before a fill so Undo can put them back exactly.
+const _WS_FILL_FIELDS={status:['status','percentComplete','completedAt','clientApprovedAt'],priority:['priority'],
+  owner:['ownerId','assigneeIds','coOwnerId'],cwith:['currentlyWith','currentlyWithType','currentlyWithUserId'],
+  duedate:['startDate','endDate'],progress:['percentComplete','status','completedAt','clientApprovedAt'],client:['clientId']};
+const _WS_FILL_NAMES={status:'Status',priority:'Priority',owner:'Owner',cwith:'With',duedate:'Timeline',progress:'Progress',client:'Client'};
+// Copies the source cell's value into the target tasks. Exported for tests as well as the drag.
+function wsFillApply(srcTid,key,targetIds){
+  try{requireInternalUser(currentUser);}catch(_){return;}
+  const src=DB.tasks.find(t=>t.id===srcTid);if(!src)return;
+  const targets=targetIds.map(id=>DB.tasks.find(t=>t.id===id)).filter(t=>t&&t.id!==srcTid&&canEditTask(currentUser,t));
+  if(!targets.length)return;
+  const ccId=key.startsWith('cc_')?key.slice(3):null;
+  const cc=ccId?(DB.customColumns||[]).find(c=>c.id===ccId):null;
+  if(ccId&&!_wsBulkColOk(cc))return;
+  // With: Client is a request to the client, so copying it opens the Send to Client form for the filled tasks
+  // (there is nothing to undo once a request has gone out).
+  if(key==='cwith'&&(src.currentlyWith==='client'||src.currentlyWithType==='client')){
+    wsHandoffToClient(targets.map(t=>t.id).join(','));return;
+  }
+  const run=()=>{
+    // What to put back on Undo.
+    const snap={key,ccId,tasks:[],values:[],parents:[]};
+    if(ccId){
+      targets.forEach(t=>{const v=(DB.customColumnValues||[]).find(x=>x.taskId===t.id&&x.columnId===ccId);snap.values.push({taskId:t.id,had:!!v,value:v?v.value:''});});
+      const val=mtGetCustomVal(src.id,ccId);
+      targets.filter(t=>mtColAppliesTo(cc,!!t.parentTaskId)).forEach(t=>_mtWriteCustomVal(t.id,ccId,val));
+    }else{
+      const fields=_WS_FILL_FIELDS[key];if(!fields)return;
+      targets.forEach(t=>{
+        const vals={};fields.forEach(f=>{vals[f]=t[f]===undefined?undefined:JSON.parse(JSON.stringify(t[f]));});
+        const kids=key==='client'?(DB.tasks||[]).filter(c=>c.parentTaskId===t.id).map(c=>({id:c.id,clientId:c.clientId})):[];
+        snap.tasks.push({id:t.id,vals,kids});
+        if(t.parentTaskId&&!snap.parents.includes(t.parentTaskId))snap.parents.push(t.parentTaskId);
+      });
+      // A parent with subitems shows (and so copies) the span of its subitems.
+      const span=key==='duedate'&&_wsHasKids(src)?getTaskDateSpan(src.id):null;
+      targets.forEach(t=>{
+        if(key==='status')_wsApplyField(t,'status',src.status);
+        else if(key==='priority')_wsApplyField(t,'priority',src.priority);
+        else if(key==='progress'){if(!_wsHasKids(t))_wsApplyField(t,'percentComplete',src.percentComplete||0);}
+        else if(key==='cwith')_wsApplyField(t,'currentlyWith',src.currentlyWith||'');
+        else if(key==='duedate'){
+          _wsApplyField(t,'startDate',(span?span.startDate:src.startDate)||'');
+          _wsApplyField(t,'endDate',(span?span.endDate:src.endDate)||'');
+        }else if(key==='owner'){
+          const prev=t.assigneeIds||[];
+          _wsApplyField(t,'ownerId',src.ownerId||'');
+          setTaskAssignees(t,src.assigneeIds||[]);
+          if(JSON.stringify(prev)!==JSON.stringify(t.assigneeIds))writeAuditEvent('Task',t.id,'assignees_changed',{assigneeIds:prev},{assigneeIds:t.assigneeIds});
+        }else if(key==='client')_wsSetTasksClient([t],getTaskClient(src)?.id||null);   // the client the cell shows
+      });
+    }
+    _wsFillUndo=snap;
+    saveDB(DB);renderView('workspace');
+    const name=cc?cc.name:(_WS_FILL_NAMES[key]||'Value');
+    showToast(`${name} copied to ${targets.length} task${targets.length!==1?'s':''}.`,'success',7000,{label:'Undo',onClick:'wsFillUndoLast()'});
+  };
+  // Client decides who sees a task in the client portal, so that one fill asks first.
+  if(key==='client'){
+    openConfirm('Copy Client',_wsClientChangeMsg(targets,getTaskClient(src)),'Copy client',()=>{closeConfirm();run();});
+    return;
+  }
+  run();
+}
+function wsFillUndoLast(){
+  const u=_wsFillUndo;_wsFillUndo=null;
+  if(!u)return;
+  try{requireInternalUser(currentUser);}catch(_){return;}
+  const now=new Date().toISOString();
+  if(u.ccId){
+    u.values.forEach(v=>{
+      if(v.had)_mtWriteCustomVal(v.taskId,u.ccId,v.value);
+      else{
+        const i=(DB.customColumnValues||[]).findIndex(x=>x.taskId===v.taskId&&x.columnId===u.ccId);
+        // Back to empty (a value row is kept, with a fresh stamp, so the undo also wins on other computers).
+        if(i>=0){DB.customColumnValues[i].value='';DB.customColumnValues[i].updatedAt=now;}
+      }
+    });
+  }else{
+    u.tasks.forEach(s=>{
+      const t=DB.tasks.find(x=>x.id===s.id);if(!t)return;
+      Object.keys(s.vals).forEach(f=>{
+        const old=s.vals[f];
+        if(!['completedAt','clientApprovedAt','coOwnerId','currentlyWithType','currentlyWithUserId'].includes(f))_taskAudit(t.id,f,t[f],old);
+        if(old===undefined)delete t[f];else t[f]=old;
+      });
+      s.kids.forEach(k=>{const c=DB.tasks.find(x=>x.id===k.id);if(c){c.clientId=k.clientId;c.updatedAt=now;}});
+      t.updatedAt=now;
+    });
+    u.parents.forEach(pid=>{const p=DB.tasks.find(x=>x.id===pid);if(p){p.percentComplete=getEffectiveTaskPct(pid);p.updatedAt=now;}});
+  }
+  saveDB(DB);renderView('workspace');
+  showToast('Fill undone.','info',2500);
+}
 
 // ── Label customisation ──
 function wsLabelColor(fieldType,key,newColor){
@@ -28923,7 +29607,9 @@ function _wsMtExportNow(){
   const subCust=custCols.filter(cc=>mtColAppliesTo(cc,true));
   const subCols=[{key:'name',label:'Name'},..._xlMix('sub',subVis,subCust),DESC_COL];
 
-  const val=(t,c)=>c.cc?{v:mtGetCustomVal(t.id,c.cc.id)||''}:_xlCell(t,c.key);
+  // A Dependencies column holds no values of its own: export the names of the tasks it waits on.
+  const _xlDeps=t=>(DB.dependencies||[]).filter(d=>d.dependentTaskId===t.id).map(d=>{const p=DB.tasks.find(x=>x.id===d.predecessorTaskId);return p?(p.name||p.title||''):'';}).filter(Boolean).join(', ');
+  const val=(t,c)=>c.cc?{v:c.cc.type==='dependencies'?_xlDeps(t):(mtGetCustomVal(t.id,c.cc.id)||'')}:_xlCell(t,c.key);
 
   let r=1;
   // title, then a quiet subtitle line — a board export gets emailed around and read out of
@@ -29006,10 +29692,28 @@ function mtGetBoardCustomCols(){
   return(DB.customColumns||[]).filter(c=>c.boardId===currentWorkboard.id).sort((a,b)=>(a.order||0)-(b.order||0));
 }
 function mtGetCustomVal(taskId,colId){
+  // For the bulk bar: the value every selected task shares, or empty when they differ.
+  if(taskId===_WS_BULK){const vs=[...new Set(_wsBulkTasks().map(t=>mtGetCustomVal(t.id,colId)))];return vs.length===1?vs[0]:'';}
   return(DB.customColumnValues||[]).find(v=>v.taskId===taskId&&v.columnId===colId)?.value||'';
 }
 function mtSetCustomVal(taskId,colId,value){
   try{requireInternalUser(currentUser);}catch(e){return;}
+  if(taskId===_WS_BULK){
+    const ts=_wsBulkTasks(),cc=(DB.customColumns||[]).find(c=>c.id===colId);
+    // Only the tier the column belongs to (an items-only column skips selected subitems).
+    const hit=ts.filter(t=>!cc||mtColAppliesTo(cc,!!t.parentTaskId));
+    hit.forEach(t=>_mtWriteCustomVal(t.id,colId,value));
+    saveDB(DB);wsCellClose();renderView('workspace');
+    showToast(`${cc?cc.name:'Column'} set on ${hit.length} task${hit.length!==1?'s':''}.`,'success',2600);
+    return;
+  }
+  _mtWriteCustomVal(taskId,colId,value);
+  saveDB(DB);
+  wsCellClose();
+  renderView('workspace');
+}
+// Writes one added-column value with no save or redraw (the bulk bar and the fill handle write many at once).
+function _mtWriteCustomVal(taskId,colId,value){
   if(!DB.customColumnValues)DB.customColumnValues=[];
   const idx=DB.customColumnValues.findIndex(v=>v.taskId===taskId&&v.columnId===colId);
   // No updatedAt meant the merge (mergeById falls back to "local always wins" with no
@@ -29017,9 +29721,6 @@ function mtSetCustomVal(taskId,colId,value){
   // a custom column value someone just typed could lose to a stale value from another tab.
   if(idx>=0){DB.customColumnValues[idx].value=value;DB.customColumnValues[idx].updatedAt=new Date().toISOString();}
   else DB.customColumnValues.push({id:'ccv'+uid(),taskId,columnId:colId,value:String(value),updatedAt:new Date().toISOString()});
-  saveDB(DB);
-  wsCellClose();
-  renderView('workspace');
 }
 function mtAddCustomCol(type,name,level){
   try{requireInternalUser(currentUser);}catch(e){return;}
@@ -29200,6 +29901,7 @@ function mtDeleteLabelOption(colId,optId){
   saveDB(DB);_mtLabelRefresh(cc);
 }
 function renderCustomColCell(taskId,cc){
+  if(cc.type==='dependencies')return mtDepsCellHtml(taskId);
   const val=mtGetCustomVal(taskId,cc.id);
   if(cc.type==='labels')return mtLabelCellHtml(cc,val);
   switch(cc.type){
@@ -29245,9 +29947,117 @@ function renderCustomColCell(taskId,cc){
   }
 }
 
+// ── Dependencies column ──
+// Shows what a task is waiting on as named chips (amber while that task is open, green once it is completed,
+// grey if it was cancelled) and how many tasks wait on this one. Reads DB.dependencies, so it always agrees
+// with the Deps column, the Gantt arrows and the "Has dependencies" filter.
+function _mtDepTone(t){
+  if(!t)return'gone';
+  if(_TASK_DONE_STATUSES.includes(t.status))return'done';
+  if(t.status==='cancelled')return'cancelled';
+  return'open';
+}
+const _MT_DEP_ICON={
+  done:'<svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="m2 5.2 2 2 4-4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  open:'<svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><circle cx="5" cy="5" r="3.4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3.4V5l1 .8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+  cancelled:'<svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  gone:'',
+};
+const _MT_DEP_WORD={done:'Completed',open:'Not done yet',cancelled:'Cancelled',gone:'Deleted task'};
+function _mtDepChip(pred,predId){
+  const tone=_mtDepTone(pred),name=pred?(pred.name||pred.title||'Untitled'):'Deleted task';
+  const sm=pred?getStatusMeta(pred.status):null;
+  // The button is the (row-height) hit area; the pill inside it is what shows.
+  return`<button type="button" class="mt-dep-hit" ${pred?`onclick="event.stopPropagation();openTaskPanel('${predId}')"`:'disabled'} title="Waiting on: ${escHtml(name)}. ${pred?escHtml(sm.label):_MT_DEP_WORD[tone]}${pred?'. Click to open it.':''}"><span class="mt-dep-chip mt-dep-${tone}">${_MT_DEP_ICON[tone]}<span>${escHtml(name)}</span></span></button>`;
+}
+function mtDepsCellHtml(taskId){
+  const deps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId);
+  const blocks=(DB.dependencies||[]).filter(d=>d.predecessorTaskId===taskId).length;
+  const blocksHtml=blocks?`<span class="mt-dep-blocks" title="${blocks} task${blocks!==1?'s':''} wait${blocks===1?'s':''} on this one">Blocks ${blocks}</span>`:'';
+  if(!deps.length)return`<div class="mt-dep-cell">${blocksHtml||'<span style="color:#c8d5e0;font-size:11px">+ add</span>'}</div>`;
+  // The first chip carries a name (what is still open comes first); the rest fold into a count that is
+  // amber while any of them is open, so the cell still answers "is anything holding this up?".
+  const rank={open:0,gone:1,cancelled:2,done:3};
+  const preds=deps.map(d=>({id:d.predecessorTaskId,t:DB.tasks.find(t=>t.id===d.predecessorTaskId)})).sort((a,b)=>rank[_mtDepTone(a.t)]-rank[_mtDepTone(b.t)]);
+  const rest=preds.slice(1),restOpen=rest.some(p=>_mtDepTone(p.t)==='open');
+  const restNames=rest.map(p=>(p.t?(p.t.name||p.t.title||'Untitled'):'Deleted task')+': '+_MT_DEP_WORD[_mtDepTone(p.t)]).join('\n');
+  return`<div class="mt-dep-cell">${_mtDepChip(preds[0].t,preds[0].id)}${rest.length?`<span class="mt-dep-more mt-dep-more-${restOpen?'open':'done'}" title="Also waiting on:\n${escHtml(restNames)}">+${rest.length}</span>`:''}${blocksHtml}</div>`;
+}
+// Tasks this one may wait on: the same rule as the Deps column (an item waits on items; a subitem also on its
+// own parent's other subitems), not archived, not already linked.
+function _mtDepCandidates(taskId){
+  const me=DB.tasks.find(t=>t.id===taskId);if(!me)return[];
+  const bid=_taskBoardId(me),pid=me.parentTaskId||null;
+  const have=new Set((DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId).map(d=>d.predecessorTaskId));
+  return DB.tasks.filter(t=>t.id!==taskId&&!t.archived&&!have.has(t.id)&&_taskBoardId(t)===bid&&canViewTask(currentUser,t)
+    &&(pid?(!t.parentTaskId||t.parentTaskId===pid):!t.parentTaskId));
+}
+function mtDepsPickerHtml(taskId,colId){
+  const me=DB.tasks.find(t=>t.id===taskId);
+  const deps=(DB.dependencies||[]).filter(d=>d.dependentTaskId===taskId);
+  const blockers=(DB.dependencies||[]).filter(d=>d.predecessorTaskId===taskId).map(d=>DB.tasks.find(t=>t.id===d.dependentTaskId)).filter(Boolean);
+  const row=(t,id,extra)=>{const tone=_mtDepTone(t);return`<div class="ws-cell-dd-item" style="justify-content:space-between;gap:6px">
+      <button type="button" class="mt-dep-row mt-dep-${tone}" ${t?`onclick="event.stopPropagation();wsCellClose();openTaskPanel('${id}')"`:'disabled'} title="${t?'Open this task':'This task was deleted'}">${_MT_DEP_ICON[tone]}<span class="mt-dep-row-name">${escHtml(t?(t.name||t.title||'Untitled'):'Deleted task')}</span><span class="mt-dep-row-st">${t?escHtml(getStatusMeta(t.status).label):''}</span></button>
+      ${extra||''}
+    </div>`;};
+  return`<div class="mt-dep-pick" onclick="event.stopPropagation()">
+    <div class="mt-dep-hd">${escHtml(me?(me.name||me.title||'This task'):'This task')} is waiting on</div>
+    ${deps.length?deps.map(d=>row(DB.tasks.find(t=>t.id===d.predecessorTaskId),d.predecessorTaskId,
+      `<button type="button" class="mt-dep-x" onclick="event.stopPropagation();mtDepsRemove('${d.id}','${taskId}','${colId}')" title="Stop waiting on this task" aria-label="Remove this dependency"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`)).join('')
+      :`<div class="mt-dep-empty">Nothing yet. Search below to add a task it waits on.</div>`}
+    <div class="ws-dd-sep"></div>
+    <div style="padding:6px 12px 4px">
+      <input id="mt-deps-q" type="search" class="mt-dep-q" placeholder="Search tasks on this board" autocomplete="off"
+        oninput="mtDepsSearch('${taskId}','${colId}',this.value)" onkeydown="if(event.key==='Escape'){event.stopPropagation();wsCellClose();}if(event.key==='Enter'){event.preventDefault();document.querySelector('#mt-deps-res .mt-dep-res')?.click();}"/>
+      <div id="mt-deps-err" role="alert" class="mt-dep-err"></div>
+    </div>
+    <div id="mt-deps-res" class="mt-dep-results">${_mtDepsResultsHtml(taskId,colId,'')}</div>
+    ${blockers.length?`<div class="ws-dd-sep"></div><div class="mt-dep-hd">Blocks ${blockers.length} task${blockers.length!==1?'s':''}</div>${blockers.map(b=>row(b,b.id)).join('')}`:''}
+  </div>`;
+}
+function _mtDepsResultsHtml(taskId,colId,q){
+  q=(q||'').trim().toLowerCase();
+  const groups=new Map((DB.groups||[]).map(g=>[g.id,g.name]));
+  const all=_mtDepCandidates(taskId).filter(t=>!q||(t.name||t.title||'').toLowerCase().includes(q)||taskRef(t).toLowerCase().includes(q));
+  if(!all.length)return`<div class="mt-dep-empty">${q?'No task on this board matches.':'No other tasks to pick.'}</div>`;
+  return all.slice(0,8).map(t=>{const tone=_mtDepTone(t);return`<button type="button" class="mt-dep-res mt-dep-${tone}" onclick="event.stopPropagation();mtDepsAdd('${taskId}','${t.id}','${colId}')">${_MT_DEP_ICON[tone]}<span class="mt-dep-row-name">${escHtml(t.name||t.title||'Untitled')}</span><span class="mt-dep-row-st">${escHtml(groups.get(t.groupId)||'')}</span></button>`;}).join('')
+    +(all.length>8?`<div class="mt-dep-empty">${all.length-8} more. Type to narrow the list.</div>`:'');
+}
+function mtDepsSearch(taskId,colId,q){
+  const box=document.getElementById('mt-deps-res');
+  if(box)box.innerHTML=_mtDepsResultsHtml(taskId,colId,q);
+}
+function _mtDepsRepaint(taskId,colId){
+  const body=document.getElementById('ws-cell-dd-body');
+  const q=document.getElementById('mt-deps-q')?.value||'';
+  renderView('workspace');
+  if(body&&_wsCellTask===taskId){
+    body.innerHTML=mtDepsPickerHtml(taskId,colId);
+    const inp=document.getElementById('mt-deps-q');
+    if(inp){inp.value=q;mtDepsSearch(taskId,colId,q);inp.focus();}
+  }
+}
+function mtDepsAdd(taskId,predId,colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const me=DB.tasks.find(t=>t.id===taskId);
+  if(!me||!canEditTask(currentUser,me))return;
+  // Lag 0, the same as adding one from the Deps column without typing a lag.
+  const res=addDependency(predId,taskId,0);
+  if(!res.ok){const el=document.getElementById('mt-deps-err');if(el)el.textContent=res.error||'That dependency could not be added.';return;}
+  _mtDepsRepaint(taskId,colId);
+}
+function mtDepsRemove(depId,taskId,colId){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const me=DB.tasks.find(t=>t.id===taskId);
+  if(!me||!canEditTask(currentUser,me))return;
+  removeDependency(depId);
+  _mtDepsRepaint(taskId,colId);
+}
+
 // Open custom column cell editor
 function mtOpenCellEdit(taskId,colId,evt){
   evt.stopPropagation();
+  _wsFillSetActive(evt.currentTarget);
   const cc=(DB.customColumns||[]).find(c=>c.id===colId);if(!cc)return;
   const val=mtGetCustomVal(taskId,colId);
   if(cc.type==='checkbox')return; // handled inline
@@ -29255,6 +30065,22 @@ function mtOpenCellEdit(taskId,colId,evt){
   const body=document.getElementById('ws-cell-dd-body');
   if(!dd||!body)return;
   const r=evt.currentTarget.getBoundingClientRect();
+  if(cc.type==='dependencies'){
+    // The task's dependencies themselves (DB.dependencies), the same ones the Deps column, the Gantt and the
+    // "Has dependencies" filter use: this column holds no values of its own.
+    _wsCellTask=taskId;_wsCellField='cc_'+colId;
+    body.innerHTML=mtDepsPickerHtml(taskId,colId);
+    dd.style.width='';dd.style.visibility='hidden';dd.style.left=r.left+'px';dd.style.top='0px';dd.style.display='block';
+    requestAnimationFrame(()=>{
+      const h=dd.offsetHeight,w=dd.offsetWidth;
+      let top=r.bottom+4,left=r.left;
+      if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-4);
+      if(left+w>window.innerWidth-8)left=Math.max(8,window.innerWidth-w-8);
+      dd.style.top=top+'px';dd.style.left=left+'px';dd.style.visibility='visible';
+      document.getElementById('mt-deps-q')?.focus();
+    });
+    return;
+  }
   // Text columns open a big box to read and edit the whole note; every other column keeps the small menu.
   const big=cc.type==='text'||cc.type==='longtext';
   const bw=big?Math.min(480,window.innerWidth-16):260,bh=big?330:300;
@@ -29373,6 +30199,7 @@ function mtOpenAddColModal(level){
     {t:'checkbox', label:'Checkbox',  icon:_ic(`<rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2.5" ${S}/><path d="m5.25 8.15 2 2 3.5-4" ${S}/>`)},
     {t:'link',     label:'Link',      icon:_ic(`<path d="M6.6 9.4a2.6 2.6 0 0 0 3.75.16l2.05-2.05a2.65 2.65 0 0 0-3.75-3.75L7.5 4.9" ${S}/><path d="M9.4 6.6a2.6 2.6 0 0 0-3.75-.16L3.6 8.49a2.65 2.65 0 0 0 3.75 3.75l1.15-1.15" ${S}/>`)},
     {t:'file',     label:'File',      icon:_ic(`<path d="M13.4 7.4 8 12.8a3.15 3.15 0 0 1-4.45-4.45l5.7-5.7a2.1 2.1 0 0 1 2.97 2.97l-5.67 5.67a1.05 1.05 0 0 1-1.48-1.48l5.25-5.25" ${S}/>`)},
+    {t:'dependencies',label:'Dependencies',icon:_ic(`<rect x="1.75" y="2.5" width="5.5" height="4" rx="1.2" ${S}/><rect x="8.75" y="9.5" width="5.5" height="4" rx="1.2" ${S}/><path d="M4.5 6.5v2.25a1.25 1.25 0 0 0 1.25 1.25H8.5" ${S}/><path d="m7.25 8.6 1.4 1.4-1.4 1.4" ${S}/>`)},
   ];
   const div=document.createElement('div');
   div.id='mt-addcol-overlay';
