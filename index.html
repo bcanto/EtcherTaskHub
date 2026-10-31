@@ -31036,7 +31036,11 @@ function sanitizeTaskForClient(task){
   // Only while the task is actually with the client: if staff take it back (With → someone
   // else) without cancelling the ask, the client must not still see "Action needed" and be
   // able to Mark Done — that would flip With away from whoever staff just gave it to.
-  const _ar=task.currentlyWithType==='client'?(DB.actionRequests||[]).find(r=>r.taskId===task.id&&r.status==='open'):null;
+  // A finished task (Completed, Completed & Approved, Cancelled) waits on nobody, even when With
+  // still says Client: same rule as api/_portal.js awaitingClient. Client Approved is not finished:
+  // staff can still ask the client for something on it (action-requests-test).
+  const _closed=['done','completed','completed-approved','cancelled'].includes(task.status);
+  const _ar=task.currentlyWithType==='client'&&!_closed?(DB.actionRequests||[]).find(r=>r.taskId===task.id&&r.status==='open'):null;
   const _grp=(DB.groups||[]).find(g=>g.id===task.groupId);
   return{
     id:              task.id,
@@ -31045,7 +31049,7 @@ function sanitizeTaskForClient(task){
     percentComplete: typeof task.percentComplete==='number'?task.percentComplete:0,
     startDate:       task.startDate??null,
     endDate:         task.endDate??null,
-    awaitingClient:  task.currentlyWithType==='client'||task.status==='ready-approval'||task.status==='waiting-client',
+    awaitingClient:  !_closed&&(task.currentlyWithType==='client'||task.status==='ready-approval'||task.status==='waiting-client'),
     approvalType:    task.approvalType||null,
     // Additional safe fields
     priority:        task.priority||'med',

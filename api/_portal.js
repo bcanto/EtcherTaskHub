@@ -280,7 +280,11 @@ function fileVisibleTo(blob, clientId, f) {
   if (f.uploadedByClientId === clientId) return true;
   return f.internalOnly !== true && !t.clientAttachmentsHidden;
 }
+// A finished task waits on nobody, even when With still says Client (staff completed it after
+// sending it over). Client Approved is not finished: staff can still ask the client for something.
+const CLOSED_FOR_CLIENT = new Set(['done', 'completed', 'completed-approved', 'cancelled']);
 function awaitingClient(t) {
+  if (CLOSED_FOR_CLIENT.has(t.status)) return false;
   return t.currentlyWithType === 'client' || t.status === 'ready-approval' || t.status === 'waiting-client';
 }
 function openRequestFor(blob, taskId) {
