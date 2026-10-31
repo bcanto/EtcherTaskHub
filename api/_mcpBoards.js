@@ -141,7 +141,10 @@ function taskVisible(data, user, t, visibleBoardIds) {
 function listTasksForUser(data, user, filter, base) {
   filter = filter || {};
   const visibleBoardIds = new Set(boardsOf(data).filter(b => canViewBoard(user, b, data)).map(b => b.id));
-  let tasks = (data.tasks || []).filter(t => !t.archived && taskVisible(data, user, t, visibleBoardIds));
+  // Tasks on a board in Archive & Bin are not current work (31 Oct 2026): left out like archived tasks.
+  const archivedBoardIds = new Set(boardsOf(data).filter(b => b && b.archived).map(b => b.id));
+  const boardOfT = t => resolveTaskBoardId(data, t) || (t.parentTaskId ? resolveTaskBoardId(data, (data.tasks || []).find(x => x.id === t.parentTaskId)) : null);
+  let tasks = (data.tasks || []).filter(t => !t.archived && !(archivedBoardIds.size && archivedBoardIds.has(boardOfT(t))) && taskVisible(data, user, t, visibleBoardIds));
 
   if (filter.boardId) tasks = tasks.filter(t => resolveTaskBoardId(data, t) === filter.boardId);
   if (filter.client) tasks = tasks.filter(t => matchesClientFilter(data, t, filter.client));

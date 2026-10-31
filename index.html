@@ -1043,20 +1043,33 @@ html.boot-share #share-skeleton{display:block!important}
 .rs-num{display:flex;align-items:center;gap:8px;min-width:0}.rs-num input{width:60px;height:34px;border:1.5px solid #e2eaf2;border-radius:7px;padding:0 8px;font-weight:700;color:#0d1c33;flex-shrink:0}
 .rs-num input:focus{outline:0;border-color:#31585a}.rs-num em{font-style:normal;font-size:12px;color:#6b8399;line-height:1.3}
 .rs-mts{display:flex;flex-wrap:wrap;gap:6px}
-.rs-mt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;border:1px solid #e2eaf2;font-size:12px;color:#6b8399;cursor:pointer}
+.rs-mt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;border:1px solid #e2eaf2;font-size:12px;color:#6b8399}.rs-mt input[type=checkbox]{cursor:pointer}
 .rs-mt.on{border-color:#97bcbd;background:#f2f7f7;color:#1a2940}.rs-mt input{accent-color:#31585a;margin:0}
 .rs-mt:focus-within{box-shadow:0 0 0 2px #31585a}
+.rs-mtw{display:grid;gap:6px;justify-items:start}
+.rs-mt-n{padding:0;border:0;background:none;font:inherit;color:inherit;cursor:text;text-align:left}.rs-mt-n:hover{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.rs-mt-n:focus-visible{outline:none}.rs-mt-n:active{opacity:.7}
+.rs-mt-ok{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:2px;padding:0;border:0;border-radius:50%;background:#31585a;color:#fff;cursor:pointer;transition:transform .12s cubic-bezier(.2,.8,.2,1)}
+.rs-mt-ok:hover{background:#244345}.rs-mt-ok:active{transform:scale(.9)}.rs-mt-ok:focus-visible{outline:2px solid #31585a;outline-offset:2px}
+.rs-mt.add{border-style:dashed}
+.rs-mt-x{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:-4px;padding:0;border:0;border-radius:50%;background:none;color:#8da2b2;cursor:pointer}
+.rs-mt-x svg{width:11px;height:11px}.rs-mt-x:hover{background:#fdecec;color:#b91c1c}.rs-mt-x:active{transform:scale(.9)}.rs-mt-x:focus-visible{outline:2px solid #31585a}
+.rs-mt-ed{padding:2px 4px}.rs-mt-in{height:26px;min-width:220px;padding:0 8px;font-size:12px;border-radius:12px}
+.rs-mt-add{padding:5px 10px;border-radius:16px;border:1px dashed #97bcbd;background:#fff;font-size:12px;font-weight:700;color:#31585a;cursor:pointer;transition:transform .12s cubic-bezier(.2,.8,.2,1)}
+.rs-mt-add:hover{background:#f2f7f7}.rs-mt-add:active{transform:scale(.96)}.rs-mt-add:focus-visible{outline:2px solid #31585a;outline-offset:1px}
+.rs-pl-mts{display:grid;gap:10px}.rs-pl-mt{display:grid;gap:6px;justify-items:start}.rs-pl-mt>b{font-size:12.5px;color:#1a2940}
+.rs-lvl-use.rs-mt-def{font-size:12px}
 .rs-track{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#6b8399}.rs-track>span{font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;color:#8da2b2}
 .rs-track button{padding:4px 11px;border:1px solid #d8e0ec;background:#fff;font-size:12px;font-weight:600;color:#3d5269;cursor:pointer}
 .rs-track button:first-of-type{border-radius:7px 0 0 7px}.rs-track button:last-of-type{border-radius:0 7px 7px 0;border-left:0}
 .rs-track button.on{background:#0d1c33;border-color:#0d1c33;color:#fff}.rs-track button:hover:not(.on){background:#f4f7fa}.rs-track button:focus-visible{outline:2px solid #31585a;outline-offset:1px}
 .rs-parts{display:grid;gap:6px}
-.rs-part{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;padding:8px;border-radius:8px;background:#f6f8fb}
+.rs-part{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:6px;align-items:center;padding:8px;border-radius:8px;background:#f6f8fb}
 .rs-part .rs-part-l{min-width:0}.rs-pl-t .rs-part input.rs-part-l{width:100%}.rs-part select{width:100%;min-width:0}
 .rs-part-x{grid-column:1/-1;justify-self:end}
 .rs-part .form-input{height:30px;padding:0 8px;font-size:12px}
 .rs-part-h{display:inline-flex;align-items:center;gap:4px;min-width:0}.rs-part-h input{width:60px;flex-shrink:0}.rs-part-h em{font-style:normal;font-size:12px;color:#6b8399}
-.rs-part .rs-part-h select.rs-part-k{width:auto;min-width:0;max-width:170px;flex:1 1 auto}
+.rs-part .rs-part-h select.rs-part-k{width:auto;min-width:0;max-width:none;flex:1 1 auto}
 .rs-part-x{border:0;background:none;padding:0 2px;font-size:11.5px;color:#8da2b2;text-decoration:underline;cursor:pointer}.rs-part-x:hover{color:#b91c1c}.rs-part-x:focus-visible{outline:2px solid #31585a;border-radius:3px}
 .rs-part-add{justify-self:start}
 .rc-hours-t td small{display:block;font-size:11px;color:#8da2b2}.rc-hours-t td.reg-num small{display:inline;margin-left:5px}
@@ -1184,7 +1197,7 @@ html.boot-share #share-skeleton{display:block!important}
 .rc-act{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border:1px solid #d8e0ec;border-radius:8px;background:#fff;font:600 12.5px Jost,sans-serif;color:#0d1c33;cursor:pointer;transition:border-color .15s,background-color .15s}
 .rc-act svg{color:#31585a}.rc-act:hover{border-color:#97bcbd;background:#f6fafa}.rc-act:active{background:#ecf3f3}.rc-act:focus-visible{outline:2px solid #31585a;outline-offset:2px}
 .rc-line{height:4px;margin:0 20px 14px;overflow:hidden;border-radius:2px;background:#e6ecf2}.rc-line i{display:block;height:100%;border-radius:2px;background:#31585a}
-.rc-band{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #e4eaf3}
+.rc-band{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #e4eaf3}.rc-band.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .rc-cell{display:flex;align-items:baseline;gap:8px;min-width:0;padding:12px 20px;border:0;border-left:1px solid #e4eaf3;background:none;font:inherit;color:inherit;text-align:left}
 .rc-cell:first-child{border-left:0}
 .rc-cell b{font:600 20px/1 Jost,sans-serif;color:#0d1c33;font-variant-numeric:tabular-nums}
@@ -1201,7 +1214,7 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .rc-mast-board{margin-bottom:16px}
 .rd-cl-id{display:inline-flex;align-items:center;gap:10px}.rd-cl-id b{font-family:Jost,sans-serif;font-size:13.5px;color:#0d1c33}
 .rq-cl .rc-logo{border-radius:5px}
-@media (max-width:760px){.rc-band{grid-template-columns:repeat(2,minmax(0,1fr))}.rc-cell:nth-child(3){border-left:0}.rc-cell:nth-child(n+3){border-top:1px solid #e4eaf3}
+@media (max-width:760px){.rc-band,.rc-band.n3{grid-template-columns:repeat(2,minmax(0,1fr))}.rc-band.n3 .rc-cell:nth-child(3){grid-column:1/-1}.rc-cell:nth-child(3){border-left:0}.rc-cell:nth-child(n+3){border-top:1px solid #e4eaf3}
   .rc-mast-top{padding:10px 16px 0}.rc-mast-id{padding:10px 16px 12px}.rc-line{margin:0 16px 12px}.rc-cell{padding:11px 16px}.rc-name h1{font-size:21px}}
 @media (max-width:640px){.rc-tabs{padding:0 4px}.rc-tab{padding:12px 7px 10px;gap:5px}.rc-tab[data-short] .rt-l{display:none}.rc-tab[data-short]::before{content:attr(data-short)}}
 .rc-q td{vertical-align:middle}
@@ -1342,6 +1355,21 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
 .reg-st.over,.reg-st.exp{color:#b91c1c}.reg-st.d30{color:#9a4a07}.reg-st.d60,.reg-st.d90{color:#8a5200}.reg-st.ok{color:#15803d}.reg-st.none,.reg-st.noexp,.reg-st.held{color:#6b8399}
 .reg-t tr.over,.reg-t tr.over td,.reg-t tr.exp,.reg-t tr.exp td{background:#fff8f8}
 .reg-cm{width:40px;text-align:right}
+.reg-act{width:66px;white-space:nowrap;text-align:right}
+.reg-ib{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:6px;background:none;color:#6b8399;cursor:pointer;transition:transform .12s cubic-bezier(.2,.8,.2,1),background-color .12s ease}
+.reg-ib:hover{background:#eef3f8;color:#0d1c33}.reg-ib.x:hover{background:#fdecec;color:#b91c1c}.reg-ib:active{transform:scale(.92)}
+.reg-ib:focus-visible{outline:2px solid #31585a;outline-offset:1px}
+.reg-df{display:grid;gap:12px}.reg-df p{margin:0}
+.reg-df-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}.reg-df-g .rd-f{min-width:0}.reg-df-g .form-input{width:100%;box-sizing:border-box}
+.reg-df-w{grid-column:span 2}.reg-df-g label:last-child{grid-column:1/-1}
+.reg-df-calc{font-size:12.5px;color:#3d5269;display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px}.reg-df-calc b{color:#0d1c33}
+#reg-df-save:disabled{opacity:.45;cursor:not-allowed}
+.reg-dr-acts{display:flex;gap:8px;margin-top:10px}.reg-dr-del:hover{color:#b91c1c}
+.reg-left{margin-bottom:12px}
+.rcf-carry{margin:0 0 14px;padding:12px 14px;border:1px solid #f0d9a8;border-radius:10px;background:#fdf8ec;display:grid;gap:6px;font-size:12.5px;color:#3d5269}
+.rcf-carry legend{padding:0 4px;font-family:Jost,sans-serif;font-weight:700;font-size:13px;color:#0d1c33}.rcf-carry p{margin:0}
+.rcf-carry label{display:inline-flex;align-items:center;gap:7px;margin-right:16px;cursor:pointer;color:#1a2940}.rcf-carry label:hover{color:#31585a}.rcf-carry input{accent-color:#31585a}
+@media (max-width:560px){.reg-df-g{grid-template-columns:minmax(0,1fr)}.reg-df-w{grid-column:auto}}
 .reg-cmn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:#31585a}
 .reg .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .reg-pad{margin:0;padding:18px 0;text-align:center;color:#6b8399}
@@ -1423,7 +1451,7 @@ button.rc-cell{cursor:pointer;transition:background-color .15s}button.rc-cell:ho
   .reg-bar{align-items:stretch}.reg-fl{width:100%}.reg-fl .rd-f{flex:1 1 140px}.reg-fl input[type=search]{width:100%;min-width:0}
   .reg-t td[data-l]{display:flex;grid-column:1/-1;gap:6px;font-size:12px}
   .reg-t td[data-l]::before{content:attr(data-l);flex-shrink:0;width:86px;padding-top:2px;font-family:Jost,sans-serif;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#7a96ad}
-  .reg-code{grid-column:1/-1}.reg-doc{grid-column:1}.reg-cm{grid-column:2;grid-row:1;width:auto}
+  .reg-code{grid-column:1/-1}.reg-doc{grid-column:1}.reg-cm{grid-column:2;grid-row:1;width:auto}.reg-act{grid-column:1/-1;width:auto;text-align:left}
   .reg-mx-wrap{max-height:62vh}
   .reg-drawer{top:auto;width:100vw;height:86vh;border-radius:14px 14px 0 0}
 }
@@ -2835,6 +2863,9 @@ function loadDB(){
 function _migrateDB(data){
   // IMS counts document revisions (2026-10-22); boards made before stored "document reviews".
   (data.boards||data.workboards||[]).forEach(b=>{((b&&b.retainer&&b.retainer.services)||[]).forEach(s=>{if(s&&/^document reviews?$/i.test(String(s.unit||'')))s.unit='document revisions';});});
+  // HSEQ's "reports and register updates" are plain Items (TH-15, 31 Oct 2026): the same amount, counted the same way.
+  {const rru=/^reports and register updates$/i,fix=o=>{if(o&&rru.test(String(o.unit||'')))o.unit='items';};
+    (data.boards||data.workboards||[]).forEach(b=>{const r=b&&b.retainer;if(!r)return;(r.services||[]).concat(r.pastServices||[]).forEach(s=>{if(!s)return;fix(s);(s.parts||[]).forEach(fix);(s.hist||[]).forEach(h=>{fix(h);((h&&h.parts)||[]).forEach(fix);});});});}
   // Ensure new top-level entities exist
   if(!data.users)         data.users         = data.staff ? JSON.parse(JSON.stringify(data.staff)) : [];
   if(!data.boards)        data.boards        = data.workboards ? JSON.parse(JSON.stringify(data.workboards)) : [];
@@ -6152,7 +6183,8 @@ function _onGlobalSearchNow(){
   // Always scope to boards this user may actually see. Previously the board filter only
   // applied when inside a board, so searching from outside one could surface tasks from
   // private boards the user was never shared on.
-  const _accessibleIds=new Set((DB.workboards||[]).filter(wb=>canViewBoard(currentUser,wb)).map(wb=>wb.id));
+  // A board in Archive & Bin is left out, unless it is the board open now (31 Oct 2026).
+  const _accessibleIds=new Set((DB.workboards||[]).filter(wb=>(!wb.archived||(currentWorkboard&&currentWorkboard.id===wb.id))&&canViewBoard(currentUser,wb)).map(wb=>wb.id));
   let pool=DB.tasks.filter(t=>canViewTask(currentUser,t)&&_accessibleIds.has(_taskBoardId(t)));
   if(currentWorkboard)pool=pool.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
   const tasks=pool.filter(t=>(t.name||t.title||'').toLowerCase().includes(q)
@@ -6387,9 +6419,24 @@ function _wsMonthSelectHtml(){
       <select class="form-input" id="ws-month" aria-label="Month" data-hidden="${hidden}" onchange="_wsMonthSet(this.value)">${opts.map(([k,l])=>`<option value="${k}"${v===k?' selected':''}>${escHtml(l)}</option>`).join('')}</select>
     </label>`;
 }
+// Tasks on a board in Archive & Bin are not current work (31 Oct 2026, "GCS Tracker has been archived"): My Week, the
+// dashboard, search, capacity, client counts and the like leave them out. The archived board's own workspace, Archive &
+// Bin, time and billing history still see them. _offBoardIds() once per list, then _offBoard(t, ids) per task.
+function _offBoardIds(){return new Set((DB.workboards||[]).filter(b=>b&&b.archived).map(b=>b.id));}
+function _offBoard(t,ids){ids=ids||_offBoardIds();return ids.size>0&&ids.has(_taskBoardId(t));}
+let _liveIx=null;
+function _liveTasks(){
+  const ids=_offBoardIds(),ts=DB.tasks||[];if(!ids.size)return ts;
+  const sig=[...ids].join(',');
+  if(_liveIx&&_liveIx.src===ts&&_liveIx.n===ts.length&&_liveIx.sig===sig)return _liveIx.out;
+  const out=ts.filter(t=>!ids.has(_taskBoardId(t)));
+  _liveIx={src:ts,n:ts.length,sig,out};setTimeout(()=>{_liveIx=null;},0);
+  return out;
+}
 function getVisibleTasks(){
   let tasks=DB.tasks.filter(t=>canViewTask(currentUser,t));
   if(currentWorkboard) tasks=tasks.filter(t=>(t.boardId||t.workboardId)===currentWorkboard.id);
+  else{const off=_offBoardIds();if(off.size)tasks=tasks.filter(t=>!_offBoard(t,off));}
   if(!wsShowArchived) tasks=tasks.filter(t=>!t.archived);
   if(_wsMonthOn())tasks=_wsMonthFilter(tasks);
   return tasks;
@@ -8004,7 +8051,7 @@ function moveWbToFolder(wbId,folderId){
 // The allowance meter counts finished subitems on client-visible work, by calendar month (R4, R5).
 const RETAINER_CATALOGUE=[
   {key:'ims', name:'IMS and Document Control',              short:'IMS',          kind:'core',  unit:'document revisions',           allowance:20, color:'#1d6fb8', monthly:['Monthly document register check','Controlled forms housekeeping']},
-  {key:'hseq',name:'HSEQ Admin and Audit Readiness',        short:'HSEQ',         kind:'core',  unit:'reports and register updates', allowance:8,  color:'#0d6e4e', monthly:['Monthly HSEQ report','Licence and ticket register update']},
+  {key:'hseq',name:'HSEQ Admin and Audit Readiness',        short:'HSEQ',         kind:'core',  unit:'audits', unitLabel:'Audit', startUnit:'items', allowance:8,  color:'#0d6e4e', monthly:['Monthly HSEQ report','Licence and ticket register update']},
   {key:'mob', name:'Mobilisation and Contractor Compliance',short:'Mobilisation', kind:'addon', unit:'compliance checks',            allowance:15, color:'#b45309', monthly:['Contractor insurance expiry check']},
   {key:'ci',  name:'Continuous Improvement',                short:'Improvement',  kind:'addon', unit:'improvement actions',          allowance:4,  color:'#6d28d9', monthly:['Monthly improvement review']},
   {key:'sys', name:'Systems and Data Backbone',             short:'Systems',      kind:'addon', unit:'data and dashboard updates',   allowance:6,  color:'#3d5269', monthly:['Monthly KPI dashboard refresh']},
@@ -8012,6 +8059,13 @@ const RETAINER_CATALOGUE=[
 const _RS_DONE=new Set(['done','completed','completed-approved','approved-client']);
 function _isRetainedBoard(wb){return !!(wb&&wb.retainer&&!wb.retainer.endedAt);}
 function _rsCat(key){return RETAINER_CATALOGUE.find(s=>s.key===key)||null;}
+// TH-15 (31 Oct 2026): every part offers the service's own unit, Items or Hours. A service's own unit is what its work is
+// counted in ("document revisions"; HSEQ's is audits, shown "Audit"); a new service starts in its startUnit if it has one
+// (HSEQ starts as Items: 8 audits a month would be wrong).
+function _rsStartUnit(key){const c=_rsCat(key);return c?(c.startUnit||c.unit):'items';}
+function _rsUnitLabel(key){const c=_rsCat(key);if(!c)return'Items';return c.unitLabel||(c.unit.charAt(0).toUpperCase()+c.unit.slice(1));}
+// Units saved before they were renamed: IMS "document reviews" (2026-10-22), HSEQ "reports and register updates" (TH-15).
+function _rsUnitFix(u){return/^document reviews?$/i.test(String(u||''))?'document revisions':/^reports and register updates$/i.test(String(u||''))?'items':u;}
 function _rsDone(t){return !!t&&_RS_DONE.has(t.status);}
 // Perth calendar months (2026-10-23), the same as api/_portal.js, wherever the computer is.
 const _RS_FMT=(()=>{try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Perth',year:'numeric',month:'2-digit'});}catch(e){return null;}})();
@@ -8195,6 +8249,8 @@ function _rsHourRows(b,s,parts,ym){
   });
 }
 function _rsTagged(x){return(x&&x.tags||[]).some(g=>/^audit$/i.test(String(g).trim()));}
+// Who a part counts (TH-15): an Audit part (Items counted in audits) takes tasks tagged Audit, whatever else it says.
+function _rsWho(x){return x&&x.kind==='items'&&x.unit==='audits'?'audit':(x&&x.who)||'all';}
 // Items (TH-11): each finished piece of work the client can see is one item. A top-level task with subitems is its
 // subitems, as before, except a task tagged Audit on a service with an Audit items part: that is one audit, counted when
 // the task itself is completed, however many subitems it has. An item goes to one part by the same rule as an hour
@@ -8202,7 +8258,7 @@ function _rsTagged(x){return(x&&x.tags||[]).some(g=>/^audit$/i.test(String(g).tr
 // an Items part counts it: work that lands on an Hours part is counted by its hours instead.
 function _rsItemUnits(b,s,parts,ym){
   const seniors=_rsSeniorsAt(b.retainer||{},ym||_rsYm()),out=[];
-  const auditItems=parts.some(p=>_rsKind(p)==='items'&&(p.who||'all')==='audit');
+  const auditItems=parts.some(p=>_rsKind(p)==='items'&&_rsWho(p)==='audit');
   (DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&t.groupId===s.groupId&&(t.boardId||t.workboardId)===b.id&&!_cpTaskHidden(t)).forEach(t=>{
     const subs=_rsKids(t.id);
     const one=x=>{const done=_rsDone(x);out.push({t:x,part:_rsPartFor(parts,_rsTagged(x)||_rsTagged(t),seniors.has(x.ownerId||t.ownerId),'items'),done,doneYm:done?_rsDoneYm(x):null,started:_rsStarted(x)});};
@@ -8236,7 +8292,7 @@ function _rsKeepPlan(r,s){
 // Admin. An hour that fits no part counts nowhere (untagged work on an Audit-only service; the hours log says so).
 // kind ('hours' or 'items', TH-11) breaks a tie between two parts with the same filter: an hour prefers the Hours one.
 function _rsPartFor(parts,aud,senior,kind){
-  const who=x=>x.who||'all',pick=f=>{const c=parts.filter(f);return c.find(x=>!kind||_rsKind(x)===kind)||c[0]||null;};
+  const who=_rsWho,pick=f=>{const c=parts.filter(f);return c.find(x=>!kind||_rsKind(x)===kind)||c[0]||null;};
   return pick(x=>who(x)==='audit'&&aud)||pick(x=>who(x)==='senior'&&senior)||pick(x=>who(x)==='admin'&&!senior)
     ||pick(x=>who(x)==='all')||pick(x=>who(x)==='admin')||null;
 }
@@ -8245,12 +8301,13 @@ function _rsPartFor(parts,aud,senior,kind){
 // hours, never changes a closed month, for staff or in the client's history.
 function _rsLocked(b,s,ym){
   const L=((((b||{}).retainer||{}).months||{})[ym]||{}).lock,x=L&&(L.services||[]).find(y=>y.key===s.key);
-  return x?{mode:x.mode,parts:(x.parts||[]).map(p=>Object.assign({},p)),locked:true}:null;
+  return x?{mode:x.mode,parts:(x.parts||[]).map(p=>Object.assign({},p,p.unit?{unit:_rsUnitFix(p.unit)}:{})),locked:true}:null;
 }
 // The newest month that may be closed: the month before last until the 10th, then last month.
 function _rsLockUpTo(){const d=new Date();d.setDate(d.getDate()-9);return _rsPrevYm(_rsYm(d));}
 function _rsLockMonths(){
   if(!currentUser||currentUser.role==='client'||!Array.isArray(DB.workboards))return 0;
+  try{_regHeal();}catch(e){}
   const upto=_rsLockUpTo();let floor=upto;for(let i=0;i<11;i++)floor=_rsPrevYm(floor);
   let n=0;
   DB.workboards.filter(b=>!b.archived&&_isRetainedBoard(b)).forEach(b=>{
@@ -8306,7 +8363,7 @@ function _rsDue(u,ym,start,now){
 function _rsDueText(u){return u&&u.due?'Due by '+new Date(u.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'';}
 function _rsHrs(n){return String(Math.round((Number(n)||0)*100)/100);}
 function _rsPeriodWords(u){return u.period==='quarter'?'this quarter':u.period==='year'?'this year':'';}
-function _rsNoun(u){return u.unit==='items'&&Number(u.cap)===1?'item':u.unit;}
+function _rsNoun(u){const n=String(u.unit||'');return Number(u.cap)===1&&n!=='hours'&&/s$/.test(n)?n.slice(0,-1):n;}
 // "4 of 20 document revisions used, 2 in progress", "Admin: 5.5 of 8 hours" or "Audit: 0 of 1 item used this quarter".
 function _rsUseText(u){
   const pw=_rsPeriodWords(u);
@@ -8345,7 +8402,7 @@ function _rsUseLine(u,ym){return _rsUseText(u)+(u.unit!=='hours'&&u.period==='mo
 // A part as the plan reads it for staff: "Audit: 1 item a quarter, Tasks tagged Audit".
 function _rsPartPlanText(p){
   const k=_rsKind(p),n=k==='hours'?Number(p.hours)||0:Number(p.amount)||0,unit=k==='hours'?'hours':(p.unit||'items');
-  const who=(p.who||'all')!=='all'?', '+((RS_PART_WHO.find(([w])=>w===p.who)||[])[1]||''):'';
+  const w=_rsWho(p),who=w!=='all'&&p.unit!=='audits'?', '+((RS_PART_WHO.find(([x])=>x===w)||[])[1]||''):'';
   return`${p.label?p.label+': ':''}${k==='hours'?_rsHrs(n):n} ${_rsNoun({unit,cap:n})} ${(RS_PART_PERIODS.find(([v])=>v===_rsPeriodOf(p))||[])[1]}${who}`;
 }
 // The plan's "Used in" figures for one part, with "Due by" when a quarter or year is ending with some left.
@@ -8358,6 +8415,113 @@ function _rsUsedCell(u){
 // ── Sidebar section (collapse is per viewer, like Personal Boards) ──
 function _retainedSectionCollapsed(){try{return localStorage.getItem(_wbFolderCollapseKey('__retained'))==='1';}catch(e){return false;}}
 function toggleRetainedSection(){try{localStorage.setItem(_wbFolderCollapseKey('__retained'),_retainedSectionCollapsed()?'0':'1');}catch(e){}renderSidebarWorkboards();}
+
+// ── Monthly tasks (TH-16, 31 Oct 2026) ──
+// Each service keeps its monthly jobs as a list (service.monthly: {id, name, on, custom, taskId}); a job is a recurring
+// task on the board (taskId is the first task of its series). Renaming changes the name of the tasks made from now on
+// (recurrence.name); the tasks already on the board keep theirs. Adding starts a series on the 1st of next month;
+// removing an added job, or unticking a default one, stops its series and leaves its tasks where they are. "Save as
+// default for this service" keeps a service's list for new boards (DB.retainerDefaults, one {id:'rsdef-<key>'} each).
+let _rsMtEditing=null;
+function _rsMonthlyDefaults(key){const d=(DB.retainerDefaults||[]).find(x=>x&&x.key===key&&Array.isArray(x.monthly));return(d?d.monthly:((_rsCat(key)||{}).monthly||[])).slice();}
+function _rsMtClean(v){return String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,120);}
+function _rsMtNew(name,on,custom){return{id:'mt'+uid().slice(-8),name:_rsMtClean(name),on:on!==false,custom:!!custom,taskId:null};}
+function _rsMtSource(t){return !!(t&&!t.archived&&t.recurrence&&t.recurrence.freq&&!t.recurSourceId);}
+function _rsMtLive(t){const r=t&&t.recurrence;return _rsMtSource(t)&&!(r.endType==='date'&&r.endDate&&r.nextDue&&r.nextDue>r.endDate);}
+// The list a plan shows. A stored list says what each job is; whether it runs is read from its task (it may have been
+// archived, or restarted in the task panel). A board made before TH-16 has no list: the catalogue's jobs are matched to
+// their recurring tasks by name, and any other monthly task on the service (a set-up job renamed on the board, or one
+// made by hand) is listed after them, so it can be renamed or stopped here instead of being started a second time.
+function _rsMonthlyOf(b,s){
+  const byId=id=>id?(DB.tasks||[]).find(t=>t.id===id):null;
+  if(Array.isArray(s.monthly))return s.monthly.map(e=>{const t=byId(e.taskId);return Object.assign({},e,{on:!!t&&_rsMtLive(t)});});
+  const src=(DB.tasks||[]).filter(t=>_rsMtSource(t)&&t.recurrence.freq==='monthly'&&t.groupId===s.groupId&&(t.boardId||t.workboardId)===b.id),used=new Set();
+  const out=((_rsCat(s.key)||{}).monthly||[]).map((name,i)=>{const t=src.find(x=>!used.has(x.id)&&(x.name||x.title)===name);if(t)used.add(t.id);return{id:'mt'+i,name,on:!!t&&_rsMtLive(t),custom:false,taskId:t?t.id:null};});
+  src.filter(t=>!used.has(t.id)).forEach((t,i)=>out.push({id:'mtx'+i,name:t.name||t.title||'Monthly task',on:_rsMtLive(t),custom:true,taskId:t.id}));
+  return out;
+}
+// The first task of a job started from the plan: the 1st of next month, or the retainer's first month if that is later.
+function _rsMtFirstDue(b){const nf=_rsNextFirst(),st=b&&b.retainer&&/^\d{4}-\d{2}$/.test(String(b.retainer.startMonth||''))?b.retainer.startMonth+'-01':'';return st>nf?st:nf;}
+function _rsNextFirst(){const d=new Date();return toDateStr(new Date(d.getFullYear(),d.getMonth()+1,1));}
+function _rsMtTask(b,s,name,due,order){
+  const now=new Date().toISOString(),own=s.ownerId||null;
+  const r={freq:'monthly',interval:1,onDay:1,onWeekdayOrdinal:null,onWeekday:null,leadDays:0,weekendAction:'keep',endType:'never',endDate:null,occurrences:null,occurrenceCount:0,
+    copySameAssignee:true,copySameBoard:true,copySamePriority:true,copySameDescription:true};
+  r.nextDue=_recurNextDate(due,r);
+  const t={id:'t'+uid(),name,title:name,clientId:b.clientId,boardId:b.id,workboardId:b.id,groupId:s.groupId,parentTaskId:null,
+    status:'todo',priority:'med',ownerId:own,currentlyWith:own,currentlyWithType:own?'staff':'none',currentlyWithUserId:own,
+    startDate:due,endDate:due,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order,description:'',
+    dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,recurrence:r};
+  DB.tasks.push(t);return t;
+}
+// Stop a series (the day before its next task) or start it again from its next 1st.
+function _rsMtStop(t){
+  const r=t&&t.recurrence;if(!r)return;
+  const d=new Date((r.nextDue||toDateStr(new Date()))+'T12:00:00');d.setDate(d.getDate()-1);
+  t.recurrence=Object.assign({},r,{endType:'date',endDate:toDateStr(d)});t.updatedAt=new Date().toISOString();
+}
+function _rsMtResume(t,first){
+  const r=t&&t.recurrence;if(!r)return;
+  const nd=r.nextDue&&r.nextDue>=toDateStr(new Date())?r.nextDue:(first||_rsNextFirst());
+  t.recurrence=Object.assign({},r,{endType:'never',endDate:null,nextDue:nd});t.updatedAt=new Date().toISOString();
+}
+function _rsMtSaveDefault(key,list){
+  if(currentUser?.role!=='admin')return;
+  const cat=_rsCat(key);if(!cat)return;
+  const names=list.filter(e=>e.on&&e.name).map(e=>e.name),now=new Date().toISOString(),all=DB.retainerDefaults=DB.retainerDefaults||[],id='rsdef-'+key;
+  const val={id,key,monthly:names,updatedAt:now,by:currentUser.id},rec=all.find(x=>x.id===id);
+  if(rec)Object.assign(rec,val);else all.push(val);
+  saveDB(DB);
+  showToast(`Saved. New boards start ${cat.name} with ${names.length} monthly task${names.length===1?'':'s'}.`,'success');
+}
+// The chips, for set-up and plan. call(field, index, valueExpression) returns the handler text. Click a name to rename
+// it, tick to keep it, + Add task for a new one; an added one has a remove button. In a name box Enter or the tick saves
+// and Escape cancels (and goes no further, so the dialog stays open). Nothing is saved on blur: the redraw would swallow
+// the click that moved the focus, and a half-typed new task would become a real one.
+const _RS_MT_OK='<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function _rsMtEditor(list,call,scope,admin){
+  const k=escHtml(scope),ed=_rsMtEditing&&_rsMtEditing.scope===scope?_rsMtEditing.i:null;
+  const box=(i,val,attrs,save,cancel)=>`<span class="rs-mt on rs-mt-ed"><input type="text" class="form-input rs-mt-in" maxlength="120" value="${val}" ${attrs} data-f="mtn-${k}-${i}" onkeydown="if(event.key==='Enter'){event.preventDefault();${save('this.value')}}else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();${cancel}}"><button type="button" class="rs-mt-ok" data-f="mto-${k}-${i}" aria-label="Save" title="Save" onclick="${save('this.previousElementSibling.value')}">${_RS_MT_OK}</button></span>`;
+  const chips=list.map((e,i)=>ed===i
+    ?box(i,escHtml(e.name),`aria-label="New name for ${escHtml(e.name)}"`,v=>call('mtName',i,v),call('mtEdit',i,'null'))
+    :`<span class="rs-mt${e.on?' on':''}${e.custom?' add':''}" data-rs-mt="${i}"><input type="checkbox" data-f="mt-${k}-${i}"${e.on?' checked':''}${admin?'':' disabled'} aria-label="Keep ${escHtml(e.name)}" onchange="${call('mt',i,'this.checked')}">${admin?`<button type="button" class="rs-mt-n" data-f="mte-${k}-${i}" aria-label="Rename ${escHtml(e.name)}" title="Click to rename" onclick="${call('mtEdit',i,String(i))}">${escHtml(e.name)}</button>`:`<span>${escHtml(e.name)}</span>`}${admin&&e.custom?`<button type="button" class="rs-mt-x" data-f="mtx-${k}-${i}" aria-label="Remove ${escHtml(e.name)}" title="Remove" onclick="${call('mtRm',i,'null')}">${_REG_IC.del}</button>`:''}</span>`).join('');
+  const add=!admin?'':ed==='new'
+    ?box('new','','placeholder="Name of the monthly task" aria-label="New monthly task"',v=>call('mtAdd',null,v),call('mtEdit',null,'null'))
+    :`<button type="button" class="rs-mt-add" data-f="mta-${k}" onclick="${call('mtEdit',null,"'new'")}">+ Add task</button>`;
+  const def=admin&&list.length?`<button type="button" class="rs-lvl-use rs-mt-def" data-f="mtd-${k}" onclick="${call('mtDefault',null,'null')}">Save as default for this service</button>`:'';
+  return`<div class="rs-mts" data-rs-mts="${k}">${chips}${add}</div>${def}`;
+}
+// After a redraw, the focus goes back where the person was: the name box, the name, the tick or + Add task.
+function _rsMtFocusF(f){if(!f)return;setTimeout(()=>{const el=document.querySelector(`[data-f="${f}"]`);if(!el)return;try{el.focus({preventScroll:true});}catch(e){el.focus();}if(el.type==='text')try{el.select();}catch(e){}},0);}
+// Where the focus goes after a monthly-task change in scope (set-up key, or 'pl-'+key in the plan).
+function _rsMtFocusFor(scope,field,i,was){
+  if(field==='mtEdit')return _rsMtEditing?`mtn-${scope}-${_rsMtEditing.i}`:was&&was.i==='new'?`mta-${scope}`:`mte-${scope}-${i}`;
+  if(field==='mtName')return`mte-${scope}-${i}`;
+  if(field==='mt')return`mt-${scope}-${i}`;
+  return`mta-${scope}`;
+}
+// Set-up: a monthly-task change on the service being set up (TH-16).
+function _rsSetupMt(v,key,field,i,val){
+  const was=_rsMtEditing;
+  if(field==='mtDefault'){_rsMtSaveDefault(key,v.monthly);return;}
+  if(field==='mtEdit')_rsMtEditing=val==null?null:{scope:key,i:val==='new'?'new':+val};
+  else if(field==='mtName'){const e=v.monthly[i],nm=_rsMtClean(val);if(e&&nm)e.name=nm;_rsMtEditing=null;}
+  else if(field==='mtAdd'){
+    const nm=_rsMtClean(val);
+    if(nm&&v.monthly.some(x=>x.name.toLowerCase()===nm.toLowerCase())){showToast('That monthly task is already on the list.','error');return;}
+    if(nm)v.monthly.push(_rsMtNew(nm,true,true));_rsMtEditing=null;
+  }
+  else if(field==='mtRm'){const e=v.monthly[i];if(e&&e.custom)v.monthly.splice(i,1);}
+  _rsSetupRender();_rsMtFocusF(_rsMtFocusFor(key,field,i,was));
+}
+// A name box still open when Create board is pressed: what was typed counts, as if Enter had been pressed.
+function _rsSetupMtFlush(m){
+  const ed=_rsMtEditing,v=ed&&m.svc[ed.scope],el=v&&document.querySelector(`[data-f="mtn-${ed.scope}-${ed.i}"]`);
+  _rsMtEditing=null;if(!el)return;
+  const nm=_rsMtClean(el.value);if(!nm)return;
+  if(ed.i==='new'){if(!v.monthly.some(x=>x.name.toLowerCase()===nm.toLowerCase()))v.monthly.push(_rsMtNew(nm,true,true));}
+  else if(v.monthly[ed.i])v.monthly[ed.i].name=nm;
+}
 
 // ── New retained board (admins only, one screen) ──
 let _rsSetup=null;
@@ -8374,8 +8538,9 @@ function openRetainerSetup(){
   const d=new Date();
   _rsSetup={clientId:clients[0].id,leadId:lead,startMonth:_rsYm(new Date(d.getFullYear(),d.getMonth()+1,1)),priority:'Standard',levelSet:false,bundle:null,svc:{}};
   // Bundle first: nothing is ticked until a bundle is chosen.
-  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,mt:s.monthly.map(()=>true),mode:'items',parts:[_rsItemsPart(s.allowance,s.unit)]};});
-  _rsSetup.seniorIds=[];
+  RETAINER_CATALOGUE.forEach(s=>{_rsSetup.svc[s.key]={on:false,allowance:s.allowance,ownerId:lead,monthly:_rsMonthlyDefaults(s.key).map(n=>_rsMtNew(n,true,false)),mode:'items',parts:[_rsItemsPart(s.allowance,_rsStartUnit(s.key))]};});
+  _rsMtEditing=null;
+  _rsSetup.seniorIds=[];_rsSetup.carry=false;
   _rsSetupFollowLevel();
   _rsSetupRender();
 }
@@ -8454,19 +8619,22 @@ function _rsSet(field,key,val,i){
   if(key){
     const v=m.svc[key];if(!v)return;
     if(field==='on')_rsSetupToggle(m,key,!!val);
-    else if(field==='allowance'){v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));if(v.mode==='items')v.parts=[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];}
+    else if(field==='allowance'){v.allowance=Math.max(1,Math.min(999,parseInt(val)||1));if(v.mode==='items')v.parts=[_rsItemsPart(v.allowance,_rsStartUnit(key))];}
     else if(field==='owner')v.ownerId=val||null;
-    else if(field==='mt')v.mt[i]=!!val;
-    else if(field==='mode'){v.mode=val==='hours'?'hours':'items';v.parts=v.mode==='hours'?_rsDefaultParts(key,v.allowance):[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];}
+    else if(field==='mt'){const e=v.monthly[i];if(e)e.on=!!val;}
+    else if(/^mt(Edit|Name|Add|Rm|Default)$/.test(field)){_rsSetupMt(v,key,field,i,val);return;}
+    else if(field==='mode'){v.mode=val==='hours'?'hours':'items';v.parts=v.mode==='hours'?_rsDefaultParts(key,v.allowance):[_rsItemsPart(v.allowance,_rsStartUnit(key))];}
     else if(/^p(Add|Rm|Label|Hours|Amount|Kind|Period|Who)$/.test(field)){
       // Every service has parts (TH-11); the shape it ends up with is what retainerCreate saves.
-      if(!(v.parts&&v.parts.length))v.parts=[_rsItemsPart(v.allowance,(_rsCat(key)||{}).unit)];
-      if(_rsPartChange(v.parts,field,i,val)){v.mode=_rsShape(v.parts,(_rsCat(key)||{}).unit);if(v.mode==='items')v.allowance=Number(v.parts[0].amount)||v.allowance;}
+      if(!(v.parts&&v.parts.length))v.parts=[_rsItemsPart(v.allowance,_rsStartUnit(key))];
+      if(_rsPartChange(v.parts,field,i,val,key)){v.mode=_rsShape(v.parts);if(v.mode==='items')v.allowance=Number(v.parts[0].amount)||v.allowance;}
     }
   }else if(field==='bundle')_rsSetupBundlePick(m,val);
   else if(field==='priority'){if(_rsLevel(val)){m.priority=val;m.levelSet=true;}}
   else if(field==='fee')m.fee=_rsFeeParse(val);
   else if(field==='startMonth'){if(/^[0-9]{4}-[0-9]{2}$/.test(String(val||'')))m.startMonth=val;}
+  else if(field==='carry')m.carry=val==='yes';
+  else if(field==='clientId'){m.clientId=val;m.carry=false;}
   else if(['clientId','leadId'].includes(field))m[field]=val;
   else if(field==='senior')m.seniorIds=val?[val]:[];
   _rsSetupRender();
@@ -8474,14 +8642,18 @@ function _rsSet(field,key,val,i){
 // The parts editor, for set-up and plan (TH-11: every service has parts, and each part is Items or Hours, a month, a
 // quarter or a year). call(field, partIndex) returns the handler text for a change.
 const RS_PART_PERIODS=[['month','a month'],['quarter','a quarter'],['year','a year']];
-function _rsPartsEditor(parts,call,keyLabel){
-  const k=escHtml(keyLabel);
+function _rsPartsEditor(parts,call,keyLabel,svcKey){
+  const k=escHtml(keyLabel),su=(_rsCat(svcKey)||{}).unit||null,aud=p=>_rsKind(p)==='items'&&p.unit==='audits';
+  // The unit a part is counted in (TH-15): the service's own (svc), Items or Hours, the same three on every part.
+  const uval=p=>_rsKind(p)==='hours'?'hours':su&&p.unit===su?'svc':'items';
   const per=(p,i)=>`<select class="form-input" aria-label="Period" data-f="pp-${k}-${i}" onchange="${call('pPeriod',i)}">${RS_PART_PERIODS.map(([v,l])=>`<option value="${v}"${_rsPeriodOf(p)===v?' selected':''}>${l}</option>`).join('')}</select>`;
-  const who=(p,i)=>`<select class="form-input" aria-label="Who counts" data-f="pw-${k}-${i}" onchange="${call('pWho',i)}">${RS_PART_WHO.map(([v,l])=>`<option value="${v}"${(p.who||'all')===v?' selected':''}>${l}</option>`).join('')}</select>`;
+  // "Tasks tagged Audit" is HSEQ's (kept on a part that already has it); an Audit part always counts tagged tasks.
+  const who=(p,i)=>aud(p)?`<select class="form-input" aria-label="Who counts" data-f="pw-${k}-${i}" disabled title="An Audit part counts tasks tagged Audit"><option value="audit" selected>Tasks tagged Audit</option></select>`
+    :`<select class="form-input" aria-label="Who counts" data-f="pw-${k}-${i}" onchange="${call('pWho',i)}">${RS_PART_WHO.filter(([v])=>v!=='audit'||svcKey==='hseq'||p.who==='audit').map(([v,l])=>`<option value="${v}"${(p.who||'all')===v?' selected':''}>${l}</option>`).join('')}</select>`;
   const amt=(p,i)=>_rsKind(p)==='hours'
     ?`<input type="number" class="form-input" min="0.5" max="999" step="0.5" value="${Number(p.hours)||0}" aria-label="Hours" data-f="ph-${k}-${i}" onchange="${call('pAmount',i)}">`
     :`<input type="number" class="form-input" min="1" max="999" step="1" value="${Number(p.amount)||0}" aria-label="Number of items" data-f="pa-${k}-${i}" onchange="${call('pAmount',i)}">`;
-  const kind=(p,i)=>`<select class="form-input rs-part-k" aria-label="Count in items or hours" data-f="pk-${k}-${i}" data-rs-kind="${_rsKind(p)}" onchange="${call('pKind',i)}"><option value="items"${_rsKind(p)==='items'?' selected':''}>${escHtml(_rsKind(p)==='items'&&p.unit?p.unit:'items')}</option><option value="hours"${_rsKind(p)==='hours'?' selected':''}>hours</option></select>`;
+  const kind=(p,i)=>`<select class="form-input rs-part-k" aria-label="Unit" data-f="pk-${k}-${i}" data-rs-kind="${_rsKind(p)}" data-rs-unit="${uval(p)}" onchange="${call('pKind',i)}">${su?`<option value="svc"${uval(p)==='svc'?' selected':''}>${escHtml(_rsUnitLabel(svcKey))}</option>`:''}<option value="items"${uval(p)==='items'?' selected':''}>Items</option><option value="hours"${uval(p)==='hours'?' selected':''}>Hours</option></select>`;
   return`<div class="rs-parts" data-rs-parts="${k}">${parts.map((p,i)=>`<div class="rs-part" data-rs-part="${i}">
       <input type="text" class="form-input rs-part-l" value="${escHtml(p.label||'')}" maxlength="60" placeholder="Name" aria-label="Part name" data-f="pl-${k}-${i}" onchange="${call('pLabel',i)}">
       <span class="rs-part-h">${amt(p,i)}${kind(p,i)}</span>
@@ -8490,7 +8662,7 @@ function _rsPartsEditor(parts,call,keyLabel){
     </div>`).join('')}<button type="button" class="btn btn-ghost btn-sm rs-part-add" onclick="${call('pAdd')}">+ Add part</button></div>`;
 }
 // One change to a parts list (set-up or plan). pHours is kept for older callers; the editor sends pAmount.
-function _rsPartChange(parts,field,i,val){
+function _rsPartChange(parts,field,i,val,svcKey){
   const p=parts[i];
   if(field==='pAdd'){parts.push({id:'hp'+uid().slice(-6),label:'Hours',kind:'hours',hours:4,period:'month',who:'all'});return true;}
   if(!p)return false;
@@ -8500,20 +8672,30 @@ function _rsPartChange(parts,field,i,val){
   if(field==='pHours'){p.hours=hrs(val);return true;}
   if(field==='pAmount'){if(_rsKind(p)==='hours')p.hours=hrs(val);else p.amount=items(val);return true;}
   if(field==='pKind'){
-    if(val==='items'&&_rsKind(p)!=='items'){p.kind='items';if(!(Number(p.amount)>0))p.amount=items(Math.round(Number(p.hours)||1));if(!p.unit)p.unit='items';if(p.label==='Hours')p.label='Items';}
-    else if(val==='hours'&&_rsKind(p)!=='hours'){p.kind='hours';if(!(Number(p.hours)>0))p.hours=hrs(Math.min(99,Number(p.amount)||4));if(!p.label||p.label==='Items')p.label='Hours';}
+    // svc: the service's own unit, items: Items, hours: Hours (TH-15). A name that only said the kind follows it.
+    const su=(_rsCat(svcKey)||{}).unit||null,to=val==='svc'&&su?'svc':val==='hours'?'hours':'items';
+    const was=_rsKind(p)==='hours'?'hours':su&&p.unit===su?'svc':'items',plain=!p.label||/^(hours|items|audits?)$/i.test(p.label);
+    if(to===was)return true;
+    if(to==='hours'){p.kind='hours';if(!(Number(p.hours)>0))p.hours=hrs(Math.min(99,Number(p.amount)||4));if(plain)p.label='Hours';}
+    else{p.kind='items';if(!(Number(p.amount)>0))p.amount=items(Math.round(Number(p.hours)||1));p.unit=to==='svc'?su:'items';if(plain)p.label=to==='items'&&parts.length>1?'Items':'';}
+    // An Audit part counts tasks tagged Audit; a part leaving Audit counts everyone again.
+    if(p.kind==='items'&&p.unit==='audits')p.who='audit';else if(was==='svc'&&su==='audits'&&p.who==='audit')p.who='all';
     return true;
   }
   if(field==='pPeriod'){p.period=val==='quarter'||val==='year'?val:'month';return true;}
-  if(field==='pWho'){if(RS_PART_WHO.some(([k])=>k===val))p.who=val;return true;}
+  if(field==='pWho'){
+    if(_rsKind(p)==='items'&&p.unit==='audits')return true;   // fixed to Tasks tagged Audit
+    if(val==='audit'&&svcKey&&svcKey!=='hseq'&&p.who!=='audit')return false;
+    if(RS_PART_WHO.some(([k])=>k===val))p.who=val;return true;
+  }
   return false;
 }
 // How a parts list is stored (TH-11). A list that is still one plain monthly Items part for Everyone stays a plain
 // items service; all Hours parts stay mode 'hours' (as saved before); anything else is 'mixed'.
-function _rsShape(parts,unit){
+function _rsShape(parts){
   if(parts.every(p=>_rsKind(p)==='hours'))return'hours';
   const p=parts[0];
-  return parts.length===1&&_rsPeriodOf(p)==='month'&&(p.who||'all')==='all'&&!p.label&&(!unit||p.unit===unit)?'items':'mixed';
+  return parts.length===1&&_rsPeriodOf(p)==='month'&&(p.who||'all')==='all'&&!p.label&&p.unit!=='audits'?'items':'mixed';
 }
 // A service's own editable parts, with their kinds written down: a plain items service gets one Items part.
 function _rsOwnParts(s){
@@ -8525,7 +8707,7 @@ function _rsOwnParts(s){
 // After a parts change: store the shape it now has. A plain items service goes back to allowance and unit only.
 function _rsSetShape(s){
   const shape=_rsShape(s.parts||[],s.unit);
-  if(shape==='items'){s.allowance=Number(s.parts[0].amount)||s.allowance;delete s.mode;delete s.parts;return;}
+  if(shape==='items'){s.allowance=Number(s.parts[0].amount)||s.allowance;if(s.parts[0].unit)s.unit=s.parts[0].unit;delete s.mode;delete s.parts;return;}
   s.mode=shape;
   const it=s.parts.find(p=>_rsKind(p)==='items');if(it)s.allowance=Number(it.amount)||s.allowance;   // what older screens read
 }
@@ -8536,9 +8718,9 @@ function _rsSetupRender(){
   const m=_rsSetup;if(!m)return;
   const b=_rsSetupBundle(m),picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
   const core=picks.filter(s=>s.kind==='core'),adds=picks.filter(s=>s.kind!=='core');
-  const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].mt.filter(Boolean).length,0);
+  const nTasks=picks.reduce((n,s)=>n+m.svc[s.key].monthly.filter(e=>e.on).length,0);
   // Every part of every picked service (TH-11): items parts with their number, hours parts with their hours.
-  const sParts=s=>{const v=m.svc[s.key];return v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,s.unit)];};
+  const sParts=s=>{const v=m.svc[s.key];return v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,_rsStartUnit(s.key))];};
   const itemRows=picks.flatMap(s=>sParts(s).filter(p=>_rsKind(p)==='items').map(p=>({s,p}))),hourRows=picks.flatMap(s=>sParts(s).filter(p=>_rsKind(p)==='hours').map(p=>({s,p})));
   const acts=itemRows.filter(x=>_rsPeriodOf(x.p)==='month').reduce((n,x)=>n+(Number(x.p.amount)||0),0);
   const hrsMonth=hourRows.filter(x=>_rsPeriodOf(x.p)==='month').reduce((n,x)=>n+(Number(x.p.hours)||0),0);
@@ -8572,13 +8754,13 @@ function _rsSetupRender(){
   const card=s=>{const v=m.svc[s.key],st=_rsSvcState(m,s.key),lock=st==='fixed'||st==='na'||st==='full'||st==='wait';
     return`<div class="rs-card rcf-svc ${s.kind} st-${st}${v.on?' on':''}" style="--rs-c:${s.color}" data-rs-state="${st}" data-rs-card="${s.key}">
       <label class="rs-card-top"><input type="checkbox" class="rs-check" data-rs-svc="${s.key}" data-f="svc-${s.key}"${v.on?' checked':''}${lock?' disabled':''} onchange="_rsSet('on','${s.key}',this.checked)">
-        <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${escHtml(s.unit.charAt(0).toUpperCase()+s.unit.slice(1))}, ${s.allowance} a month by default</small></span>${badge(st,s)}</label>
+        <span class="rs-card-name"><b>${escHtml(s.name)}</b><small>${escHtml(_rsStartUnit(s.key)==='items'&&s.unit!=='items'?'Items':_rsUnitLabel(s.key))}, ${s.allowance} a month by default</small></span>${badge(st,s)}</label>
       ${v.on?`<div class="rs-card-cfg">
         <div class="rs-cfg-row">
           <label class="rs-cfg"><span>Owner</span><select class="form-input" data-f="ow-${s.key}" onchange="_rsSet('owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(s.name)}">${staffOpts(v.ownerId)}</select></label>
         </div>
-        <div class="rs-cfg"><span>Allowance</span>${_rsPartsEditor(v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,s.unit)],(f,i)=>`_rsSet('${f}','${s.key}',this.value,${i==null?0:i})`,s.key)}</div>
-        <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mts">${s.monthly.map((t,i)=>`<label class="rs-mt${v.mt[i]?' on':''}"><input type="checkbox" data-f="mt-${s.key}-${i}"${v.mt[i]?' checked':''} onchange="_rsSet('mt','${s.key}',this.checked,${i})"><span>${escHtml(t)}</span></label>`).join('')}</div></div>
+        <div class="rs-cfg"><span>Allowance</span>${_rsPartsEditor(v.parts&&v.parts.length?v.parts:[_rsItemsPart(v.allowance,_rsStartUnit(s.key))],(f,i)=>`_rsSet('${f}','${s.key}',this.value,${i==null?0:i})`,s.key,s.key)}</div>
+        <div class="rs-cfg"><span>Monthly tasks</span><div class="rs-mtw">${_rsMtEditor(v.monthly,(f,i,x)=>`_rsSet('${f}','${s.key}',${x},${i==null?0:i})`,s.key,true)}</div></div>
       </div>`:''}
     </div>`;};
   const prog=_rsSetupProgress(m,b),pr=k=>{const r=prog.find(x=>x.kind===k);return r?`<span class="rcf-prog${r.have>=r.n?' ok':''}">${r.have} of ${r.n} selected${r.have>=r.n?IC.ok:''}</span>`:'';};
@@ -8614,6 +8796,12 @@ function _rsSetupRender(){
       <label class="rs-cfg"><span>Senior consultant</span><select class="form-input" id="rs-su-senior" data-f="senior" onchange="_rsSet('senior',null,this.value)"><option value="">None</option>${_rsStaff().map(u=>`<option value="${u.id}"${(m.seniorIds||[]).includes(u.id)?' selected':''}>${escHtml(u.name)}</option>`).join('')}</select></label>
       <label class="rs-cfg"><span>Starts</span><select class="form-input" id="rs-su-start" data-f="start" onchange="_rsSet('startMonth',null,this.value)">${_rsStartMonthOptions(m.startMonth)}</select></label>
     </div>
+    ${(()=>{const pv=_rsSetupPrev(m.clientId);if(!pv)return'';
+      const what=[pv.docs?`${pv.docs} document${pv.docs===1?'':'s'}`:'',pv.people?`${pv.people} ${pv.people===1?'person':'people'} in the training matrix`:''].filter(Boolean).join(' and ');
+      return`<fieldset class="rcf-carry" id="rs-su-carry"><legend>Carry over the ${[pv.docs?'Document register':'',pv.people?'Training matrix':''].filter(Boolean).join(' and ')} from the previous retainer?</legend>
+        <p>${escHtml(pv.board.name)}, archived ${escHtml(new Date(pv.board.updatedAt||Date.now()).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}))}, holds ${what}. Choose Yes to copy them to this board with their comments; the archived board keeps its own. Choose No to start this board empty.</p>
+        <label><input type="radio" name="rs-su-carry" value="yes" data-f="carry-yes"${m.carry?' checked':''} onchange="_rsSet('carry',null,'yes')"> Yes, carry them over</label>
+        <label><input type="radio" name="rs-su-carry" value="no" data-f="carry-no"${m.carry?'':' checked'} onchange="_rsSet('carry',null,'no')"> No, start empty</label></fieldset>`;})()}
     <div class="rcf">
       <div class="rcf-main">
         <section><h3 class="rcf-step"><i>1</i>Choose a bundle</h3><div class="rcf-bundles" role="group" aria-label="Bundle">${bundles}</div>${bsum}</section>
@@ -8634,6 +8822,7 @@ function _rsSetupRender(){
 function retainerCreate(){
   if(currentUser?.role!=='admin')return;
   const m=_rsSetup;if(!m)return;
+  _rsSetupMtFlush(m);
   const c=(DB.clients||[]).find(x=>x.id===m.clientId);
   const picks=RETAINER_CATALOGUE.filter(s=>m.svc[s.key].on);
   if(!c||!picks.length||_rsSetupIssues(m).length)return;
@@ -8649,22 +8838,20 @@ function retainerCreate(){
   picks.forEach((s,i)=>{
     const v=m.svc[s.key],gid=uid();
     DB.groups.push({id:gid,clientId:c.id,workboardId:boardId,boardId,name:s.name,order:i,color:s.color,createdAt:now});
-    board.retainer.services.push(Object.assign({key:s.key,groupId:gid,unit:s.unit,allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null},v.mode==='hours'||v.mode==='mixed'?{mode:v.mode,parts:JSON.parse(JSON.stringify(v.parts||_rsDefaultParts(s.key,v.allowance)))}:{}));
-    s.monthly.forEach((name,j)=>{
-      if(!v.mt[j])return;
-      const r={freq:'monthly',interval:1,onDay:1,onWeekdayOrdinal:null,onWeekday:null,leadDays:0,weekendAction:'keep',endType:'never',endDate:null,occurrences:null,occurrenceCount:0,
-        copySameAssignee:true,copySameBoard:true,copySamePriority:true,copySameDescription:true};
-      r.nextDue=_recurNextDate(due1,r);
-      DB.tasks.push({id:'t'+uid(),name,title:name,clientId:c.id,boardId,workboardId:boardId,groupId:gid,parentTaskId:null,
-        status:'todo',priority:'med',ownerId:v.ownerId||null,currentlyWith:v.ownerId||null,currentlyWithType:v.ownerId?'staff':'none',currentlyWithUserId:v.ownerId||null,
-        startDate:due1,endDate:due1,percentComplete:0,percentMode:'manual',hourBudget:0,lockedDates:false,order:j,description:'',
-        dependencies:[],tags:[],archived:false,createdAt:now,updatedAt:now,completedAt:null,recurrence:r});
-      made++;
+    const svc=Object.assign({key:s.key,groupId:gid,unit:v.mode==='items'&&v.parts&&v.parts[0]&&v.parts[0].unit||_rsStartUnit(s.key),allowance:v.allowance,core:s.kind==='core',ownerId:v.ownerId||null},v.mode==='hours'||v.mode==='mixed'?{mode:v.mode,parts:JSON.parse(JSON.stringify(v.parts||_rsDefaultParts(s.key,v.allowance)))}:{});
+    board.retainer.services.push(svc);
+    // The monthly jobs as kept, renamed or added in the set-up (TH-16), each a recurring task from the first month.
+    svc.monthly=(v.monthly||[]).filter(e=>e.name).map((e,j)=>{
+      const out={id:e.id,name:e.name,on:!!e.on,custom:!!e.custom,taskId:null};
+      if(e.on){out.taskId=_rsMtTask(board,svc,e.name,due1,j).id;made++;}
+      return out;
     });
   });
+  // TH-17: the registers start empty unless the admin chose to carry over the previous retainer's.
+  const pv=m.carry?_rsSetupPrev(c.id):null,carried=pv?_regCopyFrom(pv.board,c.id):0;
   saveDB(DB);closeGenericModal();_rsSetup=null;
   renderSidebarWorkboards();openWorkboard(boardId);
-  showToast(`${c.name} added to Retained Services with ${picks.length} service${picks.length>1?'s':''} and ${made} monthly task${made===1?'':'s'}.`,'success');
+  showToast(`${c.name} added to Retained Services with ${picks.length} service${picks.length>1?'s':''} and ${made} monthly task${made===1?'':'s'}${carried?`, and ${carried} register record${carried===1?'':'s'} carried over`:''}.`,'success');
 }
 
 // ── Retainer plan (allowances, owners, the month's focus, a note for the client, billing rule) ──
@@ -8683,7 +8870,7 @@ function openRetainerPlan(boardId){
   const svcRows=(r.services||[]).map(s=>{
     const cat=_rsCat(s.key)||{name:s.key,color:'#8da2b2'},own=s.ownerId?getStaff(s.ownerId):null;
     return`<tr><td><span class="rs-pl-n"><i style="background:${cat.color}"></i>${escHtml(cat.name)}</span></td>
-      <td>${admin?_rsPartsEditor(_rsPartsOf(s),(f,i)=>`_rsPlanPart('${b.id}','${s.key}','${f}',${i==null?0:i},this.value)`,'pl-'+s.key):_rsPartsOf(s).map(p=>`<div>${escHtml(_rsPartPlanText(p))}</div>`).join('')}</td>
+      <td>${admin?_rsPartsEditor(_rsPartsOf(s),(f,i)=>`_rsPlanPart('${b.id}','${s.key}','${f}',${i==null?0:i},this.value)`,'pl-'+s.key,s.key):_rsPartsOf(s).map(p=>`<div>${escHtml(_rsPartPlanText(p))}</div>`).join('')}</td>
       <td>${_rsUsage(b,s,ym).parts.map(u=>`<div class="${_rsPartFull(u)?'rs-full':''}">${_rsUsedCell(u)}</div>`).join('')}</td>
       <td>${admin?`<select class="form-input" onchange="_rsPlanSet('${b.id}','owner','${s.key}',this.value)" aria-label="Owner for ${escHtml(cat.name)}">${staffOpts(s.ownerId)}</select>`:escHtml(own?own.name:'')}</td>${admin?`<td><button class="btn btn-ghost btn-sm" data-rs-remove="${s.key}" onclick="_rsPlanRemove('${b.id}','${s.key}')" aria-label="Remove ${escHtml(cat.name)} from the plan">Remove</button></td>`:''}</tr>`;
   }).join('');
@@ -8700,6 +8887,9 @@ function openRetainerPlan(boardId){
     <div class="rs-pl-wrap"><table class="rs-pl-t"><thead><tr><th>Service</th><th>Allowance</th><th>Used in ${_rsMonthName(ym)}</th><th>Owner</th>${admin?'<th></th>':''}</tr></thead><tbody>${svcRows}</tbody></table></div>
     ${admin&&addable.length?`<select class="form-input rs-pl-add" id="rs-pl-addsvc" onchange="if(this.value)_rsPlanSet('${b.id}','addService',this.value)"><option value="">+ Add a service to the plan</option>${addable.map(c=>`<option value="${c.key}">${escHtml(c.name)}</option>`).join('')}</select>`:''}
     <p class="rs-pl-hint">${admin?'Changes apply from this month; earlier months keep the plan they had, and each month closes on the 10th of the next with its figures kept. Removing a service keeps its group and jobs and stops its meter. ':''}Each part counts in items or hours. Items are finished work the client can see: a task's subitems, or a task tagged Audit once, when it is completed. Monthly parts reset on the 1st; quarterly and yearly parts run from the Starts month and reset at the start of each period. Nothing carries over.</p>
+    <h4 class="rs-pl-h">Monthly tasks</h4>
+    <div class="rs-pl-mts" id="rs-pl-mts">${(r.services||[]).map(s=>`<div class="rs-pl-mt" data-rs-mt-svc="${s.key}"><b>${escHtml((_rsCat(s.key)||{name:s.key}).name)}</b>${_rsMtEditor(_rsMonthlyOf(b,s),(f,i,x)=>`_rsPlanMt('${b.id}','${s.key}','${f}',${i==null?0:i},${x})`,'pl-'+s.key,admin)}</div>`).join('')}</div>
+    <p class="rs-pl-hint">${admin?'Click a name to rename it, untick a task to stop it, or add one. Changes apply to this client only, and only to tasks made from now on. Next month\'s tasks take the new names, and an added task starts on the 1st of next month. Tasks already on the board stay as they are.':'The tasks made every month for each service. An admin can change them.'}</p>
     <h4 class="rs-pl-h">${_rsMonthName(ym)} focus</h4>
     ${focus.length?`<ul class="rs-pl-f">${focus.map(t=>`<li><span>${escHtml(t.name||t.title||'')}</span><b>${getEffectiveTaskPct(t.id)}%</b><button class="btn btn-ghost btn-sm" onclick="_rsPlanSet('${b.id}','focusRm','${t.id}')" aria-label="Remove from the focus">Remove</button></li>`).join('')}</ul>`:'<p class="rs-pl-hint">No focus set, so the block stays hidden in the portal.</p>'}
     ${focus.length<3&&cand.length?`<select class="form-input rs-pl-add" onchange="if(this.value)_rsPlanSet('${b.id}','focusAdd',this.value)"><option value="">+ Pin a task to the focus</option>${cand.map(t=>`<option value="${t.id}">${escHtml(t.name||t.title||'')}</option>`).join('')}</select>`:''}
@@ -8717,12 +8907,44 @@ function retainerEnd(boardId){
   if(currentUser?.role!=='admin')return;
   const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
   closeGenericModal();
-  openConfirm('End this retainer?',`${b.name}'s retained board moves to Archive & Bin and the Retained Services tab leaves their portal. Its jobs and history stay, and an admin can restore it.`,'End retainer',()=>{
-    b.retainer.endMonth=_rsYm();
-    b.archived=true;b.updatedAt=new Date().toISOString();saveDB(DB);closeConfirm();
+  openConfirm('End this retainer?',`${b.name}'s retained board moves to Archive & Bin and the Retained Services tab leaves their portal. Its jobs, history, document register and training matrix stay with it, and an admin can restore it.`,'End retainer',()=>{
+    const bb=(DB.workboards||[]).find(w=>w.id===boardId)||b;   // as it is now: a sync may have replaced it while the question was open
+    bb.retainer.endMonth=_rsYm();
+    bb.archived=true;bb.updatedAt=new Date().toISOString();_regHoldFor(bb);saveDB(DB);closeConfirm();
     if(currentWorkboard&&currentWorkboard.id===boardId){exitWorkboard();return;}
     renderSidebarWorkboards();
   });
+}
+// A change to a service's monthly tasks in the plan (TH-16, admins). See _rsMtEditor.
+function _rsPlanMt(boardId,key,field,i,val){
+  if(currentUser?.role!=='admin')return;
+  const b=(DB.workboards||[]).find(w=>w.id===boardId);if(!b||!_isRetainedBoard(b))return;
+  const s=(b.retainer.services||[]).find(x=>x.key===key);if(!s)return;
+  const scope='pl-'+key;
+  const was=_rsMtEditing;
+  if(field==='mtEdit'){_rsMtEditing=val==null?null:{scope,i:val==='new'?'new':+val};_rsPlanReopen(boardId,true);_rsMtFocusF(_rsMtFocusFor(scope,field,i,was));return;}
+  const list=JSON.parse(JSON.stringify(_rsMonthlyOf(b,s))),e=list[i],task=e&&e.taskId?(DB.tasks||[]).find(t=>t.id===e.taskId):null;
+  if(field==='mtDefault'){_rsMtSaveDefault(key,list);return;}
+  if(field==='mt'){
+    if(!e)return;e.on=!!val;
+    if(e.on){if(_rsMtSource(task))_rsMtResume(task,_rsMtFirstDue(b));else e.taskId=_rsMtTask(b,s,e.name,_rsMtFirstDue(b),_wsNextOrder(s.groupId)).id;}
+    else if(_rsMtSource(task))_rsMtStop(task);
+  }else if(field==='mtName'){
+    const nm=_rsMtClean(val);
+    if(e&&nm&&nm!==e.name){e.name=nm;if(_rsMtSource(task)){task.recurrence=Object.assign({},task.recurrence,{name:nm,nameOf:task.name||task.title||''});task.updatedAt=new Date().toISOString();}}
+  }else if(field==='mtAdd'){
+    const nm=_rsMtClean(val);
+    if(nm&&list.some(x=>x.name.toLowerCase()===nm.toLowerCase())){showToast('That monthly task is already on the list.','error');return;}
+    if(nm){const ne=_rsMtNew(nm,true,true);ne.taskId=_rsMtTask(b,s,nm,_rsMtFirstDue(b),_wsNextOrder(s.groupId)).id;list.push(ne);}
+  }else if(field==='mtRm'){
+    if(!e||!e.custom)return;
+    if(_rsMtSource(task))_rsMtStop(task);
+    list.splice(i,1);
+  }else return;
+  _rsMtEditing=null;
+  s.monthly=list;b.updatedAt=new Date().toISOString();
+  saveDB(DB);_rsPlanReopen(boardId,true);_rsMtFocusF(_rsMtFocusFor(scope,field,i,was));
+  if(currentView==='workspace')renderView('workspace');
 }
 function _rsPlanRemove(boardId,key){
   const cat=_rsCat(key)||{name:key};
@@ -8769,7 +8991,7 @@ function _rsPlanSet(boardId,field,key,val){
       let gid=past&&(DB.groups||[]).some(g=>g.id===past.groupId)?past.groupId:null;
       if(!gid){gid=uid();const order=(DB.groups||[]).filter(g=>(g.boardId||g.workboardId)===b.id).length;
         DB.groups.push({id:gid,clientId:b.clientId,workboardId:b.id,boardId:b.id,name:cat.name,order,color:cat.color,createdAt:new Date().toISOString()});}
-      r.services=(r.services||[]).concat({key,groupId:gid,unit:cat.unit,allowance:past?past.allowance:cat.allowance,core:cat.kind==='core',ownerId:(past&&past.ownerId)||r.leadId||null});
+      r.services=(r.services||[]).concat({key,groupId:gid,unit:past&&past.unit?_rsUnitFix(past.unit):_rsStartUnit(key),allowance:past?past.allowance:cat.allowance,core:cat.kind==='core',ownerId:(past&&past.ownerId)||r.leadId||null},past?(Array.isArray(past.monthly)?{monthly:past.monthly}:{}):{monthly:_rsMonthlyDefaults(key).map(n=>_rsMtNew(n,false,false))});
       r.pastServices=(r.pastServices||[]).filter(x=>x.key!==key);
     }
     else return;
@@ -9106,7 +9328,10 @@ function _mrData(b,ym){
 // What the registers say for the report: reviews and renewals finished that month, and where things stand today.
 // People are counted, never named.
 function _mrRegs(b,ym){
-  const today=_regToday(),docs=(DB.registerDocs||[]).filter(d=>d.clientId===b.clientId&&!d.archived),people=(DB.registerPeople||[]).filter(p=>p.clientId===b.clientId&&!p.archived);
+  // An archived board's report reads the records it holds (TH-17); its plan says whether training shows (TH-14).
+  const today=_regToday(),mine=x=>b.archived?x.archivedWith===b.id&&!x.wasArchived&&!x.binned:x.clientId===b.clientId&&!x.archived;
+  const trn=b.archived?((b.retainer||{}).services||[]).some(s=>s.key==='mob'):_regTrainingOn(b.clientId);
+  const docs=(DB.registerDocs||[]).filter(mine),people=trn?(DB.registerPeople||[]).filter(mine):[];
   if(!docs.length&&!people.length)return null;
   const inM=t=>_rsDone(t)&&t.completedAt&&_rsYm(new Date(t.completedAt))===ym;
   const reviewed=(DB.tasks||[]).filter(t=>!t.archived&&t.registerDocId&&inM(t)).map(t=>{const d=docs.find(x=>x.id===t.registerDocId);return d?{name:(d.code?d.code+' ':'')+(d.title||d.name),at:t.completedAt}:null;}).filter(Boolean);
@@ -9214,7 +9439,7 @@ function _mrPdf(d,logo){
   y=doc.lastAutoTable.finalY+9;
   if(d.regs){
     const g=d.regs,mn=_rsMonthName(d.month),lines=[];
-    y=head('Document control and training',y)+2;
+    y=head(g.people?'Document control and training':'Document control',y)+2;
     if(g.docs)lines.push(`${g.reviewed.length} document revision${g.reviewed.length===1?'':'s'} completed in ${mn}. Today ${g.over} of ${g.docs} document${g.docs===1?' is':'s are'} overdue for review and ${g.d30} ${g.d30===1?'is':'are'} due within 30 days.`);
     if(g.people)lines.push(`${g.renewed} training renewal${g.renewed===1?'':'s'} completed in ${mn}. Today ${g.exp} training record${g.exp===1?' has':'s have'} expired and ${g.t30} expire${g.t30===1?'s':''} within 30 days, across ${g.people} ${g.people===1?'person':'people'}.`);
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...INK);
@@ -9403,32 +9628,40 @@ const _REG_FIELDS={docs:['name','code','title','issueDate','reviewMonths','nextR
 // What an import would do: rows matched by code or name (documents), or by ID then name (people). Nothing is saved.
 function _regPlan(clientId,parsed){
   const kind=parsed.kind,coll=kind==='docs'?'registerDocs':'registerPeople';
-  const mine=(DB[coll]||[]).filter(x=>x.clientId===clientId),prim=new Map(),byName=new Map(),hit=new Set();
+  const mine=(DB[coll]||[]).filter(x=>x.clientId===clientId&&!_regHeld(x)),prim=new Map(),byName=new Map(),hit=new Set();
   const appCols=new Set(((((DB.registers||[]).find(r=>r.clientId===clientId)||{}).training||{}).added||[]).filter(k=>!(parsed.quals||[]).includes(k)));
-  mine.forEach(x=>{const k=(x.keys||[x.key])[0];if(!k)return;if(!prim.has(k))prim.set(k,x);if(k.startsWith('n:')&&!byName.has(k))byName.set(k,x);});
-  const seen=new Set(),plan=[];let added=0,updated=0,same=0,dupes=0;
+  // A document's earlier keys (its Code changed in Task Hub, TH-13): the file's row still finds it rather than adding a copy.
+  const alt=new Map();
+  mine.forEach(x=>{const ks=x.keys||[x.key],k=ks[0];if(!k)return;if(!prim.has(k))prim.set(k,x);if(k.startsWith('n:')&&!byName.has(k))byName.set(k,x);if(kind==='docs')ks.slice(1).forEach(o=>{if(o&&!alt.has(o))alt.set(o,x);});});
+  const seen=new Set(),plan=[];let added=0,updated=0,same=0,dupes=0,binned=0,ours=0;
   parsed.rows.forEach(p=>{
     const keys=_regKeys(kind,p);
     if(seen.has(keys[0])){dupes++;return;}seen.add(keys[0]);
     // A person first imported without an ID is found again by name once the sheet gives them one.
-    let ex=prim.get(keys[0])||(keys[1]&&byName.get(keys[1]))||null;
+    let ex=prim.get(keys[0])||(keys[1]&&byName.get(keys[1]))||alt.get(keys[0])||null;
     if(ex&&hit.has(ex.id))ex=null;
     const fields={};_REG_FIELDS[kind].forEach(f=>{fields[f]=p[f]==null?null:p[f];});
     // Columns added in Task Hub are not in the sheet: an import keeps their records.
     if(kind==='training'&&ex&&appCols.size){fields.quals=Object.assign({},fields.quals||{});Object.entries(ex.quals||{}).forEach(([k,q])=>{if(appCols.has(k)&&!(k in fields.quals))fields.quals[k]=q;});}
     if(!ex){plan.push({p,ex:null,fields,keys});added++;return;}
     hit.add(ex.id);
+    // A document deleted in Task Hub (TH-13) stays in Archive & Bin: the import neither brings it back nor adds it again.
+    if(ex.binned){plan.push({p,ex,fields,keys,binned:true});binned++;return;}
     const changed=ex.archived||_REG_FIELDS[kind].some(f=>JSON.stringify(ex[f]==null?null:ex[f])!==JSON.stringify(fields[f]));
+    // Rows added or changed in Task Hub since the last import take the file's values (the preview says how many).
+    if(changed&&!ex.archived&&(ex.source==='app'&&!ex.importedAt||ex.editedAt&&ex.editedAt>(ex.importedAt||'')))ours++;
     plan.push({p,ex,fields,keys,changed});changed?updated++:same++;
   });
-  const missing=mine.filter(x=>!x.archived&&!hit.has(x.id));
-  return{plan,added,updated,same,dupes,missing};
+  // Documents added in Task Hub (TH-12) are not in the client's file: an import never archives them as missing.
+  const missing=mine.filter(x=>!x.archived&&!hit.has(x.id)&&x.source!=='app');
+  return{plan,added,updated,same,dupes,missing,binned,ours};
 }
 function _regApply(clientId,parsed,archiveMissing,fileName){
   try{requireInternalUser(currentUser);}catch(e){return null;}
   const kind=parsed.kind,coll=kind==='docs'?'registerDocs':'registerPeople',list=DB[coll]=DB[coll]||[];
   const pl=_regPlan(clientId,parsed),now=new Date().toISOString();
   pl.plan.forEach(x=>{
+    if(x.binned)return;
     if(!x.ex){list.push(Object.assign({id:'rg'+uid(),clientId,key:x.keys[0],keys:x.keys,archived:false,createdAt:now,updatedAt:now,importedAt:now},x.fields));return;}
     if(x.changed)Object.assign(x.ex,x.fields,{key:x.keys[0],keys:x.keys,archived:false,updatedAt:now,importedAt:now});
   });
@@ -9457,10 +9690,17 @@ function _regQualState(q,today){
   return{k:days<0?'exp':days<=30?'d30':days<=60?'d60':days<=90?'d90':'ok',days,
     label:days<0?'Expired':days<=30?'Expires within 30 days':days<=60?'Expires within 60 days':days<=90?'Expires within 90 days':'Current'};
 }
+// TH-14 (31 Oct 2026): the training matrix belongs to Mobilisation and Contractor Compliance. A client whose active
+// retained board does not have that service sees no training anywhere (tab, header, Overview, dashboard, Month report);
+// the records are only hidden, and show again once the service is on the plan.
+function _regTrainingOn(clientId){
+  const b=(DB.workboards||[]).find(w=>w.clientId===clientId&&!w.archived&&_isRetainedBoard(w));
+  return !!(b&&(b.retainer.services||[]).some(s=>s.key==='mob'));
+}
 function _regCounts(clientId){
-  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0,dNeed:0,dNeedOver:0,tNeed:0,tNeedExp:0};
+  const today=_regToday(),n={docs:0,people:0,dOver:0,d30:0,tExp:0,t30:0,dNeed:0,dNeedOver:0,tNeed:0,tNeedExp:0},trn=_regTrainingOn(clientId);
   (DB.registerDocs||[]).forEach(d=>{if(d.clientId!==clientId||d.archived)return;n.docs++;const k=_regDocState(d,today).k;if(k==='over')n.dOver++;else if(k==='d30')n.d30++;if((k==='over'||k==='d30')&&!_regDocInHand(d)){n.dNeed++;if(k==='over')n.dNeedOver++;}});
-  (DB.registerPeople||[]).forEach(p=>{if(p.clientId!==clientId||p.archived)return;n.people++;if(_regPersonNeedsTask(p,today)){n.tNeed++;if(_regPersonDue(p,today).some(x=>x.s.k==='exp'))n.tNeedExp++;}
+  (DB.registerPeople||[]).forEach(p=>{if(!trn||p.clientId!==clientId||p.archived)return;n.people++;if(_regPersonNeedsTask(p,today)){n.tNeed++;if(_regPersonDue(p,today).some(x=>x.s.k==='exp'))n.tNeedExp++;}
     Object.values(p.quals||{}).forEach(q=>{const s=_regQualState(q,today);if(s&&s.k==='exp')n.tExp++;else if(s&&s.k==='d30')n.t30++;});});
   return n;
 }
@@ -9541,8 +9781,8 @@ function _regDocsHtml(c,docs){
   const rows=docs.map(d=>({d,s:_regDocState(d,today)})),cnt=k=>rows.filter(x=>x.s.k===k).length;
   const segs=[['','All',rows.length],['over','Overdue',cnt('over')],['d30','Within 30 days',cnt('d30')],['d60','Within 60 days',cnt('d60')],['d90','Within 90 days',cnt('d90')],['ok','Current',cnt('ok')],['none','No date',cnt('none')]]
     .filter(x=>x[0]===''||x[2]||v.st===x[0]);
-  const series=[...new Set(docs.map(d=>_regSeries(d.code)).filter(Boolean))].sort(),q=_regNorm(v.q);
-  const list=rows.filter(x=>(!v.st||x.s.k===v.st)&&(!v.series||_regSeries(x.d.code)===v.series)&&(!q||_regNorm(x.d.name+' '+(x.d.note||'')).includes(q)))
+  const series=[...new Set(docs.map(_regDocSeries).filter(Boolean))].sort(),q=_regNorm(v.q);
+  const list=rows.filter(x=>(!v.st||x.s.k===v.st)&&(!v.series||_regDocSeries(x.d)===v.series)&&(!q||_regNorm(x.d.name+' '+(x.d.note||'')).includes(q)))
     .sort((a,b)=>(a.d.nextReview?0:1)-(b.d.nextReview?0:1)||String(a.d.nextReview||'').localeCompare(String(b.d.nextReview||''))||String(a.d.code||a.d.name).localeCompare(String(b.d.code||b.d.name)));
   const cm=_regCmCounts(c.id,'doc'),tg=_regImsTarget(c.id);
   const body=list.length?list.map(({d,s})=>`<tr class="reg-r ${s.k}" data-reg-doc="${d.id}">
@@ -9553,13 +9793,14 @@ function _regDocsHtml(c,docs){
       <td class="reg-num" data-l="Next review">${_regDate(d.nextReview)}</td>
       <td data-l="Status"><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null&&s.k!=='ok'?` <em>${_regDaysText(s)}</em>`:''}</span></td>
       <td class="reg-tk" data-l="Revision task">${_regTaskCell(d,tg)}</td>
-      <td class="reg-cm">${_regCmHtml(cm.get(d.id)||0)}</td></tr>`).join('')
-    :'<tr class="rq-none"><td colspan="8">Nothing matches these filters.</td></tr>';
+      <td class="reg-cm">${_regCmHtml(cm.get(d.id)||0)}</td>
+      <td class="reg-act">${_regDocActs(c.id,d)}</td></tr>`).join('')
+    :'<tr class="rq-none"><td colspan="9">Nothing matches these filters.</td></tr>';
   return`<section class="rd-sheet">${_regIoBar(c,'docs')}
     <div class="reg-bar"><div class="reg-seg" role="group" aria-label="Review status">${segs.map(([k,l,n])=>`<button type="button" class="${v.st===k?'on ':''}${k}" aria-pressed="${v.st===k}" data-reg-st="${k}" onclick="_regSet('st','${k}')">${k?_regIcon(k):''}${l}<b>${n}</b></button>`).join('')}</div>
       <div class="reg-fl">${series.length?`<label class="rd-f"><span>Series</span><select class="form-input" id="reg-series" onchange="_regSet('series',this.value)"><option value="">All series</option>${series.map(s=>`<option value="${escHtml(s)}"${v.series===s?' selected':''}>${escHtml(s)}</option>`).join('')}</select></label>`:''}
       <label class="rd-f"><span>Search</span><input type="search" class="form-input" id="reg-q" value="${escHtml(v.q)}" placeholder="Name or note" oninput="_regSearch(this.value)"></label></div></div>
-    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th>Revision task</th><th><span class="sr-only">Comments</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="rq-wrap"><table class="rq-t reg-t" id="reg-docs"><thead><tr><th>Code</th><th>Document</th><th>Issued</th><th>Review every</th><th>Next review</th><th>Status</th><th>Revision task</th><th><span class="sr-only">Comments</span></th><th><span class="sr-only">Edit or delete</span></th></tr></thead><tbody>${body}</tbody></table></div>
   </section>`;
 }
 function _regQualsOrder(people,meta){
@@ -9650,7 +9891,7 @@ function _regEmpty(kind,c){
   return`<section class="rd-sheet rd-empty" id="reg-empty"><h2 class="rd-h">${docs?'No document register yet':'No training matrix yet'}</h2>
     <p>${docs?`Import ${escHtml(c.name)}'s register from Excel: one row per controlled document with its file name, issue date, how often it is reviewed and the next review date. Task Hub then shows what is overdue or due soon, and the team can comment on each document.`:`Import ${escHtml(c.name)}'s training matrix from Excel: one row per person and one column per training, ticket or licence, with the expiry date in each cell. Personal details such as date of birth, phone, email and licence numbers are not imported.`}</p>
     <p>Import the spreadsheet again whenever it changes. Rows are matched up again, so comments stay.</p>
-    <div class="reg-acts"><button class="btn btn-primary btn-sm" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button><button class="btn btn-ghost btn-sm" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div></section>`;
+    <div class="reg-acts"><button class="btn btn-primary btn-sm" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button>${docs?`<button type="button" class="btn btn-ghost btn-sm" id="reg-add-doc" onclick="_regDocForm('${c.id}')">+ Add document</button>`:''}<button class="btn btn-ghost btn-sm" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div></section>`;
 }
 // ── The side panel: one document or one person, its details and the team's comments ──
 let _regDr=null;
@@ -9669,7 +9910,8 @@ function _regDrawerRender(){
     head=`${d.code?`<span class="reg-dr-code">${escHtml(d.code)}</span>`:''}<h3 id="reg-dr-title">${escHtml(d.title||d.name)}</h3>`;
     info=`<dl class="reg-dl"><dt>Status</dt><dd><span class="reg-st ${s.k}">${_regIcon(s.k)}${escHtml(s.label)}${s.days!=null?` <em>${_regDaysText(s)}</em>`:''}</span></dd>
       <dt>Issued</dt><dd>${_regDate(d.issueDate)||'Not given'}</dd><dt>Review every</dt><dd>${d.reviewMonths?d.reviewMonths+' months':'Not given'}</dd><dt>Next review</dt><dd>${_regDate(d.nextReview)||'Not set'}</dd>
-      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}<dt>Revision task</dt><dd>${_regTaskCell(d,_regImsTarget(d.clientId))||'<span class="rq-na">None</span>'}</dd></dl>`;
+      ${d.note?`<dt>Register note</dt><dd>${escHtml(d.note)}</dd>`:''}<dt>Revision task</dt><dd>${_regTaskCell(d,_regImsTarget(d.clientId))||'<span class="rq-na">None</span>'}</dd></dl>
+      <div class="reg-dr-acts"><button type="button" class="btn btn-ghost btn-sm" id="reg-dr-edit" onclick="_regDocForm('${d.clientId}','${d.id}')">Edit details</button><button type="button" class="btn btn-ghost btn-sm reg-dr-del" id="reg-dr-del" onclick="_regDocDelete('${d.id}')">Delete</button></div>`;
     list=_regComments('doc',d.id);
   }else{
     const p=(DB.registerPeople||[]).find(x=>x.id===dr.rowId);if(!p){_regDrawerClose();return;}
@@ -9753,6 +9995,291 @@ function _regCommentSubmit(clientId){
 }
 function _regCommentDelete(id){if(regDeleteComment(id)){_regDrawerRender();_regRerender();}}
 
+// ── One document at a time (TH-12, TH-13, 31 Oct 2026): add, edit and delete in the register itself ──
+// A document added here carries source 'app': an import never archives it as "not in this file" and matches it by its
+// Code like any other row (the file's details win). Delete moves it to Archive & Bin (archived and binned) where an admin
+// can restore it; its revision task stays on the board, unlinked until then. Every change goes to the Audit Trail.
+function _regHeld(x){return !!(x&&(x.archivedWith||x.purged));}
+function _regDocSeries(d){return(d&&d.series)||_regSeries(d&&d.code);}
+function _regDocLabel(d){return[d.code,d.title||d.name].filter(Boolean).join(' ');}
+function _regDocKey(code,title){return _regKeys('docs',{code,name:code?code+' - '+title:title})[0];}
+// Another document in the register (or in Archive & Bin) with the same Code, or the same name when there is no Code.
+function _regDocClash(clientId,code,title,selfId){
+  const key=_regDocKey(code,title);
+  return(DB.registerDocs||[]).find(x=>x.clientId===clientId&&x.id!==selfId&&!_regHeld(x)&&(!x.archived||x.binned)&&(x.keys||[x.key])[0]===key)||null;
+}
+const _REG_DOC_LABELS={code:'Code',title:'Document',series:'Series',issueDate:'Issued',reviewMonths:'Review every',nextReview:'Next review',note:'Note'};
+function _regDocShow(k,v){if(v==null||v==='')return'none';if(k==='issueDate'||k==='nextReview')return _regDate(v);if(k==='reviewMonths')return v+' months';return String(v).slice(0,120);}
+function _regDocFields(d){return{code:d.code||'',title:d.title||d.name||'',series:_regDocSeries(d)||'',issueDate:d.issueDate||null,reviewMonths:d.reviewMonths||null,nextReview:d.nextReview||null,note:d.note||''};}
+function regSaveDoc(clientId,id,f){
+  try{requireInternalUser(currentUser);}catch(e){return{err:'Only staff can change the register.'};}
+  const code=String(f.code||'').replace(/\s+/g,'').toUpperCase().slice(0,40);
+  const title=String(f.title||'').replace(/\s+/g,' ').trim().slice(0,200);
+  if(!title)return{err:'Type the name of the document.',field:'title'};
+  const issue=f.issueDate?_regParseDateText(f.issueDate):null;
+  if(f.issueDate&&!issue)return{err:'The issue date is not a date.',field:'issue'};
+  const months=f.reviewMonths===''||f.reviewMonths==null?null:Math.round(+f.reviewMonths);
+  if(months!=null&&!(months>=1&&months<=240))return{err:'Review every is a number of months, from 1 to 240.',field:'months'};
+  const clash=_regDocClash(clientId,code,title,id||null);
+  if(clash)return{err:clash.binned?`${_regDocLabel(clash)} is in Archive & Bin. An admin can restore it there.`:`${code?code+' is':'A document with this name is'} already in this register: ${_regDocLabel(clash)}.`,field:code?'code':'title',clashId:clash.binned?null:clash.id};
+  const list=DB.registerDocs=DB.registerDocs||[],now=new Date().toISOString();
+  let d=id?list.find(x=>x.id===id&&x.clientId===clientId):null;
+  if(id&&(!d||d.archived))return{err:'This document is no longer in the register.'};
+  const key=_regDocKey(code,title);
+  // A document the last import archived (it was not in that file) comes back with these details and its comments.
+  let revived=false;
+  if(!d){const old=list.find(x=>x.clientId===clientId&&!_regHeld(x)&&x.archived&&!x.binned&&(x.keys||[x.key])[0]===key);if(old){d=old;revived=true;}}
+  const before=d?_regDocFields(d):null;
+  const datesChanged=!d||revived||before.issueDate!==issue||before.reviewMonths!==months;
+  const s0=String(f.series||'').replace(/\s+/g,'').toUpperCase().slice(0,40);
+  const fields={name:code?code+' - '+title:title,code,title,series:s0&&s0!==_regSeries(code)?s0:null,issueDate:issue,reviewMonths:months,
+    nextReview:datesChanged?(issue&&months?_regAddMonths(issue,months):null):d.nextReview,note:String(f.note||'').trim().slice(0,1000),key,keys:[key].concat(((d&&d.keys)||[]).filter(k=>k&&k!==key)).slice(0,4)};
+  if(!d){
+    d=Object.assign({id:'rg'+uid(),clientId,archived:false,source:'app',addedBy:currentUser.id,createdAt:now},fields,{updatedAt:now});
+    list.push(d);
+    writeAuditEvent('Document',d.id,'created',null,{doc:_regDocLabel(d),displayValue:_regDocLabel(d)});
+  }else{
+    Object.assign(d,fields,{archived:false,updatedAt:now,editedAt:now,editedBy:currentUser.id});
+    if(revived){d.source='app';writeAuditEvent('Document',d.id,'restored',null,{doc:_regDocLabel(d),displayValue:_regDocLabel(d)});}
+    const after=_regDocFields(d);
+    Object.keys(_REG_DOC_LABELS).forEach(k=>{
+      if(JSON.stringify(before[k])===JSON.stringify(after[k]))return;
+      writeAuditEvent('Document',d.id,'updated:'+k,{field:k,label:_REG_DOC_LABELS[k],displayValue:_regDocShow(k,before[k]),doc:_regDocLabel(d)},{field:k,label:_REG_DOC_LABELS[k],displayValue:_regDocShow(k,after[k]),doc:_regDocLabel(d)});
+    });
+  }
+  saveDB(DB);
+  return{ok:true,doc:d};
+}
+// Delete: to Archive & Bin. Its revision task stays on the board, unlinked; a restore links it again.
+function regBinDoc(id){
+  try{requireInternalUser(currentUser);}catch(e){return false;}
+  const d=(DB.registerDocs||[]).find(x=>x.id===id);if(!d||d.archived)return false;
+  const now=new Date().toISOString(),ts=(DB.tasks||[]).filter(t=>t.registerDocId===id);
+  ts.forEach(t=>{delete t.registerDocId;t.updatedAt=now;});
+  Object.assign(d,{archived:true,binned:true,binnedAt:now,binnedBy:currentUser.id,binTaskIds:ts.map(t=>t.id),updatedAt:now});
+  writeAuditEvent('Document',id,'deleted',{doc:_regDocLabel(d),displayValue:_regDocLabel(d)},null);
+  saveDB(DB);return true;
+}
+function regRestoreDoc(id){
+  if(currentUser?.role!=='admin')return{err:'Only an admin can restore from Archive & Bin.'};
+  const d=(DB.registerDocs||[]).find(x=>x.id===id);if(!d||!d.binned||d.purged)return{err:'That document is not in Archive & Bin.'};
+  const key=(d.keys||[d.key])[0];
+  const again=(DB.registerDocs||[]).find(x=>x.id!==id&&x.clientId===d.clientId&&!_regHeld(x)&&!x.archived&&(x.keys||[x.key])[0]===key);
+  if(again&&!d.archivedWith)return{err:`${_regDocLabel(d)} is in the register again (it was added after this one was deleted). Delete that one first, or leave this one in the bin.`};
+  const now=new Date().toISOString();
+  d.binned=false;d.archived=!!d.archivedWith;if(d.archivedWith)d.wasArchived=false;delete d.binnedAt;delete d.binnedBy;
+  (d.binTaskIds||[]).forEach(tid=>{const t=(DB.tasks||[]).find(x=>x.id===tid);if(t&&!t.registerDocId){t.registerDocId=d.id;t.updatedAt=now;}});
+  delete d.binTaskIds;d.updatedAt=now;
+  writeAuditEvent('Document',id,'restored',null,{doc:_regDocLabel(d),displayValue:_regDocLabel(d)});
+  saveDB(DB);return{ok:true,doc:d};
+}
+// Delete forever: the details and comments go; the record stays as an empty marker so another computer's older copy
+// cannot bring the document back, and with no key, so a later import can add it again as new.
+function regPurgeDoc(id){
+  if(currentUser?.role!=='admin')return false;
+  const list=DB.registerDocs||[],i=list.findIndex(x=>x.id===id);if(i<0||!list[i].binned)return false;
+  const d=list[i],now=new Date().toISOString(),label=_regDocLabel(d);
+  list[i]={id:d.id,clientId:d.clientId,archived:true,binned:true,purged:true,key:null,keys:[],createdAt:d.createdAt,updatedAt:now};
+  (DB.registerComments||[]).forEach(c=>{if(c.kind==='doc'&&c.rowId===id&&!c.deleted){c.deleted=true;c.updatedAt=now;}});
+  writeAuditEvent('Document',id,'purged',{doc:label,displayValue:label},null);
+  saveDB(DB);return true;
+}
+const _REG_IC={
+  edit:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.6 2.6l2.8 2.8-7.9 7.9H2.7v-2.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.2 4l2.8 2.8" stroke="currentColor" stroke-width="1.5"/></svg>',
+  del:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+};
+function _regDocActs(clientId,d){
+  const l=escHtml(_regDocLabel(d));
+  return`<button type="button" class="reg-ib" data-reg-edit="${d.id}" onclick="_regDocForm('${clientId}','${d.id}')" aria-label="Edit ${l}" title="Edit">${_REG_IC.edit}</button><button type="button" class="reg-ib x" data-reg-del="${d.id}" onclick="_regDocDelete('${d.id}')" aria-label="Delete ${l}" title="Delete">${_REG_IC.del}</button>`;
+}
+// The form: the Excel template's columns. Next review and Status are shown as they will be saved.
+function _regDocForm(clientId,id){
+  try{requireInternalUser(currentUser);}catch(e){return;}
+  const c=(DB.clients||[]).find(x=>x.id===clientId);if(!c)return;
+  const d=id?(DB.registerDocs||[]).find(x=>x.id===id&&x.clientId===clientId&&!x.archived):null;if(id&&!d)return;
+  const series=[...new Set((DB.registerDocs||[]).filter(x=>x.clientId===clientId&&!x.archived).map(_regDocSeries).filter(Boolean))].sort();
+  const v=d?{code:d.code||'',title:d.title||d.name||'',series:d.series||'',issue:d.issueDate||'',months:d.reviewMonths||'',note:d.note||''}:{code:'',title:'',series:'',issue:'',months:'',note:''};
+  const live=`_regDocFormLive('${clientId}','${id||''}')`;
+  const body=`<form class="reg-df" id="reg-df" novalidate onsubmit="event.preventDefault();_regDocFormSave('${clientId}','${id||''}')">
+    <p class="rs-su2-intro">${d?'Next review and Status are worked out again when Issued or Review every change.':'The same details as a row of the Excel template. Next review is worked out from Issued and Review every, as it is for imported rows.'}</p>
+    <div class="reg-df-g">
+      <label class="rd-f"><span>Code</span><input type="text" class="form-input" id="reg-df-code" maxlength="40" autocomplete="off" aria-describedby="reg-df-err" value="${escHtml(v.code)}" placeholder="For example: HR-POL-001" oninput="${live}"></label>
+      <label class="rd-f reg-df-w"><span>Document</span><input type="text" class="form-input" id="reg-df-title" maxlength="200" autocomplete="off" value="${escHtml(v.title)}" placeholder="For example: Performance Management Policy" oninput="${live}"></label>
+      <label class="rd-f"><span>Series</span><input type="text" class="form-input" id="reg-df-series" maxlength="40" autocomplete="off" list="reg-df-sl" value="${escHtml(v.series)}" placeholder="From the code"><datalist id="reg-df-sl">${series.map(x=>`<option value="${escHtml(x)}"></option>`).join('')}</datalist></label>
+      <label class="rd-f"><span>Issued</span><input type="date" class="form-input" id="reg-df-issue" value="${escHtml(v.issue)}" oninput="${live}"></label>
+      <label class="rd-f"><span>Review every (months)</span><input type="number" class="form-input" id="reg-df-months" min="1" max="240" step="1" value="${escHtml(String(v.months))}" placeholder="12" oninput="${live}"></label>
+      <label class="rd-f reg-df-w"><span>Note</span><textarea class="form-input" id="reg-df-note" rows="2" maxlength="1000">${escHtml(v.note)}</textarea></label>
+    </div>
+    <p class="reg-df-calc" id="reg-df-calc" aria-live="polite"></p>
+    <p class="reg-err" id="reg-df-err" role="alert" hidden></p>
+    <div class="rs-su2-foot"><span class="rs-su2-sum"></span><button type="button" class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button type="submit" class="btn btn-primary" id="reg-df-save">${d?'Save changes':'Add document'}</button></div>
+  </form>`;
+  openGenericModal(d?'Edit '+_regDocLabel(d):'Add a document to '+c.name+"'s register",body,'640px');
+  _regDocFormLive(clientId,id||'');
+  setTimeout(()=>{const i=document.getElementById(d?'reg-df-title':'reg-df-code');if(i)i.focus();},40);
+}
+function _regDocFormVals(){const g=k=>{const el=document.getElementById('reg-df-'+k);return el?el.value:'';};return{code:g('code'),title:g('title'),series:g('series'),issueDate:g('issue'),reviewMonths:g('months'),note:g('note')};}
+function _regDocFormLive(clientId,id){
+  const v=_regDocFormVals(),calc=document.getElementById('reg-df-calc'),err=document.getElementById('reg-df-err'),save=document.getElementById('reg-df-save');
+  const code=v.code.replace(/\s+/g,'').toUpperCase(),m=v.reviewMonths===''?null:Math.round(+v.reviewMonths),months=m>=1&&m<=240?m:null;
+  const d=id?(DB.registerDocs||[]).find(x=>x.id===id):null;
+  const changed=!d||(d.issueDate||null)!==(v.issueDate||null)||(d.reviewMonths||null)!==m;
+  const next=changed?(v.issueDate&&months?_regAddMonths(v.issueDate,months):null):d.nextReview;
+  const st=_regDocState({nextReview:next});
+  const ck=(next||'')+'|'+st.k;if(calc&&calc.dataset.v!==ck){calc.dataset.v=ck;calc.innerHTML=`<span>Next review <b id="reg-df-next">${next?_regDate(next):'not set'}</b>${next?'':' (it needs Issued and Review every)'}</span><span>Status <span class="reg-st ${st.k}" id="reg-df-st">${_regIcon(st.k)}${escHtml(st.label)}</span></span>`;}
+  const sp=document.getElementById('reg-df-series');if(sp)sp.placeholder=_regSeries(code)||'From the code';
+  const clash=code||v.title.trim()?_regDocClash(clientId,code,v.title.trim(),id||null):null;
+  const ci=document.getElementById('reg-df-code');if(ci)ci.setAttribute('aria-invalid',clash?'true':'false');
+  const ek=clash?clash.id:'';if(err&&err.dataset.v!==ek){err.dataset.v=ek;err.hidden=!clash;err.innerHTML=clash?(clash.binned?`${escHtml(_regDocLabel(clash))} is in Archive & Bin. An admin can restore it there.`:`${code?escHtml(code)+' is':'A document with this name is'} already in this register: ${escHtml(_regDocLabel(clash))}. <button type="button" class="rs-lvl-use" onclick="closeGenericModal();_regDocForm('${clientId}','${clash.id}')">Open it</button>`):'';}
+  if(save)save.disabled=!!clash;
+}
+function _regDocFormSave(clientId,id){
+  const res=regSaveDoc(clientId,id||null,_regDocFormVals());
+  if(!res||!res.ok){
+    const err=document.getElementById('reg-df-err');
+    if(err){err.hidden=false;err.dataset.v='save';err.innerHTML=escHtml((res&&res.err)||'Not saved.')+(res&&res.clashId?` <button type="button" class="rs-lvl-use" onclick="closeGenericModal();_regDocForm('${clientId}','${res.clashId}')">Open it</button>`:'');}
+    const f=res&&res.field&&document.getElementById('reg-df-'+res.field);if(f)f.focus();
+    return;
+  }
+  closeGenericModal();
+  if(_regView&&_regView.clientId===clientId)_regView.tab='docs';
+  if(_regDr&&_regDr.kind==='doc'&&_regDr.rowId===res.doc.id)_regDrawerRender();
+  _regRerender();
+  showToast(id?'Document updated.':'Document added.','success');
+}
+function _regDocDelete(id){
+  const d=(DB.registerDocs||[]).find(x=>x.id===id&&!x.archived);if(!d)return;
+  const linked=(DB.tasks||[]).some(t=>t.registerDocId===id&&!t.archived);
+  openConfirm(`Delete ${_regDocLabel(d)}?`,`It moves to Archive & Bin, where an admin can restore it.${linked?' Its revision task stays on the board, no longer linked to it.':''}`,'Delete',()=>{
+    closeConfirm();
+    if(!regBinDoc(id))return;
+    if(_regDr&&_regDr.rowId===id)_regDrawerClose();
+    _regRerender();
+    showToast('Document deleted. It is in Archive & Bin.','success');
+  });
+}
+// ── A retained board's registers go with it (TH-17, 31 Oct 2026) ──
+// Archiving a retained board (End retainer, or Archive) holds the client's document register and training matrix with
+// that board: each record is stamped archivedWith (its own archived flag kept in wasArchived) and the last-import details
+// go on the retainer (registerMeta). The client's register is then empty. Restoring the board brings them back. A new
+// board for the same client starts empty unless its set-up copies them across (_regCopyFrom).
+const _REG_HOLD=['registerDocs','registerPeople','registerComments'];
+function _regHoldFor(b,only){
+  if(!b||!b.retainer||!b.clientId)return 0;
+  const now=new Date().toISOString();let n=0;
+  _REG_HOLD.forEach(k=>(DB[k]||[]).forEach(x=>{
+    if(!x||x.clientId!==b.clientId||_regHeld(x)||(only&&!only(x,k)))return;
+    if(k!=='registerComments'){x.wasArchived=!!x.archived;x.archived=true;n++;}
+    x.archivedWith=b.id;x.updatedAt=now;
+  }));
+  const meta=(DB.registers||[]).find(r=>r.clientId===b.clientId);
+  if(meta&&(meta.docs||meta.training)&&!only){
+    b.retainer.registerMeta={docs:meta.docs||null,training:meta.training||null};
+    delete meta.docs;delete meta.training;meta.updatedAt=now;
+  }
+  return n;
+}
+function _regReleaseFor(b){
+  if(!b||!b.retainer)return 0;
+  const now=new Date().toISOString();let n=0;
+  _REG_HOLD.forEach(k=>(DB[k]||[]).forEach(x=>{
+    if(!x||x.archivedWith!==b.id||x.purged)return;
+    if(k!=='registerComments'){x.archived=!!(x.wasArchived||x.binned);delete x.wasArchived;n++;}
+    delete x.archivedWith;x.updatedAt=now;
+  }));
+  const saved=b.retainer.registerMeta;
+  if(saved){
+    const regs=DB.registers=DB.registers||[];let meta=regs.find(r=>r.clientId===b.clientId);
+    if(!meta){meta={id:'reg-'+b.clientId,clientId:b.clientId,createdAt:now};regs.push(meta);}
+    if(saved.docs&&!meta.docs)meta.docs=saved.docs;
+    if(saved.training&&!meta.training)meta.training=saved.training;
+    meta.updatedAt=now;delete b.retainer.registerMeta;
+  }
+  return n;
+}
+// What an archived retained board holds: its documents and people as they were when it was archived.
+function _regHeldBy(boardId,k){return(DB[k]||[]).filter(x=>x&&x.archivedWith===boardId&&!x.wasArchived&&!x.binned&&!x.purged);}
+// The client's newest archived retained board that holds any records: the one the set-up offers to carry over.
+function _rsSetupPrev(clientId){
+  const bs=(DB.workboards||[]).filter(b=>b.archived&&b.retainer&&b.clientId===clientId)
+    .map(b=>({board:b,docs:_regHeldBy(b.id,'registerDocs').length,people:_regHeldBy(b.id,'registerPeople').length}))
+    .filter(x=>x.docs||x.people).sort((a,z)=>String(z.board.updatedAt||'').localeCompare(String(a.board.updatedAt||'')));
+  return bs[0]||null;
+}
+// Carry over: copies (new ids), so the archived board keeps its own. Comments go with their rows; columns added in
+// Task Hub and the last-import details too.
+function _regCopyFrom(b,clientId){
+  const now=new Date().toISOString(),map=new Map();let n=0;
+  ['registerDocs','registerPeople'].forEach(k=>{const list=DB[k]=DB[k]||[];
+    _regHeldBy(b.id,k).forEach(x=>{const c=JSON.parse(JSON.stringify(x)),id='rg'+uid();map.set(x.id,id);
+      delete c.archivedWith;delete c.wasArchived;delete c.binTaskIds;
+      list.push(Object.assign(c,{id,clientId,archived:false,copiedFrom:x.id,createdAt:now,updatedAt:now}));n++;});});
+  const cms=DB.registerComments=DB.registerComments||[];
+  cms.filter(x=>x&&x.archivedWith===b.id&&!x.deleted&&map.has(x.rowId)).forEach(x=>{const c=JSON.parse(JSON.stringify(x));delete c.archivedWith;cms.push(Object.assign(c,{id:'rc'+uid(),clientId,rowId:map.get(x.rowId),updatedAt:now}));});
+  const saved=b.retainer&&b.retainer.registerMeta;
+  if(saved){
+    const regs=DB.registers=DB.registers||[];let meta=regs.find(r=>r.clientId===clientId);
+    if(!meta){meta={id:'reg-'+clientId,clientId,createdAt:now};regs.push(meta);}
+    if(saved.docs)meta.docs=JSON.parse(JSON.stringify(saved.docs));
+    if(saved.training)meta.training=JSON.parse(JSON.stringify(saved.training));
+    meta.updatedAt=now;
+  }
+  return n;
+}
+// Records from before TH-17: a board archived earlier left its register with the client, so it shows on the new board.
+// The register says so (admins) and moves them to that archived board in one go: records last imported or changed
+// before the current board was made.
+function _regLeftovers(clientId){
+  const cur=(DB.workboards||[]).find(w=>w.clientId===clientId&&!w.archived&&_isRetainedBoard(w));if(!cur||!cur.createdAt)return null;
+  const prev=(DB.workboards||[]).filter(b=>b.archived&&b.retainer&&b.clientId===clientId&&String(b.createdAt||'')<cur.createdAt)
+    .sort((a,z)=>String(z.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];if(!prev)return null;
+  // A register imported since this board started is this board's (an unchanged row keeps its old dates on import).
+  const meta=(DB.registers||[]).find(r=>r.clientId===clientId)||{},since=k=>String(((meta[k]||{}).at)||'')>=cur.createdAt;
+  const old=(x,k)=>x&&!_regHeld(x)&&!since(k==='registerPeople'?'training':'docs')&&String(x.importedAt||x.createdAt||'')<cur.createdAt&&String(x.updatedAt||'')<cur.createdAt;
+  const docs=(DB.registerDocs||[]).filter(x=>x.clientId===clientId&&!x.archived&&old(x,'registerDocs')).length,people=(DB.registerPeople||[]).filter(x=>x.clientId===clientId&&!x.archived&&old(x,'registerPeople')).length;
+  return docs||people?{cur,prev,docs,people,old}:null;
+}
+function _regLeftoverHtml(c){
+  if(currentUser?.role!=='admin')return'';
+  const lo=_regLeftovers(c.id);if(!lo)return'';
+  const what=[lo.docs?`${lo.docs} document${lo.docs===1?'':'s'}`:'',lo.people?`${lo.people} ${lo.people===1?'person':'people'} in the training matrix${_regTrainingOn(c.id)?'':' (not shown for this plan)'}`:''].filter(Boolean).join(' and ');
+  return`<div class="reg-warn reg-left" id="reg-leftovers"><b>${what} came from the previous retainer.</b> They were here before this board started on ${escHtml(new Date(lo.cur.createdAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}))}. <button type="button" class="rs-lvl-use" id="reg-leftovers-move" onclick="_regLeftoversMove('${c.id}')">Move them to the archived board</button></div>`;
+}
+function _regLeftoversMove(clientId){
+  const lo=_regLeftovers(clientId);if(!lo)return;
+  openConfirm('Move them to the archived board?',`They leave this register and go with ${lo.prev.name}, the archived board, as if they had been archived with it. Restoring that board brings them back.`,'Move',()=>{
+    closeConfirm();
+    const rows=new Set(_REG_HOLD.slice(0,2).flatMap(k=>(DB[k]||[]).filter(x=>x.clientId===clientId&&!x.archived&&lo.old(x,k)).map(x=>x.id)));
+    const n=_regHoldFor(lo.prev,(x,k)=>k==='registerComments'?rows.has(x.rowId):rows.has(x.id));
+    lo.prev.updatedAt=new Date().toISOString();saveDB(DB);_regRerender();
+    showToast(`${n} record${n===1?'':'s'} moved to ${lo.prev.name}.`,'success');
+  },false);
+}
+// Deleting an archived retained board forever deletes the register and matrix it holds (they went with it when it was
+// archived). Each record is emptied and kept as a marker, so an older copy on another computer cannot bring it back.
+function _regHeldNote(ids){
+  ids=new Set([].concat(ids));let d=0,p=0;
+  (DB.registerDocs||[]).forEach(x=>{if(x&&ids.has(x.archivedWith)&&!x.purged)d++;});(DB.registerPeople||[]).forEach(x=>{if(x&&ids.has(x.archivedWith)&&!x.purged)p++;});
+  return d||p?` Its document register and training matrix go too (${[d?d+' document'+(d===1?'':'s'):'',p?p+' '+(p===1?'person':'people'):''].filter(Boolean).join(' and ')}).`:'';
+}
+function _regPurgeHeld(ids){
+  ids=new Set([].concat(ids));const now=new Date().toISOString();
+  ['registerDocs','registerPeople'].forEach(k=>{const list=DB[k]||[];list.forEach((x,i)=>{if(x&&ids.has(x.archivedWith)&&!x.purged)list[i]={id:x.id,clientId:x.clientId,archived:true,purged:true,archivedWith:x.archivedWith,key:null,keys:[],createdAt:x.createdAt,updatedAt:now};});});
+  (DB.registerComments||[]).forEach(c=>{if(c&&ids.has(c.archivedWith)&&!c.deleted){c.deleted=true;c.updatedAt=now;}});
+}
+// A retained board that is live again (restored on another computer, or an older copy won a sync) gets back what it holds.
+function _regHeal(){
+  let n=0;
+  (DB.workboards||[]).forEach(b=>{if(b&&!b.archived&&b.retainer&&((DB.registerDocs||[]).some(x=>x&&x.archivedWith===b.id&&!x.purged)||(DB.registerPeople||[]).some(x=>x&&x.archivedWith===b.id&&!x.purged)))n+=_regReleaseFor(b);});
+  if(n)saveDB(DB);
+  return n;
+}
+function _regBinRestore(id){const r=regRestoreDoc(id);if(!r.ok){showAlert(r.err,'Not restored');return;}showToast('Document restored to the register.','success');renderView('archive');}
+function _regBinPurge(id){
+  const d=(DB.registerDocs||[]).find(x=>x.id===id);if(!d)return;
+  openConfirm('Delete forever',`Permanently delete ${_regDocLabel(d)} and its comments? This cannot be undone.`,'Delete forever',()=>{regPurgeDoc(id);closeConfirm();renderView('archive');});
+}
+
 // ── Import from Excel: choose the file, see what it will do, then import ──
 let _regPending=null;
 function openRegisterImport(clientId,kind){
@@ -9802,7 +10329,8 @@ function _regImportPreview(parsed){
     ${probs.length?`<div class="reg-warn" id="reg-imp-probs"><b>${probs.length} thing${probs.length===1?'':'s'} to check</b><ul>${probs.slice(0,8).map(p=>`<li>${escHtml(p)}</li>`).join('')}${probs.length>8?`<li>And ${probs.length-8} more.</li>`:''}</ul></div>`:''}
     ${sample.length?`<div class="rq-wrap">${tbl}</div>${parsed.rows.length>sample.length?`<p class="rs-pl-hint">And ${parsed.rows.length-sample.length} more.</p>`:''}`:''}
     <p class="reg-imp-change" id="reg-imp-change"><b>${change}.</b></p>
-    ${pl.missing.length?`<label class="reg-chk"><input type="checkbox" id="reg-imp-archive" checked> Archive the ${N(pl.missing.length)} not in this file. Their comments are kept, and they come back if a later file has them.</label>`:''}
+    ${pl.binned||pl.ours?`<ul class="reg-imp-cols" id="reg-imp-notes">${pl.binned?`<li>${N(pl.binned)} in this file ${pl.binned===1?'is':'are'} in Archive & Bin and ${pl.binned===1?'stays':'stay'} there. Restore ${pl.binned===1?'it':'them'} to bring ${pl.binned===1?'it':'them'} back.</li>`:''}${pl.ours?`<li>${N(pl.ours)} added or changed in Task Hub will take the file's details.</li>`:''}</ul>`:''}
+    ${pl.missing.length?`<label class="reg-chk"><input type="checkbox" id="reg-imp-archive" checked> Archive the ${N(pl.missing.length)} not in this file. Their comments are kept, and they come back if a later file has them.${docs?' Documents added in Task Hub stay.':''}</label>`:''}
     <div class="rs-su2-foot"><span class="rs-su2-sum"></span><button class="btn btn-ghost" onclick="closeGenericModal()">Cancel</button><button class="btn btn-primary" id="reg-imp-go" onclick="_regImportConfirm()"${parsed.rows.length?'':' disabled'}>Import ${N(parsed.rows.length)}</button></div>
   </div>`;
 }
@@ -9886,7 +10414,7 @@ function _regLastImport(c,kind){
   return last?`Last import: ${escHtml(last.file||'a spreadsheet')}, ${new Date(last.at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${by?' by '+escHtml(by.name):''}.`:'Not imported yet.';
 }
 function _regIoBar(c,kind){
-  return`<div class="reg-io"><p class="rd-hint reg-last">${_regLastImport(c,kind)}</p><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button>${kind==='training'?`<button type="button" class="btn btn-ghost btn-sm" id="reg-add-col" onclick="_regAddColumnDialog('${c.id}')">+ Training column</button>`:''}<button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div>`;
+  return`${_regLeftoverHtml(c)}<div class="reg-io"><p class="rd-hint reg-last">${_regLastImport(c,kind)}</p><button class="btn btn-primary btn-sm" id="reg-import" onclick="openRegisterImport('${c.id}','${kind}')">Import from Excel</button>${kind==='docs'?`<button type="button" class="btn btn-ghost btn-sm" id="reg-add-doc" onclick="_regDocForm('${c.id}')">+ Add document</button>`:''}${kind==='training'?`<button type="button" class="btn btn-ghost btn-sm" id="reg-add-col" onclick="_regAddColumnDialog('${c.id}')">+ Training column</button>`:''}<button class="btn btn-ghost btn-sm" id="reg-template" onclick="downloadRegisterTemplate('${kind}')">Download template</button></div>`;
 }
 function renderRegisters(){
   const v=_regView,c=(DB.clients||[]).find(x=>x.id===v.clientId);
@@ -9895,6 +10423,7 @@ function renderRegisters(){
   const docs=(DB.registerDocs||[]).filter(d=>d.clientId===v.clientId&&!d.archived);
   const people=(DB.registerPeople||[]).filter(p=>p.clientId===v.clientId&&!p.archived);
   const meta=(DB.registers||[]).find(r=>r.clientId===v.clientId)||{};
+  if(v.tab==='training'&&!_regTrainingOn(c.id))v.tab='overview';
   const body=v.tab==='docs'?_regDocsHtml(c,docs):v.tab==='training'?_regTrainingHtml(c,people,meta):_rcOverviewHtml(c,b,docs,people);
   return`<div class="rd reg">${_rcMastHtml(c,b,v.tab)}${body}</div>`;
 }
@@ -9948,7 +10477,7 @@ function _rcOverviewHtml(c,b,docs,people){
   const work=`<section class="rd-sheet" aria-labelledby="rc-q-h"><div class="rd-sheet-head"><h3 class="rd-h" id="rc-q-h">Requests and work <span class="rd-n">${rows.length}</span></h3></div>
     ${rows.length?`<div class="rq-wrap"><table class="rq-t rc-q" id="rc-queue"><thead><tr><th>Work</th><th>Reply by</th><th>Deliver by</th><th>Owner</th><th>Status</th></tr></thead><tbody>${rows.slice(0,12).map(_rcQueueRow).join('')}</tbody></table></div>${rows.length>12?`<p class="rd-hint">And ${rows.length-12} more. <button type="button" class="rs-lvl-use" id="rc-q-all" onclick="_rdQueueFor('${c.id}')">See them in the queue</button></p>`:''}`
       :'<p class="rd-hint">Nothing open for this client.</p>'}</section>`;
-  return`<div class="rc-grid"><div class="rc-col">${monthHtml}${work}${b?_rcHoursHtml(b,ym):''}</div><div class="rc-col">${_rcDocsHtml(c,b,docs,today)}${_rcTrainingHtml(c,people,today)}</div></div>`;
+  return`<div class="rc-grid"><div class="rc-col">${monthHtml}${work}${b?_rcHoursHtml(b,ym):''}</div><div class="rc-col">${_rcDocsHtml(c,b,docs,today)}${_regTrainingOn(c.id)?_rcTrainingHtml(c,people,today):''}</div></div>`;
 }
 // Document control on the Overview: what is due, and the reviews still without a task, one click from being work.
 function _rcDocsHtml(c,b,docs,today){
@@ -9985,7 +10514,7 @@ function _regTrnTarget(clientId){
   return s?{board:b,service:s}:null;
 }
 function _regPersonDue(p,today){return Object.entries(p.quals||{}).map(([name,q])=>({name,q,s:_regQualState(q,today)})).filter(x=>x.s&&(x.s.k==='exp'||x.s.k==='d30')).sort((a,z)=>a.s.days-z.s.days);}
-function _regPersonTask(p){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerPersonId===p.id).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
+function _regPersonTask(p){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerPersonId===p.id&&(_rsDone(t)||!_offBoard(t))).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
 // In hand: a renewal task is open, or one was finished in the last 30 days (the matrix waits for its next import).
 function _regPersonInHand(p){
   const t=_regPersonTask(p);if(!t)return false;if(!_rsDone(t))return true;
@@ -10036,7 +10565,7 @@ function _regImsTarget(clientId){
   const s=b&&(b.retainer.services||[]).find(x=>x.key==='ims');
   return s?{board:b,service:s}:null;
 }
-function _regDocTask(d){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerDocId===d.id).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
+function _regDocTask(d){return(DB.tasks||[]).filter(t=>!t.archived&&t.registerDocId===d.id&&(_rsDone(t)||!_offBoard(t))).sort((a,z)=>String(z.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null;}
 // In hand: a review task is open, or one was finished since the document was last issued.
 function _regDocInHand(d){
   const t=_regDocTask(d);if(!t)return false;if(!_rsDone(t))return true;
@@ -10108,10 +10637,11 @@ function _rcMastHtml(c,b,active){
   const top=b?(DB.tasks||[]).filter(t=>!t.archived&&!t.parentTaskId&&(t.boardId||t.workboardId)===b.id):[];
   const delivered=top.filter(t=>!_cpTaskHidden(t)&&_rsDone(t)&&_rsDoneYm(t)===ym).length,open=top.filter(t=>!_rsDone(t)).length;
   const needDocs=docs.filter(d=>_regNeedsTask(d,today)).length;
-  let exp=0;people.forEach(p=>Object.values(p.quals||{}).forEach(x=>{const s=_regQualState(x,today);if(s&&(s.k==='exp'||s.k==='d30'))exp++;}));
-  const band=`<div class="rc-band">${_rcCell(delivered,`delivered in ${_rsMonthName(ym)}`,'',null)}${_rcCell(reqs,`open request${reqs===1?'':'s'}${late?`, ${late} late`:''}`,late?'bad':'',go('overview'),'rc-cell-req')}${_rcCell(needDocs,`document${needDocs===1?'':'s'} due for review`,needDocs?'warn':'',go('docs'),'rc-cell-docs')}${_rcCell(exp,'training expired or expiring',exp?'warn':'',go('training'),'rc-cell-trn')}</div>`;
+  const trn=_regTrainingOn(c.id);
+  let exp=0;if(trn)people.forEach(p=>Object.values(p.quals||{}).forEach(x=>{const s=_regQualState(x,today);if(s&&(s.k==='exp'||s.k==='d30'))exp++;}));
+  const band=`<div class="rc-band${trn?'':' n3'}">${_rcCell(delivered,`delivered in ${_rsMonthName(ym)}`,'',null)}${_rcCell(reqs,`open request${reqs===1?'':'s'}${late?`, ${late} late`:''}`,late?'bad':'',go('overview'),'rc-cell-req')}${_rcCell(needDocs,`document${needDocs===1?'':'s'} due for review`,needDocs?'warn':'',go('docs'),'rc-cell-docs')}${trn?_rcCell(exp,'training expired or expiring',exp?'warn':'',go('training'),'rc-cell-trn'):''}</div>`;
   const tab=(k,label,n,click,id,short)=>{const on=active===k;return`<button type="button" role="tab" class="rc-tab${on?' on':''}" aria-selected="${on}" tabindex="${on?0:-1}" id="${id||'reg-tab-'+k}"${short?` data-short="${short}" aria-label="${label}"`:''}${on?'':` onclick="${click}"`}><span class="rt-l">${label}</span>${n!=null?`<span class="rt-n">${n}</span>`:''}</button>`;};
-  const tabs=`<div class="rc-tabs" role="tablist" aria-label="${escHtml(c.name)}" onkeydown="_tabKeys(event)">${tab('overview','Overview',null,go('overview'))}${b?tab('board','Board',open,`_rdOpenBoard('${b.id}')`,'rc-board'):''}${tab('docs','Document register',docs.length,go('docs'),null,'Documents')}${tab('training','Training matrix',people.length,go('training'),null,'Training')}</div>`;
+  const tabs=`<div class="rc-tabs" role="tablist" aria-label="${escHtml(c.name)}" onkeydown="_tabKeys(event)">${tab('overview','Overview',null,go('overview'))}${b?tab('board','Board',open,`_rdOpenBoard('${b.id}')`,'rc-board'):''}${tab('docs','Document register',docs.length,go('docs'),null,'Documents')}${trn?tab('training','Training matrix',people.length,go('training'),null,'Training'):''}</div>`;
   const acts=b?`<div class="rc-acts"><button type="button" class="rc-act" onclick="openRetainerPlan('${b.id}')">${_RC_ICON.plan}Plan</button><button type="button" class="rc-act" id="rc-report" onclick="openMonthReport('${b.id}')">${_RC_ICON.report}Month report</button></div>`:'';
   return`<section class="rc-mast" aria-label="${escHtml(c.name)}">
     <div class="rc-mast-top"><button type="button" class="rc-crumb" id="reg-back" onclick="${onBoard?'_rcHomeFromBoard()':'_rdHome()'}">${_RC_ICON.back}Retained Services</button><span class="rc-month">${escHtml(_rsMonthYear(ym))}, day ${ml.day} of ${ml.dim}</span></div>
@@ -10119,7 +10649,7 @@ function _rcMastHtml(c,b,active){
     ${ml.html}${band}${tabs}
   </section>`;
 }
-function _rcGo(tab){if(!_regView)return;_regView.tab=tab;if(tab==='training'){_regView.mode='expiring';_regView.win='30';}renderView('retained');}
+function _rcGo(tab){if(!_regView)return;if(tab==='training'&&!_regTrainingOn(_regView.clientId))tab='overview';_regView.tab=tab;if(tab==='training'){_regView.mode='expiring';_regView.win='30';}renderView('retained');}
 function _rcHomeFromBoard(){currentWorkboard=null;wsCommsOpen=false;wsCommsFiles=[];_rdBack=null;renderSidebarWorkboards();_rdHome();}
 // The dashboard's own header, the same card: the month, and the four things that need Etcher's eye.
 function _rdMastHtml(boards,all,lateN,usage,newBtn){
@@ -11200,7 +11730,7 @@ function renderDashStatPanel(){
   const panel=document.getElementById('dash-stat-panel');
   if(!panel)return;
   if(!dashStatOpen){panel.innerHTML='';return;}
-  const allTasks=DB.tasks;
+  const allTasks=_liveTasks();
   const allWbs=(DB.workboards||[]).filter(wb=>!wb.archived);
   const today=new Date();today.setHours(0,0,0,0);
   let items=[],title='',type='task';
@@ -11212,7 +11742,7 @@ function renderDashStatPanel(){
     items=allTasks.filter(t=>t.status==='in-progress'&&!t.archived);title='In Progress';
   } else if(dashStatOpen==='done'){
     const _approvedIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));
-    items=allTasks.filter(t=>t.status==='done'&&!t.archived&&!_approvedIds.has(t.id));title='Done — Awaiting Timesheet';
+    items=DB.tasks.filter(t=>t.status==='done'&&!t.archived&&!_approvedIds.has(t.id));title='Done — Awaiting Timesheet';
   } else if(dashStatOpen==='overdue'){
     items=allTasks.filter(t=>t.endDate&&t.status!=='done'&&!t.archived&&new Date(t.endDate)<today);title='Overdue';
   } else if(dashStatOpen==='hours'){
@@ -11637,9 +12167,10 @@ function renderNeedsAttention(){
   // Was its own reimplementation with an unconditional admin/pm bypass, independent of
   // canViewTask — meant this widget leaked a personal board's tasks to admin even after
   // canViewTask itself was fixed. Route through the one real permission function instead.
-  const approvals=(DB.tasks||[]).filter(t=>t.status==='approved-client'&&!t.archived&&canViewTask(currentUser,t));
-  const changeReqs=(DB.tasks||[]).filter(t=>t.status==='change-requested'&&!t.archived&&canViewTask(currentUser,t));
-  const declines=(DB.tasks||[]).filter(t=>t.status==='declined-client'&&!t.archived&&canViewTask(currentUser,t));
+  const _live=_liveTasks();
+  const approvals=_live.filter(t=>t.status==='approved-client'&&!t.archived&&canViewTask(currentUser,t));
+  const changeReqs=_live.filter(t=>t.status==='change-requested'&&!t.archived&&canViewTask(currentUser,t));
+  const declines=_live.filter(t=>t.status==='declined-client'&&!t.archived&&canViewTask(currentUser,t));
   const items=[...approvals,...changeReqs,...declines];
   if(!items.length)return'';
   const NEXT_APPROVAL=[
@@ -11766,7 +12297,7 @@ function renderDashboard(){
   const allWbs=DB.workboards||[];
   const wbs=allWbs.filter(wb=>!wb.archived&&canViewBoard(currentUser,wb));
   const archivedWbs=allWbs.filter(wb=>wb.archived&&canViewBoard(currentUser,wb));
-  const allTasks=DB.tasks;
+  const allTasks=_liveTasks();
   const COLORS=WB_COLOURS.map(c=>c[0]);
 
   return`
@@ -11962,13 +12493,13 @@ function renderDashboard(){
         <div class="dash-stat-arrow">▾</div>
       </div>
       <div class="stat-card dash-stat-btn" data-stat="done" onclick="toggleDashStat('done')" style="cursor:pointer;border-top-color:${getStatusMeta('done').color}">
-        <div class="stat-val" style="color:${getStatusMeta('done').color}">${(()=>{const approvedTaskIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));return allTasks.filter(t=>t.status==='done'&&!t.archived&&!approvedTaskIds.has(t.id)).length;})()}</div>
+        <div class="stat-val" style="color:${getStatusMeta('done').color}">${(()=>{const approvedTaskIds=new Set((DB.timeEntries||[]).filter(e=>e.status==='approved').map(e=>e.taskId).filter(Boolean));return DB.tasks.filter(t=>t.status==='done'&&!t.archived&&!approvedTaskIds.has(t.id)).length;})()}</div>
         <div class="stat-label" style="color:${getStatusMeta('done').color}">Done — Needs TS</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
       </div>
       <div class="stat-card dash-stat-btn" data-stat="overdue" onclick="toggleDashStat('overdue')" style="cursor:pointer;border-top-color:#dc2626">
-        <div class="stat-val" style="color:#dc2626">${allTasks.filter(t=>t.endDate&&t.status!=='done'&&new Date(t.endDate)<new Date()).length}</div>
+        <div class="stat-val" style="color:#dc2626">${allTasks.filter(t=>!t.archived&&t.endDate&&t.status!=='done'&&new Date(t.endDate)<new Date()).length}</div>
         <div class="stat-label" style="color:#dc2626">Overdue</div>
         <div style="font-size:10px;color:#c8d4e0;margin-top:3px">tap to expand</div>
         <div class="dash-stat-arrow">▾</div>
@@ -13483,7 +14014,7 @@ function _mcDateFilterBarHtml(){
   </div>`;
 }
 function mcAutoFit(){
-  const ts=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate);
+  const ts=_liveTasks().filter(t=>!t.archived&&t.startDate&&t.endDate);
   if(!ts.length)return;
   const allD=ts.flatMap(t=>[new Date(t.startDate),new Date(t.endDate)]);
   const days=Math.ceil((Math.max(...allD)-Math.min(...allD))/86400000);
@@ -13579,7 +14110,8 @@ function renderCapacity(){
 
   // ── Task pool — all non-archived tasks with start+end dates (exclude internal boards) ──
   const _excl=_excludedBoardIds();
-  let pool=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate&&!_excl.has(t.workboardId||t.boardId));
+  const _cOff=_offBoardIds();
+  let pool=DB.tasks.filter(t=>!t.archived&&t.startDate&&t.endDate&&!_excl.has(t.workboardId||t.boardId)&&!_offBoard(t,_cOff));
 
   // ── Apply filters (Capacity's own mcFilters — deliberately not shared with Blocks/Gantt) ──
   const _cf=mcFilters;
@@ -13647,7 +14179,7 @@ function renderCapacity(){
   // ── Pre-build DailyCapacity map from ALL non-archived tasks with dates ──
   // Uses all tasks (not the filtered pool) so capacity ribbons reflect true staff load
   // regardless of which filters are active in the current view.
-  const _allCapacityTasks=DB.tasks.filter(t=>!t.archived&&t.endDate).map(capacityTaskFromDb);
+  const _allCapacityTasks=_liveTasks().filter(t=>!t.archived&&t.endDate).map(capacityTaskFromDb);
   const _dailyCapacities=calculateDailyCapacity(_allCapacityTasks,mcThreshold);
   // Rebuild as O(1)-lookup Map (key: 'staffId:date')
   _mcCapacityMap=new Map(_dailyCapacities.map(d=>[`${d.staffId}:${d.date}`,d]));
@@ -13837,8 +14369,8 @@ function renderCapacity(){
 let clientsSearch='',clientsSort='name',clientsShowArchived=false;
 const _CLIENT_DONE=new Set(['done','completed','completed-approved']);
 function _clientTaskCounts(c){
-  const ts=DB.tasks.filter(t=>{if(t.archived)return false;const g=getGroup(t);return g&&g.clientId===c.id;});
-  return{ts,open:ts.filter(t=>!_CLIENT_DONE.has(t.status)&&t.status!=='cancelled').length,done:ts.filter(t=>_CLIENT_DONE.has(t.status)).length};
+  const ts=DB.tasks.filter(t=>{if(t.archived)return false;const g=getGroup(t);return g&&g.clientId===c.id;}),off=_offBoardIds();
+  return{ts,open:ts.filter(t=>!_CLIENT_DONE.has(t.status)&&t.status!=='cancelled'&&!_offBoard(t,off)).length,done:ts.filter(t=>_CLIENT_DONE.has(t.status)).length};
 }
 function _clientsGridHtml(){
   const q=clientsSearch.trim().toLowerCase();
@@ -16714,7 +17246,7 @@ function _rsPlanPart(boardId,key,field,i,val){
   // Every service has parts now (TH-11). The plan as it was stays for the months before this one.
   _rsKeepPlan(b.retainer,s);
   const parts=JSON.parse(JSON.stringify(_rsOwnParts(s)));
-  if(!_rsPartChange(parts,field,i,val))return;
+  if(!_rsPartChange(parts,field,i,val,key))return;
   s.parts=parts;_rsSetShape(s);
   b.updatedAt=new Date().toISOString();saveDB(DB);_rsPlanReopen(boardId,true);
   if(currentView==='workspace')renderView('workspace');
@@ -19151,7 +19683,7 @@ function renderAudit(){
   }).join('');
 
   // Entity-type colour coding
-  const entityColor={Task:'#3b82f6',Comment:'#6366f1',TimeEntry:'#10b981',Dependency:'#f59e0b',User:'#8b5cf6',Client:'#0ea5e9'};
+  const entityColor={Task:'#3b82f6',Comment:'#6366f1',TimeEntry:'#10b981',Dependency:'#f59e0b',User:'#8b5cf6',Client:'#0ea5e9',Document:'#0d6e4e'};
 
   const rows=filtered.slice(0,200).map(a=>{
     const actor=getStaff(a.actorId||'');
@@ -19166,6 +19698,7 @@ function renderAudit(){
       startDate:'Start Date',endDate:'End Date',percentComplete:'% Complete',
       percentMode:'Progress Mode',hourBudget:'Hour Budget',lockedDates:'Dates Locked',
       name:'Title',title:'Title',status:'Status',priority:'Priority',groupId:'Group',clientId:'Client',
+      code:'Code',series:'Series',issueDate:'Issued',reviewMonths:'Review Every',nextReview:'Next Review',note:'Note',
     };
     const ACTION_LABELS={
       created:'Created',deleted:'Deleted',auto_shifted:'Dates Auto-Shifted',
@@ -19175,7 +19708,7 @@ function renderAudit(){
       approved:'Approved',rejected:'Rejected',bulk_approved:'Bulk Approved',bulk_rejected:'Bulk Rejected',
       password_changed:'Password Changed',access_disabled:'Login Switched Off',access_enabled:'Login Switched On',
       role_changed:'Role Changed',login_created:'Login Created',portal_login_created:'Portal Login Created',
-      portal_password_changed:'Portal Password Changed',
+      portal_password_changed:'Portal Password Changed',restored:'Restored',purged:'Deleted Forever',
     };
     const rawAction=a.action||'';
     let actionLabel;
@@ -19235,7 +19768,7 @@ function renderAudit(){
         </div>
       </td>
       <td style="font-size:12px;max-width:280px"><div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${changeHtml}</div></td>
-      <td style="font-size:11px">${taskLink?`<span style="color:#97bcbd;cursor:pointer" onclick="openTaskModal('${taskLink.id}')">${escHtml(taskLink.name||taskLink.title||'').slice(0,32)}</span>`:'—'}</td>
+      <td style="font-size:11px">${taskLink?`<span style="color:#97bcbd;cursor:pointer" onclick="openTaskModal('${taskLink.id}')">${escHtml(taskLink.name||taskLink.title||'').slice(0,32)}</span>`:a.entityType==='Document'&&(after?.doc||before?.doc)?`<span style="color:#3d5269">${escHtml(String(after?.doc||before?.doc).slice(0,40))}</span>`:'—'}</td>
     </tr>`;
   }).join('');
 
@@ -19459,7 +19992,7 @@ function renderDigests(){
 function _dgGetAutoItems(clientId){
   const since=new Date();since.setDate(since.getDate()-7);
   const sinceStr=since.toISOString();
-  return(DB.tasks||[])
+  return _liveTasks()
     .filter(t=>!t.archived&&(t.updatedAt>sinceStr||t.completedAt>sinceStr)&&(!clientId||t.clientId===clientId))
     .slice(0,12)
     .map(t=>{
@@ -19766,8 +20299,9 @@ function renderMyWeek(){
   const weekLabel=`${weekStart.toLocaleDateString('en-AU',{day:'numeric',month:'short'})} – ${weekEnd.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}`;
 
   // ── Task query ────────────────────────────────────────────────────────
+  const _mwOff=_offBoardIds();
   let myTasks=(DB.tasks||[]).filter(t=>
-    !t.archived&&
+    !t.archived&&!_offBoard(t,_mwOff)&&
     (isAssignedTo(t,currentUser.id)||t.currentlyWithUserId===currentUser.id||
      (t.currentlyWithType==='staff'&&t.currentlyWith===currentUser.id))
   );
@@ -20110,6 +20644,8 @@ function renderArchiveBin(){
   const archivedWbs=(DB.workboards||[]).filter(wb=>wb.archived);
   const archivedTasks=DB.tasks.filter(t=>t.archived&&!t.parentTaskId);
   const archivedSubitems=DB.tasks.filter(t=>t.archived&&t.parentTaskId);
+  // Documents deleted from a client's register (TH-13), newest first.
+  const binDocs=(DB.registerDocs||[]).filter(d=>d.binned&&!d.purged).sort((a,b)=>String(b.binnedAt||'').localeCompare(String(a.binnedAt||'')));
 
   const ROW='display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)';
   const EMPTY='padding:28px 20px;text-align:center;font-size:13px;color:#b0bec5;font-style:italic';
@@ -20153,6 +20689,21 @@ function renderArchiveBin(){
     </div>`;
   }).join('');
 
+  const docRows=binDocs.map(d=>{
+    const cn=((DB.clients||[]).find(c=>c.id===d.clientId)||{}).name||'Client',by=d.binnedBy?getStaff(d.binnedBy):null;
+    const at=d.binnedAt?new Date(d.binnedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'';
+    return`<div style="${ROW}" data-bin-doc="${d.id}" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:#1a2940;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(_regDocLabel(d))}</div>
+        <div style="font-size:11px;color:#97bcbd;margin-top:1px">${escHtml(cn)}, document register${by&&by.name?', deleted by '+escHtml(by.name):''}</div>
+      </div>
+      <span style="font-size:12px;color:#8da2b2;width:90px;flex-shrink:0">${at}</span>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="_regBinRestore('${d.id}')" class="btn btn-ghost btn-sm" style="font-size:11px" data-bin-restore="${d.id}">Restore</button>
+        <button onclick="_regBinPurge('${d.id}')" class="btn btn-danger btn-sm" style="font-size:11px">Delete forever</button>
+      </div>
+    </div>`;
+  }).join('');
   return`<div style="display:grid;gap:18px">
 
     <!-- Header card -->
@@ -20195,12 +20746,27 @@ function renderArchiveBin(){
         :taskRows}
     </div>
 
+    <!-- Deleted documents card (TH-13) -->
+    <div class="card" style="padding:0;overflow:hidden" id="bin-docs">
+      <div style="${SEC_HDR}">
+        <div style="${SEC_TITLE}">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 1.8h5.2L12.5 5v9.2H4z" stroke="#0d1c33" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 1.8V5h3.5" stroke="#0d1c33" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          Documents
+          <span style="font-size:11px;font-weight:400;color:#8da2b2;background:#fff;border:1px solid #e8edf4;border-radius:10px;padding:1px 7px">${binDocs.length}</span>
+        </div>
+      </div>
+      ${binDocs.length===0
+        ?`<div style="${EMPTY}">No deleted documents</div>`
+        :docRows}
+    </div>
+
   </div>`;
 }
 
 function permanentDeleteWorkboard(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
-  openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks. This CANNOT be undone.','Delete Forever',()=>{
+  openConfirm('Delete Forever','This will permanently delete the WorkBoard and ALL its tasks.'+_regHeldNote(id)+' This CANNOT be undone.','Delete Forever',()=>{
+    _regPurgeHeld(id);
     {const _before=DB.boards;DB.boards=DB.boards.filter(w=>w.id!==id);_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>(t.boardId||t.workboardId)!==id);_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
@@ -20213,7 +20779,8 @@ function permanentDeleteAllArchived(){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const ids=new Set((DB.workboards||[]).filter(wb=>wb.archived).map(wb=>wb.id));
   if(!ids.size)return;
-  openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks? This CANNOT be undone.`,'Delete All Forever',()=>{
+  openConfirm('Delete All Archived WorkBoards',`Permanently delete ${ids.size} archived workboard${ids.size!==1?'s':''} and all their tasks?${_regHeldNote([...ids]).replace(' Its ',' Their ')} This CANNOT be undone.`,'Delete All Forever',()=>{
+    _regPurgeHeld([...ids]);
     {const _before=DB.boards;DB.boards=DB.boards.filter(b=>!ids.has(b.id));_tombstoneRemoved(_before,DB.boards,'deletedBoardIds');}
     DB.workboards=DB.boards;
     {const _before=DB.tasks;DB.tasks=DB.tasks.filter(t=>!ids.has(t.boardId||t.workboardId));_tombstoneRemoved(_before,DB.tasks,'deletedTaskIds');}
@@ -20702,7 +21269,7 @@ function renderStaff(){
     <div style="display:flex;justify-content:flex-end"><button onclick="openStaffModal(null)" class="btn btn-primary">+ Add Staff</button></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
     ${DB.staff.map(s=>{
-      const myTasks=DB.tasks.filter(t=>isAssignedTo(t,s.id));
+      const myTasks=_liveTasks().filter(t=>!t.archived&&isAssignedTo(t,s.id));
       const open=myTasks.filter(t=>t.status!=='done').length;
       const totalH=DB.timeEntries.filter(e=>e.staffId===s.id).reduce((a,e)=>a+e.hours,0);
       const _badgeBg=s.role==='admin'?'#fee2e2':s.role==='restricted'?'#fef3c7':'#f0f9f4';
@@ -27582,12 +28149,25 @@ function _recurPreviewDates(r,baseDate,count){
   return out;
 }
 
+// A board back from Archive & Bin: its recurring tasks carry on from today, with no back-dated copies for the months it
+// was away (they are not made while it is archived).
+function _recurSkipAway(boardId){
+  const today=toDateStr(new Date()),now=new Date().toISOString();
+  (DB.tasks||[]).forEach(t=>{
+    const r=t&&t.recurrence;if(!r||!r.freq||t.archived||!r.nextDue||r.nextDue>=today||_taskBoardId(t)!==boardId)return;
+    let nd=r.nextDue,n=0;while(nd<today&&n++<400){const x=_recurNextDate(nd,r);if(!x||x<=nd)break;nd=x;}
+    t.recurrence=Object.assign({},r,{nextDue:nd});t.updatedAt=now;
+  });
+}
 function _checkRecurringTasks(){
   const today=toDateStr(new Date());
   let created=0;
+  // A board in Archive & Bin makes no more tasks (its recurring tasks wait there, and start again if it is restored).
+  const offBoards=new Set((DB.workboards||[]).filter(b=>b.archived).map(b=>b.id));
   (DB.tasks||[]).filter(t=>t.recurrence&&!t.archived).forEach(source=>{
     const r=source.recurrence;
     if(!r||!r.freq)return;
+    if(offBoards.size&&offBoards.has(_taskBoardId(source)))return;
     const nextDue=r.nextDue||source.endDate;
     if(!nextDue)return;
     // Check if it's time to create (accounting for lead days)
@@ -27622,6 +28202,9 @@ function _checkRecurringTasks(){
         createdAt:_now,
         updatedAt:_now,
       };
+      // A monthly task renamed in the retainer plan (TH-16): the tasks made from now on take the new name.
+      // Unless the first task was renamed on the board since: then its own name leads, as it always did.
+      if(r.name&&(r.nameOf==null||r.nameOf===(source.name||source.title||''))){newTask.name=r.name;newTask.title=r.name;}
       // "Same assignee"/"Same board" off used to have no real effect: assignees stayed when the owner cleared, and
       // "not the same board" copied the source's board anyway (audit L2, 2026-10-17).
       if(!r.copySameAssignee){newTask.ownerId=null;newTask.currentlyWithUserId=null;newTask.currentlyWith=null;newTask.assigneeIds=[];}
@@ -27740,6 +28323,7 @@ function tpSaveRecurrence(taskId){
       copySameDescription:el('tp-recur-copy-desc')?.checked!==false,
       nextDue:_recurNextDate(baseDate,{freq,interval:Math.max(1,parseInt(el('tp-recur-interval')?.value)||1),onDay:parseInt(el('tp-recur-day-num')?.value)||1,onWeekdayOrdinal:onType==='weekday'?(el('tp-recur-ordinal')?.value||'first'):null,onWeekday:onType==='weekday'?parseInt(el('tp-recur-weekday')?.value||1):null,weekendAction:(document.querySelector('[name="tp-recur-weekend"]:checked')||{}).value||'keep'}),
     };
+    if(t.recurrence&&t.recurrence.name){r.name=t.recurrence.name;r.nameOf=t.recurrence.nameOf;}   // a name set in the retainer plan (TH-16) stays
     t.recurrence=r;
   }
   t.updatedAt=new Date().toISOString();
@@ -28042,7 +28626,11 @@ function archiveWorkboard(id){
   openConfirm(restoring?'Restore WorkBoard':'Archive WorkBoard',
     restoring?`Restore "${_wb.name}" from the archive?`:`Archive "${_wb.name}"? It can be restored later.`,
     restoring?'Restore':'Archive',()=>{
-    _wb.archived=!restoring;saveDB(DB);
+    const wb2=DB.workboards.find(w=>w.id===id)||_wb;   // the record as it is now: a sync may have replaced it while the question was open
+    wb2.archived=!restoring;wb2.updatedAt=new Date().toISOString();
+    if(wb2.retainer){if(restoring)_regReleaseFor(wb2);else _regHoldFor(wb2);}   // its registers go and come back with it (TH-17)
+    if(restoring)_recurSkipAway(id);
+    saveDB(DB);
     closeConfirm();
     // Archiving the board you're viewing hides it from the sidebar — leave it too.
     if(!restoring&&currentWorkboard&&currentWorkboard.id===id){exitWorkboard();return;}
@@ -28102,7 +28690,7 @@ function restoreWorkboard(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const wb=DB.workboards.find(w=>w.id===id);
   if(wb&&_rsRestoreClash(wb))return;
-  if(wb){wb.archived=false;saveDB(DB);}
+  if(wb){wb.archived=false;wb.updatedAt=new Date().toISOString();if(wb.retainer)_regReleaseFor(wb);_recurSkipAway(id);saveDB(DB);}
   renderSidebarWorkboards();
   renderView('dashboard');
 }
@@ -30485,8 +31073,9 @@ function getClientTasks(clientId){
   if(!clientId)return[];
   // Tasks may have clientId directly (legacy/demo) or only via their group's clientId (normal creation path).
   const clientGroupIds=new Set((DB.groups||[]).filter(g=>g.clientId===clientId).map(g=>g.id));
+  const off=_offBoardIds();
   return DB.tasks
-    .filter(t=>!t.archived&&!_cpTaskHidden(t)&&(t.clientId===clientId||clientGroupIds.has(t.groupId)))
+    .filter(t=>!t.archived&&!_cpTaskHidden(t)&&(t.clientId===clientId||clientGroupIds.has(t.groupId))&&(_rsDone(t)||!_offBoard(t,off)))
     .map(sanitizeTaskForClient);
 }
 

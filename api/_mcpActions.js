@@ -152,7 +152,10 @@ function listActions(data, filter) {
   filter = filter || {};
   const wantPending = filter.status && String(filter.status).trim().toLowerCase() === 'pending';
 
-  let routed = (data.tasks || []).filter(isEmailIntakeTask);
+  // Archived tasks, and tasks on a board in Archive & Bin, are not open actions (31 Oct 2026).
+  const archivedBoardIds = new Set((data.boards || data.workboards || []).filter(b => b && b.archived).map(b => b.id));
+  const boardOf = t => { if (t.boardId || t.workboardId) return t.boardId || t.workboardId; const g = (data.groups || []).find(x => x.id === t.groupId); return g ? (g.boardId || g.workboardId || null) : null; };
+  let routed = (data.tasks || []).filter(t => isEmailIntakeTask(t) && !t.archived && !archivedBoardIds.has(boardOf(t)));
   if (wantPending) {
     routed = [];
   } else if (filter.status) {

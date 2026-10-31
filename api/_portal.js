@@ -94,6 +94,13 @@ function taskOnPersonalBoard(blob, t) {
   const b = bId && arr(blob.boards).find(x => x.id === bId);
   return !!(b && b.visibility === 'private' && b.personalBoard);
 }
+// A task on a board in Archive & Bin (31 Oct 2026): open work there is no longer the client's current work, so the
+// slice leaves it out; finished work, its files and its history stay (index.html getClientTasks).
+function taskOnArchivedBoard(blob, t) {
+  const bId = taskBoardId(blob, t);
+  const b = bId && arr(blob.boards).find(x => x.id === bId);
+  return !!(b && b.archived);
+}
 function taskVisibleTo(blob, clientId, t) {
   return !!t && !t.archived && !taskHidden(blob, t) && taskClientId(blob, t) === clientId && !taskOnPersonalBoard(blob, t);
 }
@@ -109,8 +116,11 @@ function rsYm(d) {
   catch (e) { return String(d).slice(0, 7); }
 }
 function rsPrevYm(ym) { const [y, m] = ym.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; }
-// IMS counts document revisions (2026-10-22); boards saved before stored "document reviews".
-function rsUnit(u) { return /^document reviews?$/i.test(String(u || '')) ? 'document revisions' : u; }
+// IMS counts document revisions (2026-10-22); boards saved before stored "document reviews". HSEQ's "reports and
+// register updates" are plain Items (TH-15, 31 Oct 2026; index.html _rsUnitFix).
+function rsUnit(u) { return /^document reviews?$/i.test(String(u || '')) ? 'document revisions' : /^reports and register updates$/i.test(String(u || '')) ? 'items' : u; }
+// Who a part counts (index.html _rsWho): an Audit part (Items counted in audits) takes tasks tagged Audit.
+function rsWho(x) { return x && x.kind === 'items' && x.unit === 'audits' ? 'audit' : (x && x.who) || 'all'; }
 function isRetainedBoard(b) { return !!(b && b.retainer && !b.retainer.endedAt && !b.archived); }
 // "Your team": only people still at Etcher.
 function activeStaffName(blob, id) { const u = id && arr(blob.users).find(x => x.id === id && x.role !== 'client' && x.active !== false); return u ? u.name : null; }
@@ -147,7 +157,7 @@ function rsSeniorsAt(r, ym) { const h = rsAt(r && r.seniorHist, ym); return new 
 // then Everyone, then Admin. Hours that fit no part are not counted (an untagged task on an Audit-only service).
 // kind ('hours' or 'items', TH-11) breaks a tie between two parts with the same filter.
 function rsPartFor(parts, aud, senior, kind) {
-  const who = x => x.who || 'all', pick = fn => { const c = parts.filter(fn); return c.find(x => !kind || rsKind(x) === kind) || c[0] || null; };
+  const who = rsWho, pick = fn => { const c = parts.filter(fn); return c.find(x => !kind || rsKind(x) === kind) || c[0] || null; };
   return pick(x => who(x) === 'audit' && aud) || pick(x => who(x) === 'senior' && senior) || pick(x => who(x) === 'admin' && !senior)
     || pick(x => who(x) === 'all') || pick(x => who(x) === 'admin') || null;
 }
@@ -200,7 +210,7 @@ const rsTagged = x => arr(x && x.tags).some(g => /^audit$/i.test(String(g).trim(
 function rsItemUnits(blob, b, s, parts, ym) {
   const tasks = arr(blob.tasks), seniors = rsSeniorsAt(b.retainer || {}, ym), out = [];
   const doneYm = rsDoneYm;
-  const auditItems = parts.some(p => rsKind(p) === 'items' && (p.who || 'all') === 'audit');
+  const auditItems = parts.some(p => rsKind(p) === 'items' && rsWho(p) === 'audit');
   tasks.filter(t => !t.archived && !t.parentTaskId && t.groupId === s.groupId && taskBoardId(blob, t) === b.id && !taskHidden(blob, t)).forEach(t => {
     const subs = tasks.filter(x => x.parentTaskId === t.id && !x.archived && !taskHidden(blob, x));
     const one = x => { const done = RS_DONE.has(x.status); out.push({ part: rsPartFor(parts, rsTagged(x) || rsTagged(t), seniors.has(x.ownerId || t.ownerId), 'items'), done, doneYm: done ? doneYm(x) : null, started: !done && !RS_IDLE.has(String(x.status || '')) }); };
@@ -335,7 +345,7 @@ function sliceForClient(blob, clientId, userId) {
   const client = portalClient(blob, clientId);
   if (!client) return null;
 
-  const tasks = arr(blob.tasks).filter(t => taskVisibleTo(blob, clientId, t));
+  const tasks = arr(blob.tasks).filter(t => taskVisibleTo(blob, clientId, t) && (RS_DONE.has(t.status) || !taskOnArchivedBoard(blob, t)));
   const taskIds = new Set(tasks.map(t => t.id));
   const taskById = new Map(tasks.map(t => [t.id, t]));
   // personalBoard is excluded even if it somehow carries this clientId (e.g. an existing
