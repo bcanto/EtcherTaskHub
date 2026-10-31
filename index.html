@@ -3553,7 +3553,7 @@ function _tombstoneRemoved(beforeArr,afterArr,tombstoneKey){
 // - Comments/notifications: union by ID (never lose an entry)
 // - Everything else (users, clients, boards, settings): incoming wins (admin-only, rarely concurrent)
 function _mergeDB(current, incoming){
-  function mergeById(curr,inc,tsField){
+  function mergeById(curr,inc,tsField,onTie){
     const map=new Map((curr||[]).map(x=>[x.id,x]));
     for(const item of (inc||[])){
       const ex=map.get(item.id);
@@ -3567,6 +3567,7 @@ function _mergeDB(current, incoming){
       // forever, and the peer's next save pushed the stale name back over it.
       const incNewer=a&&b?a>b:(!!a&&!b);
       if(incNewer)map.set(item.id,item);
+      else if(onTie&&(a===b||(!a&&!b))&&onTie(item,ex))map.set(item.id,item);
     }
     return[...map.values()];
   }
@@ -3650,6 +3651,10 @@ function _mergeDB(current, incoming){
   // list above, so a realtime echo carrying a pre-note snapshot simply overwrote it.
   // Merge every remaining collection of {id} records by id instead of naming them one by
   // one — a whitelist only protects what someone remembered to add to it.
+  // A board archived before 31 Oct 2026 kept its old updatedAt (archiveWorkboard did not stamp it), so a copy saved by
+  // someone who still had it unarchived tied, and a tie keeps the saver's own copy: Sam's archive of GCS - Tracker was
+  // undone that way. On a tie the archived copy wins; archiving and restoring always stamp the time now.
+  const _archivedWinsTie=(inc,cur)=>!!inc.archived&&!cur.archived;
   const _named=new Set(['tasks','comments','clientComments','notifications','meetingNotes',
     'clientWorkRequests','clients','deletedClientIds','deletedWorkRequestIds','deletedTaskFileIds','clientNotes']);
   for(const key of new Set([...Object.keys(current||{}),...Object.keys(incoming||{})])){
@@ -3661,7 +3666,7 @@ function _mergeDB(current, incoming){
     if(!both.length)continue;
     // arrays of plain values (id tombstones, string lists) have nothing to merge on
     if(!both.every(x=>x&&typeof x==='object'&&x.id!=null))continue;
-    merged[key]=mergeById(cur||[],inc||[],'updatedAt');
+    merged[key]=mergeById(cur||[],inc||[],'updatedAt',key==='boards'||key==='workboards'?_archivedWinsTie:undefined);
   }
   // `clients` is excluded from the generic loop above (it's in _named, so a tombstone
   // filter can run on it below) but was never actually given an explicit merge — it just
@@ -3709,7 +3714,7 @@ function _mergeDB(current, incoming){
   // NB both halves of each alias pair must be filtered: the alias reconciliation further down
   // unions boards with workboards (and users with staff), so filtering only one half lets a
   // tombstoned board walk straight back in through its alias.
-  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds'],['internalComms','deletedInternalCommsIds'],['meetingNotes','deletedMeetingNoteIds'],['scheduleEvents','deletedScheduleEventIds'],['boardShares','deletedBoardShareIds'],['clientComments','deletedClientCommentIds']]){
+  for(const[coll,key] of[['tasks','deletedTaskIds'],['groups','deletedGroupIds'],['comments','deletedCommentIds'],['timeEntries','deletedTimeEntryIds'],['checklistItems','deletedChecklistItemIds'],['boards','deletedBoardIds'],['workboards','deletedBoardIds'],['users','deletedUserIds'],['staff','deletedUserIds'],['notifications','deletedNotificationIds'],['internalComms','deletedInternalCommsIds'],['meetingNotes','deletedMeetingNoteIds'],['scheduleEvents','deletedScheduleEventIds'],['boardShares','deletedBoardShareIds'],['clientComments','deletedClientCommentIds'],['digests','deletedDigestIds']]){
     const gone=new Set([...(current[key]||[]),...(incoming[key]||[])]);
     merged[key]=[...gone];
     if(gone.size)merged[coll]=(merged[coll]||[]).filter(x=>!gone.has(x.id));
@@ -3727,7 +3732,7 @@ function _mergeDB(current, incoming){
   // and everything under it, gone. Union each pair and re-point both keys at one array.
   merged.users=mergeById(merged.users||[],merged.staff||[],'updatedAt');
   merged.staff=merged.users;
-  merged.boards=mergeById(merged.boards||[],merged.workboards||[],'updatedAt');
+  merged.boards=mergeById(merged.boards||[],merged.workboards||[],'updatedAt',_archivedWinsTie);
   merged.workboards=merged.boards;
   return merged;
 }
@@ -5797,6 +5802,7 @@ function launchApp(){
   startIntakePoller();
   _checkRecurringTasks();
   try{_rsLockMonths();}catch(e){console.warn('[retainer months]',e.message);}
+  try{if(_boardArchiveHeal())saveDB(DB);}catch(e){console.warn('[board archive]',e.message);}
   // Deep link from the MCP connector's task URLs (?openTask=<id>&openBoard=<id>, plan: read-only
   // WorkBoard/task tools) — checked once per real login, same as the last-nav restore above.
   try{
@@ -8305,6 +8311,15 @@ function _rsLocked(b,s,ym){
 }
 // The newest month that may be closed: the month before last until the 10th, then last month.
 function _rsLockUpTo(){const d=new Date();d.setDate(d.getDate()-9);return _rsPrevYm(_rsYm(d));}
+// Boards archived before 31 Oct 2026 carry their old updatedAt, so an older unarchived copy could tie with them and
+// undo the archive on its next save. Each one is stamped once (archivedAt keeps its last known time) so the archived
+// copy wins everywhere. Returns how many were stamped.
+function _boardArchiveHeal(){
+  if(!currentUser||currentUser.role==='client'||!Array.isArray(DB.workboards))return 0;
+  const now=new Date().toISOString();let n=0;
+  DB.workboards.forEach(b=>{if(b&&b.archived&&!b.archivedAt){b.archivedAt=b.updatedAt||now;b.updatedAt=now;n++;}});
+  return n;
+}
 function _rsLockMonths(){
   if(!currentUser||currentUser.role==='client'||!Array.isArray(DB.workboards))return 0;
   try{_regHeal();}catch(e){}
@@ -8910,7 +8925,7 @@ function retainerEnd(boardId){
   openConfirm('End this retainer?',`${b.name}'s retained board moves to Archive & Bin and the Retained Services tab leaves their portal. Its jobs, history, document register and training matrix stay with it, and an admin can restore it.`,'End retainer',()=>{
     const bb=(DB.workboards||[]).find(w=>w.id===boardId)||b;   // as it is now: a sync may have replaced it while the question was open
     bb.retainer.endMonth=_rsYm();
-    bb.archived=true;bb.updatedAt=new Date().toISOString();_regHoldFor(bb);saveDB(DB);closeConfirm();
+    bb.archived=true;bb.updatedAt=bb.archivedAt=new Date().toISOString();_regHoldFor(bb);saveDB(DB);closeConfirm();
     if(currentWorkboard&&currentWorkboard.id===boardId){exitWorkboard();return;}
     renderSidebarWorkboards();
   });
@@ -10203,7 +10218,7 @@ function _regHeldBy(boardId,k){return(DB[k]||[]).filter(x=>x&&x.archivedWith===b
 function _rsSetupPrev(clientId){
   const bs=(DB.workboards||[]).filter(b=>b.archived&&b.retainer&&b.clientId===clientId)
     .map(b=>({board:b,docs:_regHeldBy(b.id,'registerDocs').length,people:_regHeldBy(b.id,'registerPeople').length}))
-    .filter(x=>x.docs||x.people).sort((a,z)=>String(z.board.updatedAt||'').localeCompare(String(a.board.updatedAt||'')));
+    .filter(x=>x.docs||x.people).sort((a,z)=>String(z.board.archivedAt||z.board.updatedAt||'').localeCompare(String(a.board.archivedAt||a.board.updatedAt||'')));
   return bs[0]||null;
 }
 // Carry over: copies (new ids), so the archived board keeps its own. Comments go with their rows; columns added in
@@ -19992,8 +20007,9 @@ function renderDigests(){
 function _dgGetAutoItems(clientId){
   const since=new Date();since.setDate(since.getDate()-7);
   const sinceStr=since.toISOString();
+  const theirs=clientId?new Set(getClientTasks(clientId).map(t=>t.id)):null;
   return _liveTasks()
-    .filter(t=>!t.archived&&(t.updatedAt>sinceStr||t.completedAt>sinceStr)&&(!clientId||t.clientId===clientId))
+    .filter(t=>!t.archived&&(t.updatedAt>sinceStr||t.completedAt>sinceStr)&&(!theirs||theirs.has(t.id)))
     .slice(0,12)
     .map(t=>{
       const sm=getStatusMeta(t.status);
@@ -20250,7 +20266,7 @@ function digestAdvanceStatus(digestId,newStatus){
 }
 
 function deleteDigest(digestId){
-  DB.digests=(DB.digests||[]).filter(x=>x.id!==digestId);
+  const _before=DB.digests||[];DB.digests=_before.filter(x=>x.id!==digestId);_tombstoneRemoved(_before,DB.digests,'deletedDigestIds');
   saveDB(DB);closeGenericModal();navigate('digest');
   showToast('Digest deleted','info');
 }
@@ -20654,7 +20670,7 @@ function renderArchiveBin(){
 
   const wbRows=archivedWbs.map(wb=>{
     const taskCount=DB.tasks.filter(t=>(t.workboardId||t.boardId)===wb.id).length;
-    const archivedAt=wb.updatedAt?new Date(wb.updatedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const _aAt=wb.archivedAt||wb.updatedAt,archivedAt=_aAt?new Date(_aAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
     return`<div style="${ROW}" onmouseover="this.style.background='#f8fbff'" onmouseout="this.style.background=''">
       <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px">
         <span style="width:8px;height:8px;border-radius:2px;background:${wb.color};flex-shrink:0;display:inline-block"></span>
@@ -22509,7 +22525,7 @@ function _clientLeftovers(id){
 }
 function _removeClientLeftovers(id){
   const lo=_clientLeftovers(id),now=new Date().toISOString();
-  lo.archive.forEach(b=>{b.archived=true;b.clientId=null;b.updatedAt=now;});
+  lo.archive.forEach(b=>{b.archived=true;b.clientId=null;b.updatedAt=b.archivedAt=now;});
   lo.unlink.forEach(b=>{b.clientId=null;b.updatedAt=now;});
   if(lo.notes.length){
     const ids=lo.notes.flatMap(n=>(n.sections||[]).map(x=>x.id));
@@ -28630,6 +28646,7 @@ function archiveWorkboard(id){
     restoring?'Restore':'Archive',()=>{
     const wb2=DB.workboards.find(w=>w.id===id)||_wb;   // the record as it is now: a sync may have replaced it while the question was open
     wb2.archived=!restoring;wb2.updatedAt=new Date().toISOString();
+    if(restoring)delete wb2.archivedAt;else wb2.archivedAt=wb2.updatedAt;
     if(wb2.retainer){if(restoring)_regReleaseFor(wb2);else _regHoldFor(wb2);}   // its registers go and come back with it (TH-17)
     if(restoring)_recurSkipAway(id);
     saveDB(DB);
@@ -28692,7 +28709,7 @@ function restoreWorkboard(id){
   try{requireInternalUser(currentUser);}catch(e){return;}
   const wb=DB.workboards.find(w=>w.id===id);
   if(wb&&_rsRestoreClash(wb))return;
-  if(wb){wb.archived=false;wb.updatedAt=new Date().toISOString();if(wb.retainer)_regReleaseFor(wb);_recurSkipAway(id);saveDB(DB);}
+  if(wb){wb.archived=false;wb.updatedAt=new Date().toISOString();delete wb.archivedAt;if(wb.retainer)_regReleaseFor(wb);_recurSkipAway(id);saveDB(DB);}
   renderSidebarWorkboards();
   renderView('dashboard');
 }
