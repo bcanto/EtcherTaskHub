@@ -114,7 +114,9 @@ async function verifySupabaseSession(accessToken) {
 // already-issued token/refresh-token — signed before this scope existed — gets a clear
 // "reconnect the connector" error on list_boards/list_tasks/get_task until the holder reconnects
 // and consents to the wider scope.
-const SCOPE = 'actions:read actions:write boards:read';
+// boards:write and timesheets:read (31 Oct 2026) work the same way: the write tools and list_timesheets need them,
+// so a connection made before they existed is told to reconnect; nothing it could already do changes.
+const SCOPE = 'actions:read actions:write boards:read boards:write timesheets:read';
 
 module.exports = {
   b64url, b64urlDecode, signToken, verifyToken, pkceMatches,

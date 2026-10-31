@@ -22004,7 +22004,7 @@ function openTaskModal(id, defaultGroupId){
               return`<div style="margin-bottom:${isLast?0:10}px;padding-bottom:${isLast?0:10}px;${isLast?'':'border-bottom:1px solid #f0f4f8'}">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
                   ${avatarHtml(author,20)}
-                  <span style="font-size:11px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>
+                  <span style="font-size:11px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>${c.via==='claude'?'<span class="cm-via" style="font-size:10px;color:#6b8399">via Claude</span>':''}
                   <span style="font-size:10px;color:#b0bec5" title="${new Date(ts).toLocaleString()}">${_relativeTime(ts)}</span>
                 </div>
                 <div style="font-size:13px;color:#4a5568;line-height:1.6;padding-left:26px">${_renderCommentBody(c.body)}</div>
@@ -26259,7 +26259,7 @@ function renderTpComments(taskId){
         ${avatarHtml(author,28)}
         <div style="flex:1">
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>
+            <span style="font-size:13px;font-weight:700;color:#0d1c33">${escHtml(author.name)}</span>${c.via==='claude'?'<span class="cm-via" style="font-size:11px;color:#6b8399">via Claude</span>':''}
             <span style="font-size:11px;color:#a0b4c7">${_cTs?new Date(_cTs).toLocaleDateString():''}</span>
             <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
               ${isInternal?`<button onclick="tpReplyToComment(${escHtml(JSON.stringify(author.name))})" style="border:none;background:none;cursor:pointer;font-size:11px;color:#97bcbd" onmouseover="this.style.color='#0d6e4e'" onmouseout="this.style.color='#97bcbd'">Reply</button>`:''}
@@ -26287,10 +26287,12 @@ let _tpTrailAll=false;
 function _tpTrail(task){
   const out=[],who=id=>{if(!id)return'Someone';const u=getStaff(id);if(u)return u.name;const cu=(DB.users||[]).find(x=>x.id===id);return cu&&cu.role==='client'?'Client':(cu?cu.name:'Someone');};
   const ids=new Set([task.id,...(DB.tasks||[]).filter(t=>t.parentTaskId===task.id).map(t=>t.id)]);
+  // Changes made through the TaskHub connector in Claude (api/_mcpWrite.js) carry via:'claude'.
+  const via=x=>x&&(x.via==='claude'||x.createdVia==='claude')?' (via Claude)':'';
   const sub=id=>id!==task.id?(()=>{const s=(DB.tasks||[]).find(t=>t.id===id);return s?' on subitem "'+(s.name||s.title||'')+'"':'';})():'';
   // Created once: from the log when it has the event (it knows who), else from the task's own date.
   const logCreated=(DB.auditLog||[]).some(e=>e.entityType==='Task'&&e.entityId===task.id&&e.action==='created');
-  if(task.createdAt&&!logCreated)out.push({at:task.createdAt,who:task.createdBy?who(task.createdBy):'',text:'Created the task'});
+  if(task.createdAt&&!logCreated)out.push({at:task.createdAt,who:task.createdBy?who(task.createdBy)+via(task):'',text:'Created the task'});
   const word={created:'Created the task',deleted:'Deleted',reordered:null,moved_to_new_group:'Moved to a new group',manual_move:'Moved the dates on the Gantt',dates_changed:'Changed the dates',dates_locked:'Locked the dates',
     auto_shifted:'Dates shifted by a dependency',assignees_changed:'Changed who is assigned',currentlyWith_changed:'Changed who it is with',client_action_requested:'Asked the client for an action',
     client_action_completed:'The client completed an action',client_portal_visibility_changed:'Changed what the client sees'};
@@ -26302,10 +26304,10 @@ function _tpTrail(task){
       text=f==='description'?'Edited the description':`${lab}: ${b.displayValue!=null?b.displayValue:'none'} to ${a.displayValue!=null?a.displayValue:'none'}`;}
     else if(e.action==='currentlyWith_changed')text=`With: ${_taskAuditShow('currentlyWith',b.currentlyWith)} to ${_taskAuditShow('currentlyWith',a.currentlyWith)}`;
     else{text=word[e.action];if(text===null)return;text=text||String(e.action).replace(/_/g,' ');}
-    out.push({at:e.createdAt,who:who(e.actorId),text:text+sub(e.entityId)});
+    out.push({at:e.createdAt,who:who(e.actorId)+via(e),text:text+sub(e.entityId)});
   });
-  (DB.tasks||[]).forEach(x=>{if(!ids.has(x.id))return;(x.auditTrail||[]).forEach(e=>out.push({at:e.at,who:who(e.by),text:(e.field==='description'?'Edited the description':`${e.label}: ${e.from} to ${e.to}`)+sub(x.id)}));});
-  (DB.comments||[]).forEach(c=>{if(ids.has(c.taskId))out.push({at:c.timestamp||c.createdAt,who:who(c.authorId),text:'Commented: "'+String(c.body||'').slice(0,80)+(String(c.body||'').length>80?'...':'')+'"'+sub(c.taskId)});});
+  (DB.tasks||[]).forEach(x=>{if(!ids.has(x.id))return;(x.auditTrail||[]).forEach(e=>out.push({at:e.at,who:who(e.by)+via(e),text:(e.field==='description'?'Edited the description':`${e.label}: ${e.from} to ${e.to}`)+sub(x.id)}));});
+  (DB.comments||[]).forEach(c=>{if(ids.has(c.taskId))out.push({at:c.timestamp||c.createdAt,who:who(c.authorId)+via(c),text:'Commented: "'+String(c.body||'').slice(0,80)+(String(c.body||'').length>80?'...':'')+'"'+sub(c.taskId)});});
   (DB.clientComments||[]).forEach(c=>{if(ids.has(c.taskId))out.push({at:c.createdAt||c.timestamp,who:c.authorRole==='client'?'Client':(c.authorName||who(c.authorId)),text:(c.authorRole==='client'?'Wrote in the client thread':'Replied to the client')+': "'+String(c.body||'').slice(0,80)+'"'});});
   (DB.timeEntries||[]).forEach(e=>{if(ids.has(e.taskId)&&Number(e.hours)>0)out.push({at:e.createdAt||e.date,who:who(e.staffId),text:`Logged ${_rsHrs(e.hours)} h for ${String(e.date||'').slice(0,10).split('-').reverse().join('/')}${e.status==='rejected'?' (rejected)':''}`+sub(e.taskId)});});
   (DB.taskFiles||[]).forEach(f=>{if(ids.has(f.taskId))out.push({at:f.uploadedAt||f.createdAt,who:who(f.uploadedBy||f.ownerId),text:'Added the file '+(f.name||'')});});

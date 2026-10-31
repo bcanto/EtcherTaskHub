@@ -74,15 +74,18 @@ function resolveCallerUser(data, sub, email) {
 const DONE_STATUSES = new Set(['done', 'completed', 'completed-approved', 'cancelled']);
 const PRIORITY_ORDER = { high: 0, med: 1, low: 2 };
 
-function listBoardsForUser(data, user) {
-  const visible = boardsOf(data).filter(b => !b.archived && canViewBoard(user, b, data));
+// Boards in Archive & Bin are left out unless includeArchived is set (31 Oct 2026: GCS - Tracker, ETCHER and supabase
+// "went missing" because they are archived); each board says whether it is.
+function listBoardsForUser(data, user, filter) {
+  const withArchived = !!(filter && filter.includeArchived);
+  const visible = boardsOf(data).filter(b => b && (withArchived || !b.archived) && canViewBoard(user, b, data));
   return visible.map(b => {
     const clientId = boardClientId(data, b);
     const client = clientId ? (data.clients || []).find(c => c.id === clientId) : null;
     const boardTasks = (data.tasks || []).filter(t => !t.archived && resolveTaskBoardId(data, t) === b.id);
     const taskCountByStatus = {};
     for (const t of boardTasks) { const s = t.status || 'todo'; taskCountByStatus[s] = (taskCountByStatus[s] || 0) + 1; }
-    return { id: b.id, name: b.name, client: client ? client.name : null, taskCountByStatus };
+    return { id: b.id, name: b.name, client: client ? client.name : null, archived: !!b.archived, taskCountByStatus };
   });
 }
 

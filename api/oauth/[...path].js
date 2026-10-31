@@ -21,6 +21,9 @@ const { signToken, verifyToken, pkceMatches, isAllowedEmail, allowedEmails, veri
 const { readBlob, casWrite } = require('../_blob');
 const { listActions, createOrUpdateAction, applyUpdate, toPublic } = require('../_mcpActions');
 const { resolveCallerUser, listBoardsForUser, listTasksForUser, getTaskForUser } = require('../_mcpBoards');
+const { createTask, createTasks, updateTask, listGroups, createGroup, addComment, routeAction } = require('../_mcpWrite');
+const { listTimesheets } = require('../_mcpTimesheets');
+const { recordAudits } = require('../_audit');
 const { sessionAllowed } = require('../_authAdmin');
 
 function baseUrl(req) {
@@ -126,7 +129,7 @@ function authorize(req, res) {
 </style></head>
 <body><div class="card">
   <h1>Connect to TaskHub</h1>
-  <p>An app wants to add items to your TaskHub Email Triage review queue, update ones you've already routed to a WorkBoard, and read the WorkBoards and tasks you can already see in TaskHub. It cannot create, edit or delete a WorkBoard task, and cannot see anything you can't already see yourself.</p>
+  <p>An app wants to work in TaskHub as you: read the WorkBoards and tasks you can already see, create and change tasks, groups and comments on those boards (each change is recorded under your name, marked via Claude), route items from the Email Triage queue, and read timesheets (everyone's if you are an admin or have Billing access, otherwise only your own). It cannot delete anything, and cannot see or change anything you can't already see yourself.</p>
   <div id="loading">Checking your session…</div>
   <form id="f" style="display:none">
     <label for="email">Email</label><input id="email" type="email" autocomplete="username">
@@ -263,7 +266,7 @@ const MCP_TOOLS = [
   },
   {
     name: 'create_action',
-    description: 'Queue an action item from an email for review in TaskHub\'s Email Triage dashboard panel — a person routes it to the correct WorkBoard, client, group and owner from there, so it is never created directly on a board. If an item with the same outlookMessageId and task text already exists — pending or already routed — it is updated instead of duplicated.',
+    description: 'EMAIL INTAKE ONLY. Do not use this to add a task to a board: use create_task, which puts the task straight onto the board. This tool queues an action item from an email for review in TaskHub\'s Email Triage dashboard panel — a person routes it to the correct WorkBoard, client, group and owner from there, so it is never created directly on a board. If an item with the same outlookMessageId and task text already exists — pending or already routed — it is updated instead of duplicated.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -300,8 +303,8 @@ const MCP_TOOLS = [
   // canViewTask so this can never drift from what the UI actually shows). ─────────────────────
   {
     name: 'list_boards',
-    description: 'List the WorkBoards visible to you (an admin/pm sees every board; anyone else sees boards marked "all internal", boards they own, and boards specifically shared with them) — each with its client and a count of its tasks per status.',
-    inputSchema: { type: 'object', properties: {} },
+    description: 'List the WorkBoards visible to you (an admin/pm sees every board; anyone else sees boards marked "all internal", boards they own, and boards specifically shared with them) — each with its client, whether it is archived, and a count of its tasks per status. Boards in Archive & Bin are left out unless includeArchived is true.',
+    inputSchema: { type: 'object', properties: { includeArchived: { type: 'boolean', description: 'Also list archived boards (Archive & Bin), marked archived: true. Default false. Archived boards cannot be written to.' } } },
   },
   {
     name: 'list_tasks',
@@ -329,10 +332,120 @@ const MCP_TOOLS = [
     description: 'Full detail for one task: everything list_tasks returns, plus its description, its parent task (if it\'s a subitem), its group, and its own subitems.',
     inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'The task id, from list_tasks.' } }, required: ['id'] },
   },
+  // ── Write tools (boards:write) — the same rules as the app: admin and staff can write, restricted users and clients
+  // cannot; only on boards the caller can see, never an archived board or task. Each change goes into the task's
+  // history under the signed-in person, marked "via Claude". There is no delete: set status "cancelled" instead.
+  {
+    name: 'create_task',
+    description: 'Create a task DIRECTLY on a WorkBoard: it appears on the board straight away, in the given group, with its owner, due date and priority. Use this whenever someone asks to add, create or put a task on a board (e.g. "add this to the Titan board"). Nothing goes to the Email Triage intake (that is create_action, for email intake only). Pass parentId to add a subitem under an existing task. Returns the new task with its link.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+          board: { type: 'string', description: 'The board id or name (any case; part of a name works when only one board matches, e.g. "Titan"). Not needed for a subitem.' },
+          title: { type: 'string', description: 'The task name.' },
+          group: { type: 'string', description: 'Group name on that board (any case). A name the board does not have yet becomes a new group. Left out: the board\'s first group. Not for a subitem.' },
+          description: { type: 'string', description: 'Notes for the task (plain text).' },
+          owner: { type: 'string', description: 'Who owns it: a staff member\'s name or email (part of a name works when only one person matches). Left out: you.' },
+          dueDate: { type: 'string', description: 'YYYY-MM-DD' },
+          priority: { type: 'string', description: 'crit (Critical), high, med (Medium) or low. Default med.' },
+          status: { type: 'string', description: 'Default todo (Not Started). Any TaskHub status value or its label, e.g. in-progress, blocked, done (Completed), cancelled.' },
+          parentId: { type: 'string', description: 'A task id: makes this a subitem of that task, on its board and in its group.' },
+        },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'create_tasks',
+    description: 'Create up to 100 tasks DIRECTLY on WorkBoards in one call, e.g. to load a task list. Each task takes the same fields as create_task (board and title needed; group, owner, dueDate, priority, status, description, parentId optional) and can name its own board and group. Tasks that pass are all saved together; any that fail are listed with the reason, so fix those and send just them again. Returns each created task with its link.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tasks: { type: 'array', maxItems: 100, description: 'The tasks to create, 1 to 100.', items: { type: 'object', properties: {
+          board: { type: 'string', description: 'The board id or name (any case; part of a name works when only one board matches, e.g. "Titan"). Not needed for a subitem.' },
+          title: { type: 'string', description: 'The task name.' },
+          group: { type: 'string', description: 'Group name on that board (any case). A name the board does not have yet becomes a new group. Left out: the board\'s first group. Not for a subitem.' },
+          description: { type: 'string', description: 'Notes for the task (plain text).' },
+          owner: { type: 'string', description: 'Who owns it: a staff member\'s name or email (part of a name works when only one person matches). Left out: you.' },
+          dueDate: { type: 'string', description: 'YYYY-MM-DD' },
+          priority: { type: 'string', description: 'crit (Critical), high, med (Medium) or low. Default med.' },
+          status: { type: 'string', description: 'Default todo (Not Started). Any TaskHub status value or its label, e.g. in-progress, blocked, done (Completed), cancelled.' },
+          parentId: { type: 'string', description: 'A task id: makes this a subitem of that task, on its board and in its group.' },
+        }, required: ['title'] } },
+      },
+      required: ['tasks'],
+    },
+  },
+  {
+    name: 'update_task',
+    description: 'Change a task: only the fields you pass change. Use it to rename, re-prioritise, re-date, reassign, move to another group or board, set a rank, or change the status, including marking it complete (status "done", shown as Completed; or "completed-approved") or cancelled (status "cancelled"; there is no delete). Moving a task to another board takes its subitems with it. Returns the updated task.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The task id, from list_tasks, get_task or create_task.' },
+        title: { type: 'string' },
+        description: { type: 'string', description: 'Replaces the task\'s notes.' },
+        priority: { type: 'string', description: 'crit (Critical), high, med (Medium) or low.' },
+        status: { type: 'string', description: 'Any TaskHub status value or its label, e.g. todo, in-progress, blocked, review, done (Completed), completed-approved, cancelled.' },
+        dueDate: { type: ['string', 'null'], description: 'YYYY-MM-DD, or null to clear it.' },
+        owner: { type: ['string', 'null'], description: 'A staff member\'s name or email, or null for unassigned.' },
+        group: { type: 'string', description: 'Move to this group (by name, any case) on the task\'s board, or on the new board when board is also given. A new name makes a new group.' },
+        board: { type: 'string', description: 'Move the task (and its subitems) to this board (id or name). Lands in group, or the board\'s first group.' },
+        rank: { type: ['integer', 'null'], description: 'A whole number for the owner\'s own order of work (1 = first), or null to clear it.' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'list_groups',
+    description: 'List the groups on a board (id or name), in board order, with how many tasks each holds.',
+    inputSchema: { type: 'object', properties: { board: { type: 'string', description: 'The board id or name.' } }, required: ['board'] },
+  },
+  {
+    name: 'create_group',
+    description: 'Add a group to a board. If the board already has a group with that name (any case), that group is returned instead of a copy.',
+    inputSchema: { type: 'object', properties: { board: { type: 'string', description: 'The board id or name.' }, name: { type: 'string', description: 'The group name (up to 80 characters).' } }, required: ['board', 'name'] },
+  },
+  {
+    name: 'add_comment',
+    description: 'Add a comment to a task. It shows in the task\'s comments and history in TaskHub under your name, marked "via Claude". @First names notify those people; the task\'s owner and assignees are told too.',
+    inputSchema: { type: 'object', properties: { taskId: { type: 'string' }, text: { type: 'string', description: 'The comment (up to 5,000 characters).' } }, required: ['taskId', 'text'] },
+  },
+  {
+    name: 'route_action',
+    description: 'Route an email action that is waiting in the Email Triage intake (list_actions with status "pending") onto a board, exactly as the Route button in TaskHub does: it becomes a task on that board and group with that owner, and leaves the intake. Returns the created task.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        actionId: { type: 'string', description: 'The pending item id from list_actions or create_action.' },
+        board: { type: 'string', description: 'The board id or name.' },
+        group: { type: 'string', description: 'Group name on that board. A new name makes a new group.' },
+        owner: { type: 'string', description: 'A staff member\'s name or email.' },
+        dueDate: { type: 'string', description: 'YYYY-MM-DD. Left out: the date suggested from the email, when it is a real date.' },
+        priority: { type: 'string', description: 'crit, high, med or low. Left out: med (Medium), as the Route button does.' },
+      },
+      required: ['actionId', 'board', 'group', 'owner'],
+    },
+  },
+  // ── Read: hours (timesheets:read). Admins and staff with Billing access see everyone; anyone else their own. ──
+  {
+    name: 'list_timesheets',
+    description: 'Hours logged between two dates: each entry (person, date, hours, task, board, billable, status draft/submitted/approved/rejected), totals per person, and each person\'s timesheet status for the period (none, draft, submitted, approved, or rejected). Admins and staff with Billing access see everyone; anyone else sees only their own hours.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dateFrom: { type: 'string', description: 'YYYY-MM-DD, first day included.' },
+        dateTo: { type: 'string', description: 'YYYY-MM-DD, last day included.' },
+        person: { type: 'string', description: 'Only this person: a staff name or email.' },
+      },
+      required: ['dateFrom', 'dateTo'],
+    },
+  },
 ];
 // Tools added after the original 3 that require the caller's token to actually carry the new
 // scope — see _mcpAuth.js's SCOPE comment for why this is enforced here but not on the original 3.
-const READ_TOOLS = new Set(['list_boards', 'list_tasks', 'get_task']);
+const READ_TOOLS = new Set(['list_boards', 'list_tasks', 'get_task', 'list_groups']);
+const WRITE_TOOLS = new Set(['create_task', 'create_tasks', 'update_task', 'create_group', 'add_comment', 'route_action']);
+const TIMESHEET_TOOLS = new Set(['list_timesheets']);
 
 function mcpSend(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));
@@ -352,10 +465,49 @@ function mcpUnauthorized(req, res) {
   mcpSend(res, 401, { error: 'unauthorized' });
 }
 
+function callerUser(data, caller) {
+  const user = resolveCallerUser(data, caller.id, caller.email);
+  if (!user) throw Object.assign(new Error('Your TaskHub account could not be matched to a staff record — ask an admin to check your account.'), { code: 'account_not_linked' });
+  if (user.active === false) throw Object.assign(new Error('Your TaskHub account is switched off, so the connector cannot work for it. Ask an admin.'), { code: 'forbidden' });
+  return user;
+}
+// The write tools: read the record, apply, compare-and-swap write, retry on a clash (the same loop as create_action).
+// A bad input throws before anything is written. The permanent audit copies go once the write has landed.
+async function writeTool(caller, apply) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { data, updatedAt } = await readBlob();
+    const out = apply(data, callerUser(data, caller));
+    if (out.unchanged) return out.result;
+    data._savedAt = new Date().toISOString();
+    if (await casWrite(data, updatedAt)) {
+      await recordAudits(out.audits);
+      return out.result;
+    }
+    await new Promise(r => setTimeout(r, 80 * (attempt + 1)));
+  }
+  throw Object.assign(new Error('TaskHub is saving changes right now — please try again in a moment.'), { code: 'conflict' });
+}
+
 async function callTool(name, args, caller, base) {
   args = args || {};
   if (READ_TOOLS.has(name) && !(caller.scope || '').split(' ').includes('boards:read')) {
     throw Object.assign(new Error('This connection was authorised before board/task access existed — disconnect and reconnect the TaskHub connector to grant it.'), { code: 'scope_required' });
+  }
+  const scopes = (caller.scope || '').split(' ');
+  if ((WRITE_TOOLS.has(name) && !scopes.includes('boards:write')) || (TIMESHEET_TOOLS.has(name) && !scopes.includes('timesheets:read'))) {
+    throw Object.assign(new Error('This connection was set up before TaskHub allowed Claude to create and change tasks and read timesheets. Disconnect and reconnect the TaskHub connector in Claude to turn this on.'), { code: 'scope_required' });
+  }
+  if (TIMESHEET_TOOLS.has(name)) {
+    const { data } = await readBlob();
+    return listTimesheets(data, callerUser(data, caller), args);
+  }
+  if (name === 'list_groups') {
+    const { data } = await readBlob();
+    return listGroups(data, callerUser(data, caller), args);
+  }
+  const WRITES = { create_task: createTask, create_tasks: createTasks, update_task: updateTask, create_group: createGroup, add_comment: addComment, route_action: routeAction };
+  if (WRITE_TOOLS.has(name) && Object.prototype.hasOwnProperty.call(WRITES, name)) {
+    return writeTool(caller, (data, user) => WRITES[name](data, user, args, base, { actorUid: caller.id || null }));
   }
   if (name === 'list_actions') {
     const { data } = await readBlob();
@@ -365,7 +517,7 @@ async function callTool(name, args, caller, base) {
     const { data } = await readBlob();
     const user = resolveCallerUser(data, caller.id, caller.email);
     if (!user) throw Object.assign(new Error('Your TaskHub account could not be matched to a staff record — ask an admin to check your account.'), { code: 'account_not_linked' });
-    if (name === 'list_boards') return { ok: true, boards: listBoardsForUser(data, user) };
+    if (name === 'list_boards') return { ok: true, boards: listBoardsForUser(data, user, args) };
     if (name === 'list_tasks') return { ok: true, ...listTasksForUser(data, user, args, base) };
     if (name === 'get_task') {
       if (!args.id) throw Object.assign(new Error('id is required'), { code: 'invalid_params' });

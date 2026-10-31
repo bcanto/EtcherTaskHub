@@ -829,4 +829,6 @@ module.exports = {
   sliceForClient, sliceForShare, shareLinkExpired, SHARE_LINK_DAYS, applyPortalAction, checkConfined,
   // exported for tests
   taskClientId, taskHidden, taskVisibleTo, normalizeLinkUrl, awaitingClient, isApprovalAsk, blockedFile, normaliseMime, DATA_URL_RE, recentActivity, fileVisibleTo,
+  // shared with api/_mcpWrite.js (the MCP connector sets statuses the same way)
+  applyStatusProgress,
 };
